@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyazıt'ın Beyin Spor Salonu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* Kart Efektleri */
+        .game-card { perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        .game-card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .card-front { background-color: #3B82F6; color: white; }
+        .card-back { background-color: white; color: #333; transform: rotateY(180deg); border: 2px solid #3B82F6; }
+
+        /* Simon Oyunu */
+        .simon-btn { transition: all 0.2s; opacity: 0.6; }
+        .simon-btn.active { opacity: 1; transform: scale(1.05); box-shadow: 0 0 20px currentColor; }
+
+        /* Dikkat Oyunu */
+        .emoji-grid-item { transition: transform 0.1s; }
+        .emoji-grid-item:active { transform: scale(0.9); }
+
+        /* Genel Animasyonlar */
+        .hidden-section { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Stroop Oyunu */
+        .stroop-option { transition: transform 0.1s; }
+        .stroop-option:active { transform: scale(0.95); }
+
+        /* Desen Oyunu (Pattern) */
+        .pattern-cell { transition: all 0.2s; }
+        .pattern-cell.active { background-color: #3B82F6; transform: scale(0.95); }
+        .pattern-cell.correct { background-color: #4ade80; }
+        .pattern-cell.wrong { background-color: #f87171; }
+
+        /* Refleks Oyunu */
+        .reflex-target { position: absolute; cursor: pointer; transition: transform 0.1s; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Sesli Harf Oyunu */
+        .letter-bubble { transition: all 0.2s; animation: floatIn 0.4s ease-out; }
+        .letter-bubble:active { transform: scale(0.9); }
+        @keyframes floatIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 bg-blue-50">
+
+    <!-- Ana Menü -->
+    <div id="main-menu" class="text-center w-full max-w-7xl fade-in my-4">
+        <h1 class="text-4xl md:text-6xl font-bold text-blue-600 mb-2">Merhaba Beyazıt! 👋</h1>
+        <p class="text-gray-600 text-xl mb-8">Bugün beynimizi güçlendirmek için ne oynamak istersin?</p>
+
+        <!-- Yan Yana Menü Düzeni (Grid) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2">
+            
+            <!-- Oyun 1: Hafıza -->
+            <div onclick="startGame('memory')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-blue-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-blue-500"><i class="fas fa-layer-group"></i></div>
+                <h2 class="text-xl font-bold mb-1">Hafıza Kartları</h2>
+                <p class="text-sm text-gray-500">Kartları eşleştir</p>
+            </div>
+
+            <!-- Oyun 2: Simon -->
+            <div onclick="startGame('simon')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-green-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-green-500"><i class="fas fa-lightbulb"></i></div>
+                <h2 class="text-xl font-bold mb-1">Sırayı Hatırla</h2>
+                <p class="text-sm text-gray-500">Işıkları izle</p>
+            </div>
+
+            <!-- Oyun 3: Dikkat -->
+            <div onclick="startGame('attention')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-purple-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-purple-500"><i class="fas fa-eye"></i></div>
+                <h2 class="text-xl font-bold mb-1">Dikkat Avcısı</h2>
+                <p class="text-sm text-gray-500">Farklı olanı bul</p>
+            </div>
+
+            <!-- Oyun 4: Renk Karmaşası -->
+            <div onclick="startGame('stroop')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-red-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-red-500"><i class="fas fa-palette"></i></div>
+                <h2 class="text-xl font-bold mb-1">Renk Karmaşası</h2>
+                <p class="text-sm text-gray-500">Rengi söyle</p>
+            </div>
+
+            <!-- Oyun 5: Kayıp Eşya -->
+            <div onclick="startGame('missing')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-yellow-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-yellow-500"><i class="fas fa-search"></i></div>
+                <h2 class="text-xl font-bold mb-1">Kayıp Eşya</h2>
+                <p class="text-sm text-gray-500">Eksiği bul</p>
+            </div>
+
+             <!-- Oyun 6: Desen Kopyalama -->
+             <div onclick="startGame('pattern')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-indigo-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-indigo-500"><i class="fas fa-th"></i></div>
+                <h2 class="text-xl font-bold mb-1">Desen Kopyalama</h2>
+                <p class="text-sm text-gray-500">Şekli hafızana kazı</p>
+            </div>
+
+            <!-- Oyun 7: Refleks Avcısı -->
+            <div onclick="startGame('reflex')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-orange-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-orange-500"><i class="fas fa-bolt"></i></div>
+                <h2 class="text-xl font-bold mb-1">Refleks Avcısı</h2>
+                <p class="text-sm text-gray-500">Hızını test et</p>
+            </div>
+
+            <!-- Oyun 8: Sesli Harf Avı (YENİ) -->
+            <div onclick="startGame('vowel')" class="bg-white p-4 rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 cursor-pointer border-b-4 border-pink-500 flex flex-col items-center justify-center min-h-[180px]">
+                <div class="text-4xl mb-3 text-pink-500"><i class="fas fa-font"></i></div>
+                <h2 class="text-xl font-bold mb-1">Sesli Harf Avı</h2>
+                <p class="text-sm text-gray-500">Sadece seslileri bul</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Geri Dön Butonu -->
+    <button id="back-btn" onclick="showMenu()" class="hidden fixed top-4 left-4 bg-white px-4 py-2 rounded-full shadow-md hover:bg-gray-100 text-gray-700 font-bold z-50">
+        <i class="fas fa-arrow-left mr-2"></i> Menü
+    </button>
+
+    <!-- OYUN ALANLARI -->
+
+    <!-- 1. HAFIZA KARTLARI -->
+    <div id="game-memory" class="hidden-section w-full max-w-2xl text-center">
+        <h2 class="text-3xl font-bold text-blue-600 mb-4">Hafıza Kartları</h2>
+        <div class="flex justify-between items-center mb-4 px-4">
+            <span class="text-xl font-bold text-gray-700">Hamle: <span id="memory-moves">0</span></span>
+            <button onclick="initMemoryGame()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Yeniden</button>
+        </div>
+        <div id="memory-grid" class="grid grid-cols-4 gap-3 md:gap-4 mx-auto" style="max-width: 500px;"></div>
+        <div id="memory-message" class="mt-4 text-2xl font-bold text-green-500 h-8"></div>
+    </div>
+
+    <!-- 2. SIMON -->
+    <div id="game-simon" class="hidden-section w-full max-w-md text-center">
+        <h2 class="text-3xl font-bold text-green-600 mb-2">Sırayı Hatırla</h2>
+        <p class="text-gray-500 mb-4">Yanan renkleri takip et!</p>
+        <div class="text-xl font-bold mb-4">Seviye: <span id="simon-level">1</span></div>
+        <div class="grid grid-cols-2 gap-4 mb-6 relative">
+            <div id="simon-green" class="simon-btn bg-green-500 h-32 w-32 rounded-tl-3xl rounded-br-lg cursor-pointer" onclick="handleSimonInput(0)"></div>
+            <div id="simon-red" class="simon-btn bg-red-500 h-32 w-32 rounded-tr-3xl rounded-bl-lg cursor-pointer" onclick="handleSimonInput(1)"></div>
+            <div id="simon-yellow" class="simon-btn bg-yellow-400 h-32 w-32 rounded-bl-3xl rounded-tr-lg cursor-pointer" onclick="handleSimonInput(2)"></div>
+            <div id="simon-blue" class="simon-btn bg-blue-500 h-32 w-32 rounded-br-3xl rounded-tl-lg cursor-pointer" onclick="handleSimonInput(3)"></div>
+            <div id="simon-start-overlay" class="absolute inset-0 flex items-center justify-center bg-white/50 rounded-3xl">
+                <button onclick="startSimonGame()" class="bg-green-600 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg hover:scale-105 transition">BAŞLA</button>
+            </div>
+        </div>
+        <div id="simon-status" class="h-8 text-lg font-bold text-gray-700"></div>
+    </div>
+
+    <!-- 3. DİKKAT AVCISI -->
+    <div id="game-attention" class="hidden-section w-full max-w-2xl text-center">
+        <h2 class="text-3xl font-bold text-purple-600 mb-2">Dikkat Avcısı</h2>
+        <p class="text-gray-500 mb-4">Farklı olanı bul!</p>
+        <div class="flex justify-between items-center mb-6 max-w-md mx-auto">
+            <div class="text-xl font-bold text-gray-700">Puan: <span id="attention-score">0</span></div>
+            <div class="text-xl font-bold text-red-500">Süre: <span id="attention-timer">30</span></div>
+        </div>
+        <div id="attention-grid" class="grid grid-cols-5 md:grid-cols-6 gap-2 mx-auto bg-white p-4 rounded-xl shadow-inner select-none" style="max-width: 500px;"></div>
+        <div id="attention-overlay" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl text-center max-w-sm mx-4">
+                <h3 class="text-3xl font-bold text-gray-800 mb-4">Süre Doldu!</h3>
+                <p class="text-xl mb-6">Puanın: <span id="final-score" class="text-purple-600 font-bold">0</span></p>
+                <button onclick="startAttentionGame()" class="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold w-full">Tekrar Oyna</button>
+                <button onclick="showMenu()" class="mt-3 text-gray-500 underline block w-full">Menüye Dön</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. RENK KARMAŞASI (STROOP) -->
+    <div id="game-stroop" class="hidden-section w-full max-w-md text-center">
+        <h2 class="text-3xl font-bold text-red-600 mb-2">Renk Karmaşası</h2>
+        <p class="text-gray-500 mb-6">Yazıyı okuma, <b>RENGİ</b> seç!</p>
+        <div class="flex justify-between items-center mb-8 px-4">
+            <div class="text-xl font-bold text-gray-700">Puan: <span id="stroop-score">0</span></div>
+            <div class="text-xl font-bold text-red-500">Süre: <span id="stroop-timer">30</span></div>
+        </div>
+        <div class="bg-white p-8 rounded-2xl shadow-xl mb-8 min-h-[150px] flex items-center justify-center border-4 border-gray-100">
+            <h1 id="stroop-word" class="text-6xl font-bold">HAZIR?</h1>
+        </div>
+        <div id="stroop-options" class="grid grid-cols-2 gap-4 hidden">
+            <button onclick="checkStroopAnswer('red')" class="stroop-option bg-red-500 text-white py-4 rounded-xl text-xl font-bold shadow">KIRMIZI</button>
+            <button onclick="checkStroopAnswer('blue')" class="stroop-option bg-blue-500 text-white py-4 rounded-xl text-xl font-bold shadow">MAVİ</button>
+            <button onclick="checkStroopAnswer('green')" class="stroop-option bg-green-500 text-white py-4 rounded-xl text-xl font-bold shadow">YEŞİL</button>
+            <button onclick="checkStroopAnswer('yellow')" class="stroop-option bg-yellow-400 text-white py-4 rounded-xl text-xl font-bold shadow">SARI</button>
+        </div>
+        <button id="stroop-start-btn" onclick="startStroopGame()" class="bg-red-600 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg w-full">BAŞLA</button>
+    </div>
+
+    <!-- 5. KAYIP EŞYA -->
+    <div id="game-missing" class="hidden-section w-full max-w-2xl text-center">
+        <h2 class="text-3xl font-bold text-yellow-500 mb-2">Kayıp Eşya</h2>
+        <p class="text-gray-500 mb-4">Dikkatli bak, ne kayboldu?</p>
+        <div class="bg-white p-6 rounded-2xl shadow-lg min-h-[300px] flex flex-col items-center justify-center">
+            <div id="missing-stage-1" class="text-center w-full">
+                <p class="text-2xl text-gray-700 mb-6 font-bold">Ezberle</p>
+                <div id="missing-items-grid" class="flex flex-wrap justify-center gap-4 text-6xl"></div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-8"><div id="missing-progress" class="bg-yellow-400 h-2.5 rounded-full" style="width: 100%"></div></div>
+            </div>
+            <div id="missing-stage-2" class="hidden text-center w-full">
+                <p class="text-2xl text-gray-700 mb-6 font-bold">Hangisi Gitti?</p>
+                <div id="missing-options-grid" class="flex flex-wrap justify-center gap-4"></div>
+            </div>
+             <div id="missing-feedback" class="hidden text-center">
+                <div class="text-6xl mb-4" id="missing-feedback-icon"></div>
+                <h3 class="text-2xl font-bold mb-4" id="missing-feedback-text"></h3>
+                <button onclick="startMissingLevel()" class="bg-yellow-500 text-white px-6 py-2 rounded-lg font-bold">Sonraki</button>
+            </div>
+        </div>
+        <button id="missing-start-btn" onclick="startMissingGame()" class="mt-6 bg-yellow-500 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg">OYUNA BAŞLA</button>
+    </div>
+
+    <!-- 6. DESEN KOPYALAMA -->
+    <div id="game-pattern" class="hidden-section w-full max-w-md text-center">
+        <h2 class="text-3xl font-bold text-indigo-500 mb-2">Desen Kopyalama</h2>
+        <p class="text-gray-500 mb-4">Deseni aklında tut ve tekrar et!</p>
+        
+        <div class="text-xl font-bold mb-4">Puan: <span id="pattern-score">0</span></div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg inline-block">
+            <div id="pattern-grid" class="grid grid-cols-3 gap-2 w-64 h-64 mx-auto">
+                <!-- Hücreler JS ile oluşturulacak -->
+            </div>
+        </div>
+
+        <div id="pattern-msg" class="mt-4 h-8 text-lg font-bold text-gray-600">Hazır mısın?</div>
+        
+        <button id="pattern-start-btn" onclick="startPatternGame()" class="mt-4 bg-indigo-500 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg hover:scale-105 transition">BAŞLA</button>
+        <button id="pattern-check-btn" onclick="checkPattern()" class="hidden mt-4 bg-green-500 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg hover:scale-105 transition">KONTROL ET</button>
+    </div>
+
+    <!-- 7. REFLEKS AVCISI -->
+    <div id="game-reflex" class="hidden-section w-full h-screen fixed inset-0 bg-orange-50 overflow-hidden cursor-crosshair">
+        <!-- Özel Geri Dön -->
+        <button onclick="showMenu()" class="absolute top-4 left-4 bg-white px-4 py-2 rounded-full shadow-md z-50 text-gray-700 font-bold">
+            <i class="fas fa-arrow-left mr-2"></i> Çık
+        </button>
+
+        <div id="reflex-intro" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-40">
+            <h2 class="text-4xl font-bold text-orange-500 mb-4">Refleks Avcısı</h2>
+            <p class="text-xl text-gray-600 mb-8">Turuncu toplar çıkınca hemen tıkla!</p>
+            <button onclick="startReflexGame()" class="bg-orange-500 text-white px-10 py-4 rounded-full text-2xl font-bold shadow-lg hover:scale-105 transition">BAŞLA</button>
+        </div>
+
+        <div class="absolute top-4 right-4 text-2xl font-bold text-orange-600 z-30 pointer-events-none">
+            Skor: <span id="reflex-score">0</span>
+        </div>
+        
+        <!-- Hedefler buraya dinamik eklenecek -->
+        <div id="reflex-area" class="w-full h-full relative"></div>
+    </div>
+
+    <!-- 8. SESLİ HARF AVI (YENİ) -->
+    <div id="game-vowel" class="hidden-section w-full max-w-2xl text-center">
+        <h2 class="text-3xl font-bold text-pink-600 mb-2">Sesli Harf Avı</h2>
+        <p class="text-gray-500 mb-4">Sadece <b class="text-pink-600">SESLİ (A, E, I, İ, O, Ö, U, Ü)</b> harflere tıkla!</p>
+        
+        <div class="flex justify-between items-center mb-6 max-w-md mx-auto">
+            <div class="text-xl font-bold text-gray-700">Puan: <span id="vowel-score">0</span></div>
+            <div class="text-xl font-bold text-red-500">Süre: <span id="vowel-timer">30</span></div>
+        </div>
+
+        <div id="vowel-grid" class="grid grid-cols-5 gap-3 mx-auto p-4 bg-white rounded-xl shadow-lg" style="max-width: 500px;">
+            <!-- Harfler Buraya Gelecek -->
+        </div>
+
+        <button id="vowel-start-btn" onclick="startVowelGame()" class="mt-6 bg-pink-500 text-white px-8 py-3 rounded-full text-xl font-bold shadow-lg hover:scale-105 transition">BAŞLA</button>
+    </div>
+
+    <script>
+        // --- GENEL YÖNETİM ---
+        const games = ['memory', 'simon', 'attention', 'stroop', 'missing', 'pattern', 'reflex', 'vowel'];
+        
+        function showMenu() {
+            document.getElementById('back-btn').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            games.forEach(g => document.getElementById(`game-${g}`).classList.add('hidden-section'));
+            // Tüm oyunların zamanlayıcılarını durdur
+            stopAttentionTimer();
+            stopStroopTimer();
+            stopVowelTimer();
+            if(reflexTimer) clearTimeout(reflexTimer);
+        }
+
+        function startGame(gameId) {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById(`game-${gameId}`).classList.remove('hidden-section');
+            if(gameId !== 'reflex') document.getElementById(`game-${gameId}`).classList.add('fade-in');
+            
+            // Reflex oyununun kendi geri butonu var, diğerleri için genel butonu göster
+            if(gameId !== 'reflex') document.getElementById('back-btn').classList.remove('hidden');
+
+            if (gameId === 'memory') initMemoryGame();
+            if (gameId === 'simon') resetSimonUI();
+            if (gameId === 'attention') showAttentionIntro();
+            if (gameId === 'stroop') resetStroopUI();
+            if (gameId === 'missing') resetMissingUI();
+            if (gameId === 'pattern') initPatternGame();
+            if (gameId === 'reflex') initReflexGame();
+            if (gameId === 'vowel') initVowelGame();
+        }
+
+        // --- 1. HAFIZA ---
+        const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
+        let flippedCards = [], matchedPairs = 0, memoryLocked = false;
+
+        function initMemoryGame() {
+            const grid = document.getElementById('memory-grid'); grid.innerHTML = '';
+            document.getElementById('memory-message').innerText = ''; matchedPairs = 0; document.getElementById('memory-moves').innerText = '0';
+            flippedCards = []; memoryLocked = false; let moves = 0;
+            const deck = [...emojis, ...emojis].sort(() => 0.5 - Math.random());
+            deck.forEach((emoji) => {
+                const card = document.createElement('div'); card.className = 'game-card h-24 md:h-28';
+                card.innerHTML = `<div class="card-inner"><div class="card-front text-4xl"><i class="fas fa-question"></i></div><div class="card-back">${emoji}</div></div>`;
+                card.dataset.value = emoji;
+                card.onclick = () => {
+                    if (memoryLocked || card.classList.contains('flipped') || flippedCards.includes(card)) return;
+                    card.classList.add('flipped'); flippedCards.push(card);
+                    if (flippedCards.length === 2) {
+                        moves++; document.getElementById('memory-moves').innerText = moves; memoryLocked = true;
+                        const [c1, c2] = flippedCards;
+                        if (c1.dataset.value === c2.dataset.value) { matchedPairs++; flippedCards = []; memoryLocked = false; if (matchedPairs === emojis.length) document.getElementById('memory-message').innerText = "Harika!"; } 
+                        else { setTimeout(() => { c1.classList.remove('flipped'); c2.classList.remove('flipped'); flippedCards = []; memoryLocked = false; }, 1000); }
+                    }
+                }; grid.appendChild(card);
+            });
+        }
+
+        // --- 2. SIMON ---
+        const colors = ['simon-green', 'simon-red', 'simon-yellow', 'simon-blue'];
+        let sequence = [], playerSequence = [], simonPlaying = false, simonLevel = 0;
+
+        function resetSimonUI() { document.getElementById('simon-start-overlay').classList.remove('hidden'); document.getElementById('simon-status').innerText = ""; document.getElementById('simon-level').innerText = "1"; }
+        function startSimonGame() { document.getElementById('simon-start-overlay').classList.add('hidden'); sequence = []; playerSequence = []; simonLevel = 0; nextSimonLevel(); }
+        function nextSimonLevel() { simonLevel++; document.getElementById('simon-level').innerText = simonLevel; playerSequence = []; sequence.push(Math.floor(Math.random() * 4)); document.getElementById('simon-status').innerText = "İzle..."; playSimonSequence(); }
+        async function playSimonSequence() { simonPlaying = true; for (let i = 0; i < sequence.length; i++) { await new Promise(r => setTimeout(r, 600)); activateSimonButton(sequence[i]); await new Promise(r => setTimeout(r, 400)); } simonPlaying = false; document.getElementById('simon-status').innerText = "Sıra Sende!"; }
+        function activateSimonButton(index) { const btn = document.getElementById(colors[index]); btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 300); }
+        function handleSimonInput(index) { if (simonPlaying) return; activateSimonButton(index); playerSequence.push(index); if (playerSequence[playerSequence.length - 1] !== sequence[playerSequence.length - 1]) { document.getElementById('simon-status').innerText = "Hata!"; setTimeout(resetSimonUI, 1500); return; } if (playerSequence.length === sequence.length) { document.getElementById('simon-status').innerText = "Süper!"; setTimeout(nextSimonLevel, 1000); } }
+
+        // --- 3. DİKKAT ---
+        let attentionScore = 0, attentionTimer = 30, attentionInterval;
+        function showAttentionIntro() { document.getElementById('attention-overlay').classList.add('hidden'); startAttentionGame(); }
+        function startAttentionGame() { document.getElementById('attention-overlay').classList.add('hidden'); attentionScore = 0; attentionTimer = 30; document.getElementById('attention-score').innerText = attentionScore; document.getElementById('attention-timer').innerText = attentionTimer; generateAttentionGrid(); clearInterval(attentionInterval); attentionInterval = setInterval(() => { attentionTimer--; document.getElementById('attention-timer').innerText = attentionTimer; if (attentionTimer <= 0) endAttentionGame(); }, 1000); }
+        function stopAttentionTimer() { clearInterval(attentionInterval); }
+        function generateAttentionGrid() { const grid = document.getElementById('attention-grid'); grid.innerHTML = ''; const totalItems = 30; const targetPos = Math.floor(Math.random() * totalItems); for (let i = 0; i < totalItems; i++) { const item = document.createElement('div'); item.className = 'emoji-grid-item text-4xl cursor-pointer p-2 bg-gray-100 rounded-lg flex items-center justify-center h-16'; if (i === targetPos) { item.innerText = '🍄'; item.onclick = () => { attentionScore += 10; document.getElementById('attention-score').innerText = attentionScore; item.style.backgroundColor = '#86efac'; setTimeout(generateAttentionGrid, 300); }; } else { item.innerText = '🌳'; item.onclick = () => { item.style.backgroundColor = '#fca5a5'; setTimeout(() => item.style.backgroundColor = '#f3f4f6', 200); }; } grid.appendChild(item); } }
+        function endAttentionGame() { stopAttentionTimer(); document.getElementById('final-score').innerText = attentionScore; document.getElementById('attention-overlay').classList.remove('hidden'); }
+
+        // --- 4. STROOP ---
+        let stroopScore = 0, stroopTimer = 30, stroopInterval, currentStroopColor = '';
+        const stroopData = [{t:'KIRMIZI',c:'text-red-500',v:'red'},{t:'MAVİ',c:'text-blue-500',v:'blue'},{t:'YEŞİL',c:'text-green-500',v:'green'},{t:'SARI',c:'text-yellow-400',v:'yellow'}];
+        function resetStroopUI() { document.getElementById('stroop-start-btn').classList.remove('hidden'); document.getElementById('stroop-options').classList.add('hidden'); document.getElementById('stroop-word').innerText = "HAZIR?"; document.getElementById('stroop-word').className = "text-6xl font-bold text-gray-800"; stroopScore = 0; document.getElementById('stroop-score').innerText = '0'; }
+        function startStroopGame() { document.getElementById('stroop-start-btn').classList.add('hidden'); document.getElementById('stroop-options').classList.remove('hidden'); stroopScore = 0; stroopTimer = 30; document.getElementById('stroop-score').innerText = stroopScore; document.getElementById('stroop-timer').innerText = stroopTimer; nextStroopQuestion(); clearInterval(stroopInterval); stroopInterval = setInterval(() => { stroopTimer--; document.getElementById('stroop-timer').innerText = stroopTimer; if (stroopTimer <= 0) { clearInterval(stroopInterval); alert(`Süre Doldu! Skor: ${stroopScore}`); resetStroopUI(); } }, 1000); }
+        function stopStroopTimer() { clearInterval(stroopInterval); }
+        function nextStroopQuestion() { const w = stroopData[Math.floor(Math.random()*4)], c = stroopData[Math.floor(Math.random()*4)]; const el = document.getElementById('stroop-word'); el.innerText = w.t; el.className = `text-6xl font-bold ${c.c} scale-100 transition-transform`; currentStroopColor = c.v; requestAnimationFrame(() => { el.classList.add('scale-110'); setTimeout(() => el.classList.remove('scale-110'), 100); }); }
+        function checkStroopAnswer(color) { if (color === currentStroopColor) stroopScore += 10; else stroopScore = Math.max(0, stroopScore - 5); document.getElementById('stroop-score').innerText = stroopScore; nextStroopQuestion(); }
+
+        // --- 5. KAYIP EŞYA ---
+        const missingEmojis = ['🍎', '🍌', '🍇', '🍉', '🍒', '🍓', '🥑', '🥕', '🌽', '🥦', '🍕', '🍔', '🍦', '🍩'];
+        let currentMissingLevel = 3, currentMissingItems = [], missingItem = '';
+        function resetMissingUI() { document.getElementById('missing-start-btn').classList.remove('hidden'); document.getElementById('missing-stage-1').classList.add('hidden'); document.getElementById('missing-stage-2').classList.add('hidden'); document.getElementById('missing-feedback').classList.add('hidden'); currentMissingLevel = 3; }
+        function startMissingGame() { document.getElementById('missing-start-btn').classList.add('hidden'); startMissingLevel(); }
+        function startMissingLevel() { document.getElementById('missing-feedback').classList.add('hidden'); document.getElementById('missing-stage-2').classList.add('hidden'); document.getElementById('missing-stage-1').classList.remove('hidden'); const shuffled = [...missingEmojis].sort(() => 0.5 - Math.random()); currentMissingItems = shuffled.slice(0, currentMissingLevel); document.getElementById('missing-items-grid').innerHTML = currentMissingItems.map(e => `<span>${e}</span>`).join(''); const bar = document.getElementById('missing-progress'); bar.style.width = '100%'; bar.style.transition = 'width 3s linear'; void bar.offsetWidth; setTimeout(() => { bar.style.width = '0%'; }, 10); setTimeout(askMissingQuestion, 3000); }
+        function askMissingQuestion() { document.getElementById('missing-stage-1').classList.add('hidden'); document.getElementById('missing-stage-2').classList.remove('hidden'); missingItem = currentMissingItems[Math.floor(Math.random() * currentMissingItems.length)]; const distractors = missingEmojis.filter(e => !currentMissingItems.includes(e)).sort(() => 0.5 - Math.random()).slice(0, 3); const options = [missingItem, ...distractors].sort(() => 0.5 - Math.random()); const grid = document.getElementById('missing-options-grid'); grid.innerHTML = ''; options.forEach(opt => { const btn = document.createElement('button'); btn.className = 'text-5xl p-4 bg-gray-100 rounded-xl hover:bg-gray-200 transition transform hover:scale-110'; btn.innerText = opt; btn.onclick = () => checkMissingAnswer(opt); grid.appendChild(btn); }); }
+        function checkMissingAnswer(ans) { document.getElementById('missing-stage-2').classList.add('hidden'); document.getElementById('missing-feedback').classList.remove('hidden'); const icon = document.getElementById('missing-feedback-icon'), text = document.getElementById('missing-feedback-text'); if (ans === missingItem) { icon.innerHTML = '🎉'; text.innerHTML = 'Doğru Bildin!'; text.className = 'text-2xl font-bold mb-4 text-green-600'; if (currentMissingLevel < 8) currentMissingLevel++; } else { icon.innerHTML = '😢'; text.innerHTML = `Yanlış... ${missingItem}`; text.className = 'text-2xl font-bold mb-4 text-red-600'; if (currentMissingLevel > 3) currentMissingLevel--; } }
+
+        // --- 6. DESEN KOPYALAMA ---
+        let patternGrid = [], patternSolution = [], patternScore = 0, patternInput = [];
+        function initPatternGame() {
+            document.getElementById('pattern-start-btn').classList.remove('hidden');
+            document.getElementById('pattern-check-btn').classList.add('hidden');
+            document.getElementById('pattern-grid').innerHTML = '';
+            document.getElementById('pattern-msg').innerText = "Hazır mısın?";
+            document.getElementById('pattern-score').innerText = '0';
+            patternScore = 0;
+            createPatternGrid();
+        }
+
+        function createPatternGrid() {
+            const gridEl = document.getElementById('pattern-grid');
+            gridEl.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'pattern-cell bg-gray-200 rounded-lg cursor-pointer h-full w-full';
+                cell.dataset.index = i;
+                cell.onclick = () => togglePatternCell(i, cell);
+                gridEl.appendChild(cell);
+            }
+        }
+
+        function startPatternGame() {
+            document.getElementById('pattern-start-btn').classList.add('hidden');
+            document.getElementById('pattern-msg').innerText = "Deseni İzle...";
+            
+            // Temizle
+            document.querySelectorAll('.pattern-cell').forEach(c => c.className = 'pattern-cell bg-gray-200 rounded-lg cursor-pointer h-full w-full');
+            
+            // Desen Oluştur (3 rastgele hücre)
+            patternSolution = [];
+            while(patternSolution.length < 4) {
+                let r = Math.floor(Math.random() * 9);
+                if(!patternSolution.includes(r)) patternSolution.push(r);
+            }
+
+            // Göster
+            patternSolution.forEach(idx => {
+                document.querySelector(`.pattern-cell[data-index="${idx}"]`).classList.add('bg-indigo-500');
+            });
+
+            // Gizle ve Oynat
+            setTimeout(() => {
+                document.querySelectorAll('.pattern-cell').forEach(c => c.classList.remove('bg-indigo-500'));
+                document.getElementById('pattern-msg').innerText = "Aynısını Çiz!";
+                document.getElementById('pattern-check-btn').classList.remove('hidden');
+                patternInput = [];
+            }, 2000);
+        }
+
+        function togglePatternCell(idx, cell) {
+            if(!document.getElementById('pattern-start-btn').classList.contains('hidden')) return; // Oyun başlamadıysa tıklama
+
+            if(patternInput.includes(idx)) {
+                patternInput = patternInput.filter(i => i !== idx);
+                cell.classList.remove('bg-indigo-400');
+            } else {
+                if(patternInput.length < 4) {
+                    patternInput.push(idx);
+                    cell.classList.add('bg-indigo-400');
+                }
+            }
+        }
+
+        function checkPattern() {
+            const isCorrect = patternSolution.every(val => patternInput.includes(val)) && patternInput.length === patternSolution.length;
+            
+            if(isCorrect) {
+                patternScore += 10;
+                document.getElementById('pattern-msg').innerText = "Mükemmel!";
+                document.getElementById('pattern-msg').classList.add('text-green-500');
+                patternInput.forEach(idx => {
+                     document.querySelector(`.pattern-cell[data-index="${idx}"]`).classList.add('correct');
+                });
+            } else {
+                document.getElementById('pattern-msg').innerText = "Hata yaptın.";
+                document.getElementById('pattern-msg').classList.add('text-red-500');
+                 patternInput.forEach(idx => {
+                     document.querySelector(`.pattern-cell[data-index="${idx}"]`).classList.add('wrong');
+                });
+            }
+
+            document.getElementById('pattern-score').innerText = patternScore;
+            document.getElementById('pattern-check-btn').classList.add('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('pattern-msg').className = "mt-4 h-8 text-lg font-bold text-gray-600";
+                startPatternGame();
+            }, 1500);
+        }
+
+        // --- 7. REFLEKS AVCISI ---
+        let reflexScore = 0;
+        let reflexTimer;
+        let reflexActive = false;
+
+        function initReflexGame() {
+            document.getElementById('reflex-intro').classList.remove('hidden');
+            document.getElementById('reflex-area').innerHTML = '';
+            reflexScore = 0;
+            document.getElementById('reflex-score').innerText = '0';
+            reflexActive = false;
+        }
+
+        function startReflexGame() {
+            document.getElementById('reflex-intro').classList.add('hidden');
+            reflexActive = true;
+            spawnReflexTarget();
+        }
+
+        function spawnReflexTarget() {
+            if(!reflexActive) return;
+
+            const area = document.getElementById('reflex-area');
+            const target = document.createElement('div');
+            
+            // Random boyut (40px - 80px)
+            const size = Math.floor(Math.random() * 40) + 50;
+            // Random pozisyon (%10 - %90)
+            const top = Math.floor(Math.random() * 80) + 10;
+            const left = Math.floor(Math.random() * 80) + 10;
+
+            target.className = 'reflex-target bg-orange-500 rounded-full shadow-lg border-4 border-white';
+            target.style.width = `${size}px`;
+            target.style.height = `${size}px`;
+            target.style.top = `${top}%`;
+            target.style.left = `${left}%`;
+            
+            target.onmousedown = () => {
+                reflexScore++;
+                document.getElementById('reflex-score').innerText = reflexScore;
+                target.remove();
+                
+                // Hızlandırıcı etki
+                const delay = Math.max(300, 1000 - (reflexScore * 20)); 
+                setTimeout(spawnReflexTarget, Math.random() * 500);
+            };
+
+            area.appendChild(target);
+
+            // Eğer 2 saniye içinde tıklanmazsa kaybolsun ve yeni gelsin (Ceza yok, sadece fırsat kaçar)
+            setTimeout(() => {
+                if(target.parentNode) {
+                    target.remove();
+                    spawnReflexTarget();
+                }
+            }, 2000);
+        }
+
+        // --- 8. SESLİ HARF AVI (YENİ) ---
+        const vowels = ['A', 'E', 'I', 'İ', 'O', 'Ö', 'U', 'Ü'];
+        const consonants = ['B', 'C', 'Ç', 'D', 'F', 'G', 'Ğ', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'Ş', 'T', 'V', 'Y', 'Z'];
+        let vowelScore = 0, vowelTimer = 30, vowelInterval;
+
+        function initVowelGame() {
+            document.getElementById('vowel-start-btn').classList.remove('hidden');
+            document.getElementById('vowel-grid').innerHTML = '';
+            document.getElementById('vowel-score').innerText = '0';
+            document.getElementById('vowel-timer').innerText = '30';
+            vowelScore = 0;
+        }
+
+        function startVowelGame() {
+            document.getElementById('vowel-start-btn').classList.add('hidden');
+            vowelScore = 0;
+            vowelTimer = 30;
+            document.getElementById('vowel-score').innerText = vowelScore;
+            
+            generateVowelGrid();
+            
+            clearInterval(vowelInterval);
+            vowelInterval = setInterval(() => {
+                vowelTimer--;
+                document.getElementById('vowel-timer').innerText = vowelTimer;
+                if(vowelTimer <= 0) {
+                    clearInterval(vowelInterval);
+                    alert(`Süre Doldu! Sesli Harf Puanın: ${vowelScore}`);
+                    initVowelGame();
+                }
+            }, 1000);
+        }
+
+        function stopVowelTimer() { clearInterval(vowelInterval); }
+
+        function generateVowelGrid() {
+            const grid = document.getElementById('vowel-grid');
+            grid.innerHTML = '';
+            
+            let gridLetters = [];
+            // En az 5 sesli harf garanti olsun
+            for(let i=0; i<5; i++) gridLetters.push(vowels[Math.floor(Math.random() * vowels.length)]);
+            // Kalan 15 tanesi karışık
+            for(let i=0; i<15; i++) {
+                 if(Math.random() > 0.7) gridLetters.push(vowels[Math.floor(Math.random() * vowels.length)]);
+                 else gridLetters.push(consonants[Math.floor(Math.random() * consonants.length)]);
+            }
+            
+            gridLetters.sort(() => 0.5 - Math.random());
+
+            gridLetters.forEach(letter => {
+                const bubble = document.createElement('div');
+                bubble.className = 'letter-bubble bg-gray-100 rounded-full h-14 w-14 flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-gray-200';
+                bubble.innerText = letter;
+                bubble.onclick = () => {
+                    if(vowels.includes(letter)) {
+                        // Doğru (Sesli)
+                        if(!bubble.classList.contains('bg-green-400')) {
+                            bubble.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                            bubble.classList.add('bg-green-400', 'text-white');
+                            vowelScore += 5;
+                        }
+                    } else {
+                        // Yanlış (Sessiz)
+                        bubble.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                        bubble.classList.add('bg-red-400', 'text-white');
+                        vowelScore = Math.max(0, vowelScore - 3);
+                    }
+                    document.getElementById('vowel-score').innerText = vowelScore;
+                    
+                    // Eğer tüm sesliler bulunduysa yeni grid (Opsiyonel, şimdilik sadece puan toplama)
+                    // Hepsini yeşil yaptıysa kontrol edip yenileyebiliriz:
+                    const remainingVowels = Array.from(grid.children).filter(b => vowels.includes(b.innerText) && !b.classList.contains('bg-green-400'));
+                    if(remainingVowels.length === 0) {
+                        setTimeout(generateVowelGrid, 500);
+                    }
+                };
+                grid.appendChild(bubble);
+            });
+        }
+
+    </script>
+</body>
+</html>
