@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="tr">
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="firebase-config.js"></script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Paneli | Barış İlkan</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 20px; }
@@ -17,16 +19,13 @@
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
         button:hover { background: #1e40af; }
-        .message { margin-top: 15px; padding: 10px; border-radius: 8px; display: none; text-align: center; }
-        .success { background: #dcfce7; color: #166534; }
+        .message { margin-top: 15px; padding: 15px; border-radius: 8px; display: none; text-align: center; font-weight: bold; }
+        .success { background: #dcfce7; color: #166534; border: 1px solid #166534; }
+        .error { background: #fee2e2; color: #991b1b; border: 1px solid #991b1b; }
         .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-btn { flex: 1; background: #e2e8f0; color: #333; border: none; padding: 10px; cursor: pointer; border-radius: 8px; }
         .tab-btn.active { background: #2563eb; color: white; }
     </style>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="firebase-config.js"></script>
 </head>
 <body>
 
@@ -76,11 +75,7 @@
     </div>
 
     <script>
-        const sifre = prompt("Yönetici Şifresini Girin:");
-        if(sifre !== "1234") { 
-            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:red;'>Hatalı Şifre!</h2>";
-        }
-
+        // Veritabanı Bağlantısı
         const db = firebase.firestore();
 
         function tabDegis(tip) {
@@ -91,34 +86,52 @@
         }
 
         function projeEkle() {
+            const b = document.getElementById('p-baslik').value;
+            const l = document.getElementById('p-link').value;
+
+            if(!b || !l) {
+                gosterMesaj("Hata: Başlık ve Link boş olamaz!", "error");
+                return;
+            }
+
             const data = {
-                baslik: document.getElementById('p-baslik').value,
+                baslik: b,
                 aciklama: document.getElementById('p-aciklama').value,
-                link: document.getElementById('p-link').value,
+                link: l,
                 icon: document.getElementById('p-icon').value,
                 tarih: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             db.collection("projeler").add(data).then(() => {
-                gosterMesaj("Başarıyla kaydedildi!");
+                gosterMesaj("Tebrikler! Proje başarıyla buluta kaydedildi.", "success");
                 document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+            }).catch((error) => {
+                gosterMesaj("Hata Oluştu: " + error.message, "error");
             });
         }
 
         function duyuruEkle() {
+            const m = document.getElementById('d-metin').value;
+            if(!m) return;
+
             db.collection("duyurular").add({
-                metin: document.getElementById('d-metin').value,
+                metin: m,
                 tarih: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
-                gosterMesaj("Duyuru kaydedildi!");
+                gosterMesaj("Duyuru başarıyla kaydedildi!", "success");
                 document.getElementById('d-metin').value = "";
+            }).catch((error) => {
+                gosterMesaj("Hata: " + error.message, "error");
             });
         }
 
-        function gosterMesaj(m) {
+        function gosterMesaj(metin, tip) {
             const k = document.getElementById('mesaj-kutusu');
-            k.innerText = m; k.style.display = "block"; k.className = "message success";
-            setTimeout(() => k.style.display = "none", 3000);
+            k.innerText = metin;
+            k.className = "message " + tip;
+            k.style.display = "block";
+            // Mesaj 5 saniye kalsın sonra kapansın
+            setTimeout(() => { k.style.display = "none"; }, 5000);
         }
     </script>
 </body>
