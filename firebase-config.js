@@ -1,14 +1,7 @@
-// Firebase yapılandırması (Kendi bilgilerini buraya yapıştır)
-const firebaseConfig = {
-  apiKey: "AIzaSy...", 
-  authDomain: "projen-adi.firebaseapp.com",
-  projectId: "projen-adi",
-  storageBucket: "projen-adi.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
-};
-
-// Firebase'i başlat
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+apiKey : "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU" , 
+  authDomain : "shaped-totem-481514-c5.firebaseapp.com" , 
+  projeId : "şekilli-totem-481514-c5" , 
+  storageBucket : "shaped-totem-481514-c5.firebasestorage.app" , 
+  messagingSenderId : "519295049418" , 
+  appId : "1:519295049418:web:7d04e18c4ea36bc088de33" , 
+  ölçümId : "G-10ENZQDXK1"
