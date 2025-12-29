@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetici Paneli | Barış İlkan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2563eb; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #475569; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #1e40af; }
+        .message { margin-top: 15px; padding: 10px; border-radius: 8px; display: none; text-align: center; }
+        .success { background: #dcfce7; color: #166534; }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; background: #e2e8f0; color: #333; border: none; padding: 10px; cursor: pointer; border-radius: 8px; }
+        .tab-btn.active { background: #2563eb; color: white; }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2><i class="fas fa-user-cog"></i> Yönetici Paneli</h2>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" id="btn-proje" onclick="tabDegis('proje')">Proje Ekle</button>
+            <button class="tab-btn" id="btn-duyuru" onclick="tabDegis('duyuru')">Duyuru Ekle</button>
+        </div>
+
+        <div id="proje-formu">
+            <div class="form-group">
+                <label>Proje Başlığı</label>
+                <input type="text" id="p-baslik" placeholder="Örn: Beyazıt Bellek Oyunu">
+            </div>
+            <div class="form-group">
+                <label>Açıklama</label>
+                <textarea id="p-aciklama" rows="3" placeholder="Proje hakkında kısa bilgi..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Link (Dosya Adı)</label>
+                <input type="text" id="p-link" placeholder="Örn: beyazit.html">
+            </div>
+            <div class="form-group">
+                <label>İkon Seç</label>
+                <select id="p-icon">
+                    <option value="fa-brain">🧠 Beyin (Zeka)</option>
+                    <option value="fa-trophy">🏆 Kupa (Yarışma)</option>
+                    <option value="fa-gamepad">🎮 Oyun</option>
+                    <option value="fa-chess-knight">♞ Satranç</option>
+                    <option value="fa-puzzle-piece">🧩 Dikkat</option>
+                </select>
+            </div>
+            <button onclick="projeEkle()">Projeyi Veritabanına Kaydet</button>
+        </div>
+
+        <div id="duyuru-formu" style="display:none;">
+            <div class="form-group">
+                <label>Duyuru Metni</label>
+                <input type="text" id="d-metin" placeholder="Kayan bantta ne yazsın?">
+            </div>
+            <button onclick="duyuruEkle()">Duyuruyu Veritabanına Kaydet</button>
+        </div>
+
+        <div id="mesaj-kutusu" class="message"></div>
+    </div>
+
+    <script>
+        const sifre = prompt("Yönetici Şifresini Girin:");
+        if(sifre !== "1234") { 
+            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:red;'>Hatalı Şifre!</h2>";
+        }
+
+        const db = firebase.firestore();
+
+        function tabDegis(tip) {
+            document.getElementById('proje-formu').style.display = tip === 'proje' ? 'block' : 'none';
+            document.getElementById('duyuru-formu').style.display = tip === 'duyuru' ? 'block' : 'none';
+            document.getElementById('btn-proje').classList.toggle('active', tip === 'proje');
+            document.getElementById('btn-duyuru').classList.toggle('active', tip === 'duyuru');
+        }
+
+        function projeEkle() {
+            const data = {
+                baslik: document.getElementById('p-baslik').value,
+                aciklama: document.getElementById('p-aciklama').value,
+                link: document.getElementById('p-link').value,
+                icon: document.getElementById('p-icon').value,
+                tarih: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("projeler").add(data).then(() => {
+                gosterMesaj("Başarıyla kaydedildi!");
+                document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+            });
+        }
+
+        function duyuruEkle() {
+            db.collection("duyurular").add({
+                metin: document.getElementById('d-metin').value,
+                tarih: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                gosterMesaj("Duyuru kaydedildi!");
+                document.getElementById('d-metin').value = "";
+            });
+        }
+
+        function gosterMesaj(m) {
+            const k = document.getElementById('mesaj-kutusu');
+            k.innerText = m; k.style.display = "block"; k.className = "message success";
+            setTimeout(() => k.style.display = "none", 3000);
+        }
+    </script>
+</body>
+</html>
