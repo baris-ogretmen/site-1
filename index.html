@@ -3,268 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barış İlkan | Dijital Eğitim Platformu</title>
+    <title>Barış İlkan | Sınıf Merkezi</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #2563eb; /* Ana Renk */
-            --secondary: #1e40af; /* Koyu Mavi */
-            --accent: #f59e0b; /* Turuncu Vurgular */
-            --bg: #f8fafc;
-            --text: #334155;
+            --ana-yesil: #4CAF50; /* Canva'daki ana yeşil */
+            --canli-sari: #FFEB3B;
+            --soft-mor: #9C27B0;
+            --arkaplan: #f0f4f8;
         }
 
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--ana-yesil); /* Canva'daki gibi yeşil zemin */
+            color: #333;
+        }
 
-        /* 1. DUYURU BANDI (Kayan Yazı) */
-        .news-ticker {
-            background: #1e293b;
+        /* Duyuru Bandı - Mor Tonu */
+        .news-ticker { background: var(--soft-mor); color: white; padding: 10px 0; font-weight: bold; }
+        .ticker-content { display: inline-block; animation: ticker 20s linear infinite; }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        header { 
+            padding: 3rem 1rem; 
+            text-align: center; 
             color: white;
-            padding: 10px 0;
-            overflow: hidden;
-            white-space: nowrap;
-            position: relative;
         }
-        .ticker-content {
+
+        .hero-box {
+            background: var(--canli-sari);
+            color: #2e7d32;
+            padding: 10px 30px;
+            border-radius: 50px;
             display: inline-block;
-            animation: ticker 30s linear infinite;
-            padding-left: 100%;
-        }
-        .ticker-item {
-            display: inline-block;
-            padding: 0 2rem;
-            font-size: 0.9rem;
-        }
-        .ticker-item i { color: var(--accent); margin-right: 5px; }
-
-        @keyframes ticker {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-        }
-
-        /* 2. HEADER & PROFİL */
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 3rem 1rem;
-            text-align: center;
-            border-bottom-left-radius: 50px;
-            border-bottom-right-radius: 50px;
-            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
-        }
-
-        .profile-img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border: 5px solid white;
-            object-fit: cover;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-            margin-bottom: 1rem;
-            background-color: #ddd; 
-        }
-
-        h1 { margin: 0; font-size: 2.2rem; }
-        .subtitle { opacity: 0.9; margin-top: 5px; font-weight: 300; }
-
-        /* 3. PROJE KARTLARI */
-        .container {
-            max-width: 1200px;
-            margin: -50px auto 0; 
-            padding: 0 1rem 3rem;
-            position: relative;
-            z-index: 10;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 30px rgba(0,0,0,0.1);
-            border-color: var(--primary);
-        }
-
-        .icon-box {
-            width: 60px;
-            height: 60px;
-            background: #eff6ff;
-            color: var(--primary);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 900;
             font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+            text-transform: uppercase;
         }
 
-        .card:hover .icon-box { background: var(--primary); color: white; }
+        /* Dinamik Kart Yapısı */
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 20px; 
+        }
 
-        .card h3 { margin: 0 0 10px; font-size: 1.4rem; color: var(--secondary); }
-        .card p { color: #64748b; line-height: 1.6; font-size: 0.95rem; margin-bottom: 1.5rem; flex-grow: 1;}
-        
-        .card-footer {
+        .card { 
+            background: white; 
+            border-radius: 25px; 
+            padding: 25px; 
+            text-align: center; 
+            text-decoration: none; 
+            color: inherit; 
+            border-bottom: 8px solid #ddd;
+            transition: 0.3s all;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Her karta farklı renk sınırı (Canva tarzı) */
+        .card:nth-child(odd) { border-bottom-color: var(--canli-sari); }
+        .card:nth-child(even) { border-bottom-color: var(--soft-mor); }
+
+        .card:hover { transform: scale(1.05); }
+
+        .icon-circle {
+            width: 80px; height: 80px;
+            background: #fdfdfd;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2.5rem;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        h3 { margin: 10px 0; font-size: 1.3rem; color: #2e7d32; text-transform: capitalize; }
+        p { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
+
+        .btn-go {
+            background: var(--ana-yesil);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
             font-weight: bold;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: #64748b;
-            font-size: 0.9rem;
-            border-top: 1px solid #e2e8f0;
-            margin-top: 2rem;
+            display: inline-block;
         }
     </style>
 </head>
 <body>
 
     <div class="news-ticker">
-        <div class="ticker-content" id="duyuru-alani">
-            </div>
+        <div class="ticker-content" id="duyuru-alani">Duyurular hazırlanıyor...</div>
     </div>
 
     <header>
-        <img src="profil.jpg.jpeg" alt="Barış Hoca" class="profile-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'">
-        
-        <h1>Barış İlkan</h1>
-        <p class="subtitle">Eğitim Koçu & Dijital İçerik Üreticisi</p>
-        <p style="font-size: 0.9rem; margin-top: 10px; opacity: 0.8;">"Teknoloji ile Geleceği Tasarlıyoruz"</p>
+        <div class="hero-box">SINIF MERKEZİ</div>
+        <p style="font-size: 1.2rem; font-weight: 500;">Barış İlkan ile Eğlenceli Öğrenme</p>
     </header>
 
     <div class="container">
-        <div class="grid" id="proje-listesi">
+        <div class="grid" id="proje-alani">
             </div>
     </div>
 
-    <footer>
-        <p>&copy; 2025 Barış İlkan | Tüm Hakları Saklıdır.</p>
-    </footer>
-
-    <div id="ozel-popup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999;">
-        <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 400px; text-align: center; box-shadow: 0 20px 25px rgba(0,0,0,0.3); animation: slideIn 0.5s ease;">
-            
-            <h2 style="color: #2563eb; margin-top: 0; font-size: 1.8rem;">📢 Bilgilendirme</h2>
-            
-            <p style="color: #4b5563; font-size: 1.1rem; line-height: 1.6;">
-                Sitemize yeni eğitim materyalleri eklendi! <br>
-                <strong>Okul Ligi Pro</strong> güncel sıralamaları için butona tıklayabilirsiniz.
-            </p>
-    
-            <button onclick="document.getElementById('ozel-popup').style.display='none'" style="background: #2563eb; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 1rem; transition: 0.3s;">
-                Tamam, Teşekkürler
-            </button>
-        </div>
-    </div>
-
     <script>
-        // ******************************************************
-        // KOLAY YÖNETİM PANELİ
-        // ******************************************************
+        const db = firebase.firestore();
 
-        // 1. DUYURULAR LISTESI (Mavi İklim Takvimi Silindi)
-        const duyurular = [
-            "LGS Analiz Sistemi 2.0 Yayında!",
-            "Okul Ligi Pro Turnuvası Başlıyor!",
-            "Satranç Akademisi Kayıtları Devam Ediyor...",
-            "Yeni Dönem Eğitim Materyalleri Eklendi."
-        ];
-
-        // 2. PROJELER LISTESI
-        const projeler = [
-            {
-                baslik: "Okul Ligi Pro",
-                aciklama: "Öğrenciler için bulut tabanlı bilgi yarışması ve puan takip sistemi.",
-                link: "okul-ligi.html",
-                icon: "fa-trophy"
-            },
-            {
-                baslik: "Satranç Akademisi",
-                aciklama: "Değişim Koleji Satranç Akademisi eğitim materyalleri.",
-                link: "satranc.html",
-                icon: "fa-chess-knight"
-            },
-            {
-                baslik: "LGS Analiz",
-                aciklama: "8. Sınıf öğrencileri için yapay zeka destekli gelişim raporları.",
-                link: "lgs-analiz.html",
-                icon: "fa-chart-pie"
-            },
-            {
-                baslik: "Dikkat Çalışması",
-                aciklama: "Özel eğitim öğrencileri için HTML tabanlı dikkat geliştirme oyunları.",
-                link: "dikkat.html",
-                icon: "fa-puzzle-piece"
-            },
-            {
-        baslik: "Beyazıt Bellek Oyunu",
-        aciklama: "Kısa süreli bellek çalışması.",
-        link: "beyazit.html",
-        icon: "fa-brain"
-    },
-            {
-                baslik: "Yönetici Girişi",
-                aciklama: "Veri ve maaş yönetimi (Yetkili Girişi).",
-                link: "yonetici.html",
-                icon: "fa-lock",
-                ozel: true
-            }
-        ];
-
-        // ******************************************************
-        // SİSTEM KODLARI
-        // ******************************************************
-
-        // Duyuruları yükle
-        const duyuruKutusu = document.getElementById('duyuru-alani');
-        let duyuruHTML = "";
-        duyurular.forEach(not => {
-            duyuruHTML += `<div class="ticker-item"><i class="fas fa-bullhorn"></i> ${not}</div>`;
+        // Duyuruları Getir
+        db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                html += `<span style="margin-right:50px;">🔔 ${doc.data().metin}</span>`;
+            });
+            document.getElementById('duyuru-alani').innerHTML = html || "Sınıfımıza hoş geldiniz!";
         });
-        duyuruKutusu.innerHTML = duyuruHTML + duyuruHTML; 
 
-        // Projeleri yükle
-        const projeKutusu = document.getElementById('proje-listesi');
-        projeler.forEach(proje => {
-            let renkStili = proje.ozel ? 'border-color: #dc2626;' : '';
-            let iconRengi = proje.ozel ? 'background: #fee2e2; color: #dc2626;' : '';
-            let butonMetni = proje.ozel ? 'Güvenli Giriş' : 'İncele';
-
-            let html = `
-            <a href="${proje.link}" class="card" style="${renkStili}">
-                <div class="icon-box" style="${iconRengi}">
-                    <i class="fas ${proje.icon}"></i>
-                </div>
-                <h3>${proje.baslik}</h3>
-                <p>${proje.aciklama}</p>
-                <div class="card-footer" style="${proje.ozel ? 'color:#dc2626':''}">
-                    ${butonMetni} <i class="fas fa-arrow-right"></i>
-                </div>
-            </a>
-            `;
-            projeKutusu.innerHTML += html;
+        // Projeleri Getir (Canva Tasarımıyla)
+        db.collection("projeler").orderBy("tarih", "desc").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const p = doc.data();
+                html += `
+                <a href="${p.link}" class="card">
+                    <div class="icon-circle"><i class="fas ${p.icon}"></i></div>
+                    <h3>${p.baslik}</h3>
+                    <p>${p.aciklama}</p>
+                    <div class="btn-go">Giriş Yap <i class="fas fa-arrow-right"></i></div>
+                </a>`;
+            });
+            document.getElementById('proje-alani').innerHTML = html;
         });
     </script>
 </body>
