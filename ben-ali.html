@@ -3,123 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ben Ali | E-Kitap Oku</title>
+    <title>Ben Ali | İnteraktif Hikaye</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,400&display=swap" rel="stylesheet">
+    
     <style>
-        /* GENEL SAYFA AYARLARI */
-        body { margin: 0; background: #222; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
-        
-        /* ÜST MENÜ (SABİT) */
-        .reader-header { width: 100%; background: rgba(0,0,0,0.9); padding: 15px; text-align: center; position: fixed; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
-        .back-btn { color: white; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; font-weight: bold; background: #333; padding: 8px 15px; border-radius: 20px; }
-        .book-title { font-weight: bold; color: #FFD700; font-size: 1.1rem; letter-spacing: 1px; }
+        /* GENEL AYARLAR */
+        body { margin: 0; background: #fdf6e3; color: #2c3e50; font-family: 'Merriweather', serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* KİTAP GÖRÜNTÜLEME ALANI */
-        .book-container { margin-top: 80px; margin-bottom: 90px; width: 100%; max-width: 800px; padding: 0 10px; display: flex; justify-content: center; align-items: flex-start; min-height: 60vh; }
+        /* ÜST BAR */
+        .top-bar { background: #d35400; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; height: 60px; box-sizing: border-box; }
+        .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.3s; }
+        .back-btn:hover { background: rgba(255,255,255,0.4); }
+        .book-title { font-weight: bold; font-size: 1.2rem; letter-spacing: 1px; }
         
-        /* RESİM STİLİ */
-        #page-image { 
+        /* KİTAP ALANI (EKRANI İKİYE BÖL) */
+        #book-container { flex: 1; display: flex; align-items: stretch; justify-content: center; overflow: hidden; position: relative; }
+        
+        /* SOL TARAF: YAZI */
+        .text-area { 
+            flex: 1; 
+            padding: 50px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            background: #fff; 
+            box-shadow: inset -5px 0 10px rgba(0,0,0,0.05);
+            overflow-y: auto; /* Yazı çok uzunsa kaydırma çubuğu çıkar */
+        }
+        .chapter-title { color: #d35400; font-size: 1.8rem; margin-bottom: 25px; font-weight: 900; line-height: 1.2; }
+        .story-text { font-size: 1.3rem; line-height: 1.8; color: #34495e; text-align: justify; }
+
+        /* SAĞ TARAF: RESİM */
+        .image-area { 
+            flex: 1; 
+            background: #2c3e50; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative;
+            padding: 20px;
+        }
+        .story-img { 
             max-width: 100%; 
-            height: auto; 
-            max-height: 75vh; 
-            border-radius: 8px; 
-            box-shadow: 0 5px 25px rgba(0,0,0,0.5); 
-            transition: opacity 0.3s ease-in-out;
-            object-fit: contain;
+            max-height: 100%; 
+            object-fit: contain; 
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            transition: opacity 0.5s ease, transform 0.5s ease; 
         }
 
-        /* ALT KONTROL PANELİ (SABİT) */
-        .controls { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 15px 0; display: flex; justify-content: center; gap: 20px; align-items: center; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); }
-        
-        .nav-btn { background: #2563eb; color: white; border: none; padding: 12px 25px; border-radius: 30px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); }
-        .nav-btn:active { transform: scale(0.95); }
-        .nav-btn:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.5; box-shadow: none; }
-        
-        .page-counter { font-size: 1rem; color: #ccc; min-width: 90px; text-align: center; font-variant-numeric: tabular-nums; font-weight: bold; }
+        /* ALT KONTROLLER */
+        .controls { 
+            background: #fff; padding: 15px; border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; gap: 30px; height: 80px; box-sizing: border-box;
+        }
+        .nav-btn { background: #2c3e50; color: white; border: none; padding: 15px 35px; border-radius: 50px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .nav-btn:hover { background: #34495e; transform: translateY(-2px); }
+        .nav-btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; box-shadow: none; }
+        .page-indicator { font-family: sans-serif; font-weight: bold; color: #7f8c8d; font-size: 1.2rem; }
 
+        /* --- TELEFON VE TABLET MODU --- */
+        @media (max-width: 900px) {
+            #book-container { flex-direction: column; overflow-y: auto; } /* Alt alta diz */
+            
+            .image-area { 
+                flex: none; /* Esnekliği kapat */
+                height: 40vh; /* Ekranın %40'ı resim */
+                background: #2c3e50; 
+                padding: 10px;
+            }
+            .story-img { max-height: 100%; box-shadow: none; border-radius: 5px; }
+            
+            .text-area { 
+                flex: none; /* Esnekliği kapat */
+                min-height: 60vh; /* Geri kalanı yazı */
+                padding: 25px; 
+                border-radius: 25px 25px 0 0; 
+                margin-top: -20px; 
+                z-index: 10; 
+                justify-content: flex-start;
+            }
+            .chapter-title { font-size: 1.4rem; margin-bottom: 15px; }
+            .story-text { font-size: 1.1rem; line-height: 1.6; }
+            .controls { position: sticky; bottom: 0; z-index: 20; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="reader-header">
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Çıkış</a>
-        <span class="book-title">BEN ALİ</span>
+    <div class="top-bar">
+        <button class="back-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Ana Sayfa</button>
+        <div class="book-title">BEN ALİ</div>
         <div style="width:70px;"></div> </div>
 
-    <div class="book-container">
-        <img id="page-image" src="" alt="Kitap Sayfası Yükleniyor...">
+    <div id="book-container">
+        <div class="text-area">
+            <div id="chapter-title" class="chapter-title">Yükleniyor...</div>
+            <div id="story-text" class="story-text"></div>
+        </div>
+
+        <div class="image-area">
+            <img id="story-img" src="" alt="Hikaye Resmi" class="story-img">
+        </div>
     </div>
 
     <div class="controls">
-        <button class="nav-btn" onclick="prevPage()" id="btn-prev"><i class="fas fa-chevron-left"></i> Geri</button>
-        <span class="page-counter" id="counter">Yükleniyor...</span>
-        <button class="nav-btn" onclick="nextPage()" id="btn-next">İleri <i class="fas fa-chevron-right"></i></button>
+        <button class="nav-btn" id="prev-btn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i> Geri</button>
+        <span class="page-indicator" id="page-num">1 / 6</span>
+        <button class="nav-btn" id="next-btn" onclick="changePage(1)">İleri <i class="fas fa-chevron-right"></i></button>
     </div>
 
     <script>
-        // --- AYARLAR ---
-        const totalPages = 6; // Toplam resim sayısı (ali1 ... ali7)
-        const filePrefix = "ali"; // Resimlerin ismi
-        // ---------------
+        // ==========================================
+        // BARIŞ HOCA'NIN HİKAYE VERİLERİ
+        // ==========================================
+        const storyData = [
+            {
+                img: "ali1.jpg", // Kapak
+                title: "Ben Ali",
+                text: "Nebevi Eğitim Modeline uygun olarak; Hz. Ali'nin, Efendimizin (s.a.v) evindeki yetişme sürecini bir çocuk gözüyle anlatan manevi bir tanışma hikayesi.<br><br><strong>Yazar:</strong> Barış İlkan"
+            },
+            {
+                img: "ali2.jpg",
+                title: "Ali'nin Sevgili Amca Oğlu",
+                text: "Güneş, Mekke’nin altın sarısı kumlarını nazikçe ısıtıyordu. Küçük Ali, babası Ebu Talip’in elini sıkıca tutmuştu.<br><br>Babası ona sevgiyle bakarak, 'Güzel oğlum Ali,' dedi, 'Bugün seninle çok özel bir yolculuğa çıkıyoruz. Hazırlan, çünkü artık yeni bir evde, çok sevilen birinin yanında yaşayacaksın.'<br><br>Ali, meraklı gözlerle babasına baktı."
+            },
+            {
+                img: "ali3.jpg",
+                title: "Çöl Yolculuğu",
+                text: "Çölün yumuşak kumları üzerinde yürümeye başladılar. Yanlarında onlara eşlik eden, uzun bacaklı ve sevimli bir deve vardı.<br><br>Ali, devenin adımlarına bakarken babası söze devam etti: 'Ali, biz şimdi amcanın oğlu Muhammed’in yanına gidiyoruz. O, dünyadaki en dürüst ve en güvenilir insandır. Seninle o ilgilenecek.'"
+            },
+            {
+                img: "ali4.jpg",
+                title: "O Tatlı İsim: Muhammed",
+                text: "Ali, 'Muhammed...' diye tekrar etti kendi kendine. Bu isim ona çok tatlı gelmişti. Yol boyunca kocaman yeşil yaprakları olan hurma ağaçlarının altından geçtiler.<br><br>Ali, babasına sordu: 'Babacığım, amcamın oğlu Muhammed beni sever mi?'<br><br>Ebu Talip gülümseyerek, 'Hem de çok sever Ali. O, çocukları çok seven, kalbi sevgi dolu biridir,' dedi."
+            },
+            {
+                img: "ali5.jpg",
+                title: "Pıtır Pıtır Atan Kalp",
+                text: "Ali’nin içini büyük bir sevinç kapladı. 'Amcamın oğlu Muhammed!' diye bağırdı neşeyle.<br><br>Kumların üzerinde bir sağa bir sola zıplamaya başladı. Onunla oyunlar oynamayı, onun dizinin dibinde oturmayı hayal ediyordu.<br><br>Kalbi, hiç görmediği bu sevgili akrabasına kavuşmak için pıtır pıtır atıyordu."
+            },
+            {
+                img: "ali6.jpg",
+                title: "Ve Kutlu Buluşma...",
+                text: "Nihayet o kutlu eve vardılar. Kapı açıldığında Ali'yi, yüzünde güneş gibi bir tebessüm olan o güzel insan karşıladı. Artık emin ellerdeydi...<br><br><strong>Hikayenin Sonu.</strong><br>Yeni maceralar yakında..."
+            }
+        ];
 
-        let currentPage = 1;
-        const imgElement = document.getElementById('page-image');
-        const counterElement = document.getElementById('counter');
-        const btnPrev = document.getElementById('btn-prev');
-        const btnNext = document.getElementById('btn-next');
+        let currentPage = 0;
 
-        function updateDisplay() {
-            // Resmi yumuşak geçişle değiştir
-            imgElement.style.opacity = 0;
+        function updatePage() {
+            const pageData = storyData[currentPage];
+            const imgEl = document.getElementById('story-img');
+            const titleEl = document.getElementById('chapter-title');
+            const textEl = document.getElementById('story-text');
             
+            // 1. Animasyon: İçeriği gizle
+            imgEl.style.opacity = 0;
+            imgEl.style.transform = "scale(0.95)";
+            titleEl.style.opacity = 0;
+            textEl.style.opacity = 0;
+
             setTimeout(() => {
-                // Resmi yükle
-                imgElement.src = `${filePrefix}${currentPage}.jpg`; 
-                
-                imgElement.onload = () => { 
-                    imgElement.style.opacity = 1; 
-                };
-                
-                // Eğer resim yoksa hata verme, kullanıcıya bilgi ver
-                imgElement.onerror = () => {
-                    imgElement.alt = "Resim bulunamadı: " + filePrefix + currentPage + ".jpg";
-                    imgElement.style.opacity = 1;
-                };
-            }, 150);
+                // 2. İçeriği Değiştir
+                imgEl.src = pageData.img;
+                titleEl.innerHTML = pageData.title;
+                textEl.innerHTML = pageData.text;
+                document.getElementById('page-num').innerText = `${currentPage + 1} / ${storyData.length}`;
 
-            // Sayacı güncelle
-            counterElement.innerText = `${currentPage} / ${totalPages}`;
+                // Butonları Ayarla
+                document.getElementById('prev-btn').disabled = (currentPage === 0);
+                const nextBtn = document.getElementById('next-btn');
+                
+                if(currentPage === storyData.length - 1) {
+                    nextBtn.innerHTML = 'Bitir <i class="fas fa-check"></i>';
+                    nextBtn.style.background = "#27ae60"; // Yeşil
+                } else {
+                    nextBtn.innerHTML = 'İleri <i class="fas fa-chevron-right"></i>';
+                    nextBtn.style.background = "#2c3e50"; // Lacivert
+                }
 
-            // Butonları aç/kapa
-            btnPrev.disabled = (currentPage === 1);
-            btnNext.disabled = (currentPage === totalPages);
+                // 3. Animasyon: Tekrar göster
+                imgEl.style.opacity = 1;
+                imgEl.style.transform = "scale(1)";
+                titleEl.style.opacity = 1;
+                textEl.style.opacity = 1;
+                
+                // Mobilde her sayfa değişiminde yazının tepesine çık
+                if(window.innerWidth < 900) {
+                   document.querySelector('.text-area').scrollTop = 0; 
+                }
+
+            }, 300);
         }
 
-        function nextPage() {
-            if(currentPage < totalPages) {
+        function changePage(dir) {
+            if (dir === 1 && currentPage < storyData.length - 1) {
                 currentPage++;
-                updateDisplay();
-                window.scrollTo(0, 0); // Sayfa değişince en üste git
-            }
-        }
-
-        function prevPage() {
-            if(currentPage > 1) {
+                updatePage();
+            } else if (dir === -1 && currentPage > 0) {
                 currentPage--;
-                updateDisplay();
-                window.scrollTo(0, 0);
+                updatePage();
+            } else if (dir === 1 && currentPage === storyData.length - 1) {
+                if(confirm("Hikayeyi bitirdin! Ana sayfaya dönmek ister misin?")) {
+                    window.location.href = 'index.html';
+                }
             }
         }
 
-        // Klavye ile kontrol (Sağ/Sol ok tuşları)
-        document.addEventListener('keydown', function(event) {
-            if(event.key === "ArrowRight") nextPage();
-            if(event.key === "ArrowLeft") prevPage();
+        // Başlat
+        updatePage();
+
+        // Klavye ile kontrol
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowRight") changePage(1);
+            if (e.key === "ArrowLeft") changePage(-1);
         });
-
-        // Sayfayı başlat
-        updateDisplay();
     </script>
-
 </body>
 </html>
