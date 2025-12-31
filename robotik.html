@@ -3,86 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barış Hoca | Robotik & Kodlama</title>
+    <title>Barış Öğretmen | Robotik Kodlama Atölyesi</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; font-family: 'Roboto', sans-serif; background: #0f172a; color: #e2e8f0; }
-        
-        /* TECH HEADER */
-        header { 
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); 
-            padding: 40px 20px; text-align: center; border-bottom: 3px solid #6366f1;
-            position: relative; overflow: hidden;
+        :root {
+            --bg-dark: #0f172a;
+            --tech-blue: #38bdf8;
+            --tech-purple: #818cf8;
+            --text-light: #f8fafc;
         }
-        header h1 { font-family: 'Orbitron', sans-serif; margin: 0; font-size: 1.8rem; color: #a5b4fc; letter-spacing: 2px; text-transform: uppercase; }
-        .back-btn { display: inline-block; background: rgba(255,255,255,0.1); color: #a5b4fc; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; border: 1px solid rgba(99, 102, 241, 0.3); }
 
-        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+        body { 
+            margin: 0; 
+            font-family: 'Fredoka', sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-light); 
+            padding-bottom: 50px; 
+        }
+        
+        /* HEADER (Fütüristik Tasarım) */
+        header { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+            padding: 40px 20px; 
+            text-align: center; 
+            border-bottom: 4px solid var(--tech-blue);
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
+        }
+        .back-btn { 
+            position: absolute; left: 20px; top: 30px; 
+            color: var(--tech-blue); text-decoration: none; 
+            font-weight: bold; border: 1px solid var(--tech-blue);
+            padding: 8px 15px; border-radius: 10px; transition: 0.3s;
+        }
+        .back-btn:hover { background: var(--tech-blue); color: var(--bg-dark); }
+        
+        h1 { 
+            font-family: 'Orbitron', sans-serif; 
+            margin: 0; font-size: 2.2rem; 
+            letter-spacing: 2px; color: var(--tech-blue);
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+        }
 
-        /* KARTLAR */
-        .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        
+        .section-title { 
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem; color: var(--tech-purple); 
+            margin: 40px 0 25px; display: flex; align-items: center; gap: 15px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--tech-purple); opacity: 0.3; }
+
+        /* OYUN KARTLARI */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         
         .tech-card { 
-            background: #1e293b; border: 1px solid #334155; border-radius: 15px; padding: 25px; 
-            text-align: center; transition: 0.3s; position: relative; overflow: hidden;
+            background: #1e293b; border-radius: 20px; padding: 30px; 
+            display: flex; align-items: center; gap: 20px;
+            text-decoration: none; color: inherit; transition: 0.4s;
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            position: relative; overflow: hidden;
         }
-        .tech-card:hover { transform: translateY(-5px); border-color: #6366f1; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-        
-        .icon-zone { font-size: 2.5rem; color: #6366f1; margin-bottom: 15px; }
-        .card-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: white; margin-bottom: 10px; }
-        .card-desc { font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
-        
-        .action-btn { 
-            display: inline-block; background: #6366f1; color: white; padding: 10px 25px; 
-            border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 0.9rem; 
-            width: 100%; box-sizing: border-box; transition: 0.2s;
+        .tech-card::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.1), transparent);
+            transition: 0.5s;
         }
-        .action-btn:hover { background: #4f46e5; }
-        .action-btn.locked { background: #334155; color: #64748b; cursor: not-allowed; }
+        .tech-card:hover::before { left: 100%; }
+        .tech-card:hover { 
+            transform: translateY(-10px); 
+            border-color: var(--tech-blue);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        
+        .icon-box { 
+            width: 70px; height: 70px; background: rgba(56, 189, 248, 0.1); 
+            color: var(--tech-blue); border-radius: 15px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 2.2rem; flex-shrink: 0;
+        }
+        
+        .card-content h3 { margin: 0 0 8px; font-size: 1.3rem; color: var(--tech-blue); }
+        .card-content p { margin: 0; font-size: 0.95rem; color: #94a3b8; line-height: 1.5; }
 
-        .info-box { background: #1e1b4b; border-left: 4px solid #f43f5e; padding: 20px; margin-top: 40px; border-radius: 10px; }
+        /* DİNAMİK LİSTE (Firebase) */
+        .resource-list { list-style: none; padding: 0; }
+        .resource-item { 
+            background: #1e293b; padding: 20px; border-radius: 15px; 
+            margin-bottom: 15px; display: flex; justify-content: space-between; 
+            align-items: center; cursor: pointer; border-left: 5px solid var(--tech-purple);
+        }
+        .resource-item:hover { background: #334155; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .tech-modal { background: #1e293b; padding: 30px; border-radius: 25px; width: 90%; max-width: 650px; border: 1px solid var(--tech-blue); color: var(--text-light); }
     </style>
 </head>
 <body>
 
     <header>
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Ana Sayfa</a>
-        <h1>Robotik & Kodlama<br><span style="font-size:1rem; color:white;">Atölyesi</span></h1>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Geri</a>
+        <h1>ROBOTİK ATÖLYE</h1>
+        <div style="margin-top:10px; color: #94a3b8; font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">Algoritma ve Kodlama Dünyası</div>
     </header>
 
     <div class="container">
 
-        <div class="tech-grid">
-            <div class="tech-card">
-                <div class="icon-zone"><i class="fas fa-cat"></i></div>
-                <div class="card-title">Scratch ile Kodlama</div>
-                <div class="card-desc">Blok tabanlı kodlama ile kendi oyununu ve animasyonunu yap. Yeni başlayanlar için ideal.</div>
-                <a href="#" onclick="alert('Ders içerikleri yakında!')" class="action-btn locked">Dersler Yakında</a>
+        <div class="section-title"><i class="fas fa-terminal"></i> Eğitim Görevleri</div>
+        <div class="grid">
+            
+            <a href="https://baris-ogretmen.github.io/robotik-kodlama-1/" class="tech-card">
+                <div class="icon-box"><i class="fas fa-microchip"></i></div>
+                <div class="card-content">
+                    <h3>Robotik Kodlama - 1</h3>
+                    <p>Algoritma temellerini ve mantıksal düşünmeyi geliştiren ilk seviye eğitim görevi.</p>
+                </div>
+            </a>
+
+            <div class="tech-card" style="opacity: 0.5; cursor: default;">
+                <div class="icon-box"><i class="fas fa-code"></i></div>
+                <div class="card-content">
+                    <h3>Yeni Görevler</h3>
+                    <p>Çok yakında yeni kodlama maceraları buraya eklenecek!</p>
+                </div>
             </div>
 
-            <div class="tech-card" style="border-color:#f43f5e;">
-                <div class="icon-zone" style="color:#f43f5e;"><i class="fas fa-gamepad"></i></div>
-                <div class="card-title">Algoritma Oyunu</div>
-                <div class="card-desc">Robotu hedefe ulaştırmak için doğru komutları ver! Mantıksal düşünme egzersizi.</div>
-                <a href="#" onclick="alert('Oyun hazırlanıyor!')" class="action-btn locked">Yakında</a>
-            </div>
-
-            <div class="tech-card">
-                <div class="icon-zone" style="color:#10b981;"><i class="fas fa-microchip"></i></div>
-                <div class="card-title">Arduino Projeleri</div>
-                <div class="card-desc">Elektronik devreler, sensörler ve robot yapımı. Mühendisliğe ilk adım.</div>
-                <a href="#" onclick="alert('Projeler yakında!')" class="action-btn locked">Projeler Yakında</a>
-            </div>
         </div>
 
-        <div class="info-box">
-            <h3 style="margin-top:0; color:#f43f5e;">💡 Neden Kodlama?</h3>
-            <p style="margin:0; color:#cbd5e1; line-height:1.6;">Kodlama sadece bilgisayar kullanmak değildir; <strong>problem çözme, analitik düşünme ve yaratıcılık</strong> becerilerini geliştirir. Geleceğin dili kodlamadır.</p>
+        <div class="section-title"><i class="fas fa-broadcast-tower"></i> Atölye Duyuruları</div>
+        <div id="duyuru-listesi">
+            <div style="text-align:center; color:#64748b;">Yükleniyor...</div>
         </div>
 
     </div>
+
+    <div class="modal-overlay" id="duyuru-modal">
+        <div class="tech-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 id="modal-baslik" style="margin:0; color:var(--tech-blue);"></h3>
+                <i class="fas fa-times" onclick="kapat('duyuru-modal')" style="cursor:pointer; font-size:1.5rem; color:#64748b;"></i>
+            </div>
+            <div id="modal-icerik" style="line-height:1.7;"></div>
+        </div>
+    </div>
+
+    <script>
+        const db = firebase.firestore();
+        let duyuruVerileri = {};
+
+        // Panelden gelen robotik ile ilgili yazıları çekme
+        db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                const y = doc.data();
+                duyuruVerileri[doc.id] = y.icerik;
+                html += `
+                <div class="resource-item" onclick="duyuruAc('${doc.id}', '${y.baslik}')">
+                    <div style="display:flex; align-items:center;">
+                        <i class="fas fa-satellite" style="color:var(--tech-blue); margin-right:15px;"></i>
+                        <span style="font-weight:bold;">${y.baslik}</span>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#475569;"></i>
+                </div>`;
+            });
+            document.getElementById('duyuru-listesi').innerHTML = html || "Henüz duyuru yayınlanmamış.";
+        });
+
+        function duyuruAc(id, baslik) {
+            document.getElementById('modal-baslik').innerText = baslik;
+            document.getElementById('modal-icerik').innerHTML = duyuruVerileri[id];
+            document.getElementById('duyuru-modal').style.display = 'flex';
+        }
+        function kapat(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
 
 </body>
 </html>
