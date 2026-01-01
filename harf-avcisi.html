@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harf Avcısı | Barış Öğretmen</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* GENEL STİLLER (Senin sitenin tarzında) */
+        body {
+            margin: 0;
+            font-family: 'Fredoka', sans-serif;
+            background: #eff6ff; /* Açık mavi arka plan */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background: #3b82f6;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+        .back-btn {
+            display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-bottom: 10px;
+        }
+
+        /* OYUN ALANI STİLLERİ */
+        .game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-card {
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 4px solid #3b82f6;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Puan ve İlerleme */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+
+        /* Hayvan Resmi Alanı */
+        .image-area {
+            width: 150px;
+            height: 150px;
+            background: #eff6ff;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid #f59e0b; /* Turuncu çerçeve */
+            font-size: 4rem;
+            color: #333;
+        }
+
+        /* Kelime Alanı (Eksik Harfli) */
+        .word-display {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: 10px;
+            margin-bottom: 30px;
+            color: #1e40af;
+        }
+        .missing-letter {
+            color: #f59e0b; /* Eksik harf yeri turuncu */
+            border-bottom: 4px solid #f59e0b;
+            display: inline-block;
+            width: 50px;
+        }
+
+        /* Seçenek Butonları */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .option-btn {
+            background: #eff6ff;
+            border: 3px solid #3b82f6;
+            color: #3b82f6;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Fredoka', sans-serif;
+        }
+        .option-btn:hover {
+            background: #3b82f6;
+            color: white;
+            transform: translateY(-3px);
+        }
+        .option-btn.correct {
+            background: #2ecc71 !important; color: white !important; border-color: #2ecc71 !important; animation: pulse 0.5s;
+        }
+        .option-btn.wrong {
+            background: #ef4444 !important; color: white !important; border-color: #ef4444 !important; animation: shake 0.5s;
+        }
+
+        /* Oyun Bitti Ekranı */
+        .game-over {
+            display: none; /* Başlangıçta gizli */
+            text-align: center;
+        }
+        .game-over h2 { font-size: 2.5rem; color: #3b82f6; }
+        .final-score { font-size: 4rem; color: #f59e0b; font-weight: bold; margin: 20px 0; }
+        .restart-btn {
+            background: #f59e0b; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; border-radius: 30px; cursor: pointer; font-weight: bold; font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Animasyonlar */
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); } }
+
+        /* Mobil uyum */
+        @media (max-width: 400px) {
+            .word-display { font-size: 2.2rem; letter-spacing: 5px; }
+            .option-btn { font-size: 1.5rem; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="ilkokul.html" class="back-btn"><i class="fas fa-arrow-left"></i> İlkokul'a Dön</a>
+        <h1>🦁 Harf Avcısı</h1>
+        <p style="margin:0; opacity: 0.9;">Eksik harfi bul, hayvanı tamamla!</p>
+    </header>
+
+    <div class="game-container">
+        <div class="game-card">
+            
+            <div id="game-play-area">
+                <div class="stats-bar">
+                    <div>⭐ Puan: <span id="score">0</span></div>
+                    <div>Soru: <span id="question-count">1</span>/10</div>
+                </div>
+
+                <div class="image-area" id="animal-image">
+                    <i class="fas fa-cat"></i>
+                </div>
+
+                <div class="word-display" id="word-container">
+                    K <span class="missing-letter">_</span> D İ
+                </div>
+
+                <div class="options-grid" id="options-container">
+                    <button class="option-btn">E</button>
+                    <button class="option-btn">A</button>
+                    <button class="option-btn">İ</button>
+                </div>
+            </div>
+
+            <div id="game-over-area" class="game-over">
+                <i class="fas fa-trophy" style="font-size: 5rem; color: #f59e0b;"></i>
+                <h2>Harika İş Çıkardın!</h2>
+                <p>Toplam Puanın:</p>
+                <div class="final-score" id="final-score">0</div>
+                <button class="restart-btn" onclick="startGame()">Tekrar Oyna 🔄</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. OYUN VERİLERİ (Veritabanı gibi düşün)
+        // Buraya istediğin kadar hayvan ekleyebilirsin.
+        const questionsData = [
+            { word: "KEDİ", icon: "fa-cat", options: ["E", "A", "İ"] },
+            { word: "KÖPEK", icon: "fa-dog", options: ["Ö", "O", "Ü"] },
+            { word: "BALIK", icon: "fa-fish", options: ["A", "E", "I"] },
+            { word: "KUŞ", icon: "fa-dove", options: ["U", "Ü", "O"] },
+            { word: "ASLAN", icon: "fa-lion", options: ["S", "Ş", "Z"] },
+            { word: "FİL", icon: "fa-hippo", options: ["İ", "I", "E"] }, // Hippo ikonu file benziyor :)
+            { word: "AT", icon: "fa-horse", options: ["T", "D", "K"] },
+            { word: "TAVUK", icon: "fa-feather", options: ["V", "F", "Y"] },
+            { word: "ARİ", icon: "fa-bug", options: ["R", "Y", "L"] }, // Arı
+            { word: "KURBAĞA", icon: "fa-frog", options: ["R", "Y", "L"] }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentQuestion = null;
+        let missingCharIndex = 0;
+        let isAnswering = false; // Peş peşe tıklamayı önlemek için
+
+        // HTML Elemanlarını Seç
+        const gamePlayArea = document.getElementById("game-play-area");
+        const gameOverArea = document.getElementById("game-over-area");
+        const scoreEl = document.getElementById("score");
+        const questionCountEl = document.getElementById("question-count");
+        const animalImageEl = document.getElementById("animal-image");
+        const wordContainerEl = document.getElementById("word-container");
+        const optionsContainerEl = document.getElementById("options-container");
+        const finalScoreEl = document.getElementById("final-score");
+
+        // Oyunu Başlatma Fonksiyonu
+        function startGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreEl.innerText = score;
+            gamePlayArea.style.display = "block";
+            gameOverArea.style.display = "none";
+            // Soruları karıştır (Her seferinde farklı sıra)
+            questionsData.sort(() => Math.random() - 0.5);
+            loadQuestion();
+        }
+
+        // Soru Yükleme Fonksiyonu
+        function loadQuestion() {
+            isAnswering = false;
+            questionCountEl.innerText = currentQuestionIndex + 1;
+            currentQuestion = questionsData[currentQuestionIndex];
+
+            // Resmi (İkonu) Güncelle
+            animalImageEl.innerHTML = `<i class="fas ${currentQuestion.icon}"></i>`;
+
+            // Rastgele bir harfi gizle
+            missingCharIndex = Math.floor(Math.random() * currentQuestion.word.length);
+            const correctLetter = currentQuestion.word[missingCharIndex];
+            
+            // Kelimeyi ekrana yaz (Eksik harf ile)
+            let displayHtml = "";
+            for (let i = 0; i < currentQuestion.word.length; i++) {
+                if (i === missingCharIndex) {
+                    displayHtml += `<span class="missing-letter">_</span> `;
+                } else {
+                    displayHtml += `${currentQuestion.word[i]} `;
+                }
+            }
+            wordContainerEl.innerHTML = displayHtml;
+
+            // Seçenekleri Hazırla (Doğru cevap + Yanlışlar)
+            let currentOptions = [...currentQuestion.options];
+            // Eğer doğru cevap seçeneklerde yoksa ekle (Veri hatasını önlemek için)
+            if(!currentOptions.includes(correctLetter)){
+                 currentOptions[0] = correctLetter;
+            }
+            
+            // Seçeneklerin içinde doğru cevap olduğundan emin ol ve karıştır
+            if (!currentOptions.includes(correctLetter)) {
+                 // Bu durum normalde olmamalı ama veri giriş hatasına karşı önlem.
+                 // Verilerde doğru cevap mutlaka options dizisinde olmalı.
+                 // Basitlik adına şimdilik verilerin doğru girildiğini varsayıyoruz.
+            }
+            
+            currentOptions.sort(() => Math.random() - 0.5); // Seçenekleri karıştır
+
+            optionsContainerEl.innerHTML = "";
+            currentOptions.forEach(letter => {
+                const btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.innerText = letter;
+                btn.onclick = () => checkAnswer(btn, letter, correctLetter);
+                optionsContainerEl.appendChild(btn);
+            });
+        }
+
+        // Cevap Kontrol Fonksiyonu
+        function checkAnswer(btnElement, selectedLetter, correctLetter) {
+            if (isAnswering) return; // Zaten cevap verildiyse işlem yapma
+            isAnswering = true;
+
+            if (selectedLetter === correctLetter) {
+                // DOĞRU CEVAP
+                btnElement.classList.add("correct");
+                score += 10;
+                scoreEl.innerText = score;
+                // Eksik harfi tamamla
+                wordContainerEl.children[missingCharIndex].innerText = correctLetter;
+                wordContainerEl.children[missingCharIndex].style.color = "#2ecc71";
+                wordContainerEl.children[missingCharIndex].style.borderBottom = "none";
+            } else {
+                // YANLIŞ CEVAP
+                btnElement.classList.add("wrong");
+                // Doğru cevabı göster (kısa süreliğine)
+                const options = optionsContainerEl.getElementsByClassName("option-btn");
+                for(let opt of options) {
+                    if(opt.innerText === correctLetter) {
+                        opt.classList.add("correct");
+                    }
+                }
+            }
+
+            // Bir sonraki soruya geç (Kısa bir bekleme ile)
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questionsData.length) {
+                    loadQuestion();
+                } else {
+                    endGame();
+                }
+            }, 1500); // 1.5 saniye bekle
+        }
+
+        // Oyun Bitiş Fonksiyonu
+        function endGame() {
+            gamePlayArea.style.display = "none";
+            gameOverArea.style.display = "block";
+            finalScoreEl.innerText = score;
+        }
+
+        // Sayfa açılınca oyunu başlat
+        startGame();
+
+    </script>
+</body>
+</html>
