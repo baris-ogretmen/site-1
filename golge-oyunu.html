@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gölge Eşleştirme | Barış İlkan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* GENEL SAYFA DÜZENİ */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0fdfa; /* Özel eğitim temasına uygun yumuşak arka plan */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            user-select: none; /* Yazı seçimini engelle */
+        }
+        header {
+            background: linear-gradient(135deg, #0d9488 0%, #115e59 100%);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
+        }
+        .back-btn {
+            display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 8px 20px; border-radius: 30px; text-decoration: none; font-weight: bold; margin-bottom: 10px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; }
+
+        /* OYUN ALANI */
+        .game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* HEDEF NESNE KUTUSU (Renkli Olan) */
+        .target-box {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            border: 5px solid #0d9488;
+            position: relative;
+        }
+        .target-icon {
+            font-size: 8rem;
+            /* İkonun orijinal renklerini kullanması için */
+        }
+        
+        /* GÖLGE SEÇENEKLERİ */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+        .shadow-btn {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 20px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1 / 1; /* Kare olması için */
+        }
+        .shadow-btn:hover {
+            transform: scale(1.05);
+            background: #cbd5e1;
+        }
+        .shadow-btn:active {
+            transform: scale(0.95);
+        }
+        .shadow-icon {
+            font-size: 5rem;
+            color: #334155; /* Koyu gri/siyah gölge rengi */
+            filter: brightness(0); /* Tamamen siyah yap */
+            opacity: 0.8;
+        }
+
+        /* GERİ BİLDİRİM (Doğru/Yanlış Efektleri) */
+        .correct-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 10rem;
+            color: #2ecc71;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .target-box.success .correct-overlay {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } 100% { transform: translateX(0); }
+        }
+
+        /* MOBİL UYUM */
+        @media (max-width: 500px) {
+            .target-icon { font-size: 6rem; }
+            .shadow-icon { font-size: 4rem; }
+            .options-grid { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="ozel-egitim.html" class="back-btn"><i class="fas fa-arrow-left"></i> Özel Eğitim'e Dön</a>
+        <h1>🧩 Gölge Eşleştirme</h1>
+    </header>
+
+    <div class="game-container">
+        
+        <div class="target-box" id="target-box">
+            <i id="target-icon" class="fas fa-car-side target-icon" style="color: #e74c3c;"></i>
+            <i class="fas fa-check-circle correct-overlay"></i>
+        </div>
+
+        <div class="options-grid" id="options-grid">
+            </div>
+
+    </div>
+
+    <script>
+        // OYUN VERİLERİ (Nesneler ve Renkleri)
+        // Buraya istediğin kadar yeni nesne ekleyebilirsin.
+        const gameData = [
+            { icon: "fa-car-side", color: "#e74c3c" }, // Kırmızı Araba
+            { icon: "fa-apple-alt", color: "#c0392b" }, // Kırmızı Elma
+            { icon: "fa-star", color: "#f1c40f" }, // Sarı Yıldız
+            { icon: "fa-fish", color: "#3498db" }, // Mavi Balık
+            { icon: "fa-tree", color: "#2ecc71" }, // Yeşil Ağaç
+            { icon: "fa-robot", color: "#9b59b6" }, // Mor Robot
+            { icon: "fa-basketball-ball", color: "#e67e22" }, // Turuncu Top
+            { icon: "fa-ice-cream", color: "#f39c12" }, // Dondurma
+            { icon: "fa-cat", color: "#34495e" }, // Kedi
+            { icon: "fa-plane", color: "#2980b9" } // Uçak
+        ];
+
+        let currentTarget = null;
+        let isAnimating = false;
+
+        const targetBox = document.getElementById('target-box');
+        const targetIconEl = document.getElementById('target-icon');
+        const optionsGrid = document.getElementById('options-grid');
+
+        // OYUNU BAŞLAT / YENİ SORU GELSİN
+        function loadLevel() {
+            isAnimating = false;
+            targetBox.classList.remove('success', 'shake'); // Efektleri temizle
+            optionsGrid.innerHTML = ""; // Seçenekleri temizle
+
+            // 1. Rastgele bir hedef seç
+            currentTarget = gameData[Math.floor(Math.random() * gameData.length)];
+
+            // 2. Hedefi ekrana yerleştir
+            targetIconEl.className = `fas ${currentTarget.icon} target-icon`;
+            targetIconEl.style.color = currentTarget.color;
+
+            // 3. Yanlış seçenekleri belirle
+            let wrongOptions = gameData.filter(item => item.icon !== currentTarget.icon);
+            // Rastgele 2 yanlış seçenek al
+            wrongOptions.sort(() => Math.random() - 0.5);
+            let options = [currentTarget, wrongOptions[0], wrongOptions[1]];
+            
+            // 4. Seçenekleri karıştır
+            options.sort(() => Math.random() - 0.5);
+
+            // 5. Butonları oluştur
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'shadow-btn';
+                btn.innerHTML = `<i class="fas ${opt.icon} shadow-icon"></i>`;
+                btn.onclick = () => checkAnswer(opt);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        // CEVAP KONTROLÜ
+        function checkAnswer(selectedOption) {
+            if (isAnimating) return; // Animasyon bitmeden tıklamayı engelle
+            isAnimating = true;
+
+            if (selectedOption.icon === currentTarget.icon) {
+                // DOĞRU CEVAP
+                targetBox.classList.add('success');
+                // Başarı sesi çalınabilir (opsiyonel)
+                
+                // 1.5 saniye sonra yeni soruya geç
+                setTimeout(loadLevel, 1500);
+            } else {
+                // YANLIŞ CEVAP
+                targetBox.classList.add('shake');
+                // Hata sesi çalınabilir (opsiyonel)
+                
+                // 0.5 saniye sonra titremeyi durdur ve tekrar denemesine izin ver
+                setTimeout(() => {
+                    targetBox.classList.remove('shake');
+                    isAnimating = false;
+                }, 500);
+            }
+        }
+
+        // Sayfa açılınca oyunu başlat
+        loadLevel();
+
+    </script>
+
+</body>
+</html>
