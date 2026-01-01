@@ -26,6 +26,8 @@
         .item-card { background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .item-info { font-size: 0.9rem; font-weight: 600; color: #333; }
         .btn-del-mini { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; width: auto; }
+        /* YENİ EKLENEN VİTRİN BUTONU STİLİ */
+        .btn-vitrin { background: #FFD700; color: #000; border: none; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; width: auto; margin-right: 5px; font-weight: bold; cursor: pointer; }
 
         .tab-buttons { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab-btn { flex: 1; background: #e2e8f0; color: #333; border: none; padding: 10px 5px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size:0.85rem; }
@@ -120,16 +122,47 @@
             db.collection("yazilar").add({ baslik: b, icerik: i, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('yazi-formu'); });
         }
 
-        // --- LİSTELEME ---
+        // --- LİSTELEME FONKSİYONU (VİTRİN ÖZELLİKLİ) ---
         function listeGetir(koleksiyon, divId, ikon) {
             db.collection(koleksiyon).orderBy("tarih", "desc").onSnapshot(snap => {
                 let html = "";
                 snap.forEach(doc => {
                     const d = doc.data();
                     let baslik = d.baslik || d.metin || d.ad_soyad;
-                    html += `<div class="item-card"><div class="item-info">${ikon} ${baslik}</div><button onclick="kayitSil('${koleksiyon}', '${doc.id}')" class="btn-del-mini">Sil</button></div>`;
+                    
+                    // Güvenli veri çekimi (Tırnak hatalarını önlemek için)
+                    const safeBaslik = (baslik || "").replace(/'/g, "\\'");
+                    const safeAciklama = (d.aciklama || "").replace(/'/g, "\\'");
+                    const safeLink = (d.link || "").replace(/'/g, "\\'");
+
+                    html += `
+                    <div class="item-card">
+                        <div class="item-info">${ikon} ${baslik}</div>
+                        <div style="display:flex; align-items:center;">
+                            ${koleksiyon === 'projeler' ? 
+                              `<button onclick="vitrinYap('${safeBaslik}', '${safeAciklama}', '${safeLink}')" class="btn-vitrin"><i class="fas fa-star"></i> Vitrin Yap</button>` 
+                              : ''}
+                            <button onclick="kayitSil('${koleksiyon}', '${doc.id}')" class="btn-del-mini">Sil</button>
+                        </div>
+                    </div>`;
                 });
                 document.getElementById(divId).innerHTML = html || "Veri yok.";
+            });
+        }
+
+        // --- YENİ EKLENEN: VİTRİN YAP FONKSİYONU ---
+        function vitrinYap(baslik, aciklama, link) {
+            if(!confirm("'" + baslik + "' projesini Haftanın Oyunu yapmak istiyor musun?")) return;
+
+            db.collection("site_ayarlari").doc("haftanin_oyunu").set({
+                baslik: baslik,
+                metin: aciklama || "Haftanın en iyi oyunu!",
+                url: link,
+                tarih: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                gosterMesaj("✅ Haftanın Oyunu Güncellendi!", "success");
+            }).catch((err) => {
+                alert("Hata: " + err);
             });
         }
 
@@ -150,13 +183,11 @@
         function kayitSil(col, id) { if(confirm("Silmek istiyor musun?")) db.collection(col).doc(id).delete().then(()=> gosterMesaj("Silindi", "success")); }
         function resetForm(id) { document.querySelectorAll('#'+id+' input, #'+id+' textarea').forEach(i=>i.value=""); gosterMesaj("Başarıyla Kaydedildi!", "success"); }
         function gosterMesaj(m, t) { const k = document.getElementById('mesaj-kutusu'); k.innerText=m; k.className="message "+t; k.style.display="block"; setTimeout(()=>k.style.display="none", 3000); }
- 
-   </script>
+    </script>
 
-<center>
-    <h3>🌍 Ziyaretçi Bayrakları</h3>
-    
-    <a href="https://info.flagcounter.com/Xk1d"><img src="https://s01.flagcounter.com/count2/Xk1d/bg_FFFFFF/txt_000000/border_CCCCCC/columns_2/maxflags_10/viewers_0/labels_0/pageviews_0/flags_0/percent_0/" alt="Flag Counter" border="0"></a>
+    <center>
+        <h3>🌍 Ziyaretçi Bayrakları</h3>
+        <a href="https://info.flagcounter.com/Xk1d"><img src="https://s01.flagcounter.com/count2/Xk1d/bg_FFFFFF/txt_000000/border_CCCCCC/columns_2/maxflags_10/viewers_0/labels_0/pageviews_0/flags_0/percent_0/" alt="Flag Counter" border="0"></a>
     </center>
 
 </body>
