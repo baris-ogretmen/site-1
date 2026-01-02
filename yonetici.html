@@ -81,10 +81,25 @@
             </div>
 
             <h3 style="color:#475569;">Yeni Proje Ekle</h3>
-            <div class="form-group"><input type="text" id="p-baslik" placeholder="Başlık (Örn: Nöro-Işık)"></div>
+            <div class="form-group"><input type="text" id="p-baslik" placeholder="Başlık (Örn: LGS Deneme Sınavı)"></div>
             <div class="form-group"><textarea id="p-aciklama" rows="2" placeholder="Açıklama (Vitrinde görünecek yazı)"></textarea></div>
-            <div class="form-group"><input type="text" id="p-link" placeholder="Link (Örn: hafiza-oyunu.html)"></div>
-            <div class="form-group"><select id="p-icon"><option value="fa-gamepad">🎮 Oyun</option><option value="fa-brain">🧠 Zeka</option><option value="fa-robot">🤖 Robotik</option><option value="fa-chess-knight">♞ Satranç</option></select></div>
+            <div class="form-group"><input type="text" id="p-link" placeholder="Link (Örn: lgs-deneme-1.html)"></div>
+            
+            <div class="form-group">
+                <select id="p-kategori">
+                    <option value="">Kategori Seçiniz...</option>
+                    <option value="Anaokulu">🧸 Anaokulu</option>
+                    <option value="İlkokul">🏫 İlkokul</option>
+                    <option value="Özel Eğitim">🧩 Özel Eğt.</option>
+                    <option value="Robotik">🤖 Robotik</option>
+                    <option value="Ortaokul">📚 Ortaokul / Ders</option>
+                    <option value="LGS Koçluk">🎯 LGS & YKS Koçluk</option>
+                    <option value="Akıl Zeka">🧠 Akıl Zeka</option>
+                    <option value="Satranç">♞ Satranç</option>
+                </select>
+            </div>
+            
+            <div class="form-group"><select id="p-icon"><option value="fa-gamepad">🎮 Oyun</option><option value="fa-brain">🧠 Zeka</option><option value="fa-robot">🤖 Robotik</option><option value="fa-chess-knight">♞ Satranç</option><option value="fa-book">📚 Kitap/Ders</option></select></div>
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
             
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">📂 Mevcut Projeler</h4><div id="list-projeler"></div></div>
@@ -133,9 +148,22 @@
 
         // --- EKLEME FONKSİYONLARI ---
         function projeEkle() {
-            const b = document.getElementById('p-baslik').value; const l = document.getElementById('p-link').value; if(!b || !l) return;
-            db.collection("projeler").add({ baslik: b, aciklama: document.getElementById('p-aciklama').value, link: l, icon: document.getElementById('p-icon').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('proje-formu'); });
+            const b = document.getElementById('p-baslik').value; 
+            const l = document.getElementById('p-link').value; 
+            const k = document.getElementById('p-kategori').value; // Yeni Kategori
+            
+            if(!b || !l) { alert("Başlık ve Link zorunlu!"); return; }
+            
+            db.collection("projeler").add({ 
+                baslik: b, 
+                aciklama: document.getElementById('p-aciklama').value, 
+                link: l, 
+                kategori: k, // Kategoriyi kaydet
+                icon: document.getElementById('p-icon').value, 
+                tarih: firebase.firestore.FieldValue.serverTimestamp() 
+            }).then(() => { resetForm('proje-formu'); });
         }
+
         function duyuruEkle() {
             const m = document.getElementById('d-metin').value; if(!m) return;
             db.collection("duyurular").add({ metin: m, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('duyuru-formu'); });
@@ -152,14 +180,10 @@
                 snap.forEach(doc => {
                     const d = doc.data();
                     let baslik = d.baslik || d.metin || d.ad_soyad;
-                    
-                    // Güvenli Veri
                     const safeBaslik = (baslik || "").replace(/'/g, "\\'");
                     const safeAciklama = (d.aciklama || "İncelemek için tıkla.").replace(/'/g, "\\'");
-                    // Yazılarda link olmaz, modal açılır. Projelerde link olur.
                     const safeLink = d.link ? d.link.replace(/'/g, "\\'") : "yazi"; 
                     
-                    // Kategori Etiketi
                     let etiket = d.kategori ? `<span style="background:#e2e8f0; font-size:0.7rem; padding:2px 5px; border-radius:4px; margin-left:5px;">${d.kategori.toUpperCase()}</span>` : "";
 
                     html += `
@@ -173,10 +197,14 @@
                             ${koleksiyon === 'projeler' ? `
                             <select id="kat-${doc.id}" style="padding:5px; border:1px solid #ddd; border-radius:5px; font-size:0.8rem;">
                                 <option value="">Sayfaya Gönder...</option>
-                                <option value="anaokulu">Anaokulu</option>
-                                <option value="ilkokul">İlkokul</option>
-                                <option value="ozel">Özel Eğt.</option>
-                                <option value="robotik">Robotik</option>
+                                <option value="Anaokulu">🧸 Anaokulu</option>
+                                <option value="İlkokul">🏫 İlkokul</option>
+                                <option value="Özel Eğitim">🧩 Özel Eğt.</option>
+                                <option value="Robotik">🤖 Robotik</option>
+                                <option value="Ortaokul">📚 Ortaokul</option>
+                                <option value="LGS Koçluk">🎯 Koçluk/LGS</option>
+                                <option value="Akıl Zeka">🧠 Akıl Zeka</option>
+                                <option value="Satranç">♞ Satranç</option>
                             </select>
                             <button onclick="kategoriAta('${doc.id}')" class="btn-mini btn-kat">✔</button>
                             ` : ''}
@@ -192,12 +220,8 @@
         // --- 1. VİTRİN YAP ---
         function vitrinYap(baslik, aciklama, link) {
             if(!confirm("Bu içeriği Ana Sayfa'da 'Haftanın Yıldızı' yapmak istiyor musun?")) return;
-            
-            // Eğer yazıysa (link 'yazi' ise), vitrinde tıklandığında ne olacağını ayarla
-            // Şimdilik yazıların linki olmadığı için onları 'kaynaklar' bölümüne yönlendirebiliriz veya linki boş bırakabiliriz.
             let url = link;
             if(link === 'yazi') url = 'index.html#kaynak-alani'; 
-
             db.collection("site_ayarlari").doc("haftanin_oyunu").set({
                 baslik: baslik, metin: aciklama, url: url, tarih: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => gosterMesaj("✅ Ana Sayfa Vitrini Güncellendi!", "success"));
@@ -211,7 +235,6 @@
             .then(() => gosterMesaj("✅ Proje ilgili sayfaya gönderildi!", "success"));
         }
 
-        // --- DİĞER FONKSİYONLAR ---
         function kayitSil(col, id) { if(confirm("Silmek istiyor musun?")) db.collection(col).doc(id).delete().then(()=> gosterMesaj("Silindi", "success")); }
         function resetForm(id) { document.querySelectorAll('#'+id+' input, #'+id+' textarea').forEach(i=>i.value=""); gosterMesaj("Başarıyla Kaydedildi!", "success"); }
         function gosterMesaj(m, t) { const k = document.getElementById('mesaj-kutusu'); k.innerText=m; k.className="message "+t; k.style.display="block"; setTimeout(()=>k.style.display="none", 3000); }
