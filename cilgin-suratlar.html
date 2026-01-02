@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Çılgın Suratlar | Barış Hoca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Carter+One&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root { --yellow: #facc15; --green: #4ade80; --blue: #3b82f6; --dark: #1e293b; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body { 
+            margin: 0; 
+            font-family: 'Carter One', cursive; 
+            background: radial-gradient(circle, #fef08a 0%, #eab308 100%);
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        header { 
+            padding: 10px 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            z-index: 50;
+        }
+        .back-btn { 
+            background: white; color: var(--dark); width: 45px; height: 45px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            text-decoration: none; font-size: 1.5rem; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .action-btn {
+            background: var(--blue); color: white; border: none; padding: 8px 20px; 
+            border-radius: 20px; font-family: inherit; cursor: pointer; 
+            box-shadow: 0 4px 0 #1e40af; font-size: 1rem;
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-reset { background: #ef4444; box-shadow: 0 4px 0 #b91c1c; }
+
+        /* OYUN ALANI (CANVAS) */
+        .game-area { 
+            flex: 1; position: relative; overflow: hidden; 
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* YÜZ (BASE) */
+        .face-base {
+            width: 300px; height: 380px; 
+            background: #d4a373; /* Patates Rengi */
+            border-radius: 45% 45% 40% 40% / 50% 50% 45% 45%;
+            position: relative;
+            box-shadow: inset -10px -10px 30px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
+            border: 4px solid rgba(0,0,0,0.1);
+            transition: background 0.3s;
+        }
+        
+        /* MOBİLDE YÜZÜ BİRAZ KÜÇÜLT */
+        @media (max-height: 700px) {
+            .face-base { width: 240px; height: 300px; }
+        }
+
+        /* SÜRÜKLENEBİLİR PARÇALAR */
+        .draggable-item {
+            position: absolute; cursor: grab; font-size: 3rem; 
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+            touch-action: none; /* Mobilde sürüklemeyi iyileştirir */
+            transform: translate(-50%, -50%); /* Merkezden tut */
+        }
+        .draggable-item:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1); }
+        
+        .remove-btn {
+            position: absolute; top: -10px; right: -10px; 
+            width: 20px; height: 20px; background: red; color: white; 
+            border-radius: 50%; font-size: 12px; display: none; 
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+        .draggable-item:active .remove-btn { display: flex; }
+
+        /* ALT PANEL (PALET) */
+        .palette-panel {
+            background: white; height: 160px; width: 100%; 
+            border-radius: 20px 20px 0 0; 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; z-index: 100;
+        }
+
+        .tabs { display: flex; overflow-x: auto; padding: 10px; gap: 10px; border-bottom: 1px solid #eee; }
+        .tab-btn { 
+            padding: 5px 15px; border-radius: 15px; border: none; background: #f3f4f6; 
+            font-weight: bold; cursor: pointer; white-space: nowrap; font-family: inherit;
+        }
+        .tab-btn.active { background: var(--green); color: white; }
+
+        .items-scroll { 
+            flex: 1; overflow-x: auto; display: flex; align-items: center; gap: 15px; padding: 10px 20px; 
+        }
+        
+        .palette-item {
+            font-size: 3rem; cursor: pointer; transition: 0.2s; 
+            padding: 5px; border-radius: 10px;
+        }
+        .palette-item:active { transform: scale(1.2); background: #fef08a; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="back-btn"><i class="fa-solid fa-home"></i></a>
+        <div style="display:flex; gap:10px;">
+            <button class="action-btn" onclick="game.changeColor()"><i class="fa-solid fa-palette"></i> Renk</button>
+            <button class="action-btn btn-reset" onclick="game.clear()"><i class="fa-solid fa-trash"></i> Temizle</button>
+        </div>
+    </header>
+
+    <div class="game-area">
+        <div id="face" class="face-base">
+            </div>
+    </div>
+
+    <div class="palette-panel">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="game.filter('eyes', this)">Gözler</button>
+            <button class="tab-btn" onclick="game.filter('mouth', this)">Ağız</button>
+            <button class="tab-btn" onclick="game.filter('nose', this)">Burun</button>
+            <button class="tab-btn" onclick="game.filter('hair', this)">Saç/Şapka</button>
+            <button class="tab-btn" onclick="game.filter('access', this)">Aksesuar</button>
+        </div>
+        <div id="palette-container" class="items-scroll">
+            </div>
+    </div>
+
+    <script>
+        // PARÇA KÜTÜPHANESİ
+        const parts = {
+            eyes: ['👀', '🕶️', '👁️', '🧐', '🤩', '😵', '🥺', '😎', '😜', '😍'],
+            mouth: ['👄', '👅', '😬', '😮', '🙂', '😐', '😷', '🤢', '🤠', '👿'],
+            nose: ['👃', '🐽', '🥕', '🔴', '🤡'],
+            hair: ['🎩', '🧢', '👒', '🎓', '⛑️', '👑', '🎀', '🎧', '🦱', '💇'],
+            access: ['👓', '🧣', '💎', '⭐', '❤️', '🩹', '🎤', '🍭', '🍕', '🐛']
+        };
+
+        const colors = ['#d4a373', '#fca5a5', '#86efac', '#93c5fd', '#c4b5fd', '#fde047'];
+        let colorIndex = 0;
+
+        const game = {
+            init: function() {
+                this.filter('eyes', document.querySelector('.tab-btn'));
+                this.setupDropZone();
+            },
+
+            filter: function(category, btn) {
+                // Tab aktifliği
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                if(btn) btn.classList.add('active');
+
+                // Paleti doldur
+                const container = document.getElementById('palette-container');
+                container.innerHTML = '';
+                
+                parts[category].forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'palette-item';
+                    el.innerText = item;
+                    el.onclick = () => this.addPart(item);
+                    container.appendChild(el);
+                });
+            },
+
+            addPart: function(content) {
+                const face = document.getElementById('face');
+                const el = document.createElement('div');
+                el.className = 'draggable-item';
+                el.innerText = content;
+                
+                // Rastgele başlangıç konumu (Yüzün ortasına yakın)
+                el.style.left = '50%';
+                el.style.top = '50%';
+                
+                // Silme butonu ekle (Double click ile)
+                el.ondblclick = () => el.remove();
+
+                // Sürükleme Mantığı (Hem Mouse Hem Touch)
+                this.makeDraggable(el);
+                
+                face.appendChild(el);
+                
+                // Efekt
+                confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors: ['#fde047'] });
+            },
+
+            makeDraggable: function(elmnt) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                elmnt.onmousedown = dragMouseDown;
+                elmnt.ontouchstart = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    // Başlangıç pozisyonu
+                    if(e.type === 'touchstart') {
+                        pos3 = e.touches[0].clientX;
+                        pos4 = e.touches[0].clientY;
+                    } else {
+                        pos3 = e.clientX;
+                        pos4 = e.clientY;
+                    }
+                    
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                    document.ontouchend = closeDragElement;
+                    document.ontouchmove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault(); // Sayfa kaymasını engelle
+                    
+                    let clientX, clientY;
+                    if(e.type === 'touchmove') {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+
+                    // Yeni pozisyonu hesapla
+                    pos1 = pos3 - clientX;
+                    pos2 = pos4 - clientY;
+                    pos3 = clientX;
+                    pos4 = clientY;
+
+                    // Elementi taşı
+                    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                    document.ontouchend = null;
+                    document.ontouchmove = null;
+                }
+            },
+
+            changeColor: function() {
+                colorIndex = (colorIndex + 1) % colors.length;
+                document.getElementById('face').style.backgroundColor = colors[colorIndex];
+            },
+
+            clear: function() {
+                if(confirm("Yüzü temizlemek istiyor musun?")) {
+                    document.getElementById('face').innerHTML = '';
+                }
+            },
+            
+            setupDropZone: function() {
+                // Drop zone logic is handled by absolute positioning within the 'face' container
+            }
+        };
+
+        window.onload = () => game.init();
+
+    </script>
+</body>
+</html>
