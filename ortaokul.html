@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barış Hoca | Ortaokul Akademi</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         body { margin: 0; font-family: 'Exo 2', sans-serif; background: #f3e8ff; color: #333; }
         
-        /* HEADER (Mor Tema) */
+        /* HEADER */
         header { 
             background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
             padding: 30px; text-align: center; color: white; 
@@ -24,10 +29,15 @@
 
         .section-title { font-weight: 800; color: #6d28d9; margin: 30px 0 15px; border-left: 5px solid #d946ef; padding-left: 10px; font-size: 1.2rem; }
 
-        /* SINIF KARTLARI */
+        /* SINIF KARTLARI (FİLTRE BUTONLARI) */
         .class-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .class-card { background: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-decoration: none; color: inherit; transition: 0.3s; border-top: 4px solid transparent; }
-        .class-card:hover { transform: translateY(-5px); }
+        .class-card { 
+            background: white; border-radius: 15px; padding: 20px; text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; 
+            transition: 0.3s; border-top: 4px solid transparent; 
+        }
+        .class-card:hover, .class-card.active { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .class-card.active { background: #faf5ff; border-top-width: 6px; }
         
         /* Sınıf Renkleri */
         .c-5 { border-color: #3b82f6; } .c-5 i { color: #3b82f6; background: #dbeafe; }
@@ -38,10 +48,17 @@
         .class-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 10px; }
         .class-name { font-weight: bold; font-size: 1.1rem; display: block; }
 
-        /* DERS LİSTESİ */
-        .lesson-list { list-style: none; padding: 0; }
-        .lesson-item { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #e9d5ff; cursor: pointer; }
+        /* DERS LİSTESİ (DİNAMİK ALAN) */
+        .lesson-list { list-style: none; padding: 0; min-height: 100px; }
+        .lesson-item { 
+            background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            border: 1px solid #e9d5ff; cursor: pointer; text-decoration: none; color: inherit;
+            animation: fadeIn 0.5s;
+        }
         .lesson-item:hover { border-color: #a855f7; background: #faf5ff; }
+        
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
     </style>
 </head>
@@ -57,44 +74,103 @@
 
         <div class="section-title">Sınıfını Seç</div>
         <div class="class-grid">
-            <a href="#" class="class-card c-5" onclick="alert('5. Sınıf içerikleri hazırlanıyor!')">
+            <div class="class-card c-5" onclick="filtrele('5', this)">
                 <div class="class-icon"><i class="fas fa-seedling"></i></div>
                 <span class="class-name">5. Sınıf</span>
-            </a>
-            <a href="#" class="class-card c-6" onclick="alert('6. Sınıf içerikleri hazırlanıyor!')">
+            </div>
+            <div class="class-card c-6" onclick="filtrele('6', this)">
                 <div class="class-icon"><i class="fas fa-layer-group"></i></div>
                 <span class="class-name">6. Sınıf</span>
-            </a>
-            <a href="#" class="class-card c-7" onclick="alert('7. Sınıf içerikleri hazırlanıyor!')">
+            </div>
+            <div class="class-card c-7" onclick="filtrele('7', this)">
                 <div class="class-icon"><i class="fas fa-rocket"></i></div>
                 <span class="class-name">7. Sınıf</span>
-            </a>
-            <a href="#" class="class-card c-8" onclick="alert('LGS Kampı Koçluk sayfasında!')">
+            </div>
+            <div class="class-card c-8" onclick="filtrele('8', this)">
                 <div class="class-icon"><i class="fas fa-graduation-cap"></i></div>
                 <span class="class-name">8. Sınıf (LGS)</span>
-            </a>
+            </div>
         </div>
 
-        <div class="section-title">📚 Öne Çıkan Ders Notları</div>
-        <div class="lesson-list">
-            <div class="lesson-item" onclick="alert('Dosya açılıyor...')">
-                <div style="display:flex; align-items:center;">
-                    <i class="fas fa-flask" style="color:#ef4444; font-size:1.4rem; margin-right:15px;"></i>
-                    <div><strong>Fen Bilimleri</strong><br><small style="color:#666;">Maddenin Yapısı - Özet</small></div>
-                </div>
-                <i class="fas fa-chevron-right" style="color:#d8b4fe;"></i>
-            </div>
-            
-            <div class="lesson-item" onclick="alert('Dosya açılıyor...')">
-                <div style="display:flex; align-items:center;">
-                    <i class="fas fa-square-root-alt" style="color:#3b82f6; font-size:1.4rem; margin-right:15px;"></i>
-                    <div><strong>Matematik</strong><br><small style="color:#666;">Cebirsel İfadeler - Test</small></div>
-                </div>
-                <i class="fas fa-chevron-right" style="color:#d8b4fe;"></i>
-            </div>
+        <div class="section-title" id="liste-baslik">📚 Tüm Ders Notları</div>
+        <div id="ders-listesi" class="lesson-list">
+            <div style="text-align:center; color:#999; margin-top:20px;">Yükleniyor...</div>
         </div>
 
     </div>
+
+    <script>
+        const db = firebase.firestore();
+        let tumProjeler = [];
+
+        // 1. TÜM ORTAOKUL VERİLERİNİ ÇEK VE HAFIZADA TUT
+        db.collection("projeler").orderBy("tarih", "desc").get().then((snapshot) => {
+            snapshot.forEach((doc) => {
+                const veri = doc.data();
+                const kat = (veri.kategori || "").toLowerCase();
+                
+                // Sadece "Ortaokul" veya "Ders" kategorisindekileri al
+                if (kat.includes("ortaokul") || kat.includes("ders")) {
+                    tumProjeler.push(veri);
+                }
+            });
+            // Sayfa açılışında hepsini göster
+            listele(tumProjeler);
+        });
+
+        // 2. FİLTRELEME FONKSİYONU
+        function filtrele(sinif, kartElement) {
+            // Aktif kart görselini güncelle
+            document.querySelectorAll('.class-card').forEach(c => c.classList.remove('active'));
+            if(kartElement) kartElement.classList.add('active');
+
+            // Başlığı güncelle
+            document.getElementById('liste-baslik').innerText = sinif ? `📚 ${sinif}. Sınıf İçerikleri` : "📚 Tüm Ders Notları";
+
+            // Verileri filtrele
+            if (sinif) {
+                const filtrelenmis = tumProjeler.filter(p => p.sinif === sinif);
+                listele(filtrelenmis);
+            } else {
+                listele(tumProjeler);
+            }
+        }
+
+        // 3. LİSTELEME (EKRANA BASMA)
+        function listele(liste) {
+            const div = document.getElementById('ders-listesi');
+            div.innerHTML = "";
+
+            if (liste.length === 0) {
+                div.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>Bu sınıf için henüz içerik eklenmemiş.</div>";
+                return;
+            }
+
+            liste.forEach(p => {
+                // İkona karar ver (Matematikse cetvel, fense deney tüpü vb.)
+                let ikon = "fa-book";
+                let renk = "#6d28d9"; // Varsayılan mor
+                const baslikKucuk = p.baslik.toLowerCase();
+
+                if(baslikKucuk.includes("mat")) { ikon = "fa-square-root-alt"; renk = "#3b82f6"; } // Mavi
+                else if(baslikKucuk.includes("fen")) { ikon = "fa-flask"; renk = "#ef4444"; } // Kırmızı
+                else if(baslikKucuk.includes("türkçe") || baslikKucuk.includes("sözel")) { ikon = "fa-feather-alt"; renk = "#f59e0b"; } // Turuncu
+                else if(baslikKucuk.includes("sosyal") || baslikKucuk.includes("inkılap")) { ikon = "fa-globe-europe"; renk = "#10b981"; } // Yeşil
+
+                div.innerHTML += `
+                <a href="${p.link}" target="_blank" class="lesson-item">
+                    <div style="display:flex; align-items:center;">
+                        <i class="fas ${ikon}" style="color:${renk}; font-size:1.4rem; margin-right:15px; width:30px; text-align:center;"></i>
+                        <div>
+                            <div style="font-weight:bold; color:#333;">${p.baslik}</div>
+                            <small style="color:#666;">${p.aciklama || 'Ders içeriği'}</small>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#d8b4fe;"></i>
+                </a>`;
+            });
+        }
+    </script>
 
 </body>
 </html>
