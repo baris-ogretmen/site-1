@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğretmen Çantası | Barış Hoca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root { --bg: #111827; --panel: #1f2937; --accent: #3b82f6; --text: #f3f4f6; --red: #ef4444; --green: #10b981; }
+        
+        body { margin: 0; font-family: 'Roboto', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        
+        /* SOL MENÜ */
+        .sidebar { width: 80px; background: var(--panel); display: flex; flex-direction: column; align-items: center; padding-top: 20px; border-right: 1px solid #374151; z-index: 10; }
+        .nav-btn { 
+            width: 50px; height: 50px; margin-bottom: 20px; border-radius: 12px; border: none; 
+            background: rgba(255,255,255,0.05); color: #9ca3af; font-size: 1.2rem; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent); color: white; transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
+        .back-home { margin-top: auto; margin-bottom: 20px; background: var(--red); color: white; }
+
+        /* ANA EKRAN */
+        .main-content { flex: 1; position: relative; padding: 20px; overflow: hidden; }
+        .tool-view { display: none; height: 100%; flex-direction: column; animation: fadeIn 0.5s; }
+        .tool-view.active { display: flex; }
+        .tool-header { font-family: 'Teko', sans-serif; font-size: 3rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #374151; padding-bottom: 10px; color: var(--accent); }
+
+        /* --- ARAÇ 1: ÇARKIFELEK --- */
+        .wheel-container { flex: 1; display: flex; gap: 20px; align-items: center; justify-content: center; }
+        .wheel-input { width: 250px; height: 300px; background: #374151; border: none; color: white; padding: 15px; border-radius: 10px; resize: none; font-size: 0.9rem; }
+        .wheel-wrapper { position: relative; width: 400px; height: 400px; }
+        .the-wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid white; transition: 4s cubic-bezier(0.1, 0.9, 0.2, 1); transform: rotate(0deg); position: relative; overflow: hidden; background: conic-gradient(from 0deg, #ef4444 0 60deg, #f59e0b 60deg 120deg, #10b981 120deg 180deg, #3b82f6 180deg 240deg, #8b5cf6 240deg 300deg, #ec4899 300deg 360deg); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid white; z-index: 5; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        .spin-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; background: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(0,0,0,0.5); font-size: 1.2rem; color: #111827; z-index: 10; }
+        .winner-display { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 3rem; font-weight: bold; color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.5); display: none; }
+
+        /* --- ARAÇ 2: GÜRÜLTÜ ÖLÇER --- */
+        .noise-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .noise-bar-wrapper { width: 100px; height: 400px; background: #374151; border-radius: 50px; position: relative; overflow: hidden; border: 5px solid #4b5563; }
+        .noise-bar { width: 100%; height: 0%; background: linear-gradient(to top, #10b981, #f59e0b, #ef4444); position: absolute; bottom: 0; transition: 0.1s; }
+        .noise-status { font-size: 2rem; margin-top: 20px; font-weight: bold; }
+        .mic-btn { padding: 15px 30px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 1.2rem; cursor: pointer; margin-top: 20px; }
+
+        /* --- ARAÇ 3: SAYAÇ --- */
+        .timer-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .big-time { font-size: 10rem; font-family: 'Teko', sans-serif; line-height: 1; text-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+        .timer-presets { display: flex; gap: 10px; margin-top: 20px; }
+        .preset-btn { background: #374151; color: white; border: 1px solid #4b5563; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; }
+        .preset-btn:hover { background: var(--accent); border-color: var(--accent); }
+        .control-group { display: flex; gap: 20px; margin-top: 30px; }
+        .ctrl-btn { width: 80px; height: 80px; border-radius: 50%; border: none; font-size: 2rem; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-start { background: #10b981; } .btn-stop { background: #ef4444; } .btn-reset { background: #6b7280; }
+        .ctrl-btn:active { transform: scale(0.9); }
+
+        /* --- ARAÇ 4: GRUP OLUŞTURUCU --- */
+        .group-layout { display: flex; gap: 20px; height: 100%; }
+        .group-input-area { width: 250px; display: flex; flex-direction: column; gap: 10px; }
+        .group-textarea { flex: 1; background: #374151; color: white; border: none; padding: 10px; border-radius: 10px; resize: none; }
+        .group-result-area { flex: 1; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; padding: 10px; }
+        .group-card { background: #1f2937; border: 1px solid #374151; border-radius: 10px; width: 200px; padding: 15px; animation: popIn 0.3s; }
+        .group-title { color: var(--accent); font-weight: bold; border-bottom: 1px solid #374151; margin-bottom: 10px; padding-bottom: 5px; }
+        .group-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #d1d5db; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .shaking { animation: shake 0.5s; animation-iteration-count: infinite; }
+
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <button class="nav-btn active" onclick="switchTool('wheel')"><i class="fa-solid fa-dharmachakra"></i></button>
+        <button class="nav-btn" onclick="switchTool('noise')"><i class="fa-solid fa-volume-high"></i></button>
+        <button class="nav-btn" onclick="switchTool('timer')"><i class="fa-solid fa-hourglass-half"></i></button>
+        <button class="nav-btn" onclick="switchTool('groups')"><i class="fa-solid fa-users"></i></button>
+        
+        <a href="index.html" class="nav-btn back-home"><i class="fa-solid fa-right-from-bracket"></i></a>
+    </nav>
+
+    <div class="main-content">
+        
+        <div id="tool-wheel" class="tool-view active">
+            <div class="tool-header">İSİM ÇARKI</div>
+            <div class="wheel-container">
+                <textarea id="wheel-names" class="wheel-input" placeholder="Her satıra bir isim yaz...">Ali
+Ayşe
+Mehmet
+Fatma
+Can
+Zeynep
+Barış
+Elif</textarea>
+                <div class="wheel-wrapper">
+                    <div class="pointer"></div>
+                    <div class="the-wheel" id="theWheel"></div>
+                    <button class="spin-btn" onclick="spinWheel()">ÇEVİR</button>
+                </div>
+            </div>
+            <div class="winner-display" id="winner-text">KAZANAN: ALİ</div>
+        </div>
+
+        <div id="tool-noise" class="tool-view">
+            <div class="tool-header">GÜRÜLTÜ ÖLÇER</div>
+            <div class="noise-container">
+                <div class="noise-bar-wrapper">
+                    <div class="noise-bar" id="mic-bar"></div>
+                </div>
+                <div class="noise-status" id="noise-msg">Sessiz Ortam 🤫</div>
+                <button class="mic-btn" onclick="startMic()"><i class="fa-solid fa-microphone"></i> Başlat</button>
+            </div>
+        </div>
+
+        <div id="tool-timer" class="tool-view">
+            <div class="tool-header">SINAV SAYACI</div>
+            <div class="timer-container">
+                <div class="big-time" id="timer-display">10:00</div>
+                <div class="timer-presets">
+                    <button class="preset-btn" onclick="setTimer(5)">5 Dk</button>
+                    <button class="preset-btn" onclick="setTimer(10)">10 Dk</button>
+                    <button class="preset-btn" onclick="setTimer(20)">20 Dk</button>
+                    <button class="preset-btn" onclick="setTimer(40)">40 Dk</button>
+                </div>
+                <div class="control-group">
+                    <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fa-solid fa-play"></i></button>
+                    <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fa-solid fa-pause"></i></button>
+                    <button class="ctrl-btn btn-reset" onclick="resetTimer()"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tool-groups" class="tool-view">
+            <div class="tool-header">GRUP SİHİRBAZI</div>
+            <div class="group-layout">
+                <div class="group-input-area">
+                    <textarea id="group-names" class="group-textarea" placeholder="İsimleri yaz...">Ali
+Ayşe
+Mehmet
+Fatma
+Can
+Zeynep
+Barış
+Elif
+Cem
+Deniz</textarea>
+                    <input type="number" id="group-count" value="2" min="2" class="wheel-input" style="height:50px;" placeholder="Grup Sayısı">
+                    <button class="mic-btn" onclick="makeGroups()">Dağıt</button>
+                </div>
+                <div class="group-result-area" id="group-results"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // MENÜ GEÇİŞİ
+        function switchTool(id) {
+            document.querySelectorAll('.tool-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tool-' + id).classList.add('active');
+            // Buton aktifliği basitçe index ile bulunur ama burada manuel yapalım
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- ÇARKIFELEK ---
+        let currentRotation = 0;
+        function spinWheel() {
+            const names = document.getElementById('wheel-names').value.trim().split('\n').filter(n => n);
+            if (names.length < 2) { alert("En az 2 isim girin!"); return; }
+            
+            const winnerDiv = document.getElementById('winner-text');
+            winnerDiv.style.display = "none";
+            
+            const spin = Math.floor(Math.random() * 3000) + 1000; // 1000-4000 derece arası
+            currentRotation += spin;
+            
+            const wheel = document.getElementById('theWheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            
+            // Hangi isimde durdu? (Basit mantık: Rastgele seç ve göster)
+            // Görsel olarak tam denk getirmek zor olduğu için sonucu önceden seçip ona göre çevirmek daha temizdir ama burada basit şans efekti yapıyoruz.
+            const winner = names[Math.floor(Math.random() * names.length)];
+            
+            setTimeout(() => {
+                winnerDiv.innerText = "🎉 " + winner.toUpperCase() + " 🎉";
+                winnerDiv.style.display = "block";
+                confetti();
+            }, 4000);
+        }
+
+        // --- GÜRÜLTÜ ÖLÇER ---
+        let audioContext;
+        let analyser;
+        let micStream;
+        
+        async function startMic() {
+            try {
+                if(audioContext) return; // Zaten çalışıyor
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                function update() {
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for(let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                    let average = sum / dataArray.length;
+                    
+                    // Hassasiyet Ayarı
+                    let percent = Math.min(100, average * 2); 
+                    
+                    const bar = document.getElementById('mic-bar');
+                    const msg = document.getElementById('noise-msg');
+                    const wrapper = document.querySelector('.noise-bar-wrapper');
+                    
+                    bar.style.height = percent + "%";
+                    
+                    if (percent > 80) {
+                        msg.innerText = "ÇOK GÜRÜLTÜLÜ! 🚨";
+                        msg.style.color = "#ef4444";
+                        wrapper.classList.add('shaking');
+                        wrapper.style.borderColor = "#ef4444";
+                    } else if (percent > 50) {
+                        msg.innerText = "Ses Yükseliyor... ⚠️";
+                        msg.style.color = "#f59e0b";
+                        wrapper.classList.remove('shaking');
+                        wrapper.style.borderColor = "#f59e0b";
+                    } else {
+                        msg.innerText = "Sessiz Ortam 🤫";
+                        msg.style.color = "#10b981";
+                        wrapper.classList.remove('shaking');
+                        wrapper.style.borderColor = "#4b5563";
+                    }
+                    
+                    requestAnimationFrame(update);
+                }
+                update();
+                document.querySelector('.mic-btn').innerText = "Dinleniyor...";
+                document.querySelector('.mic-btn').disabled = true;
+                
+            } catch (err) {
+                alert("Mikrofon izni verilmedi veya hata oluştu.");
+            }
+        }
+
+        // --- SAYAÇ ---
+        let timerInt;
+        let seconds = 600;
+        
+        function updateTimerDisplay() {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}:${s}`;
+        }
+        
+        function setTimer(min) {
+            stopTimer();
+            seconds = min * 60;
+            updateTimerDisplay();
+        }
+        
+        function startTimer() {
+            if(timerInt) return;
+            timerInt = setInterval(() => {
+                if(seconds > 0) {
+                    seconds--;
+                    updateTimerDisplay();
+                } else {
+                    stopTimer();
+                    alert("Süre Doldu!");
+                    // Ses çalınabilir
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInt);
+            timerInt = null;
+        }
+        
+        function resetTimer() {
+            stopTimer();
+            seconds = 600;
+            updateTimerDisplay();
+        }
+
+        // --- GRUP OLUŞTURUCU ---
+        function makeGroups() {
+            const names = document.getElementById('group-names').value.trim().split('\n').filter(n => n);
+            const count = parseInt(document.getElementById('group-count').value);
+            const resultDiv = document.getElementById('group-results');
+            resultDiv.innerHTML = "";
+            
+            if(names.length < count) { alert("Öğrenci sayısı grup sayısından az olamaz!"); return; }
+            
+            // Karıştır (Fisher-Yates)
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+            
+            // Grupları oluştur
+            const groups = Array.from({ length: count }, () => []);
+            names.forEach((name, i) => {
+                groups[i % count].push(name);
+            });
+            
+            // Ekrana bas
+            groups.forEach((g, i) => {
+                let html = `<div class="group-card"><div class="group-title">GRUP ${i+1}</div><ul class="group-list">`;
+                g.forEach(n => html += `<li>${n}</li>`);
+                html += `</ul></div>`;
+                resultDiv.innerHTML += html;
+            });
+        }
+
+    </script>
+</body>
+</html>
