@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kurbağa Denge | Barış Hoca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root { --green: #4ade80; --dark-green: #15803d; --wood: #92400e; --sky: #e0f2fe; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; 
+            font-family: 'Fredoka', sans-serif; 
+            background: linear-gradient(180deg, #bae6fd 0%, #ecfccb 100%);
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* HEADER */
+        header { 
+            padding: 15px; position: absolute; top: 0; width: 100%; z-index: 50;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .back-btn { 
+            background: white; color: var(--dark-green); width: 45px; height: 45px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            text-decoration: none; font-size: 1.5rem; box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        .level-badge {
+            background: var(--dark-green); color: white; padding: 5px 15px; 
+            border-radius: 20px; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        /* OYUN ALANI */
+        .game-area { 
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative; width: 100%; max-width: 600px; margin: 0 auto;
+        }
+
+        /* DENGE MEKANİZMASI */
+        .balance-system {
+            position: relative; width: 300px; height: 300px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        /* AĞAÇ GÖVDESİ (SABİT) */
+        .tree-trunk {
+            width: 40px; height: 120px; background: var(--wood); 
+            border-radius: 10px 10px 0 0; position: absolute; bottom: 0; z-index: 1;
+            box-shadow: inset 5px 0 10px rgba(0,0,0,0.2);
+        }
+        .tree-base {
+            width: 120px; height: 30px; background: #5a2e09; 
+            border-radius: 50% 50% 0 0; position: absolute; bottom: -10px; z-index: 0;
+        }
+
+        /* DENGE ÇUBUĞU (DÖNEN KISIM) */
+        .balance-beam {
+            width: 320px; height: 20px; background: #22c55e; border-radius: 10px;
+            position: absolute; bottom: 110px; z-index: 10;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-shadow: 0 5px 0 #15803d;
+            transform-origin: center center;
+        }
+        /* Denge Çubuğu Pimi */
+        .balance-beam::after {
+            content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 15px; height: 15px; background: #fcd34d; border-radius: 50%; border: 2px solid #b45309;
+        }
+
+        /* YERLEŞTİRME ALANLARI */
+        .side-zone {
+            width: 120px; height: 100px; position: absolute; bottom: 20px;
+            display: flex; flex-wrap: wrap-reverse; align-content: flex-start; justify-content: center; gap: 2px;
+        }
+        .side-left { left: 0; }
+        .side-right { right: 0; }
+
+        /* KURBAĞA */
+        .frog {
+            width: 35px; height: 35px; font-size: 30px; color: var(--dark-green);
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); animation: popIn 0.3s;
+        }
+
+        /* KONTROL PANELİ */
+        .control-panel {
+            width: 100%; background: white; padding: 20px; border-radius: 30px 30px 0 0;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 20;
+        }
+
+        .dice-container {
+            width: 80px; height: 80px; background: white; border: 4px solid var(--dark-green);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; color: var(--dark-green); font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px 0 #166534; transition: 0.1s;
+        }
+        .dice-container:active { transform: translateY(6px); box-shadow: none; }
+        .dice-info { font-size: 1.1rem; color: #555; text-align: center; }
+
+        .btn-group { display: flex; gap: 15px; width: 100%; margin-top: 10px; display: none; }
+        .place-btn {
+            flex: 1; padding: 15px; border: none; border-radius: 15px; 
+            font-size: 1.2rem; font-weight: bold; color: white; cursor: pointer;
+            font-family: 'Fredoka', sans-serif; box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            transition: 0.1s;
+        }
+        .place-btn:active { transform: translateY(5px); box-shadow: none; }
+        .btn-left { background: #3b82f6; }
+        .btn-right { background: #f97316; }
+
+        /* BAŞLANGIÇ EKRANI */
+        #start-screen, #game-over {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; backdrop-filter: blur(5px); color: white; text-align: center;
+        }
+        #game-over { display: none; background: rgba(220, 38, 38, 0.9); }
+        
+        .big-btn {
+            background: var(--green); color: var(--dark-green); padding: 15px 50px; 
+            font-size: 2rem; border-radius: 50px; border: none; font-weight: bold; 
+            cursor: pointer; margin-top: 20px; box-shadow: 0 8px 0 #166534;
+        }
+        .big-btn:active { transform: translateY(8px); box-shadow: none; }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg)} 75%{transform:rotate(5deg)} }
+        .shaking { animation: shake 0.5s; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="back-btn"><i class="fa-solid fa-home"></i></a>
+        <div class="level-badge">Skor: <span id="score">0</span></div>
+    </header>
+
+    <div class="game-area">
+        <div class="balance-system">
+            <div class="balance-beam" id="beam">
+                <div class="side-zone side-left" id="zone-left"></div>
+                <div class="side-zone side-right" id="zone-right"></div>
+            </div>
+            <div class="tree-trunk"></div>
+            <div class="tree-base"></div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="dice-info" id="status-text">Zarı at ve kurbağaları yerleştir!</div>
+        
+        <div class="dice-container" id="dice-btn" onclick="game.rollDice()">
+            <i class="fa-solid fa-dice"></i>
+        </div>
+
+        <div class="btn-group" id="placement-btns">
+            <button class="place-btn btn-left" onclick="game.placeFrog('left')">SOLA KOY ⬅️</button>
+            <button class="place-btn btn-right" onclick="game.placeFrog('right')">SAĞA KOY ➡️</button>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1 style="font-size: 3rem; margin: 0; text-shadow: 0 5px 0 #000;">KURBAĞA<br>DENGE</h1>
+        <div style="font-size: 5rem; margin: 20px;">🐸⚖️</div>
+        <p>Ağacı devirmeden en çok kurbağayı yerleştir!</p>
+        <button class="big-btn" onclick="game.start()">BAŞLA</button>
+    </div>
+
+    <div id="game-over">
+        <h1 style="font-size: 3rem; margin: 0;">DEVRİLDİ! 😱</h1>
+        <p style="font-size: 1.5rem; margin: 10px;">Toplam Skor: <span id="final-score">0</span></p>
+        <button class="big-btn" style="background: white; color: #dc2626;" onclick="location.reload()">TEKRAR</button>
+    </div>
+
+    <script>
+        const game = {
+            leftCount: 0,
+            rightCount: 0,
+            score: 0,
+            currentDice: 0,
+            frogsToPlace: 0,
+            isPlacing: false,
+
+            start: function() {
+                document.getElementById('start-screen').style.display = 'none';
+                this.updateBalance();
+            },
+
+            rollDice: function() {
+                if(this.frogsToPlace > 0) return; // Önce elindekileri bitir
+
+                // Zar efekti
+                const diceIcon = document.querySelector('#dice-btn i');
+                diceIcon.className = "fa-solid fa-dice fa-spin";
+                
+                setTimeout(() => {
+                    this.currentDice = Math.floor(Math.random() * 3) + 1; // 1, 2 veya 3 gelir (Daha kolay denge)
+                    this.frogsToPlace = this.currentDice;
+                    
+                    // Zar ikonunu güncelle
+                    const faces = ['one', 'two', 'three', 'four', 'five', 'six'];
+                    diceIcon.className = `fa-solid fa-dice-${faces[this.currentDice-1]}`;
+                    
+                    document.getElementById('status-text').innerText = `${this.currentDice} Kurbağa! Nereye koyacaksın?`;
+                    document.getElementById('dice-btn').style.display = 'none';
+                    document.getElementById('placement-btns').style.display = 'flex';
+                }, 500);
+            },
+
+            placeFrog: function(side) {
+                if(this.frogsToPlace <= 0) return;
+
+                // Kurbağa ekle
+                const frog = document.createElement('div');
+                frog.className = 'frog';
+                frog.innerHTML = '<i class="fa-solid fa-frog"></i>';
+                
+                if(side === 'left') {
+                    document.getElementById('zone-left').appendChild(frog);
+                    this.leftCount++;
+                } else {
+                    document.getElementById('zone-right').appendChild(frog);
+                    this.rightCount++;
+                }
+
+                this.frogsToPlace--;
+                this.score += 10;
+                document.getElementById('score').innerText = this.score;
+
+                // Dengeyi Kontrol Et
+                this.updateBalance();
+
+                // Tur bitti mi?
+                if(this.frogsToPlace === 0) {
+                    document.getElementById('status-text').innerText = "Sıra tekrar sende! Zarı at.";
+                    document.getElementById('dice-btn').style.display = 'flex';
+                    document.getElementById('placement-btns').style.display = 'none';
+                    // İkonu sıfırla
+                    document.querySelector('#dice-btn i').className = "fa-solid fa-dice";
+                } else {
+                    document.getElementById('status-text').innerText = `Kalan: ${this.frogsToPlace} Kurbağa`;
+                }
+            },
+
+            updateBalance: function() {
+                // Basit Fizik: Fark ne kadar çoksa o kadar yatar
+                const diff = this.rightCount - this.leftCount;
+                let angle = diff * 5; // Her fark 5 derece yatırır
+
+                // Maksimum açı sınırı (Görsel olarak)
+                if(angle > 45) angle = 45;
+                if(angle < -45) angle = -45;
+
+                const beam = document.getElementById('beam');
+                beam.style.transform = `rotate(${angle}deg)`;
+
+                // KAYBETME KONTROLÜ (Fark 4'ten fazlaysa devrilir)
+                if(Math.abs(diff) >= 4) {
+                    setTimeout(() => this.gameOver(), 600);
+                }
+            },
+
+            gameOver: function() {
+                document.getElementById('game-over').style.display = 'flex';
+                document.getElementById('final-score').innerText = this.score;
+                // Devrilme efekti için açıyı abart
+                const beam = document.getElementById('beam');
+                const finalAngle = this.rightCount > this.leftCount ? 60 : -60;
+                beam.style.transform = `rotate(${finalAngle}deg)`;
+                beam.style.transition = "transform 0.2s";
+            }
+        };
+    </script>
+</body>
+</html>
