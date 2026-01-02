@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sihirli Okuma Asistanı | Barış Hoca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Andika&family=Comic+Neue:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg: #f8fafc; --text: #1e293b; --accent: #4f46e5; --panel: #ffffff; }
+        
+        body { margin: 0; font-family: 'Open Sans', sans-serif; background-color: var(--bg); color: var(--text); overflow-x: hidden; transition: 0.3s; }
+        
+        /* HEADER */
+        header { background: var(--accent); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+        .back-btn { color: white; text-decoration: none; border: 2px solid rgba(255,255,255,0.3); padding: 8px 20px; border-radius: 30px; font-weight: bold; transition:0.3s; }
+        .back-btn:hover { background: white; color: var(--accent); }
+        h1 { margin: 0; font-family: 'Comic Neue', cursive; font-size: 1.8rem; letter-spacing: 1px; }
+
+        /* KONTROL PANELİ */
+        .controls { background: var(--panel); padding: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; border-bottom: 2px solid #e2e8f0; box-shadow: 0 5px 10px rgba(0,0,0,0.05); }
+        
+        .tool-btn { 
+            border: none; background: #f1f5f9; color: #475569; padding: 10px 15px; 
+            border-radius: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;
+            transition: 0.2s; border-bottom: 3px solid #cbd5e1;
+        }
+        .tool-btn:active { transform: translateY(2px); border-bottom: 0; }
+        .tool-btn.active { background: var(--accent); color: white; border-color: #3730a3; }
+        .tool-btn i { font-size: 1.2rem; }
+
+        /* RENK FİLTRELERİ */
+        .filter-group { display: flex; gap: 5px; background: #f1f5f9; padding: 5px; border-radius: 12px; align-items: center; }
+        .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .color-dot:hover { transform: scale(1.1); }
+        .color-dot.selected { border-color: #333; transform: scale(1.1); }
+
+        /* OKUMA ALANI */
+        .reading-area { 
+            max-width: 900px; margin: 40px auto; padding: 40px; 
+            background: var(--panel); border-radius: 20px; 
+            min-height: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            font-size: 24px; line-height: 1.6; border: 2px solid #e2e8f0;
+            outline: none; position: relative;
+        }
+
+        /* DİSLEKSİ ÖZELLİKLERİ */
+        .dyslexic-font { font-family: 'Andika', sans-serif !important; letter-spacing: 2px; word-spacing: 5px; }
+        .high-contrast { background: #000 !important; color: #fbbf24 !important; }
+        .high-contrast .reading-area { background: #000; border-color: #fbbf24; color: #fbbf24; }
+
+        /* ODAK ÇUBUĞU (RULER) */
+        #focus-ruler {
+            position: fixed; left: 0; width: 100%; height: 60px;
+            background: rgba(0, 0, 0, 0.7); /* Karanlık kısımlar */
+            pointer-events: none; z-index: 50; display: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); /* Geri kalanı karart */
+        }
+
+        /* RENK KATMANI (OVERLAY) */
+        #color-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 40; mix-blend-mode: multiply; display: none;
+        }
+
+        /* KONUŞAN KELİME */
+        .speaking { background-color: #fde047; color: #000; border-radius: 5px; padding: 0 5px; }
+
+        /* HİKAYE SEÇİCİ */
+        .story-select { padding: 10px; border-radius: 10px; border: 2px solid var(--accent); font-weight: bold; color: var(--accent); outline: none; }
+
+        @media (max-width: 768px) {
+            .reading-area { padding: 20px; font-size: 18px; margin: 10px; }
+            .controls { gap: 5px; }
+            .tool-btn span { display: none; } /* Mobilde yazıları gizle */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="ozel-egitim.html" class="back-btn"><i class="fas fa-chevron-left"></i> Çıkış</a>
+        <h1>Sihirli Okuma Asistanı 🦉</h1>
+        <select class="story-select" onchange="loadStory(this.value)">
+            <option value="">Hikaye Seç...</option>
+            <option value="1">Karga ile Tilki</option>
+            <option value="2">Aslan ile Fare</option>
+            <option value="3">Rüzgar ve Güneş</option>
+        </select>
+    </header>
+
+    <div class="controls">
+        <button class="tool-btn" onclick="toggleSpeech()" id="btn-speech"><i class="fas fa-volume-up"></i> <span>Sesli Oku</span></button>
+        <button class="tool-btn" onclick="changeSize(1)"><i class="fas fa-plus"></i></button>
+        <button class="tool-btn" onclick="changeSize(-1)"><i class="fas fa-minus"></i></button>
+        <button class="tool-btn" onclick="toggleDyslexic()" id="btn-font"><i class="fas fa-font"></i> <span>Disleksi Font</span></button>
+        <button class="tool-btn" onclick="toggleRuler()" id="btn-ruler"><i class="fas fa-ruler-horizontal"></i> <span>Odak Çubuğu</span></button>
+        
+        <div class="filter-group">
+            <div class="color-dot" style="background:#fff; border:1px solid #ccc;" onclick="setOverlay('none', this)"></div>
+            <div class="color-dot" style="background:#fef08a;" onclick="setOverlay('#fef08a', this)"></div> <div class="color-dot" style="background:#bae6fd;" onclick="setOverlay('#bae6fd', this)"></div> <div class="color-dot" style="background:#bbf7d0;" onclick="setOverlay('#bbf7d0', this)"></div> <div class="color-dot" style="background:#fbcfe8;" onclick="setOverlay('#fbcfe8', this)"></div> </div>
+    </div>
+
+    <div id="content" class="reading-area" contenteditable="true" spellcheck="false">
+        Buraya kendi metnini yapıştırabilir veya yukarıdan bir hikaye seçebilirsin...
+        Disleksi dostu bu araç ile okumak artık daha kolay!
+        Renkleri değiştir, odak çubuğunu aç ve sesli dinle.
+    </div>
+
+    <div id="focus-ruler"></div>
+    <div id="color-overlay"></div>
+
+    <script>
+        // DEĞİŞKENLER
+        let fontSize = 24;
+        let isDyslexic = false;
+        let isRulerActive = false;
+        let speechUtterance = null;
+        const contentArea = document.getElementById('content');
+        const ruler = document.getElementById('focus-ruler');
+        const overlay = document.getElementById('color-overlay');
+
+        // HİKAYELER
+        const stories = {
+            1: "Bir gün bir karga, ağzında bir parça peynirle dala konmuş. Tilki kokuyu almış ve kargaya: 'Sesin ne kadar güzel, bir şarkı söyle de dinleyelim' demiş. Karga buna inanmış ve 'Gak!' diye bağırmış. Peynir düşmüş, tilki kapıp kaçmış.",
+            2: "Aslan bir gün uyurken, minik fare yüzünde dolaşmaya başlamış. Aslan uyanıp fareyi yakalamış. Fare yalvarmış: 'Bırak beni, belki bir gün işine yararım.' Aslan gülüp bırakmış. Günler sonra aslan avcıların ağına düşmüş. Fare gelip ipleri kemirmiş ve aslanı kurtarmış.",
+            3: "Rüzgar ve Güneş kimin daha güçlü olduğu konusunda iddiaya girmişler. 'Şu adamın paltosunu kim çıkarırsa o kazanır' demişler. Rüzgar estikçe adam paltosuna sarılmış. Güneş parlayınca adam terlemiş ve paltosunu çıkarmış. Tatlı dil, kaba kuvvetten güçlüdür."
+        };
+
+        function loadStory(id) {
+            if(stories[id]) {
+                contentArea.innerHTML = stories[id];
+                stopSpeech();
+            }
+        }
+
+        // FONT BOYUTU
+        function changeSize(delta) {
+            fontSize += delta * 2;
+            contentArea.style.fontSize = fontSize + 'px';
+        }
+
+        // DİSLEKSİ FONTU
+        function toggleDyslexic() {
+            isDyslexic = !isDyslexic;
+            if(isDyslexic) {
+                contentArea.classList.add('dyslexic-font');
+                document.getElementById('btn-font').classList.add('active');
+            } else {
+                contentArea.classList.remove('dyslexic-font');
+                document.getElementById('btn-font').classList.remove('active');
+            }
+        }
+
+        // ODAK ÇUBUĞU (RULER)
+        function toggleRuler() {
+            isRulerActive = !isRulerActive;
+            if(isRulerActive) {
+                ruler.style.display = 'block';
+                document.getElementById('btn-ruler').classList.add('active');
+                document.addEventListener('mousemove', moveRuler);
+            } else {
+                ruler.style.display = 'none';
+                document.getElementById('btn-ruler').classList.remove('active');
+                document.removeEventListener('mousemove', moveRuler);
+            }
+        }
+
+        function moveRuler(e) {
+            // Çubuğu farenin ortasına getir
+            ruler.style.top = (e.clientY - 30) + 'px';
+        }
+
+        // RENK FİLTRESİ (IRLEN)
+        function setOverlay(color, element) {
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+            element.classList.add('selected');
+
+            if(color === 'none') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.backgroundColor = color;
+                overlay.style.display = 'block';
+            }
+        }
+
+        // SESLİ OKUMA (TTS)
+        function toggleSpeech() {
+            if(window.speechSynthesis.speaking) {
+                stopSpeech();
+            } else {
+                readAloud();
+            }
+        }
+
+        function readAloud() {
+            const text = contentArea.innerText;
+            speechUtterance = new SpeechSynthesisUtterance(text);
+            speechUtterance.lang = 'tr-TR';
+            speechUtterance.rate = 0.9; // Biraz yavaş oku
+
+            // Kelime takibi (Highlight)
+            // Not: Web Speech API kelime sınırlarını tam vermez ama basit bir efekt yapabiliriz
+            document.getElementById('btn-speech').classList.add('active');
+            
+            speechUtterance.onend = () => {
+                document.getElementById('btn-speech').classList.remove('active');
+            };
+
+            window.speechSynthesis.speak(speechUtterance);
+        }
+
+        function stopSpeech() {
+            window.speechSynthesis.cancel();
+            document.getElementById('btn-speech').classList.remove('active');
+        }
+
+    </script>
+</body>
+</html>
