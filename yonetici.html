@@ -81,25 +81,33 @@
             </div>
 
             <h3 style="color:#475569;">Yeni Proje Ekle</h3>
-            <div class="form-group"><input type="text" id="p-baslik" placeholder="Başlık (Örn: LGS Deneme Sınavı)"></div>
+            <div class="form-group"><input type="text" id="p-baslik" placeholder="Başlık (Örn: Fen 1. Ünite Özeti)"></div>
             <div class="form-group"><textarea id="p-aciklama" rows="2" placeholder="Açıklama (Vitrinde görünecek yazı)"></textarea></div>
-            <div class="form-group"><input type="text" id="p-link" placeholder="Link (Örn: lgs-deneme-1.html)"></div>
+            <div class="form-group"><input type="text" id="p-link" placeholder="Link (Örn: fen-5-ozet.html)"></div>
             
-            <div class="form-group">
-                <select id="p-kategori">
+            <div class="form-group" style="display:flex; gap:10px;">
+                <select id="p-kategori" style="flex:2;">
                     <option value="">Kategori Seçiniz...</option>
-                    <option value="Anaokulu">🧸 Anaokulu</option>
-                    <option value="İlkokul">🏫 İlkokul</option>
-                    <option value="Özel Eğitim">🧩 Özel Eğt.</option>
-                    <option value="Robotik">🤖 Robotik</option>
                     <option value="Ortaokul">📚 Ortaokul / Ders</option>
                     <option value="LGS Koçluk">🎯 LGS & YKS Koçluk</option>
                     <option value="Akıl Zeka">🧠 Akıl Zeka</option>
                     <option value="Satranç">♞ Satranç</option>
+                    <option value="Anaokulu">🧸 Anaokulu</option>
+                    <option value="İlkokul">🏫 İlkokul</option>
+                    <option value="Özel Eğitim">🧩 Özel Eğt.</option>
+                    <option value="Robotik">🤖 Robotik</option>
+                </select>
+                
+                <select id="p-sinif" style="flex:1; border-color:#8b5cf6; font-weight:bold;">
+                    <option value="">Sınıf</option>
+                    <option value="5">5. Sınıf</option>
+                    <option value="6">6. Sınıf</option>
+                    <option value="7">7. Sınıf</option>
+                    <option value="8">8. Sınıf</option>
                 </select>
             </div>
             
-            <div class="form-group"><select id="p-icon"><option value="fa-gamepad">🎮 Oyun</option><option value="fa-brain">🧠 Zeka</option><option value="fa-robot">🤖 Robotik</option><option value="fa-chess-knight">♞ Satranç</option><option value="fa-book">📚 Kitap/Ders</option></select></div>
+            <div class="form-group"><select id="p-icon"><option value="fa-book">📚 Kitap/Ders</option><option value="fa-gamepad">🎮 Oyun</option><option value="fa-brain">🧠 Zeka</option><option value="fa-robot">🤖 Robotik</option><option value="fa-chess-knight">♞ Satranç</option></select></div>
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
             
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">📂 Mevcut Projeler</h4><div id="list-projeler"></div></div>
@@ -150,7 +158,8 @@
         function projeEkle() {
             const b = document.getElementById('p-baslik').value; 
             const l = document.getElementById('p-link').value; 
-            const k = document.getElementById('p-kategori').value; // Yeni Kategori
+            const k = document.getElementById('p-kategori').value; 
+            const s = document.getElementById('p-sinif').value; // Sınıf verisi
             
             if(!b || !l) { alert("Başlık ve Link zorunlu!"); return; }
             
@@ -158,7 +167,8 @@
                 baslik: b, 
                 aciklama: document.getElementById('p-aciklama').value, 
                 link: l, 
-                kategori: k, // Kategoriyi kaydet
+                kategori: k, 
+                sinif: s, // Sınıfı veritabanına ekle
                 icon: document.getElementById('p-icon').value, 
                 tarih: firebase.firestore.FieldValue.serverTimestamp() 
             }).then(() => { resetForm('proje-formu'); });
@@ -185,30 +195,16 @@
                     const safeLink = d.link ? d.link.replace(/'/g, "\\'") : "yazi"; 
                     
                     let etiket = d.kategori ? `<span style="background:#e2e8f0; font-size:0.7rem; padding:2px 5px; border-radius:4px; margin-left:5px;">${d.kategori.toUpperCase()}</span>` : "";
+                    let sinifEtiket = d.sinif ? `<span style="background:#d8b4fe; color:#581c87; font-size:0.7rem; padding:2px 5px; border-radius:4px; margin-left:5px;">${d.sinif}. SINIF</span>` : "";
 
                     html += `
                     <div class="item-card">
-                        <div class="item-info" style="margin-bottom:10px;">${ikon} ${baslik} ${etiket}</div>
+                        <div class="item-info" style="margin-bottom:10px;">${ikon} ${baslik} ${etiket} ${sinifEtiket}</div>
                         
                         <div class="btn-action-group">
                             ${(koleksiyon === 'projeler' || koleksiyon === 'yazilar') ? 
                               `<button onclick="vitrinYap('${safeBaslik}', '${safeAciklama}', '${safeLink}')" class="btn-mini btn-vitrin"><i class="fas fa-star"></i> Vitrin</button>` : ''}
                             
-                            ${koleksiyon === 'projeler' ? `
-                            <select id="kat-${doc.id}" style="padding:5px; border:1px solid #ddd; border-radius:5px; font-size:0.8rem;">
-                                <option value="">Sayfaya Gönder...</option>
-                                <option value="Anaokulu">🧸 Anaokulu</option>
-                                <option value="İlkokul">🏫 İlkokul</option>
-                                <option value="Özel Eğitim">🧩 Özel Eğt.</option>
-                                <option value="Robotik">🤖 Robotik</option>
-                                <option value="Ortaokul">📚 Ortaokul</option>
-                                <option value="LGS Koçluk">🎯 Koçluk/LGS</option>
-                                <option value="Akıl Zeka">🧠 Akıl Zeka</option>
-                                <option value="Satranç">♞ Satranç</option>
-                            </select>
-                            <button onclick="kategoriAta('${doc.id}')" class="btn-mini btn-kat">✔</button>
-                            ` : ''}
-
                             <button onclick="kayitSil('${koleksiyon}', '${doc.id}')" class="btn-mini btn-sil"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>`;
@@ -217,22 +213,13 @@
             });
         }
 
-        // --- 1. VİTRİN YAP ---
+        // --- DİĞER FONKSİYONLAR (Vitrin, Silme vb.) ---
         function vitrinYap(baslik, aciklama, link) {
             if(!confirm("Bu içeriği Ana Sayfa'da 'Haftanın Yıldızı' yapmak istiyor musun?")) return;
-            let url = link;
-            if(link === 'yazi') url = 'index.html#kaynak-alani'; 
+            let url = link; if(link === 'yazi') url = 'index.html#kaynak-alani'; 
             db.collection("site_ayarlari").doc("haftanin_oyunu").set({
                 baslik: baslik, metin: aciklama, url: url, tarih: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => gosterMesaj("✅ Ana Sayfa Vitrini Güncellendi!", "success"));
-        }
-
-        // --- 2. KATEGORİ ATA ---
-        function kategoriAta(docId) {
-            const kat = document.getElementById(`kat-${docId}`).value;
-            if(!kat) { alert("Bölüm seçmedin!"); return; }
-            db.collection("projeler").doc(docId).update({ kategori: kat })
-            .then(() => gosterMesaj("✅ Proje ilgili sayfaya gönderildi!", "success"));
         }
 
         function kayitSil(col, id) { if(confirm("Silmek istiyor musun?")) db.collection(col).doc(id).delete().then(()=> gosterMesaj("Silindi", "success")); }
