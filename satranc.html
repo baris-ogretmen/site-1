@@ -2,90 +2,727 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barış Satranç Akademisi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4f46e5">
+    <title>Barış Satranç Akademisi | Mega</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
     <style>
-        body { margin: 0; font-family: 'Merriweather', serif; background: #f0fdf4; color: #14532d; }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Outfit:wght@400;700;900&display=swap');
+
+        /* Temel Ayarlar */
+        body { font-family: 'Outfit', sans-serif; background-color: #f3f4f6; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .brand-font { font-family: 'Fredoka', sans-serif; }
         
-        /* HEADER (Yeşil-Beyaz Satranç Teması) */
-        header { 
-            background: #15803d; padding: 30px; text-align: center; color: white; 
-            border-bottom: 10px solid #166534; position: relative;
+        /* Özel Scrollbar Gizleme */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animasyonlar */
+        .page-enter { animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .btn-bounce:active { transform: scale(0.95); }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); }
+
+        /* Tahta Stili */
+        .board-wrapper { 
+            border-radius: 12px; overflow: hidden; 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); 
+            border: 6px solid #312e81; 
+            touch-action: none;
         }
-        .back-btn { display: inline-block; background: white; color: #15803d; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-bottom: 15px; font-family: sans-serif; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
-        h1 { margin: 0; font-size: 2rem; letter-spacing: 1px; }
-        .chess-icon { font-size: 3rem; margin-bottom: 10px; display: block; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); }
 
-        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+        /* Haber Bandı */
+        .marquee-container { background: #312e81; color: white; height: 36px; display: flex; align-items: center; overflow: hidden; position: relative; }
+        .marquee-text { white-space: nowrap; position: absolute; animation: scroll 20s linear infinite; font-size: 0.85rem; font-weight: 600; }
+        @keyframes scroll { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        .section-header { text-align: center; margin-bottom: 30px; font-weight: bold; font-size: 1.2rem; color: #166534; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #bbf7d0; display: inline-block; padding-bottom: 5px; }
-
-        /* LİSTE TASARIMI */
-        .chess-list { list-style: none; padding: 0; }
-        .chess-item { 
-            background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px; 
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 6px solid #166534;
-            transition: 0.3s; cursor: pointer; border: 1px solid #dcfce7;
-        }
-        .chess-item:hover { transform: translateX(5px); background: #f0fdf4; border-color: #15803d; }
-        
-        .item-content h3 { margin: 0 0 5px; font-size: 1.1rem; }
-        .item-content p { margin: 0; font-size: 0.85rem; color: #666; font-family: sans-serif; }
-        
-        .play-icon { font-size: 1.5rem; color: #15803d; width: 40px; text-align: center; }
-
-        .quote-box { text-align: center; font-style: italic; color: #4b5563; margin-top: 40px; padding: 20px; border-top: 1px solid #bbf7d0; background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        /* Robot Oyunu Izgarası */
+        .robot-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: #e0e7ff; padding: 5px; border-radius: 10px; }
+        .robot-cell { background: white; border-radius: 6px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; }
+        .robot-active { background: #4f46e5; color: white; transform: scale(1.1); box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4); z-index: 5; border-radius: 8px; }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen text-slate-800">
 
-    <header>
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Ana Sayfa</a>
-        <i class="fas fa-chess-knight chess-icon"></i>
-        <h1>Barış Satranç<br>Akademisi</h1>
-    </header>
-
-    <div class="container">
+    <div id="view-login" class="fixed inset-0 z-50 bg-indigo-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&q=80')] bg-cover opacity-10"></div>
         
-        <div style="text-align: center;">
-            <div class="section-header">♟️ Eğitim & Antrenman</div>
+        <div class="relative z-10 w-full max-w-sm text-center page-enter">
+            <div class="w-28 h-28 bg-white rounded-3xl mx-auto mb-6 flex items-center justify-center text-6xl text-indigo-600 shadow-2xl rotate-3">
+                <i class="fa-solid fa-chess-knight"></i>
+            </div>
+            <h1 class="text-3xl font-black text-white mb-2 brand-font tracking-wide">BARIŞ SATRANÇ</h1>
+            <p class="text-indigo-200 text-sm mb-8 font-medium tracking-widest uppercase">Akademisi</p>
+
+            <div class="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl">
+                <label class="block text-left text-indigo-200 text-xs font-bold mb-2 ml-1">ÖĞRENCİ ADI</label>
+                <div class="relative">
+                    <input type="text" id="login-name" class="w-full bg-indigo-950/50 border border-indigo-400/30 rounded-xl px-4 py-4 text-white font-bold outline-none focus:border-indigo-400 placeholder-indigo-300/50 transition text-lg text-center" placeholder="Adını Yaz">
+                </div>
+                <button onclick="auth.login()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white py-4 rounded-xl font-black shadow-lg shadow-orange-500/30 mt-4 btn-bounce flex items-center justify-center gap-2 text-lg">
+                    BAŞLA <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+            
+            <button onclick="admin.showLogin()" class="mt-8 text-indigo-400/50 hover:text-indigo-300 text-xs font-bold uppercase tracking-wider"><i class="fa-solid fa-lock"></i> Öğretmen Girişi</button>
         </div>
+    </div>
 
-        <div class="chess-list">
-            <div class="chess-item" onclick="alert('Analiz videoları yakında!')">
-                <div class="item-content">
-                    <h3>Hamle Analizleri</h3>
-                    <p>Büyük ustaların maçlarından kritik anlar ve dersler.</p>
-                </div>
-                <div class="play-icon"><i class="fas fa-video"></i></div>
-            </div>
-
-            <div class="chess-item" onclick="alert('Soru çözümü yakında!')">
-                <div class="item-content">
-                    <h3>Günün Bulmacası</h3>
-                    <p>Matı bulabilir misin? Zihnini satrançla keskinleştir.</p>
-                </div>
-                <div class="play-icon"><i class="fas fa-puzzle-piece"></i></div>
-            </div>
-
-            <div class="chess-item" onclick="alert('Turnuva takvimi henüz açıklanmadı.')">
-                <div class="item-content">
-                    <h3>Turnuva Hazırlık</h3>
-                    <p>Turnuva kuralları, saat kullanımı ve psikolojik hazırlık.</p>
-                </div>
-                <div class="play-icon"><i class="fas fa-trophy"></i></div>
-            </div>
-        </div>
+    <div id="app-container" class="hidden flex-col h-full bg-slate-50">
         
-        <div class="quote-box">
-            "Satranç tahtasında insan ruhunun tüm halleri vardır."
+        <header class="bg-white px-4 py-3 flex justify-between items-center shadow-sm z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-indigo-200">
+                    <i class="fa-solid fa-chess-king"></i>
+                </div>
+                <div>
+                    <h2 class="font-black text-slate-800 leading-none text-sm brand-font">BARIŞ</h2>
+                    <p class="text-[10px] text-indigo-600 font-bold tracking-wider">AKADEMİ</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-amber-200">
+                    <i class="fa-solid fa-coins"></i> <span id="gold-display">0</span>
+                </div>
+                <div onclick="app.navTo('profile')" class="w-9 h-9 bg-slate-200 rounded-full overflow-hidden border-2 border-white shadow-sm cursor-pointer">
+                    <div id="header-avatar" class="w-full h-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-user"></i></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="marquee-container">
+            <div id="marquee-text" class="marquee-text">Barış Satranç Akademisi'ne Hoş Geldiniz! İyi dersler...</div>
         </div>
+
+        <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar relative">
+            
+            <div id="view-home" class="page-view p-5 pb-24 space-y-6">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-indigo-200 text-xs font-bold uppercase mb-1">HOŞ GELDİN</p>
+                        <h2 class="text-3xl font-black mb-1"><span id="welcome-name">Öğrenci</span></h2>
+                        <span id="home-rank" class="bg-white/20 px-3 py-1 rounded-lg text-xs font-bold backdrop-blur-sm border border-white/10">Piyon</span>
+                    </div>
+                    <i class="fa-solid fa-chess-rook absolute -bottom-4 -right-4 text-8xl text-white/10 rotate-12"></i>
+                </div>
+
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-lightbulb"></i></div>
+                        <h3 class="font-bold text-slate-700">Günün Sorusu</h3>
+                    </div>
+                    <p id="daily-q-text" class="text-sm text-slate-600 mb-4 font-medium">...</p>
+                    <div id="daily-q-options" class="flex gap-2"></div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-400 text-xs uppercase tracking-wider mb-3 ml-1">EĞİTİM & OYUN</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="app.navTo('gamehub')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition btn-bounce flex flex-col items-center gap-2">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-gamepad"></i></div>
+                            <span class="font-bold text-slate-700 text-sm">Oyun Odası</span>
+                        </button>
+                        <button onclick="app.navTo('lessons')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition btn-bounce flex flex-col items-center gap-2">
+                            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-chalkboard-user"></i></div>
+                            <span class="font-bold text-slate-700 text-sm">Dersler</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-gamehub" class="page-view hidden p-5 pb-24 space-y-6">
+                <div class="flex items-center gap-3">
+                    <button onclick="app.navTo('home')" class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-500"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h2 class="text-2xl font-black text-slate-800">Oyun Odası</h2>
+                </div>
+
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+                    <button onclick="gameManager.startBot(5)" class="w-full p-4 flex items-center gap-4 hover:bg-slate-50 border-b border-slate-50 transition">
+                        <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-2xl">🤖</div>
+                        <div class="text-left flex-1"><span class="block font-bold text-slate-800">Bot ile Oyna</span><span class="text-xs text-slate-500">Antrenman Modu</span></div>
+                        <i class="fa-solid fa-chevron-right text-slate-300"></i>
+                    </button>
+                    <button onclick="gameManager.startPvP()" class="w-full p-4 flex items-center gap-4 hover:bg-slate-50 transition">
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">👥</div>
+                        <div class="text-left flex-1"><span class="block font-bold text-slate-800">Arkadaşınla Oyna</span><span class="text-xs text-slate-500">Aynı Cihazda</span></div>
+                        <i class="fa-solid fa-chevron-right text-slate-300"></i>
+                    </button>
+                </div>
+
+                <h3 class="font-bold text-slate-400 text-xs uppercase tracking-wider ml-1">ZEKA OYUNLARI</h3>
+                <div class="grid grid-cols-2 gap-3" id="projects-grid">
+                    <button onclick="app.navTo('robot')" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 btn-bounce">
+                        <i class="fa-solid fa-robot text-3xl text-cyan-500"></i><span class="font-bold text-sm text-slate-700">Robot</span>
+                    </button>
+                    <button onclick="app.navTo('math')" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 btn-bounce">
+                        <i class="fa-solid fa-calculator text-3xl text-orange-500"></i><span class="font-bold text-sm text-slate-700">Matematik</span>
+                    </button>
+                    <button onclick="app.navTo('coordinate')" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 btn-bounce">
+                        <i class="fa-solid fa-crosshairs text-3xl text-emerald-500"></i><span class="font-bold text-sm text-slate-700">Koordinat</span>
+                    </button>
+                    <button onclick="app.navTo('memory')" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 btn-bounce">
+                        <i class="fa-solid fa-brain text-3xl text-purple-500"></i><span class="font-bold text-sm text-slate-700">Hafıza</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="view-arena" class="page-view hidden h-full flex flex-col bg-slate-200">
+                <div class="bg-white p-4 shadow-sm z-10 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl font-bold" id="opponent-icon">🤖</div>
+                        <div><span class="block text-[10px] font-bold text-slate-400 uppercase">RAKİP</span><span class="block font-bold text-slate-800 leading-none" id="opponent-name">Bot</span></div>
+                    </div>
+                    <button onclick="app.navTo('gamehub')" class="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 hover:text-red-500 transition">Çıkış</button>
+                </div>
+                <div class="flex-1 flex items-center justify-center p-4">
+                    <div id="arena-board" class="board-wrapper w-full max-w-[450px]"></div>
+                </div>
+                <div class="p-5 bg-white rounded-t-3xl shadow-lg flex gap-3 pb-8">
+                    <button onclick="gameManager.undo()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold text-sm btn-bounce">Geri Al</button>
+                    <button onclick="gameManager.reset()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm btn-bounce">Yeniden Başla</button>
+                </div>
+            </div>
+
+            <div id="view-lessons" class="page-view hidden h-full flex flex-col bg-slate-50 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="app.navTo('home')" class="w-10 h-10 bg-white rounded-full shadow flex items-center justify-center text-slate-500"><i class="fa-solid fa-arrow-left"></i></button>
+                    <select id="lesson-select" onchange="lessons.load(this.value)" class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none shadow-sm">
+                        <optgroup label="Taş Hareketleri">
+                            <option value="l_kale">Kale</option><option value="l_fil">Fil</option><option value="l_vezir">Vezir</option><option value="l_at">At</option><option value="l_piyon">Piyon</option><option value="l_sah">Şah</option>
+                        </optgroup>
+                        <optgroup label="Kurallar">
+                            <option value="rok">Rok</option><option value="gecerken">Geçerken Alma</option>
+                        </optgroup>
+                        <optgroup label="Matlar">
+                            <option value="coban">Çoban Matı</option><option value="merdiven">Merdiven Matı</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center">
+                    <div id="lesson-board" class="board-wrapper w-full max-w-[350px] mb-6"></div>
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 text-center w-full max-w-sm">
+                        <p id="lesson-text" class="text-slate-700 font-medium mb-6 min-h-[3rem]">Dersi seç ve başla.</p>
+                        <div class="flex justify-center gap-4">
+                            <button onclick="lessons.prev()" class="w-12 h-12 bg-slate-100 rounded-xl text-slate-500"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button onclick="lessons.next()" class="w-12 h-12 bg-indigo-600 rounded-xl text-white shadow-lg btn-bounce"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-robot" class="page-view hidden h-full flex flex-col items-center justify-center bg-slate-800 p-5">
+                <div class="w-full max-w-sm">
+                    <div class="flex justify-between items-center mb-4 text-white">
+                        <h2 class="font-bold text-lg">Robot Matı</h2>
+                        <button onclick="app.navTo('gamehub')" class="text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+                    </div>
+                    <div id="robo-board" class="robot-grid mb-4"></div>
+                    <div class="bg-slate-700 p-4 rounded-xl">
+                        <div id="robo-cmds" class="h-12 flex items-center gap-2 overflow-x-auto mb-4 bg-slate-800 rounded p-2"></div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="robotGame.add('Sol')" class="bg-slate-600 text-white p-3 rounded-lg"><i class="fa-solid fa-arrow-left"></i></button>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="robotGame.add('İleri')" class="bg-blue-600 text-white p-3 rounded-lg"><i class="fa-solid fa-arrow-up"></i></button>
+                                <button onclick="robotGame.add('Geri')" class="bg-slate-600 text-white p-3 rounded-lg"><i class="fa-solid fa-arrow-down"></i></button>
+                            </div>
+                            <button onclick="robotGame.add('Sağ')" class="bg-slate-600 text-white p-3 rounded-lg"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                        <button onclick="robotGame.run()" class="w-full mt-4 bg-green-500 text-white py-3 rounded-lg font-bold">ÇALIŞTIR</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-math" class="page-view hidden h-full flex flex-col items-center justify-center bg-orange-50 p-5 relative">
+                <button onclick="app.navTo('gamehub')" class="absolute top-5 left-5 text-orange-400"><i class="fa-solid fa-arrow-left text-2xl"></i></button>
+                <div class="bg-white p-8 rounded-3xl shadow-xl text-center w-full max-w-sm">
+                    <h2 class="text-2xl font-black text-orange-600 mb-6">Taşları Topla</h2>
+                    <div class="flex justify-center items-center gap-4 text-4xl mb-8">
+                        <div id="math-p1"></div> <span class="text-slate-300">+</span> <div id="math-p2"></div>
+                    </div>
+                    <div id="math-options" class="grid grid-cols-3 gap-3"></div>
+                </div>
+            </div>
+
+            <div id="view-coordinate" class="page-view hidden h-full flex flex-col items-center justify-center bg-emerald-50 p-5">
+                <button onclick="app.navTo('gamehub')" class="absolute top-5 left-5 text-emerald-600"><i class="fa-solid fa-arrow-left text-2xl"></i></button>
+                <div class="bg-white px-8 py-4 rounded-2xl shadow-lg mb-6 transform scale-110">
+                    <span id="coord-target" class="text-5xl font-black text-emerald-600 font-mono">e4</span>
+                </div>
+                <div id="coord-board" class="board-wrapper w-full max-w-[350px] border-emerald-700"></div>
+                <p class="mt-4 text-emerald-800 font-bold">Skor: <span id="coord-score">0</span></p>
+            </div>
+
+            <div id="view-memory" class="page-view hidden h-full flex flex-col items-center justify-center bg-purple-50 p-5">
+                <button onclick="app.navTo('gamehub')" class="absolute top-5 left-5 text-purple-600"><i class="fa-solid fa-arrow-left text-2xl"></i></button>
+                <h2 class="text-2xl font-black text-purple-800 mb-8">Hafıza Kartları</h2>
+                <div id="memory-grid" class="grid grid-cols-4 gap-3 w-full max-w-[350px]"></div>
+                <button onclick="memoryGame.init()" class="mt-8 bg-purple-600 text-white px-6 py-2 rounded-xl font-bold">Yeniden</button>
+            </div>
+
+            <div id="view-profile" class="page-view hidden p-5 pb-24">
+                <h2 class="text-2xl font-black text-slate-800 mb-6">Profilim</h2>
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 text-center mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-20 bg-indigo-600"></div>
+                    <div class="relative z-10 mt-6">
+                        <div class="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-3">
+                            <div id="profile-avatar-display" class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center overflow-hidden"></div>
+                        </div>
+                        <h2 id="profile-name" class="text-xl font-black text-slate-800">...</h2>
+                        <p id="profile-rank" class="text-indigo-600 font-bold text-xs uppercase">...</p>
+                    </div>
+                </div>
+                <h3 class="font-bold text-slate-700 mb-3 ml-1 text-sm">AVATAR SEÇ</h3>
+                <div id="avatar-grid" class="grid grid-cols-4 gap-3 mb-6"></div>
+                <button onclick="auth.logout()" class="w-full bg-red-50 text-red-500 py-3 rounded-xl font-bold text-sm">Çıkış Yap</button>
+            </div>
+
+            <div id="view-market" class="page-view hidden p-5 pb-24">
+                <h2 class="text-2xl font-black text-slate-800 mb-6">Mağaza</h2>
+                <div class="bg-slate-800 text-white p-6 rounded-3xl mb-6 shadow-xl relative overflow-hidden">
+                    <span class="text-slate-400 text-xs font-bold uppercase">BAKİYEN</span>
+                    <div class="text-3xl font-mono font-bold text-yellow-400 mt-1"><span id="market-gold-display">0</span></div>
+                    <i class="fa-solid fa-coins absolute -right-4 -bottom-4 text-8xl text-white/10 rotate-12"></i>
+                </div>
+                <div id="market-grid" class="grid grid-cols-2 gap-4"></div>
+            </div>
+
+            <div id="view-admin" class="page-view hidden p-5 h-full flex-col bg-slate-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-black text-slate-800 text-xl">Öğretmen Paneli</h2>
+                    <button onclick="app.navTo('home')" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-4 space-y-3">
+                    <h3 class="font-bold text-sm text-indigo-600">Duyuru / Haber</h3>
+                    <textarea id="admin-news-input" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs" rows="2" placeholder="Kayan yazı..."></textarea>
+                    <button onclick="admin.saveNews()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold w-full">Güncelle</button>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-4 space-y-3">
+                    <h3 class="font-bold text-sm text-green-600">Yeni Proje Ekle</h3>
+                    <input type="text" id="new-project-name" placeholder="Proje Adı" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">
+                    <input type="text" id="new-project-link" placeholder="Link" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">
+                    <button onclick="admin.addProject()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold w-full">Ekle</button>
+                </div>
+
+                <div class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-3 bg-slate-50 border-b text-xs font-bold text-slate-500">ÖĞRENCİ LİSTESİ</div>
+                    <div class="overflow-y-auto flex-1 p-2">
+                        <table class="w-full text-xs text-left">
+                            <thead class="text-slate-400 border-b"><tr><th class="p-2">İsim</th><th class="p-2">Altın</th><th class="p-2 text-right">Sil</th></tr></thead>
+                            <tbody id="admin-user-list"></tbody>
+                        </table>
+                    </div>
+                    <div class="p-3 border-t bg-slate-50">
+                        <button onclick="admin.clearData()" class="text-red-500 text-xs font-bold underline w-full">Tüm Verileri Sıfırla</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center fixed bottom-0 left-0 w-full z-30 pb-safe">
+            <button onclick="app.navTo('home')" class="nav-btn text-indigo-600 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-house text-xl"></i><span class="text-[10px] font-bold">Ana Sayfa</span>
+            </button>
+            <button onclick="app.navTo('gamehub')" class="nav-btn text-slate-400 hover:text-indigo-500 flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-gamepad text-xl"></i><span class="text-[10px] font-bold">Oyunlar</span>
+            </button>
+            <div class="w-12"></div> <button onclick="app.navTo('market')" class="nav-btn text-slate-400 hover:text-indigo-500 flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-shop text-xl"></i><span class="text-[10px] font-bold">Mağaza</span>
+            </button>
+            <button onclick="app.navTo('profile')" class="nav-btn text-slate-400 hover:text-indigo-500 flex flex-col items-center gap-1 transition">
+                <i class="fa-solid fa-user text-xl"></i><span class="text-[10px] font-bold">Profil</span>
+            </button>
+            
+            <button onclick="gameManager.startBot(5)" class="absolute left-1/2 bottom-5 transform -translate-x-1/2 w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-300 border-4 border-slate-50 btn-bounce">
+                <i class="fa-solid fa-chess-pawn"></i>
+            </button>
+        </nav>
 
     </div>
 
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl page-enter">
+            <div id="modal-icon" class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fa-solid fa-info"></i></div>
+            <h3 id="modal-title" class="text-xl font-black text-slate-800 mb-2">Bilgi</h3>
+            <p id="modal-msg" class="text-slate-600 mb-6 text-sm">...</p>
+            <button onclick="ui.closeModal()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Tamam</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <script>
+        // --- AYARLAR ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU",
+            authDomain: "shaped-totem-481514-c5.firebaseapp.com",
+            projectId: "shaped-totem-481514-c5",
+            storageBucket: "shaped-totem-481514-c5.firebasestorage.app",
+            messagingSenderId: "519295049418",
+            appId: "1:519295049418:web:7d04e18c4ea36bc088de33"
+        };
+
+        const dailyDb = [
+            {q:"Satranç tahtasında kaç kare vardır?", o:["32","64","100"], a:1},
+            {q:"Hangi taş 'L' şeklinde gider?", o:["Kale","Fil","At"], a:2},
+            {q:"Şah hangi taşı yiyemez?", o:["Vezir","Piyon","Korunan Taş"], a:2},
+            {q:"En güçlü taş hangisidir?", o:["Şah","Vezir","Kale"], a:1}
+        ];
+
+        // --- VERİTABANI YÖNETİCİSİ ---
+        const db = {
+            users: [], news: "Barış Satranç Akademisi'ne Hoş Geldiniz!", projects: [], currentUser: null, useFirebase: false, dbRef: null,
+            avatars: [{id:'default',icon:'<i class="fa-solid fa-user"></i>',type:'free'},{id:'king',icon:'<i class="fa-solid fa-chess-king"></i>',type:'market',cost:100},{id:'queen',icon:'<i class="fa-solid fa-chess-queen"></i>',type:'market',cost:100},{id:'dragon',icon:'<i class="fa-solid fa-dragon"></i>',type:'market',cost:500}],
+            daily: null,
+
+            init: async function() {
+                this.daily = dailyDb[new Date().getDate() % dailyDb.length];
+                try {
+                    if (firebase && firebase.apps.length === 0) {
+                        firebase.initializeApp(firebaseConfig);
+                        await firebase.auth().signInAnonymously();
+                        this.dbRef = firebase.firestore();
+                        this.useFirebase = true;
+                        
+                        this.dbRef.collection('baris_users').onSnapshot(snap => {
+                            this.users = snap.docs.map(doc => doc.data());
+                            if(document.getElementById('view-admin').style.display !== 'none') admin.render();
+                        });
+                        this.dbRef.collection('baris_config').doc('main').onSnapshot(doc => {
+                            if(doc.exists) { 
+                                const data = doc.data();
+                                if(data.news) { this.news = data.news; this.updateMarquee(); }
+                                if(data.projects) { this.projects = data.projects; app.renderProjects(); }
+                            }
+                        });
+                    }
+                } catch(e) { console.log("Offline Mode"); this.useFirebase = false; this.loadFromLocal(); }
+                
+                if (!this.useFirebase) { this.loadFromLocal(); }
+                this.updateMarquee(); app.renderProjects(); ui.renderDaily();
+            },
+            
+            loadFromLocal: function() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('barisChess_db'));
+                    if (saved) { this.users = saved.users || []; this.news = saved.news || this.news; this.projects = saved.projects || []; }
+                } catch(e) {}
+            },
+            
+            save: function() { 
+                if(!this.useFirebase) localStorage.setItem('barisChess_db', JSON.stringify({users: this.users, news: this.news, projects: this.projects})); 
+            },
+
+            addUser: function(user) {
+                const existing = this.users.find(u => u.name.toLowerCase() === user.name.toLowerCase());
+                if (this.useFirebase) {
+                    const userRef = this.dbRef.collection('baris_users').doc(user.name);
+                    if(existing) { this.currentUser = existing; userRef.update({lastLogin: new Date().toLocaleDateString()}); }
+                    else { user.inventory=['default']; user.avatar='default'; this.currentUser = user; userRef.set(user); }
+                } else {
+                    if(existing) { this.currentUser = existing; }
+                    else { user.inventory=['default']; user.avatar='default'; this.users.push(user); this.currentUser = user; }
+                    this.save();
+                }
+            },
+
+            updateGold: function(amount) {
+                if(this.currentUser) {
+                    this.currentUser.gold += amount;
+                    // Rütbe Güncelleme
+                    const g = this.currentUser.gold;
+                    if(g >= 200) this.currentUser.rank = "At"; 
+                    if(g >= 500) this.currentUser.rank = "Fil"; 
+                    if(g >= 1000) this.currentUser.rank = "Kale";
+                    
+                    if(this.useFirebase) this.dbRef.collection('baris_users').doc(this.currentUser.name).update(this.currentUser);
+                    else this.save();
+                    app.updateUI(); sfx.play('win');
+                }
+            },
+
+            addProject: function(name, link) { this.projects.push({name, link}); if(this.useFirebase) this.dbRef.collection('baris_config').doc('main').set({projects: this.projects}, {merge: true}); else this.save(); app.renderProjects(); },
+            setNews: function(text) { this.news = text; if(this.useFirebase) this.dbRef.collection('baris_config').doc('main').set({news: text}, {merge: true}); else this.save(); this.updateMarquee(); },
+            updateMarquee: function() { const el = document.getElementById('marquee-text'); if(el) el.innerHTML = this.news; }
+        };
+
+        // --- AUTH ---
+        const auth = {
+            login: function() {
+                const name = document.getElementById('login-name').value.trim();
+                if(name.length < 3) { ui.alert("Hata", "Lütfen geçerli bir isim gir.", "error"); return; }
+                db.addUser({ name: name, gold: 50, rank: 'Piyon' });
+                app.init();
+            },
+            logout: function() { db.currentUser = null; location.reload(); }
+        };
+
+        // --- UI ---
+        const ui = {
+            alert: function(title, msg, type) {
+                document.getElementById('modal-title').innerText = title; 
+                document.getElementById('modal-msg').innerText = msg;
+                document.getElementById('modal-icon').className = `w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 ${type==='error'?'bg-red-100 text-red-500':'bg-blue-100 text-blue-600'}`;
+                document.getElementById('custom-modal').classList.remove('hidden');
+            },
+            closeModal: function() { document.getElementById('custom-modal').classList.add('hidden'); },
+            renderDaily: function() {
+                if(!db.daily) return;
+                document.getElementById('daily-q-text').innerText = db.daily.q;
+                const optDiv = document.getElementById('daily-q-options'); optDiv.innerHTML = '';
+                db.daily.o.forEach((opt, idx) => {
+                    const b = document.createElement('button');
+                    b.className = "flex-1 bg-slate-50 py-2 rounded-lg text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-100";
+                    b.innerText = opt;
+                    b.onclick = () => {
+                        if(idx === db.daily.a) { b.className = "flex-1 bg-green-500 text-white py-2 rounded-lg text-xs font-bold"; db.updateGold(10); confetti(); }
+                        else { b.className = "flex-1 bg-red-500 text-white py-2 rounded-lg text-xs font-bold"; }
+                    };
+                    optDiv.appendChild(b);
+                });
+            },
+            renderAvatar: function(id, containerId) {
+                const ava = db.avatars.find(a => a.id === id) || db.avatars[0];
+                const el = document.getElementById(containerId);
+                if(el) el.innerHTML = ava.icon;
+            }
+        };
+
+        // --- ANA UYGULAMA ---
+        const app = {
+            init: function() {
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('flex');
+                this.updateUI();
+                this.navTo('home');
+                // Oyunları Başlat
+                gameManager.init();
+                lessons.init();
+                // Admin tablosu
+                if(db.currentUser.name.toLowerCase() === 'baris') document.getElementById('view-admin').classList.remove('hidden');
+            },
+            updateUI: function() {
+                if(!db.currentUser) return;
+                document.getElementById('gold-display').innerText = db.currentUser.gold;
+                document.getElementById('market-gold-display').innerText = db.currentUser.gold;
+                document.getElementById('welcome-name').innerText = db.currentUser.name.split(' ')[0];
+                document.getElementById('home-rank').innerText = db.currentUser.rank;
+                document.getElementById('profile-name').innerText = db.currentUser.name;
+                document.getElementById('profile-rank').innerText = db.currentUser.rank;
+                ui.renderAvatar(db.currentUser.avatar, 'header-avatar');
+                ui.renderAvatar(db.currentUser.avatar, 'profile-avatar-display');
+            },
+            navTo: function(viewId) {
+                document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById('view-' + viewId);
+                target.classList.remove('hidden');
+                
+                // Aktif Nav Butonunu Boya
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-indigo-600', 'text-slate-400'));
+                // Basit mantık: nav butonlarını sırayla kontrol et
+                if(viewId==='home') document.querySelectorAll('.nav-btn')[0].classList.replace('text-slate-400','text-indigo-600');
+                if(viewId==='gamehub') document.querySelectorAll('.nav-btn')[1].classList.replace('text-slate-400','text-indigo-600');
+                if(viewId==='market') document.querySelectorAll('.nav-btn')[2].classList.replace('text-slate-400','text-indigo-600');
+                if(viewId==='profile') document.querySelectorAll('.nav-btn')[3].classList.replace('text-slate-400','text-indigo-600');
+
+                // Özel Başlatmalar
+                if(viewId === 'coordinate') { coordGame.init(); setTimeout(() => coordGame.board.resize(), 100); }
+                if(viewId === 'market') market.render();
+                if(viewId === 'profile') market.renderAvatarSelection();
+                if(viewId === 'admin') admin.render();
+            },
+            renderProjects: function() {
+                const c = document.getElementById('projects-grid');
+                // Sadece dinamik olanları temizle (sabitleri koru)
+                const dynamics = c.querySelectorAll('.dynamic-p'); dynamics.forEach(e=>e.remove());
+                db.projects.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.className = "dynamic-p bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl shadow-md border border-indigo-400 flex flex-col items-center gap-2 hover:shadow-lg text-white btn-bounce relative overflow-hidden col-span-2";
+                    btn.onclick = () => window.open(p.link, '_blank');
+                    btn.innerHTML = `<i class="fa-solid fa-rocket text-3xl text-yellow-300"></i><span class="font-bold text-sm uppercase">${p.name}</span><div class="absolute top-0 right-0 bg-white/20 p-1 rounded-bl-lg"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></div>`;
+                    c.appendChild(btn);
+                });
+            }
+        };
+
+        // --- OYUN YÖNETİCİSİ (SATRANÇ) ---
+        const gameManager = { 
+            board: null, game: new Chess(), currentMode: null,
+            init: function() { 
+                this.board = Chessboard('arena-board', { draggable: true, position: 'start', onDragStart: this.onDragStart, onDrop: this.onDrop, pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png' }); 
+            },
+            reset: function() { this.game.reset(); this.board.start(); },
+            startBot: function(lvl) { this.currentMode='bot'; this.reset(); app.navTo('arena'); document.getElementById('opponent-name').innerText="Bot (Seviye "+lvl+")"; },
+            startPvP: function() { this.currentMode='pvp'; this.reset(); app.navTo('arena'); document.getElementById('opponent-name').innerText="Arkadaşın"; },
+            onDragStart: (s, p) => { if(gameManager.game.game_over() || (gameManager.game.turn() === 'w' && p.search(/^b/)!==-1) || (gameManager.game.turn() === 'b' && p.search(/^w/)!==-1)) return false; },
+            onDrop: (s, t) => { 
+                const m = gameManager.game.move({from:s, to:t, promotion:'q'}); 
+                if(m===null) return 'snapback'; 
+                sfx.play(m.flags.includes('c') ? 'capture' : 'move');
+                if(gameManager.currentMode==='bot' && !gameManager.game.game_over()) { 
+                    setTimeout(()=> { 
+                        const moves = gameManager.game.moves(); 
+                        gameManager.game.move(moves[Math.floor(Math.random() * moves.length)]); 
+                        gameManager.board.position(gameManager.game.fen()); 
+                        sfx.play('move'); 
+                    }, 500); 
+                } 
+            },
+            undo: function() { this.game.undo(); if(this.currentMode==='bot') this.game.undo(); this.board.position(this.game.fen()); }
+        };
+
+        // --- DERSLER ---
+        const lessons = {
+            moves:[], game:new Chess(), board:null, step:-1,
+            init:function(){this.board=Chessboard('lesson-board',{position:'start',draggable:false, pieceTheme:'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'});},
+            load:function(id){
+                this.step=-1; this.game.reset();
+                if(id==='l_kale') { this.game.load("8/8/8/8/8/8/8/R3K3 w - - 0 1"); this.moves=[{m:'Ra8',t:'Kale dümdüz gider.'},{m:'Ke7',t:'Siyah oynadı.'}]; }
+                // Diğer dersler buraya eklenebilir (kısaltıldı)
+                else { this.game.load("8/8/8/8/8/8/8/4K3 w - - 0 1"); this.moves=[{m:'Ke2',t:'Şah bir kare gider.'}]; }
+                this.board.position(this.game.fen()); document.getElementById('lesson-text').innerText="İlerlemek için oka bas.";
+            },
+            next:function(){ if(this.step<this.moves.length-1){ this.step++; this.game.move(this.moves[this.step].m); this.board.position(this.game.fen()); document.getElementById('lesson-text').innerText=this.moves[this.step].t; sfx.play('move'); } },
+            prev:function(){ if(this.step>=0){ this.game.undo(); this.board.position(this.game.fen()); this.step--; } }
+        };
+
+        // --- MİNİ OYUNLAR (Robot, Koordinat, Hafıza) ---
+        const robotGame = {
+            pos: {x:0, y:0}, cmds: [],
+            add: function(c) { this.cmds.push(c); document.getElementById('robo-cmds').innerHTML += `<span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold mr-1">${c}</span>`; },
+            run: async function() { 
+                for(let c of this.cmds) {
+                    await new Promise(r=>setTimeout(r,500));
+                    if(c==='İleri' && this.pos.y<4) this.pos.y++; else if(c==='Geri' && this.pos.y>0) this.pos.y--; else if(c==='Sağ' && this.pos.x<4) this.pos.x++; else if(c==='Sol' && this.pos.x>0) this.pos.x--;
+                    this.draw();
+                }
+                if(this.pos.x===4 && this.pos.y===4) { db.updateGold(20); ui.alert("Başarılı!","Robot hedefe ulaştı.","success"); }
+                this.pos={x:0,y:0}; this.cmds=[]; document.getElementById('robo-cmds').innerHTML=''; this.draw();
+            },
+            draw: function() {
+                const b = document.getElementById('robo-board'); b.innerHTML='';
+                for(let y=0; y<5; y++) { for(let x=0; x<5; x++) {
+                    const c = document.createElement('div'); c.className='robot-cell';
+                    if(x===this.pos.x && y===this.pos.y) { c.classList.add('robot-active'); c.innerHTML='<i class="fa-solid fa-robot"></i>'; }
+                    else if(x===4 && y===4) { c.innerHTML='<i class="fa-solid fa-flag-checkered text-red-500"></i>'; }
+                    b.appendChild(c);
+                }}
+            }
+        };
+
+        const coordGame = {
+            board:null, target:'', score:0,
+            init:function(){ this.score=0; this.board=Chessboard('coord-board',{position:'empty', showNotation:false, draggable:false}); this.next(); 
+                setTimeout(() => { $('#coord-board .square-55d63').css('cursor','pointer').on('click', function(){ coordGame.check($(this).attr('data-square')) }); }, 500); 
+            },
+            next:function(){ const f=['a','b','c','d','e','f','g','h'], r=['1','2','3','4','5','6','7','8']; this.target=f[Math.floor(Math.random()*8)]+r[Math.floor(Math.random()*8)]; document.getElementById('coord-target').innerText=this.target; },
+            check:function(sq){ if(sq===this.target){ this.score++; document.getElementById('coord-score').innerText=this.score; sfx.play('win'); this.next(); } else { sfx.play('error'); } }
+        };
+
+        const memoryGame = {
+            init:function() {
+                const grid=document.getElementById('memory-grid'); grid.innerHTML='';
+                const icons=['wP','wN','wB','wR','wQ','wK','bP','bK'];
+                let items=[...icons, ...icons].sort(()=>0.5-Math.random());
+                items.forEach(i => {
+                    const d=document.createElement('div'); d.className="bg-indigo-600 aspect-square rounded-xl flex items-center justify-center text-white text-2xl cursor-pointer shadow-md btn-bounce";
+                    d.innerHTML='<i class="fa-solid fa-chess"></i>';
+                    d.onclick = () => { d.classList.replace('bg-indigo-600','bg-white'); d.innerHTML=`<img src="https://chessboardjs.com/img/chesspieces/wikipedia/${i}.png" class="w-10">`; };
+                    grid.appendChild(d);
+                });
+            }
+        };
+
+        const mathGame = {
+            init: function() {
+                const v={p:1,n:3,b:3,r:5,q:9}, i={p:'wP',n:'wN',b:'wB',r:'wR',q:'wQ'}, k=['p','n','b','r','q'];
+                const p1=k[Math.floor(Math.random()*5)], p2=k[Math.floor(Math.random()*5)], ans=v[p1]+v[p2];
+                document.getElementById('math-p1').innerHTML=`<img src="https://chessboardjs.com/img/chesspieces/wikipedia/${i[p1]}.png" class="h-12 inline">`;
+                document.getElementById('math-p2').innerHTML=`<img src="https://chessboardjs.com/img/chesspieces/wikipedia/${i[p2]}.png" class="h-12 inline">`;
+                const opts=document.getElementById('math-options'); opts.innerHTML='';
+                [ans, ans+1, ans-1].sort(()=>0.5-Math.random()).forEach(o=>{
+                    opts.innerHTML+=`<button onclick="if(${o}===${ans}){db.updateGold(5);mathGame.init();}else{ui.alert('Hata','Yanlış cevap','error')}" class="bg-orange-100 py-3 rounded-xl font-bold text-orange-700 hover:bg-orange-200 transition">${o}</button>`;
+                });
+            }
+        };
+
+        // --- MAĞAZA ---
+        const market = {
+            render: function() {
+                const g = document.getElementById('market-grid'); g.innerHTML='';
+                db.avatars.filter(a=>a.type==='market').forEach(a=>{
+                    const owned = db.currentUser.inventory.includes(a.id);
+                    g.innerHTML += `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-center"><div class="text-4xl mb-2 text-indigo-600">${a.icon}</div><span class="block font-bold text-slate-700 capitalize mb-2">${a.id}</span>${owned ? '<span class="text-xs text-green-500 font-bold">Alındı</span>' : `<button onclick="market.buy('${a.id}',${a.cost})" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded text-xs font-bold w-full">Al (${a.cost})</button>`}</div>`;
+                });
+            },
+            buy: function(id, cost) {
+                if(db.currentUser.gold >= cost) { db.updateGold(-cost); db.currentUser.inventory.push(id); db.save(); this.render(); ui.alert("Başarılı", "Avatar alındı!", "success"); }
+                else ui.alert("Yetersiz Bakiye", "Daha fazla taş topla!", "error");
+            },
+            renderAvatarSelection: function() {
+                const g = document.getElementById('avatar-grid'); g.innerHTML='';
+                db.avatars.forEach(a => {
+                    const owned = db.currentUser.inventory.includes(a.id);
+                    g.innerHTML += `<div onclick="${owned?`db.currentUser.avatar='${a.id}';db.save();app.updateUI();app.navTo('profile')`:''}" class="aspect-square rounded-xl flex items-center justify-center text-2xl border-2 ${db.currentUser.avatar===a.id?'border-indigo-500 bg-indigo-50':'border-slate-100 bg-white'} ${!owned?'opacity-50 grayscale':''}"> ${a.icon} </div>`;
+                });
+            }
+        };
+
+        // --- ADMİN ---
+        const admin = {
+            showLogin: function() {
+                const p = prompt("Öğretmen Şifresi:");
+                if(p === "1453") { 
+                    document.getElementById('view-login').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('app-container').classList.add('flex');
+                    app.navTo('admin');
+                }
+            },
+            render: function() {
+                const l = document.getElementById('admin-user-list'); l.innerHTML='';
+                db.users.forEach(u => {
+                    l.innerHTML += `<tr class="border-b"><td class="p-2 font-bold">${u.name}</td><td class="p-2 text-yellow-600">${u.gold}</td><td class="p-2 text-right"><button onclick="admin.del('${u.name}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+                });
+                document.getElementById('admin-news-input').value = db.news;
+            },
+            saveNews: function() { db.setNews(document.getElementById('admin-news-input').value); },
+            addProject: function() { db.addProject(document.getElementById('new-project-name').value, document.getElementById('new-project-link').value); },
+            del: function(n) { if(confirm("Silinsin mi?")) { db.users = db.users.filter(u=>u.name!==n); db.save(); this.render(); } },
+            clearData: function() { if(confirm("Her şey silinsin mi?")) { localStorage.clear(); location.reload(); } }
+        };
+
+        // --- SES EFEKTLERİ ---
+        const sfx = {
+            ctx: null,
+            play: function(type) {
+                try {
+                    if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                    osc.connect(g); g.connect(this.ctx.destination);
+                    if(type==='move') { osc.frequency.value=200; g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime+0.1); osc.start(); osc.stop(this.ctx.currentTime+0.1); }
+                    if(type==='win') { osc.frequency.value=600; osc.type='square'; g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime+0.5); osc.start(); osc.stop(this.ctx.currentTime+0.5); }
+                    if(type==='error') { osc.frequency.value=100; osc.type='sawtooth'; g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime+0.3); osc.start(); osc.stop(this.ctx.currentTime+0.3); }
+                } catch(e){}
+            }
+        };
+
+        window.onload = () => db.init();
+    </script>
 </body>
 </html>
