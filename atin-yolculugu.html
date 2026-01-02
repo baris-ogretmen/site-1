@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atın Yolculuğu | Barış Satranç</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+        body { font-family: 'Outfit', sans-serif; background: #e0e7ff; user-select: none; }
+        .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 2rem; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative; }
+        .cell.white { background-color: #f8fafc; color: #1e3a8a; }
+        .cell.black { background-color: #bfdbfe; color: #1e3a8a; }
+        .cell:hover { transform: scale(0.95); }
+        .visited { background-color: #4ade80 !important; color: white !important; cursor: default; pointer-events: none; }
+        .visited::after { content: '✔'; font-size: 1rem; opacity: 0.5; }
+        .current { background-color: #4f46e5 !important; color: white !important; transform: scale(1.1); z-index: 10; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.4); border: 2px solid white; }
+        .possible { background-color: #fbbf24 !important; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
+    </style>
+</head>
+<body class="flex flex-col h-screen items-center justify-center p-4">
+
+    <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md text-center border-4 border-indigo-100">
+        <div class="flex justify-between items-center mb-6">
+            <button onclick="history.back()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-arrow-left"></i></button>
+            <h1 class="text-2xl font-black text-indigo-900">ATIN YOLCULUĞU</h1>
+            <div class="w-10"></div>
+        </div>
+
+        <div class="bg-indigo-50 p-4 rounded-xl mb-6 text-sm text-indigo-800 font-medium">
+            <i class="fa-solid fa-chess-knight mr-2"></i>Hedef: Tüm karelere <b>tek sefer</b> bas!
+        </div>
+
+        <div id="board" class="grid grid-cols-5 gap-2 bg-slate-200 p-2 rounded-xl mb-6 shadow-inner">
+            </div>
+
+        <div class="flex justify-between items-center">
+            <div class="text-left">
+                <span class="text-xs font-bold text-slate-400 uppercase">SKOR</span>
+                <div class="text-3xl font-black text-indigo-600" id="score">0</div>
+            </div>
+            <button onclick="game.reset()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-300 active:scale-95 transition">
+                YENİDEN <i class="fa-solid fa-rotate-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const game = {
+            size: 5, pos: null, visited: [], score: 0,
+            init: function() {
+                this.reset();
+            },
+            draw: function() {
+                const b = document.getElementById('board'); b.innerHTML = '';
+                for(let y=0; y<this.size; y++) {
+                    for(let x=0; x<this.size; x++) {
+                        const idx = y * this.size + x;
+                        const cell = document.createElement('div');
+                        cell.className = `cell ${(x+y)%2===0 ? 'white':'black'}`;
+                        
+                        // Durumlar
+                        if(this.pos && this.pos.x === x && this.pos.y === y) {
+                            cell.className += ' current';
+                            cell.innerHTML = '<i class="fa-solid fa-chess-knight"></i>';
+                        } else if(this.visited.includes(idx)) {
+                            cell.className += ' visited';
+                        } else if(this.isValidMove(x, y)) {
+                            cell.className += ' possible';
+                            cell.onclick = () => this.move(x, y);
+                        } else {
+                            // Geçersiz karelere tıklanmaz
+                            cell.style.opacity = "0.5";
+                            cell.style.cursor = "default";
+                        }
+                        b.appendChild(cell);
+                    }
+                }
+                document.getElementById('score').innerText = this.score;
+            },
+            isValidMove: function(tx, ty) {
+                if(!this.pos) return true; // İlk hamle serbest
+                const dx = Math.abs(tx - this.pos.x);
+                const dy = Math.abs(ty - this.pos.y);
+                return (dx === 2 && dy === 1) || (dx === 1 && dy === 2);
+            },
+            move: function(x, y) {
+                if(this.pos) {
+                    const idx = this.pos.y * this.size + this.pos.x;
+                    this.visited.push(idx);
+                    this.score++;
+                }
+                this.pos = {x, y};
+                
+                // Oyun Bitti mi?
+                if(this.visited.length === (this.size*this.size) - 1) {
+                    alert("TEBRİKLER! İMKANSIZI BAŞARDIN! 🏆");
+                } else if(!this.canMove()) {
+                    // Kayıp kontrolü (biraz gecikmeli)
+                    setTimeout(() => {
+                        if(!confirm("Gidecek yer kalmadı! Skorun: " + this.score + ". Tekrar?")) return;
+                        this.reset();
+                    }, 300);
+                }
+                this.draw();
+            },
+            canMove: function() {
+                // Gidebilecek en az 1 kare var mı?
+                const moves = [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
+                for(let m of moves) {
+                    const nx = this.pos.x + m[0];
+                    const ny = this.pos.y + m[1];
+                    if(nx >= 0 && nx < this.size && ny >= 0 && ny < this.size) {
+                        const idx = ny * this.size + nx;
+                        if(!this.visited.includes(idx)) return true;
+                    }
+                }
+                return false;
+            },
+            reset: function() {
+                this.pos = null; this.visited = []; this.score = 0;
+                this.draw();
+                // İlk yerleşimi kullanıcı yapsın diye pos null başlıyor,
+                // ama ipucu olarak tüm tahtayı 'possible' yapalım:
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach((c, i) => {
+                    c.classList.add('possible');
+                    const x = i % 5; const y = Math.floor(i / 5);
+                    c.onclick = () => game.move(x, y);
+                });
+            }
+        };
+        game.init();
+    </script>
+</body>
+</html>
