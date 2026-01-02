@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barış İlkan | Dijital Eğitim Üssü</title>
     
+    <!-- Firebase SDK (v8.10.1 - İstemci Tarafı) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="firebase-config.js"></script>
 
+    <!-- Fontlar ve İkonlar -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Kütüphaneler (Güncel ve Kararlı Sürümler) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.js"></script>
     
     <style>
         :root {
@@ -19,24 +24,48 @@
             --ozel-egitim: #0d9488;
             --arkaplan: #f8fafc;
             --koyu: #1e293b;
+            --yazi-arkaplan: #fffbeb;
         }
 
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--arkaplan); color: var(--koyu); padding-bottom: 90px; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--arkaplan); color: var(--koyu); padding-bottom: 90px; overflow-x: hidden; }
+
+        /* PAYLAŞ BUTONU ALANI */
+        .share-bar {
+            background: #ffffff;
+            padding: 10px;
+            text-align: right;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+            z-index: 60;
+        }
+        .share-btn-top {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .share-btn-top:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
 
         /* KAYAN YAZI */
-        .news-ticker { background: var(--koyu); color: var(--vurgu); padding: 10px 0; font-size: 0.9rem; overflow: hidden; }
+        .news-ticker { background: var(--koyu); color: var(--vurgu); padding: 10px 0; font-size: 0.9rem; overflow: hidden; position: relative; z-index: 50; }
         .ticker-content { display: inline-block; animation: ticker 30s linear infinite; white-space: nowrap; }
         @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
         /* HEADER */
         header { 
             background: linear-gradient(-45deg, #1e3a8a, #3b82f6, #2563eb, #2dd4bf);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            padding: 3rem 1rem 5rem; text-align: center; color: white; 
+            background-size: 400% 400%; animation: gradientBG 15s ease infinite;
+            padding: 3rem 1rem 6rem; text-align: center; color: white; 
             border-bottom-left-radius: 50px; border-bottom-right-radius: 50px;
-            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
-            position: relative;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3); position: relative;
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
@@ -44,6 +73,7 @@
             width: 150px; height: 150px; border-radius: 50%; border: 6px solid rgba(255,255,255,0.3); 
             object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.2); display: block; margin: 0 auto 15px;
             backdrop-filter: blur(5px);
+            background-color: #fff;
         }
 
         .hero-title { font-size: 2rem; font-weight: 900; letter-spacing: 1px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
@@ -53,100 +83,192 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2); line-height: 1.5;
         }
 
-        .container { max-width: 1100px; margin: -40px auto 0; padding: 0 15px; position: relative; z-index: 10; }
+        .container { max-width: 1100px; margin: -50px auto 0; padding: 0 15px; position: relative; z-index: 10; }
 
-        /* HAKKIMDA KARTI */
+        /* HERO ETKİLEŞİM */
+        .hero-interaction { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
+        .hero-card {
+            background: white; border-radius: 20px; padding: 20px; flex: 1; min-width: 300px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-bottom: 5px solid var(--vurgu);
+            display: flex; flex-direction: column; justify-content: center; position: relative;
+        }
+        .quote-icon { font-size: 2rem; color: #cbd5e1; position: absolute; top: 10px; left: 10px; }
+        .dynamic-quote { font-style: italic; font-size: 1.1rem; color: #334155; text-align: center; margin-top: 15px; }
+        
+        .wheel-btn {
+            background: linear-gradient(45deg, #ec4899, #8b5cf6); color: white; border: none; padding: 12px; 
+            border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 5px 15px rgba(236, 72, 153, 0.3);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        
+        /* ARAMA MOTORU STİLİ */
+        .search-box { position: relative; width: 100%; }
+        .search-input { 
+            width: 100%; padding: 12px 15px 12px 40px; border: 2px solid #e2e8f0; border-radius: 30px; 
+            outline: none; transition: 0.3s; font-family: inherit; font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .search-input:focus { border-color: var(--ana-renk); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .search-hint { font-size: 0.75rem; color: #64748b; margin-top: 5px; text-align: center; }
+
+        /* BİYOGRAFİ */
         .modern-bio-card {
             background: white; border-radius: 25px; padding: 35px; box-shadow: 0 15px 40px rgba(0,0,0,0.08);
-            margin-top: 30px; border: 2px solid white; position: relative; overflow: hidden; text-align: center;
+            margin-top: 0; border: 2px solid white; position: relative; overflow: hidden; text-align: center;
         }
         .modern-bio-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: var(--vurgu); }
-        .bio-title {
-            font-size: 1.4rem; margin: 0 0 25px 0; font-weight: 900; background: var(--vurgu); color: #000;
-            padding: 10px 30px; border-radius: 50px; display: inline-block; box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
-        }
+        .bio-title { font-size: 1.4rem; margin: 0 0 25px 0; font-weight: 900; background: var(--vurgu); color: #000; padding: 10px 30px; border-radius: 50px; display: inline-block; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); }
         .bio-text { color: #475569; font-size: 1.05rem; line-height: 1.8; text-align: justify; }
         .bio-highlight { color: #000; font-weight: 700; background: linear-gradient(120deg, transparent 0%, transparent 10%, #fffacd 10%, #FFD700 100%); padding: 2px 5px; border-radius: 4px; }
 
         /* SERTİFİKALAR */
-        .cert-header { font-size: 1.2rem; margin: 0 0 20px 0; font-weight: 900; background: var(--vurgu); color: #000; padding: 8px 25px; border-radius: 50px; display: inline-block; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); text-transform: uppercase; }
-        .cert-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; text-align: left; }
+        .cert-header { font-size: 1.2rem; margin: 20px 0; font-weight: 900; background: var(--vurgu); color: #000; padding: 8px 25px; border-radius: 50px; display: inline-block; box-shadow: 3px 3px 0px rgba(0,0,0,0.1); text-transform: uppercase; }
+        .cert-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 10px; text-align: left; }
         .cert-card { background: #ffffff; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); display: flex; align-items: center; border-left: 5px solid var(--vurgu); transition: transform 0.3s; }
         .cert-card:hover { transform: translateX(5px); background-color: #fffef0; }
         .cert-icon { font-size: 1.5rem; margin-right: 15px; width: 40px; text-align: center; color: #d97706; }
         .cert-title { font-weight: 600; color: #334155; font-size: 0.95rem; }
         .special-cert { background: linear-gradient(135deg, #fff 0%, #fff7ed 100%); border: 1px solid var(--vurgu); }
 
-        .quote-card { background: white; margin-bottom: 30px; padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-bottom: 5px solid var(--vurgu); }
-        
-        /* BÖLÜM STİLLERİ */
-        .section-container { text-align: center; margin: 60px 0 30px; }
+        /* GENEL BÖLÜMLER */
+        .section-container { text-align: center; margin: 50px 0 30px; }
         .section-title { background: var(--vurgu); color: #000; font-weight: 900; font-size: 1.1rem; padding: 10px 30px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 5px 5px 0px rgba(0,0,0,0.8); }
         .section-title.ozel { background: var(--ozel-egitim); color: white; box-shadow: 5px 5px 0px #0f172a; } 
-        
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        /* TIKLANABİLİR KARTLAR */
+        
+        /* KART STİLLERİ */
         .card { display: block; background: white; border-radius: 20px; padding: 25px; text-align: center; text-decoration: none; color: inherit; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.4s; border: 1px solid #f1f5f9; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(37, 99, 235, 0.15); border-color: var(--ana-renk); }
         .icon-box { width: 70px; height: 70px; background: #eff6ff; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2rem; color: var(--ana-renk); transition: 0.3s; transform: rotate(-5deg); }
-        
+
         /* KATEGORİ KARTLARI */
         .cat-card { text-align: left; display: flex; align-items: center; gap: 15px; padding: 20px; border-left: 5px solid transparent; }
         .cat-icon { font-size: 1.8rem; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 15px; background: #f1f5f9; color: #64748b; }
         .cat-info h3 { margin: 0; font-size: 1.1rem; color: #1e293b; } .cat-info p { margin: 5px 0 0; font-size: 0.85rem; color: #64748b; }
         
-        /* ÖZEL EĞİTİM & AKADEMİK */
-        .sped-card { border: 1px solid #ccfbf1; background: #f0fdfa; } .sped-card:hover { border-color: var(--ozel-egitim); box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2); } .sped-icon { color: var(--ozel-egitim); background: #ccfbf1; }
+        /* AKADEMİK & ÖZEL EĞİTİM */
         .acad-card { border-top: 5px solid #ccc; padding: 30px 20px; } .acad-icon { font-size: 2.5rem; margin-bottom: 15px; display: inline-block; } .acad-title { font-weight: 800; font-size: 1.2rem; margin-bottom: 5px; }
-        
+        .sped-card { border: 1px solid #ccfbf1; background: #f0fdfa; } .sped-card:hover { border-color: var(--ozel-egitim); box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2); } .sped-icon { color: var(--ozel-egitim); background: #ccfbf1; }
+
         /* KİTAP */
         .book-card { background: #fff; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: left; display: flex; text-decoration: none; color: inherit; border: 1px solid #e2e8f0; transition: 0.3s; } .book-card:hover { transform: scale(1.02); }
         .book-cover { width: 100px; background: #ccc; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem; } .book-info { padding: 15px; flex: 1; } .book-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #1e293b; } .book-desc { font-size: 0.9rem; color: #555; line-height: 1.4; }
-        
-        /* LİSTELER */
+
+        /* TAVSİYE KARTLARI */
+        .social-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .social-card { 
+            position: relative; height: 150px; border-radius: 15px; overflow: hidden; 
+            display: flex; align-items: flex-end; padding: 15px; color: white; text-decoration: none; 
+            background-size: cover; background-position: center; transition: 0.3s;
+        }
+        .social-card:hover { transform: scale(1.03); }
+        .social-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
+        .social-card-content { position: relative; z-index: 2; }
+        .social-icon { font-size: 2rem; margin-bottom: 5px; }
+        .sc-insta { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+        .sc-yt { background: #FF0000; }
+        .sc-book { background: #3b82f6; }
+
+        /* EBEVEYN LİSTE */
         .link-list { list-style: none; padding: 0; }
         .link-item { background: white; margin-bottom: 10px; padding: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; border-left: 5px solid #FFD700; transition: transform 0.2s; position: relative; overflow: hidden; }
         .link-item:active { transform: scale(0.98); background: #fefce8; }
+
+        /* YÜZEN ASİSTANLAR */
+        .floating-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end; }
+        .float-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; border: none; }
+        .wa-btn { background: #25D366; animation: pulse 2s infinite; }
         
-        .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; z-index: 1000; cursor: pointer; animation: pulse 2s infinite; }
-        
+        /* ROBOT BUTONU (RESİMLİ) */
+        .robot-btn { 
+            /* Placeholder Robot Resmi */
+            background-image: url('https://placehold.co/100x100/2563eb/white?text=AI');
+            background-size: cover; 
+            background-position: center;
+            border: 2px solid white;
+            animation: bounce 3s infinite; 
+        }
+        .up-btn { background: #475569; font-size: 1.5rem; width: 50px; height: 50px; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
         /* MODALLAR */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .report-modal { background: #fff; padding: 25px; border-radius: 20px; width: 95%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; color: #333; }
         
-        /* MAKALE İÇERİĞİ */
-        .article-content { line-height: 1.7; color: #333; font-size: 1.05rem; }
-        .article-content strong, .article-content b { color: #000; font-weight: 800; }
-        .article-content p { margin-bottom: 15px; }
-        .highlight-box { background:#fffbeb; border-left: 5px solid #FFD700; padding: 15px; margin: 20px 0; font-weight: bold; font-size: 1.1rem; color: #b45309; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        /* YAZI/MAKALE OKUMA STİLİ (GÜNCELLENDİ) */
+        .article-modal-content { 
+            font-family: 'Segoe UI', serif; 
+            line-height: 1.8; 
+            font-size: 1.15rem; 
+            color: #1f2937; 
+            background-color: #fffbeb; 
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #d97706; 
+        }
+        .article-modal-content h1, .article-modal-content h2 { color: #92400e; margin-top: 20px; }
+        .article-modal-content p { margin-bottom: 15px; }
+        .article-modal-content strong { color: #b45309; }
+
+        /* ROBOT CHAT MODAL */
+        #chat-modal { display: none; position: fixed; bottom: 90px; right: 20px; width: 350px; height: 500px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 1001; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; }
+        @media (max-width: 400px) { #chat-modal { width: 90%; right: 5%; bottom: 85px; height: 60vh; } }
+        .chat-header { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+        .chat-input-area { padding: 10px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; background: white; }
+        .chat-input { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 20px; outline: none; }
+        .send-btn { background: #6366f1; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
+        .msg-bot { background: #e0e7ff; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-user { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        #wheel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .wheel-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 90%; animation: popIn 0.5s; position: relative; }
+        .wheel-result { font-size: 1.5rem; font-weight: bold; color: var(--ana-renk); margin: 20px 0; }
+        .wheel-go-btn { background: var(--vurgu); color: black; border: none; padding: 10px 30px; border-radius: 20px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
     </style>
 </head>
 <body>
+
+    <!-- YENİ PAYLAŞMA ALANI -->
+    <div class="share-bar">
+        <button class="share-btn-top" onclick="shareSite()">
+            <i class="fas fa-share-alt"></i> Siteyi Paylaş
+        </button>
+    </div>
 
     <div class="news-ticker">
         <div class="ticker-content" id="duyuru-alani">Barış İlkan Dijital Eğitim Platformuna Hoş Geldiniz...</div>
     </div>
 
     <header>
-        <img src="profil.jpg.jpeg" class="profile-img" alt="Barış İlkan">
+        <!-- Profil Resmi (Placeholder kullanıldı) -->
+        <img src="https://placehold.co/150x150/png?text=B%C4%B0" class="profile-img" alt="Barış İlkan">
         <h1 class="hero-title">BARIŞ İLKAN</h1>
         <div class="slogan">EĞİTİM KOÇU | EĞİTİM TEKNOLOĞU | DİJİTAL İÇERİK ÜRETİCİSİ</div>
     </header>
 
     <div class="container">
         
-        <div class="quote-card">
-            <div style="font-style:italic; font-size:1.2rem; color:#334155;">"İlim Çin'de de olsa gidip alınız. Çünkü ilim öğrenmek her Müslümana farzdır."</div>
-            <div style="font-weight:bold; margin-top:10px; color:#2563eb;">- Hz. Muhammed (s.a.v)</div>
+        <div class="hero-interaction">
+            <div class="hero-card">
+                <i class="fas fa-quote-left quote-icon"></i>
+                <div class="dynamic-quote" id="daily-quote">"İlim Çin'de de olsa gidip alınız. Çünkü ilim öğrenmek her Müslümana farzdır."</div>
+                <div style="font-weight:bold; margin-top:10px; color:#2563eb; text-align:center;" id="quote-author">- Hz. Muhammed (s.a.v)</div>
+            </div>
+            <div class="hero-card">
+                <button class="wheel-btn" onclick="spinWheel()"><i class="fas fa-dharmachakra"></i> GÜNÜN ŞANSI ÇEVİR</button>
+                <div class="search-box">
+                    <i class="fas fa-magnifying-glass search-icon"></i>
+                    <input type="text" class="search-input" id="searchBar" placeholder="Ara veya Robot'a sor..." onkeyup="handleSearch(event)">
+                    <div class="search-hint">💡 Bir soru yazıp <b>ENTER</b>'a basarsan Robot cevaplar!</div>
+                </div>
+            </div>
         </div>
 
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="haftanin-oyunu.html" style="background: linear-gradient(45deg, #ff00cc, #333399); color: white; padding: 20px; border-radius: 15px; text-decoration: none; display: block; font-weight: bold; font-size: 1.2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: 0.3s;">
-                <i class="fas fa-gamepad" style="color: #FFD700; font-size: 1.5rem; margin-right: 10px;"></i> 
-                HAFTANIN OYUNUNU GÖR
-                <div style="font-size: 0.9rem; font-weight: normal; margin-top: 5px; opacity: 0.8;">Barış Hoca'nın bu haftaki seçimi için tıkla!</div>
-            </a>
-        </div>
         <div class="modern-bio-card">
             <div class="bio-title">BARIŞ İLKAN KİMDİR?</div>
             <div class="bio-text">
@@ -154,7 +276,6 @@
                 <p>Eğitim sektöründeki birikimimi <span class="bio-highlight">Anaokulu Müdürlüğü</span> yaparak yönetimsel boyuta taşıdım. Rehabilitasyon Merkezlerinde edindiğim köklü tecrübeyi; profesyonel <span class="bio-highlight">Eğitim Koçluğu</span> kariyerimle birleştirerek, bugün anaokulundan üniversiteye hazırlık (LGS & YKS) sürecine kadar her seviyedeki öğrencilerime rehberlik ediyorum.</p>
                 <p><span class="bio-highlight">Eğitim Teknoloğu</span> kimliğimle; öğrencilerimi Robotik Kodlama, Yapay Zeka ve Bilişim teknolojileriyle tanıştırıyor, onları geleceğin dünyasına donanımlı bireyler olarak hazırlıyorum.</p>
             </div>
-            
             <div style="margin-top: 35px; border-top: 2px dashed #e2e8f0; padding-top: 25px;">
                 <div class="cert-header">UZMANLIK ALANLARIM & SERTİFİKALARIM</div>
                 <div class="cert-grid">
@@ -171,37 +292,21 @@
             </div>
         </div>
 
-        <div class="section-container"><div class="section-title"><i class="fas fa-layer-group"></i> EĞİTİM KATEGORİLERİ</div></div>
-        <div class="grid">
-            <a href="akil-zeka.html" class="card cat-card" style="border-left-color: #3b82f6;">
-                <div class="cat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-brain"></i></div>
-                <div class="cat-info"><h3>Akıl & Zeka Oyunları</h3><p>Dikkat ve hafıza geliştirici egzersizler.</p></div>
-            </a>
-            <a href="robotik.html" class="card cat-card" style="border-left-color: #ec4899;">
-                <div class="cat-icon" style="background:#fdf2f8; color:#ec4899;"><i class="fas fa-robot"></i></div>
-                <div class="cat-info"><h3>Robotik & Kodlama</h3><p>Algoritmik düşünme becerileri.</p></div>
-            </a>
-            <a href="satranc.html" class="card cat-card" style="border-left-color: #10b981;">
-                <div class="cat-icon" style="background:#ecfdf5; color:#10b981;"><i class="fas fa-chess"></i></div>
-                <div class="cat-info"><h3>Satranç Akademisi</h3><p>Strateji ve hamle analizleri.</p></div>
-            </a>
-        </div>
-
         <div class="section-container"><div class="section-title"><i class="fas fa-graduation-cap"></i> AKADEMİK KÖŞE</div></div>
         <div class="grid">
-            <a href="anaokulu.html" class="card acad-card" style="border-top-color: #f59e0b;">
+            <a href="anaokulu.html" class="card acad-card searchable" data-name="anaokulu okul öncesi" style="border-top-color: #f59e0b;">
                 <div class="acad-icon" style="color:#f59e0b;"><i class="fas fa-shapes"></i></div>
                 <div class="acad-title">Okul Öncesi</div>
             </a>
-            <a href="ilkokul.html" class="card acad-card" style="border-top-color: #3b82f6;">
+            <a href="ilkokul.html" class="card acad-card searchable" data-name="ilkokul" style="border-top-color: #3b82f6;">
                 <div class="acad-icon" style="color:#3b82f6;"><i class="fas fa-book-open"></i></div>
                 <div class="acad-title">İlkokul</div>
             </a>
-            <a href="ortaokul.html" class="card acad-card" style="border-top-color: #a855f7;">
+            <a href="ortaokul.html" class="card acad-card searchable" data-name="ortaokul" style="border-top-color: #a855f7;">
                 <div class="acad-icon" style="color:#a855f7;"><i class="fas fa-book-reader"></i></div>
                 <div class="acad-title">Ortaokul</div>
             </a>
-            <a href="kocluk.html" class="card acad-card" style="border-top-color: #ef4444;">
+            <a href="kocluk.html" class="card acad-card searchable" data-name="koçluk lgs yks" style="border-top-color: #ef4444;">
                 <div class="acad-icon" style="color:#ef4444;"><i class="fas fa-rocket"></i></div>
                 <div class="acad-title">LGS & YKS Koçluk</div>
             </a>
@@ -211,40 +316,45 @@
             <div class="section-title ozel"><i class="fas fa-hands-holding-child"></i> ÖZEL EĞİTİM & GELİŞİM</div>
         </div>
         <div class="grid">
-            <a href="ozel-egitim.html" class="card sped-card">
+            <a href="ozel-egitim.html" class="card sped-card searchable" data-name="özel eğitim testleri">
                 <div class="icon-box sped-icon"><i class="fas fa-clipboard-check"></i></div>
                 <h3>Değerlendirme Testleri</h3>
                 <small style="color:var(--ozel-egitim); font-weight:bold;">Teste Başla &rarr;</small>
             </a>
-            <a href="ozel-egitim.html" class="card sped-card">
+            <a href="dil-konusma.html" class="card sped-card searchable" data-name="dil konuşma kartları">
+                <div class="icon-box sped-icon"><i class="fas fa-comments"></i></div>
+                <h3>Konuşan Kartlar</h3>
+                <small style="color:var(--ozel-egitim); font-weight:bold;">Uygulamayı Aç &rarr;</small>
+            </a>
+            <a href="ozel-egitim.html" class="card sped-card searchable" data-name="özel eğitim gelişimi">
                 <div class="icon-box sped-icon"><i class="fas fa-chart-line"></i></div>
                 <h3>Gelişim Takibi</h3>
                 <small style="color:var(--ozel-egitim); font-weight:bold;">Takip Et &rarr;</small>
             </a>
-            <a href="ozel-egitim.html" class="card sped-card">
-                <div class="icon-box sped-icon"><i class="fas fa-user-md"></i></div>
-                <h3>Barış Hoca'dan Tavsiyeler</h3>
-                <small style="color:var(--ozel-egitim); font-weight:bold;">Oku &rarr;</small>
-            </a>
         </div>
         
-        <div style="margin-top:40px; text-align:center;">
+        <div style="margin-top:30px; text-align:center;">
              <a href="karne.html" style="display:inline-block; text-decoration:none; background: linear-gradient(135deg, #0f172a 0%, #334155 100%); color:white; padding:15px 35px; border-radius:50px; font-size:1rem; cursor:pointer; box-shadow:0 10px 25px rgba(0,0,0,0.25);">
                 <i class="fas fa-chart-pie"></i> Kişisel Gelişim Karneni Gör
             </a>
         </div>
-        
-        <div class="section-container"><div class="section-title"><i class="fas fa-book"></i> E-KİTAPLARIM</div></div>
+
+        <div class="section-container"><div class="section-title"><i class="fas fa-user-graduate"></i> EBEVEYN & KAYNAKLAR</div></div>
+        <ul class="link-list" id="kaynak-alani">
+            <div style="text-align:center; color:#999; padding:20px;">Yazılar yükleniyor...</div>
+        </ul>
+
+        <div class="section-container"><div class="section-title"><i class="fas fa-book-open"></i> E-KİTAPLARIM & MÜZİKLERİM</div></div>
         <div class="grid">
-            <a href="ben-ali.html" class="book-card">
+            <a href="ben-ali.html" class="book-card searchable" data-name="ben ali kitabı">
                 <div class="book-cover" style="background:#eab308;">A</div>
                 <div class="book-info">
                     <div class="book-title">Ben Ali</div>
-                    <div class="book-desc">Nebevi Eğitim Modeline uygun olarak; Hz. Ali'nin, Efendimizin (s.a.v) evindeki yetişme sürecini bir çocuk gözüyle anlatan hikaye.</div>
+                    <div class="book-desc">Nebevi Eğitim Modeline uygun hikaye.</div>
                     <small style="color:blue;">Okumaya Başla &rarr;</small>
                 </div>
             </a>
-            <a href="en-guclu-cocuk-halid.html" class="book-card">
+            <a href="en-guclu-cocuk-halid.html" class="book-card searchable" data-name="en güçlü çocuk halid">
                 <div class="book-cover" style="background:#ef4444;">H</div>
                 <div class="book-info">
                     <div class="book-title">En Güçlü Çocuk Halid</div>
@@ -252,11 +362,7 @@
                     <small style="color:green;">Okumaya Başla &rarr;</small>
                 </div>
             </a>
-        </div>
-        
-        <div class="section-container"><div class="section-title"><i class="fas fa-music"></i> EĞİTİCİ ŞARKILARIM</div></div>
-        <div>
-            <a href="sarkilar.html" class="card" style="display:flex; align-items:center; justify-content:center; gap:15px; background:#fdf2f8; border:2px solid #db2777; color:#db2777; text-decoration:none;">
+             <a href="sarkilar.html" class="card searchable" data-name="şarkılar müzik" style="display:flex; align-items:center; justify-content:center; gap:15px; background:#fdf2f8; border:2px solid #db2777; color:#db2777; text-decoration:none;">
                 <div style="width:60px; height:60px; background:#db2777; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
                     <i class="fas fa-music"></i>
                 </div>
@@ -267,17 +373,81 @@
             </a>
         </div>
 
-        <div class="section-container"><div class="section-title"><i class="fas fa-gamepad"></i> GÜNCEL İÇERİKLER</div></div>
+        <div class="section-container"><div class="section-title"><i class="fas fa-layer-group"></i> EĞİTİM VİTRİNİ</div></div>
+        <div class="grid" id="main-grid">
+            <a href="haftanin-oyunu.html" class="card cat-card searchable" data-name="haftanın oyunu" style="border-left-color: #ff00cc; background:#fdf2f8;">
+                <div class="cat-icon" style="background:#db2777; color:white;"><i class="fas fa-gamepad"></i></div>
+                <div class="cat-info"><h3>HAFTANIN OYUNU</h3><p>Barış Hoca'nın seçimi.</p></div>
+            </a>
+            <a href="akil-zeka.html" class="card cat-card searchable" data-name="akıl zeka oyunları" style="border-left-color: #3b82f6;">
+                <div class="cat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-brain"></i></div>
+                <div class="cat-info"><h3>Akıl & Zeka Oyunları</h3><p>Dikkat ve hafıza egzersizleri.</p></div>
+            </a>
+            <a href="robotik.html" class="card cat-card searchable" data-name="robotik kodlama" style="border-left-color: #ec4899;">
+                <div class="cat-icon" style="background:#fdf2f8; color:#ec4899;"><i class="fas fa-robot"></i></div>
+                <div class="cat-info"><h3>Robotik & Kodlama</h3><p>Algoritmik düşünme becerileri.</p></div>
+            </a>
+            <a href="satranc.html" class="card cat-card searchable" data-name="satranç akademisi" style="border-left-color: #10b981;">
+                <div class="cat-icon" style="background:#ecfdf5; color:#10b981;"><i class="fas fa-chess"></i></div>
+                <div class="cat-info"><h3>Satranç Akademisi</h3><p>Strateji ve hamle analizleri.</p></div>
+            </a>
+             <a href="sipsak-sef.html" class="card cat-card searchable" data-name="şipşak şef yemek oyunu" style="border-left-color: #f59e0b;">
+                <div class="cat-icon" style="background:#fffbeb; color:#f59e0b;"><i class="fas fa-burger"></i></div>
+                <div class="cat-info"><h3>Şipşak Şef</h3><p>Dikkat ve hız oyunu.</p></div>
+            </a>
+            <a href="dondurma-adasi.html" class="card cat-card searchable" data-name="dondurma adası" style="border-left-color: #6366f1;">
+                <div class="cat-icon" style="background:#e0e7ff; color:#6366f1;"><i class="fas fa-ice-cream"></i></div>
+                <div class="cat-info"><h3>Dondurma Adası</h3><p>Sıralama ve görsel algı.</p></div>
+            </a>
+            <a href="kurbaga-denge.html" class="card cat-card searchable" data-name="kurbağa denge" style="border-left-color: #10b981;">
+                <div class="cat-icon" style="background:#ecfccb; color:#15803d;"><i class="fas fa-scale-balanced"></i></div>
+                <div class="cat-info"><h3>Kurbağa Denge</h3><p>Denge ve matematik.</p></div>
+            </a>
+             <a href="cilgin-suratlar.html" class="card cat-card searchable" data-name="çılgın suratlar" style="border-left-color: #f43f5e;">
+                <div class="cat-icon" style="background:#ffe4e6; color:#be123c;"><i class="fas fa-face-grin-tongue-wink"></i></div>
+                <div class="cat-info"><h3>Çılgın Suratlar</h3><p>Yaratıcılık atölyesi.</p></div>
+            </a>
+             <a href="zeka-atolyesi.html" class="card cat-card searchable" data-name="zeka atölyesi" style="border-left-color: #8b5cf6;">
+                <div class="cat-icon" style="background:#f3e8ff; color:#8b5cf6;"><i class="fas fa-puzzle-piece"></i></div>
+                <div class="cat-info"><h3>Zeka Atölyesi</h3><p>Sudoku, Hanoi, Hafıza.</p></div>
+            </a>
+        </div>
+
+        <div class="section-container"><div class="section-title"><i class="fas fa-bolt"></i> EN GÜNCEL İÇERİKLER</div></div>
         <div class="grid" id="proje-alani"><div style="text-align:center; width:100%;">Yükleniyor...</div></div>
-        
-        <div class="section-container"><div class="section-title"><i class="fas fa-user-graduate"></i> EBEVEYN & KAYNAKLAR</div></div>
-        <ul class="link-list" id="kaynak-alani">
-            <div style="text-align:center; color:#999; padding:20px;">Yazılar yükleniyor...</div>
-        </ul>
+
+        <div class="section-container"><div class="section-title"><i class="fas fa-heart"></i> TAVSİYELER & SOSYAL</div></div>
+        <div class="social-grid">
+            <a href="https://instagram.com" target="_blank" class="social-card sc-insta">
+                <div class="social-card-content">
+                    <div class="social-icon"><i class="fab fa-instagram"></i></div>
+                    <h3>Instagram</h3>
+                    <small>Bizi Takip Edin</small>
+                </div>
+            </a>
+            <a href="https://youtube.com" target="_blank" class="social-card sc-yt">
+                <div class="social-card-content">
+                    <div class="social-icon"><i class="fab fa-youtube"></i></div>
+                    <h3>YouTube</h3>
+                    <small>Eğitim Videoları</small>
+                </div>
+            </a>
+             <a href="#" class="social-card sc-book">
+                <div class="social-card-content">
+                    <div class="social-icon"><i class="fas fa-book-open"></i></div>
+                    <h3>Ayın Kitabı</h3>
+                    <small>Öğretmenin Önerisi</small>
+                </div>
+            </a>
+        </div>
 
     </div>
 
-    <div class="whatsapp-float" onclick="waAc()"><i class="fab fa-whatsapp"></i></div>
+    <div class="floating-container">
+        <button class="float-btn robot-btn" onclick="toggleChat()"></button>
+        <div class="float-btn wa-btn" onclick="waAc()"><i class="fab fa-whatsapp"></i></div>
+        <button class="float-btn up-btn" onclick="window.scrollTo(0,0)"><i class="fas fa-arrow-up"></i></button>
+    </div>
 
     <div class="modal-overlay" id="wa-modal">
         <div class="report-modal" style="text-align: left; position: relative; background:white; padding:25px; border-radius:20px; width:90%; max-width:400px;">
@@ -297,52 +467,308 @@
                 <h3 id="modal-baslik" style="margin:0; color:#2563eb;"></h3>
                 <i class="fas fa-times" onclick="kapat('yazi-modal')" style="cursor:pointer; font-size:1.2rem; color:#999;"></i>
             </div>
-            
-            <div id="modal-icerik" class="article-content"></div>
-            
+            <div id="modal-icerik" class="article-modal-content"></div>
             <button onclick="kapat('yazi-modal')" style="width:100%; background:#2563eb; color:white; border:none; padding:12px; border-radius:8px; margin-top:20px; font-weight:bold; cursor:pointer;">Okudum, Anladım</button>
         </div>
     </div>
 
-    <footer>&copy; 2025 Barış İlkan - Tüm Hakları Saklıdır.</footer>
+    <div id="chat-modal">
+        <div class="chat-header">
+            <span><i class="fas fa-robot"></i> Asistan Robot</span>
+            <span style="cursor:pointer;" onclick="toggleChat()">X</span>
+        </div>
+        <div class="chat-body" id="chat-box">
+            <div class="message msg-bot">Merhaba, ben Barış İlkan. Neden Nebevi Eğitim Modeli? Çünkü yıllarca hep beyne yüklendik, kalbi boş bıraktık. Ben bu sisteme, akıl ve kalp yan yana, ahenkle çalışsın diye başladım... Evet, şimdi seni dinliyorum; sorunu alabilirim.</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" class="chat-input" placeholder="Bir şey sor..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="wheel-modal">
+        <div class="wheel-content">
+            <i class="fas fa-gift" style="font-size: 4rem; color: #f59e0b; margin-bottom: 20px;"></i>
+            <h2>Günün Şanslı İçeriği:</h2>
+            <div id="wheel-result-text" class="wheel-result">...</div>
+            <a href="#" id="wheel-go-link" class="wheel-go-btn">HEMEN GİT</a>
+            <br><br>
+            <button onclick="document.getElementById('wheel-modal').style.display='none'" style="background:none; border:none; color:#999; cursor:pointer;">Kapat</button>
+        </div>
+    </div>
+
+    <footer>&copy; 2026 Barış İlkan - Tüm Hakları Saklıdır.</footer>
 
     <script>
-        const db = firebase.firestore();
+        // --- 1. AYARLAR & YAPILANDIRMA ---
+        const SiteAyarlari = {
+            apiKey: "AIzaSyCqjX3wufvo0LpeqkHvEg4XG3l6l2hBZHc", // Verdiğiniz API Anahtarı
+            sozler: [
+                "İlim Çin'de de olsa gidip alınız.",
+                "Bana bir harf öğretenin kırk yıl kölesi olurum.",
+                "Çocuklarınızı kendi zamanınıza göre değil, onların yaşayacağı zamana göre yetiştirin.",
+                "Eğitim, dünyayı değiştirmek için kullanabileceğiniz en güçlü silahtır."
+            ],
+            robotTalimati: "Sen bizzat Barış İlkan'sın. Bir yapay zeka asistanı gibi değil, Barış Hoca'nın kendi ağzından, samimi, içten ve profesyonel bir eğitimci diliyle konuş. 'Ben' dili kullan. Eğitim felsefen: 'Akıl ve kalp birlikteliği'. Sorulara pedagojik, bilimsel ve rehberlik odaklı cevaplar ver. Manevi değerleri önemseyen ancak evrensel ahlak, başarı, motivasyon ve kişisel gelişim odaklı, dengeli bir üslup kullan. Dini terimleri sadece yerinde ve dozunda kullan, sohbeti sürekli dini konulara getirme. Kullanıcıya bir öğretmen ve rehber gibi yaklaş."
+        };
+
+        // --- 2. FIREBASE YAPILANDIRMASI ---
+        // Not: Buraya kendi Firebase Config bilgilerinizi yapıştırmazsanız site "Demo Modu"nda çalışır.
+        const firebaseConfig = {
+            apiKey: "BURAYA_FIREBASE_API_KEY_GELECEK",
+            authDomain: "BURAYA_FIREBASE_AUTH_DOMAIN_GELECEK",
+            projectId: "BURAYA_FIREBASE_PROJECT_ID_GELECEK",
+            storageBucket: "BURAYA_FIREBASE_STORAGE_BUCKET_GELECEK",
+            messagingSenderId: "BURAYA_FIREBASE_SENDER_ID_GELECEK",
+            appId: "BURAYA_FIREBASE_APP_ID_GELECEK"
+        };
+
+        let db;
+        let demoModu = false;
+
+        try {
+            // Eğer config bilgileri girilmemişse (default değerler varsa)
+            if (firebaseConfig.apiKey.includes("BURAYA")) {
+                throw new Error("Firebase Config eksik.");
+            }
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            console.log("Firebase bağlantısı başarılı.");
+        } catch (error) {
+            console.warn("Firebase bağlantısı yapılamadı. Demo Modu aktif ediliyor.");
+            demoModu = true;
+        }
+
+        // --- 3. PAYLAŞMA FONKSİYONU ---
+        function shareSite() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Barış İlkan | Dijital Eğitim Üssü',
+                    text: 'Barış İlkan Dijital Eğitim Platformunu keşfedin!',
+                    url: window.location.href
+                })
+                .then(() => console.log('Başarıyla paylaşıldı'))
+                .catch((error) => console.log('Paylaşım hatası:', error));
+            } else {
+                // Web Share API desteklenmiyorsa panoya kopyala
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                alert("Site linki panoya kopyalandı!");
+            }
+        }
+
+        // --- 4. TEMEL FONKSİYONLAR ---
         function waAc() { document.getElementById('wa-modal').style.display = 'flex'; }
         function kapat(id) { document.getElementById(id).style.display = 'none'; }
         
         let makaleVerileri = {}; 
 
-        // DUYURULAR
-        db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { 
-            let h=""; s.forEach(d => h+=`<span style="margin-right:50px;">📢 ${d.data().metin}</span>`); 
-            if(h) document.getElementById('duyuru-alani').innerHTML = h; 
-        });
+        // GÜNÜN SÖZÜ
+        if(SiteAyarlari.sozler) {
+            const randomQuote = SiteAyarlari.sozler[Math.floor(Math.random() * SiteAyarlari.sozler.length)];
+            document.getElementById('daily-quote').innerText = `"${randomQuote}"`;
+        }
 
-        // PROJELER
-        db.collection("projeler").orderBy("tarih", "desc").onSnapshot(s => {
-            let h=""; s.forEach(d => { const p=d.data(); h+=`<a href="${p.link}" class="card"><div class="icon-box"><i class="fas ${p.icon}"></i></div><h3>${p.baslik}</h3><div style="color:var(--ana-renk);">Başla</div></a>`; });
-            document.getElementById('proje-alani').innerHTML = h || "Yükleniyor...";
-        });
+        // KONFETİ EFEKTİ
+        window.onload = () => {
+            // HATA DÜZELTME: Confetti'yi güvenli bir şekilde başlat
+            setTimeout(() => {
+                try {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                } catch (e) {
+                    console.log("Confetti başlatılamadı:", e);
+                }
+            }, 500);
+            
+            // Demo modu verilerini yükle (Eğer firebase yoksa)
+            if(demoModu) loadDemoData();
+        };
 
-        // YAZILAR
-        db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => {
-            let h=""; 
-            s.forEach(doc => { 
-                const y = doc.data();
-                makaleVerileri[doc.id] = y.icerik; 
-                const safeTitle = y.baslik.replace(/'/g, "\\'"); 
+        // AKILLI ARAMA MOTORU & ROBOT ENTEGRASYONU
+        function handleSearch(event) {
+            const input = document.getElementById('searchBar').value.toLowerCase();
+            
+            // 1. Önce sayfadaki kartları filtrele
+            const cards = document.querySelectorAll('.searchable');
+            let foundCount = 0;
+            
+            cards.forEach(card => {
+                const text = card.getAttribute('data-name');
+                if (text.includes(input)) {
+                    card.style.display = "flex"; // veya block, css yapısına göre card flex ise flex kalmalı
+                    if(card.classList.contains('card') && !card.classList.contains('cat-card') && !card.classList.contains('book-card')) {
+                         card.style.display = "block"; // Standart kartlar block
+                    } else if (card.classList.contains('book-card') || card.classList.contains('cat-card')) {
+                         card.style.display = "flex"; // Yatay kartlar flex
+                    }
+                    foundCount++;
+                } else {
+                    card.style.display = "none";
+                }
+            });
+
+            // 2. Eğer ENTER'a basılırsa ve yazı uzunsa, ROBOTA SOR
+            if (event.key === "Enter" && input.length > 2) {
+                toggleChat(); // Sohbet penceresini aç
+                const chatBox = document.getElementById('chat-box');
+                const userInput = document.getElementById('user-input');
+                
+                // Mesajı chat'e taşı ve gönder
+                userInput.value = input; // Inputu kopyala
+                sendMessage(); // Gönder fonksiyonunu tetikle
+                
+                // Filtrelemeyi temizle
+                document.getElementById('searchBar').value = "";
+                cards.forEach(c => c.style.display = "");
+            }
+        }
+
+        // ÇARKIFELEK
+        function spinWheel() {
+            const items = document.querySelectorAll('.searchable'); 
+            if(items.length === 0) return;
+            
+            try {
+                confetti();
+            } catch (e) {
+                console.log("Confetti hatası:", e);
+            }
+
+            const randomItem = items[Math.floor(Math.random() * items.length)];
+            
+            // Başlık bulma (Farklı kart tipleri için)
+            let name = "Sürpriz İçerik";
+            if(randomItem.querySelector('h3')) name = randomItem.querySelector('h3').innerText;
+            else if(randomItem.querySelector('.book-title')) name = randomItem.querySelector('.book-title').innerText;
+            else if(randomItem.querySelector('.acad-title')) name = randomItem.querySelector('.acad-title').innerText;
+
+            const link = randomItem.getAttribute('href');
+            document.getElementById('wheel-result-text').innerText = name;
+            document.getElementById('wheel-go-link').setAttribute('href', link);
+            document.getElementById('wheel-modal').style.display = 'flex';
+        }
+
+        // ROBOT CHAT
+        function toggleChat() {
+            const modal = document.getElementById('chat-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            chatBox.innerHTML += `<div class="message msg-user">${msg}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div class="message msg-bot" id="${loadingId}">...</div>`;
+
+            try {
+                if(!SiteAyarlari.apiKey) throw new Error("API Key Yok");
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${SiteAyarlari.apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: SiteAyarlari.robotTalimati + "\n\nKullanıcı: " + msg }] }] 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if(data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                const botReply = data.candidates[0].content.parts[0].text;
+                // Markdown'ı HTML'e çevir
+                document.getElementById(loadingId).innerHTML = marked.parse(botReply);
+            } catch (error) {
+                document.getElementById(loadingId).innerText = "Şu an cevap veremiyorum. Lütfen internet bağlantınızı veya API anahtarınızı kontrol edin.";
+                console.error(error);
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // --- 5. VERİ YÖNETİMİ (FIREBASE veya DEMO) ---
+        
+        function loadDemoData() {
+            // Duyurular
+            document.getElementById('duyuru-alani').innerHTML = 
+                '<span style="margin-right:50px;">📢 Barış İlkan Dijital Eğitim Platformuna Hoş Geldiniz! (Demo Modu)</span>' +
+                '<span style="margin-right:50px;">📢 LGS Hazırlık kampımız başlıyor.</span>';
+
+            // Projeler
+            document.getElementById('proje-alani').innerHTML = `
+                <a href="#" class="card"><div class="icon-box"><i class="fas fa-robot"></i></div><h3>Robotik Kodlama</h3><div style="color:var(--ana-renk);">Başla</div></a>
+                <a href="#" class="card"><div class="icon-box"><i class="fas fa-brain"></i></div><h3>Zeka Oyunları</h3><div style="color:var(--ana-renk);">Oyna</div></a>
+                <a href="#" class="card"><div class="icon-box"><i class="fas fa-book"></i></div><h3>Okuma Saati</h3><div style="color:var(--ana-renk);">Oku</div></a>
+            `;
+
+            // Yazılar (Demo verileri kaldırıldı, alan boş bırakılıyor)
+            /*
+            const demoYazilar = [
+                { id: '1', baslik: 'Çocuklarda Dikkat Gelişimi', icerik: '<h1>Dikkat Gelişimi</h1><p>Çocuklarda dikkat süresini artırmak için...</p>' },
+                { id: '2', baslik: 'Sınav Kaygısı ile Baş Etme', icerik: '<h1>Sınav Kaygısı</h1><p>Sınav döneminde öğrenciler...</p>' }
+            ];
+            
+            let h = "";
+            demoYazilar.forEach(y => {
+                makaleVerileri[y.id] = y.icerik;
+                const safeTitle = y.baslik.replace(/'/g, "\\'");
                 h += `
-                <li class="link-item" onclick="yaziAc('${doc.id}', '${safeTitle}')">
+                <li class="link-item" onclick="yaziAc('${y.id}', '${safeTitle}')">
                     <div style="display:flex; align-items:center;">
                         <i class="fas fa-book-reader" style="color:#d97706; font-size:1.5rem; margin-right:15px;"></i>
                         <div><strong style="display:block;">${y.baslik}</strong><span style="font-size:0.85rem; color:#666;">Okumak için tıklayın...</span></div>
                     </div>
                     <span style="background:#FFD700; padding:5px 10px; border-radius:15px; font-size:0.8rem; font-weight:bold;">OKU</span>
-                </li>`; 
+                </li>`;
             });
-            document.getElementById('kaynak-alani').innerHTML = h || "<div style='text-align:center; color:#999; padding:20px;'>Henüz yazı eklenmemiş.</div>";
-        });
+            document.getElementById('kaynak-alani').innerHTML = h;
+            */
+        }
+
+        if (!demoModu && db) {
+            // DUYURULAR
+            db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { 
+                let h=""; s.forEach(d => h+=`<span style="margin-right:50px;">📢 ${d.data().metin}</span>`); 
+                if(h) document.getElementById('duyuru-alani').innerHTML = h; 
+            }, err => console.log("Duyuru hatası:", err));
+
+            // PROJELER
+            db.collection("projeler").orderBy("tarih", "desc").onSnapshot(s => {
+                let h=""; s.forEach(d => { const p=d.data(); h+=`<a href="${p.link}" class="card"><div class="icon-box"><i class="fas ${p.icon}"></i></div><h3>${p.baslik}</h3><div style="color:var(--ana-renk);">Başla</div></a>`; });
+                document.getElementById('proje-alani').innerHTML = h || "Proje bulunamadı.";
+            }, err => console.log("Proje hatası:", err));
+
+            // YAZILAR
+            db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => {
+                let h=""; 
+                s.forEach(doc => { 
+                    const y = doc.data();
+                    makaleVerileri[doc.id] = y.icerik; 
+                    const safeTitle = y.baslik.replace(/'/g, "\\'"); 
+                    h += `
+                    <li class="link-item" onclick="yaziAc('${doc.id}', '${safeTitle}')">
+                        <div style="display:flex; align-items:center;">
+                            <i class="fas fa-book-reader" style="color:#d97706; font-size:1.5rem; margin-right:15px;"></i>
+                            <div><strong style="display:block;">${y.baslik}</strong><span style="font-size:0.85rem; color:#666;">Okumak için tıklayın...</span></div>
+                        </div>
+                        <span style="background:#FFD700; padding:5px 10px; border-radius:15px; font-size:0.8rem; font-weight:bold;">OKU</span>
+                    </li>`; 
+                });
+                document.getElementById('kaynak-alani').innerHTML = h || "<div style='text-align:center; color:#999; padding:20px;'>Henüz yazı eklenmemiş.</div>";
+            }, err => console.log("Yazı hatası:", err));
+        }
 
         function yaziAc(id, baslik) {
             document.getElementById('modal-baslik').innerText = baslik;
@@ -350,13 +776,19 @@
             document.getElementById('yazi-modal').style.display = 'flex';
         }
 
-        // ASİSTAN
+        // ASİSTAN TALEBİ
         function talepGonder() {
             const ad = document.getElementById('talep-ad').value;
             const tel = document.getElementById('talep-tel').value;
             const konu = document.getElementById('talep-konu').value;
             if(ad === "" || tel === "" || konu === "") { alert("Lütfen tüm alanları doldurunuz."); return; }
             
+            if(demoModu) {
+                alert("✅ Talebiniz alındı! (Demo Modu: Veritabanına kaydedilmedi)");
+                kapat('wa-modal');
+                return;
+            }
+
             const btn = document.querySelector('#wa-modal button');
             btn.innerHTML = 'İletiliyor...'; btn.disabled = true;
 
@@ -373,14 +805,16 @@
         }
         
         // ZİYARETÇİ SAYACI
-        const bugunStr = new Date().toISOString().split('T')[0];
-        const sonKontrol = localStorage.getItem('gunluk_ziyaret');
-        if (sonKontrol !== bugunStr) {
-            db.collection("istatistik").doc(bugunStr).set({
-                ziyaret: firebase.firestore.FieldValue.increment(1),
-                tarih: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            localStorage.setItem('gunluk_ziyaret', bugunStr);
+        if(!demoModu && db) {
+            const bugunStr = new Date().toISOString().split('T')[0];
+            const sonKontrol = localStorage.getItem('gunluk_ziyaret');
+            if (sonKontrol !== bugunStr) {
+                db.collection("istatistik").doc(bugunStr).set({
+                    ziyaret: firebase.firestore.FieldValue.increment(1),
+                    tarih: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                localStorage.setItem('gunluk_ziyaret', bugunStr);
+            }
         }
     </script>
 </body>
