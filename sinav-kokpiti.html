@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sınav Kokpiti | Barış Hoca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #ef4444; --text: #f1f5f9; --border: #334155; }
+        * { box-sizing: border-box; }
+        
+        body { margin: 0; font-family: 'Exo 2', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* HEADER */
+        header { background: #000; padding: 15px 20px; border-bottom: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        .back-btn { color: #94a3b8; text-decoration: none; border: 1px solid #334155; padding: 5px 15px; border-radius: 5px; font-size: 0.9rem; transition: 0.3s; }
+        .back-btn:hover { color: white; border-color: white; }
+
+        /* GRID YAPISI */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; width: 100%; flex: 1; }
+        
+        .card { background: var(--panel); border-radius: 15px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 10px 20px rgba(0,0,0,0.3); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .card-header { font-size: 1.2rem; font-weight: 900; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        /* 1. ZAMANLAYICI (TIMER) */
+        .timer-display { font-size: 4.5rem; font-weight: 900; text-align: center; margin: 20px 0; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .timer-controls { display: flex; gap: 10px; justify-content: center; }
+        .btn { border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-family: inherit; }
+        .btn-start { background: var(--accent); }
+        .btn-stop { background: #334155; }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .timer-modes { display: flex; gap: 5px; justify-content: center; margin-bottom: 15px; }
+        .mode-btn { background: transparent; border: 1px solid var(--border); color: #64748b; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+        .mode-btn.active { border-color: var(--accent); color: var(--accent); }
+
+        /* 2. NET HESAPLAMA */
+        .calc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; }
+        .calc-input { width: 60px; background: #0f172a; border: 1px solid var(--border); color: white; padding: 5px; text-align: center; border-radius: 5px; font-weight: bold; }
+        .net-result { text-align: center; margin-top: 15px; font-size: 1.5rem; font-weight: bold; color: #4ade80; }
+
+        /* 3. TODO LIST */
+        .todo-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .todo-input { flex: 1; background: #0f172a; border: 1px solid var(--border); padding: 10px; color: white; border-radius: 8px; }
+        .todo-list { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; max-height: 200px; }
+        .todo-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--border); animation: slideIn 0.3s; }
+        .todo-item.done span { text-decoration: line-through; color: #64748b; }
+        .delete-btn { color: #64748b; cursor: pointer; }
+        .delete-btn:hover { color: var(--accent); }
+
+        /* 4. ODAK SESLERİ */
+        .sound-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .sound-btn { background: #0f172a; border: 1px solid var(--border); padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: 0.3s; color: #94a3b8; }
+        .sound-btn:hover { border-color: white; color: white; }
+        .sound-btn.playing { border-color: #4ade80; color: #4ade80; box-shadow: 0 0 10px rgba(74, 222, 128, 0.2); }
+        .sound-icon { font-size: 1.5rem; margin-bottom: 5px; display: block; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Mobilde Tek Kolon */
+        @media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <audio id="sound-rain" loop src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg"></audio>
+    <audio id="sound-cafe" loop src="https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg"></audio>
+    <audio id="sound-fire" loop src="https://actions.google.com/sounds/v1/ambiences/fire.ogg"></audio>
+
+    <header>
+        <a href="kocluk.html" class="back-btn"><i class="fas fa-chevron-left"></i> ÇIKIŞ</a>
+        <h1>SINAV KOKPİTİ</h1>
+        <div style="width: 60px;"></div> </header>
+
+    <div class="dashboard">
+        
+        <div class="card" style="grid-row: span 2;">
+            <div class="card-header"><i class="fas fa-stopwatch"></i> ODAK ZAMANI</div>
+            <div class="timer-modes">
+                <button class="mode-btn active" onclick="setTimer(40)">40 Dk (Ders)</button>
+                <button class="mode-btn" onclick="setTimer(25)">25 Dk (Pomodoro)</button>
+                <button class="mode-btn" onclick="setTimer(10)">10 Dk (Mola)</button>
+            </div>
+            <div class="timer-display" id="display">40:00</div>
+            <div class="timer-controls">
+                <button class="btn btn-start" onclick="startTimer()" id="startBtn">BAŞLAT</button>
+                <button class="btn btn-stop" onclick="resetTimer()">SIFIRLA</button>
+            </div>
+            <div style="margin-top:20px; text-align:center; color:#64748b; font-size:0.9rem;">
+                "Başarı, ter kokar."
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-calculator"></i> HIZLI NET HESAPLA</div>
+            <div class="calc-row">
+                <span>Doğru Sayısı</span>
+                <input type="number" id="dogru" class="calc-input" oninput="calculateNet()">
+            </div>
+            <div class="calc-row">
+                <span>Yanlış Sayısı</span>
+                <input type="number" id="yanlis" class="calc-input" oninput="calculateNet()">
+            </div>
+            <div style="text-align:center; margin-top:10px; color:#94a3b8;">NETİNİZ</div>
+            <div class="net-result" id="netResult">0.00</div>
+        </div>
+
+        <div class="card" style="grid-row: span 2;">
+            <div class="card-header"><i class="fas fa-tasks"></i> GÜNLÜK HEDEFLER</div>
+            <div class="todo-input-group">
+                <input type="text" id="todoInput" class="todo-input" placeholder="Örn: 50 Paragraf çöz...">
+                <button class="btn btn-start" onclick="addTodo()"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="todo-list" id="todoList">
+                </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-headphones"></i> ORTAM SESLERİ</div>
+            <div class="sound-grid">
+                <div class="sound-btn" onclick="toggleSound('rain', this)">
+                    <i class="fas fa-cloud-rain sound-icon"></i> Yağmur
+                </div>
+                <div class="sound-btn" onclick="toggleSound('cafe', this)">
+                    <i class="fas fa-mug-hot sound-icon"></i> Kafe
+                </div>
+                <div class="sound-btn" onclick="toggleSound('fire', this)">
+                    <i class="fas fa-fire sound-icon"></i> Şömine
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- ZAMANLAYICI ---
+        let timerInterval;
+        let timeLeft = 40 * 60;
+        let isRunning = false;
+
+        function updateDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('display').innerText = `${m}:${s}`;
+            document.title = `${m}:${s} - Sınav Kokpiti`;
+        }
+
+        function startTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                document.getElementById('startBtn').innerText = "DEVAM ET";
+                document.getElementById('startBtn').style.backgroundColor = "#eab308"; // Sarı
+                isRunning = false;
+            } else {
+                timerInterval = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        alert("Süre Doldu! 🔔");
+                        resetTimer();
+                    }
+                }, 1000);
+                document.getElementById('startBtn').innerText = "DURAKLAT";
+                document.getElementById('startBtn').style.backgroundColor = "#334155";
+                isRunning = true;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('startBtn').innerText = "BAŞLAT";
+            document.getElementById('startBtn').style.backgroundColor = "#ef4444";
+            setTimer(40); // Varsayılan
+        }
+
+        function setTimer(minutes) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timeLeft = minutes * 60;
+            updateDisplay();
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('startBtn').innerText = "BAŞLAT";
+            document.getElementById('startBtn').style.backgroundColor = "#ef4444";
+        }
+
+        // --- NET HESAPLAMA ---
+        function calculateNet() {
+            const d = parseFloat(document.getElementById('dogru').value) || 0;
+            const y = parseFloat(document.getElementById('yanlis').value) || 0;
+            const net = d - (y / 4); // LGS ve TYT'de 4 yanlış 1 doğruyu götürür (Basit mod)
+            document.getElementById('netResult').innerText = net.toFixed(2);
+        }
+
+        // --- TODO LIST (LocalStorage ile Kayıtlı) ---
+        function loadTodos() {
+            const todos = JSON.parse(localStorage.getItem('baris_todos')) || [];
+            const list = document.getElementById('todoList');
+            list.innerHTML = "";
+            todos.forEach((t, index) => {
+                const li = document.createElement('li');
+                li.className = `todo-item ${t.done ? 'done' : ''}`;
+                li.innerHTML = `
+                    <span onclick="toggleTodo(${index})">${t.text}</span>
+                    <i class="fas fa-trash delete-btn" onclick="deleteTodo(${index})"></i>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const todos = JSON.parse(localStorage.getItem('baris_todos')) || [];
+            todos.push({ text: text, done: false });
+            localStorage.setItem('baris_todos', JSON.stringify(todos));
+            input.value = "";
+            loadTodos();
+        }
+
+        function toggleTodo(index) {
+            const todos = JSON.parse(localStorage.getItem('baris_todos'));
+            todos[index].done = !todos[index].done;
+            localStorage.setItem('baris_todos', JSON.stringify(todos));
+            loadTodos();
+        }
+
+        function deleteTodo(index) {
+            const todos = JSON.parse(localStorage.getItem('baris_todos'));
+            todos.splice(index, 1);
+            localStorage.setItem('baris_todos', JSON.stringify(todos));
+            loadTodos();
+        }
+
+        // --- ODAK SESLERİ ---
+        function toggleSound(id, btn) {
+            const audio = document.getElementById('sound-' + id);
+            
+            // Diğer sesleri durdur (İsteğe bağlı, aynı anda çalmasın diye)
+            document.querySelectorAll('audio').forEach(a => {
+                if(a.id !== 'sound-' + id) {
+                    a.pause();
+                    a.currentTime = 0; 
+                }
+            });
+            document.querySelectorAll('.sound-btn').forEach(b => {
+                if(b !== btn) b.classList.remove('playing');
+            });
+
+            if (audio.paused) {
+                audio.play();
+                btn.classList.add('playing');
+            } else {
+                audio.pause();
+                btn.classList.remove('playing');
+            }
+        }
+
+        // Başlat
+        loadTodos();
+    </script>
+</body>
+</html>
