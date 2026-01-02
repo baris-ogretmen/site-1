@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mantık Kalesi | Barış Öğretmen</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root { --primary: #7c3aed; --secondary: #22d3ee; --bg: #2e1065; --dark: #1e1b4b; --success: #10b981; --error: #ef4444; }
+        
+        * { box-sizing: border-box; touch-action: manipulation; }
+
+        body { 
+            margin: 0; font-family: 'Fredoka', sans-serif; 
+            background: var(--bg); color: white; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        /* HEADER */
+        header { 
+            background: rgba(0,0,0,0.3); padding: 15px; 
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--primary);
+            flex-shrink: 0;
+        }
+        .back-btn { background: rgba(255,255,255,0.1); color: var(--secondary); padding: 8px 15px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 0.9rem; border: 1px solid var(--secondary); }
+        h1 { margin: 0; font-family: 'Righteous', cursive; font-size: 1.3rem; color: var(--secondary); letter-spacing: 1px; }
+        .help-btn { background: var(--secondary); color: #000; width: 35px; height: 35px; border-radius: 50%; border:none; font-weight:bold; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+        /* OYUN ALANI */
+        .game-container { 
+            flex: 1; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; padding: 10px;
+            width: 100%;
+        }
+
+        /* SEVİYE BİLGİSİ */
+        .level-badge { 
+            background: var(--primary); padding: 5px 15px; border-radius: 20px; 
+            font-weight: bold; font-size: 1rem; margin-bottom: 15px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        /* IZGARA (Responsive) */
+        .grid-board {
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 8px; 
+            background: var(--dark);
+            padding: 10px;
+            border-radius: 15px;
+            border: 4px solid var(--primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 90%; /* Mobilde ekranın %90'ı */
+            max-width: 400px; /* Tablette çok büyümesin */
+            aspect-ratio: 1; /* Kare kalsın */
+        }
+
+        .cell {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(1.5rem, 5vw, 2.5rem); /* Ekran boyutuna göre yazı */
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.1s;
+        }
+        .cell:active { transform: scale(0.95); }
+        .cell.fixed { background: rgba(124, 58, 237, 0.2); color: rgba(255,255,255,0.7); cursor: default; }
+        .cell.wrong { border-color: var(--error); background: rgba(239, 68, 68, 0.2); animation: shake 0.4s; }
+        .cell.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.2); }
+
+        /* KONTROL PANELI */
+        .controls {
+            background: white; width: 100%; padding: 20px 15px;
+            border-top-left-radius: 25px; border-top-right-radius: 25px;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+            flex-shrink: 0; /* Küçülmesin */
+        }
+
+        .palette { display: flex; justify-content: space-between; gap: 10px; max-width: 400px; margin: 0 auto; width: 100%; }
+        .palette-item {
+            flex: 1; aspect-ratio: 1; /* Kare butonlar */
+            border-radius: 12px;
+            background: #f3f4f6;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border: 3px solid #e5e7eb;
+            box-shadow: 0 4px 0 #d1d5db;
+        }
+        .palette-item:active { transform: translateY(4px); box-shadow: none; }
+        .palette-item.active-tool { border-color: var(--primary); background: #f3e8ff; box-shadow: 0 4px 0 #7c3aed; transform: translateY(-2px); }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; max-width: 400px; margin: 0 auto; width: 100%; }
+        .action-btn {
+            flex: 1; padding: 15px; border: none; border-radius: 12px;
+            font-weight: bold; font-size: 1rem; cursor: pointer; color: white;
+            font-family: 'Righteous', sans-serif; letter-spacing: 1px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .btn-check { background: var(--success); box-shadow: 0 4px 0 #059669; }
+        .btn-check:active { transform: translateY(4px); box-shadow: none; }
+        .btn-reset { background: var(--error); max-width: 60px; box-shadow: 0 4px 0 #b91c1c; }
+
+        /* NASIL OYNANIR MODALI */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px); padding: 20px;
+        }
+        .help-modal {
+            background: white; color: #333; padding: 25px; border-radius: 20px;
+            width: 100%; max-width: 500px; text-align: center;
+            border: 5px solid var(--secondary);
+        }
+        .help-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; font-size: 1.1rem; }
+        .mini-cell { width: 30px; height: 30px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: #eee; }
+        .rule-text { text-align: left; font-size: 0.95rem; line-height: 1.5; color: #555; margin-bottom: 20px; }
+
+        @keyframes shake { 0%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-5px)} 100%{transform:translateX(0)} }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="akil-zeka.html" class="back-btn"><i class="fas fa-chevron-left"></i> ÇIKIŞ</a>
+        <h1>MANTIK KALESİ</h1>
+        <button class="help-btn" onclick="openHelp()">?</button>
+    </header>
+
+    <div class="game-container">
+        <div class="level-badge" id="level-text">SEVİYE 1</div>
+        <div class="grid-board" id="board">
+            </div>
+    </div>
+
+    <div class="controls">
+        <div class="palette">
+            <div class="palette-item" onclick="selectTool(1)">⭐</div>
+            <div class="palette-item" onclick="selectTool(2)">💎</div>
+            <div class="palette-item" onclick="selectTool(3)">🌙</div>
+            <div class="palette-item" onclick="selectTool(4)">⚡</div>
+            <div class="palette-item" onclick="selectTool(0)" style="color:#ef4444;"><i class="fas fa-eraser"></i></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="action-btn btn-check" onclick="checkBoard()">KONTROL ET</button>
+            <button class="action-btn btn-reset" onclick="resetBoard()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="help-modal">
+        <div class="help-modal">
+            <h2 style="color:var(--primary); margin-top:0;">Nasıl Oynanır? 🤔</h2>
+            
+            <div class="help-row">
+                <div class="mini-cell">⭐</div>
+                <div class="mini-cell">💎</div>
+                <div class="mini-cell">🌙</div>
+                <div class="mini-cell">⚡</div>
+            </div>
+
+            <p class="rule-text">
+                1. Her satırda (yatay) ve sütunda (dikey) her sembolden <b>sadece 1 tane</b> olmalı.<br><br>
+                2. Tıpkı <b>Sudoku</b> gibi! Aynı sembolü yan yana veya alt alta koyamazsın.<br><br>
+                3. Aşağıdan sembolü seç, kutuya dokun ve boşlukları doldur.
+            </p>
+
+            <button class="action-btn" style="background:var(--primary);" onclick="closeHelp()">ANLADIM, BAŞLA! 🚀</button>
+        </div>
+    </div>
+
+    <script>
+        // --- OYUN VERİLERİ ---
+        const levels = [
+            { // Seviye 1 (Kolay)
+                solution: [1, 2, 3, 4, 3, 4, 1, 2, 2, 1, 4, 3, 4, 3, 2, 1],
+                initial:  [1, 0, 0, 4, 3, 0, 1, 0, 0, 1, 0, 3, 4, 0, 0, 1]
+            },
+            { // Seviye 2 (Orta)
+                solution: [4, 3, 2, 1, 2, 1, 4, 3, 3, 4, 1, 2, 1, 2, 3, 4],
+                initial:  [0, 3, 0, 0, 2, 0, 4, 0, 0, 4, 0, 2, 0, 0, 3, 0]
+            },
+            { // Seviye 3 (Zor)
+                solution: [2, 4, 1, 3, 3, 1, 4, 2, 4, 2, 3, 1, 1, 3, 2, 4],
+                initial:  [0, 4, 0, 0, 0, 0, 4, 0, 0, 2, 0, 0, 0, 0, 2, 0]
+            }
+        ];
+
+        const symbols = { 0: '', 1: '⭐', 2: '💎', 3: '🌙', 4: '⚡' };
+        let currentLevel = 0;
+        let boardState = [];
+        let selectedTool = 1;
+
+        function initGame() {
+            document.getElementById('level-text').innerText = `SEVİYE ${currentLevel + 1}`;
+            resetBoard();
+            // İlk açılışta yardım göster (sadece seviye 1'de)
+            if(currentLevel === 0) openHelp();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            boardState.forEach((val, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (levels[currentLevel].initial[index] !== 0) {
+                    cell.classList.add('fixed');
+                } else {
+                    cell.onclick = () => placeItem(index, cell);
+                }
+                cell.innerText = symbols[val];
+                board.appendChild(cell);
+            });
+
+            // Aktif araç görseli
+            document.querySelectorAll('.palette-item').forEach((item, i) => {
+                item.classList.remove('active-tool');
+                if((selectedTool === 0 && i === 4) || (selectedTool === i + 1)) {
+                    item.classList.add('active-tool');
+                }
+            });
+        }
+
+        function selectTool(toolId) {
+            selectedTool = toolId;
+            renderBoard();
+        }
+
+        function placeItem(index, cellElement) {
+            if (levels[currentLevel].initial[index] === 0) {
+                boardState[index] = selectedTool;
+                cellElement.innerText = symbols[selectedTool];
+                cellElement.classList.remove('wrong', 'correct');
+            }
+        }
+
+        function checkBoard() {
+            const cells = document.querySelectorAll('.cell');
+            const solution = levels[currentLevel].solution;
+            let errors = 0;
+            let empty = false;
+
+            if (boardState.includes(0)) {
+                alert("Önce tüm boşlukları doldurmalısın! 🧩");
+                return;
+            }
+
+            boardState.forEach((val, i) => {
+                if (val !== solution[i]) {
+                    cells[i].classList.add('wrong');
+                    errors++;
+                } else {
+                    cells[i].classList.add('correct');
+                }
+            });
+
+            if (errors === 0) {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                setTimeout(() => {
+                    alert("TEBRİKLER! Zekanı konuşturdun! 🏆");
+                    nextLevel();
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    alert(`${errors} yerde hata var. Satır ve sütunları kontrol et!`);
+                    setTimeout(() => cells.forEach(c => c.classList.remove('wrong', 'correct')), 2000);
+                }, 200);
+            }
+        }
+
+        function resetBoard() {
+            boardState = [...levels[currentLevel].initial];
+            renderBoard();
+        }
+
+        function nextLevel() {
+            if (currentLevel < levels.length - 1) {
+                currentLevel++;
+                initGame();
+            } else {
+                alert("TÜM SEVİYELERİ BİTİRDİN! Efsanesin! 🧠🔥");
+                currentLevel = 0;
+                initGame();
+            }
+        }
+
+        // Modal Fonksiyonları
+        function openHelp() { document.getElementById('help-modal').style.display = 'flex'; }
+        function closeHelp() { document.getElementById('help-modal').style.display = 'none'; }
+
+        initGame();
+    </script>
+</body>
+</html>
