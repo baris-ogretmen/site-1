@@ -36,11 +36,11 @@
         
         /* LİSTE ELEMANLARI */
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #f8fafc; margin-bottom: 10px; border-radius: 10px; }
-        .item-info { flex: 1; }
-        .item-actions { display: flex; gap: 10px; }
-        .btn-mini { border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+        .item-actions { display: flex; gap: 5px; }
+        .btn-mini { border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
         .btn-vitrin { background: #FFD700; color: #000; }
         .btn-sil { background: #ef4444; color: white; }
+        .btn-wa { background: #25D366; color: white; }
         
         .settings-box { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 15px; margin-bottom: 20px; background: #f8fafc; }
     </style>
@@ -78,15 +78,30 @@
         </div>
 
         <div id="proje-formu" class="panel-card">
-            <h3>🎮 Yeni İçerik / Oyun Ekle</h3>
-            <input type="text" id="p-baslik" placeholder="Başlık (Örn: Çarpım Tablosu Oyunu)">
-            <input type="text" id="p-link" placeholder="Link (Örn: oyun.html)">
+            <h3>🎮 Yeni İçerik Ekle & Yönlendir</h3>
+            <input type="text" id="p-baslik" placeholder="Başlık (Örn: LGS Çalışma Kampı)">
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="p-link" placeholder="Link buraya gelecek..." style="flex:2;">
+                <select onchange="document.getElementById('p-link').value = this.value" style="flex:1; background:#fffbeb; font-weight:bold;">
+                    <option value="">Hızlı Sayfa Seç 🔽</option>
+                    <option value="anaokulu.html">Anaokulu Sayfası</option>
+                    <option value="ilkokul.html">İlkokul Sayfası</option>
+                    <option value="ortaokul.html">Ortaokul Sayfası</option>
+                    <option value="kocluk.html">Koçluk Sayfası</option>
+                    <option value="ozel-egitim.html">Özel Eğitim Sayfası</option>
+                    <option value="sarkilar.html">Şarkılar Sayfası</option>
+                    <option value="ben-ali.html">Ben Ali Kitabı</option>
+                </select>
+            </div>
+
             <select id="p-kategori">
+                <option value="Genel">Kategori Seçiniz</option>
                 <option value="Ortaokul">📚 Ortaokul</option><option value="LGS Koçluk">🎯 Koçluk</option>
                 <option value="Akıl Zeka">🧠 Akıl Zeka</option><option value="Robotik">🤖 Robotik</option>
-                <option value="Satranç">♞ Satranç</option>
+                <option value="Satranç">♞ Satranç</option><option value="Özel Eğitim">🧩 Özel Eğitim</option>
             </select>
-            <select id="p-icon"><option value="fa-gamepad">Oyun İkonu</option><option value="fa-book">Kitap İkonu</option><option value="fa-robot">Robot İkonu</option></select>
+            <select id="p-icon"><option value="fa-star">Yıldız</option><option value="fa-gamepad">Oyun</option><option value="fa-book">Kitap</option><option value="fa-robot">Robot</option></select>
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
             <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
                 <h4>📂 Mevcut Projeler (Vitrine Eklemek İçin Sarı Butona Bas)</h4>
@@ -124,7 +139,7 @@
 
         <div id="ayarlar-formu" class="panel-card" style="display:none;">
             <div class="settings-box">
-                <h4>🤖 Robot Ayarları</h4>
+                <h4>🤖 Robot Ayarları (Yapay Zeka)</h4>
                 <input type="text" id="set-api" placeholder="API Anahtarı">
                 <textarea id="set-prompt" rows="3" placeholder="Robot Talimatı"></textarea>
                 <button onclick="robotAyarlariniKaydet()" class="save-btn" style="background:#2563eb;">Robotu Güncelle</button>
@@ -173,15 +188,12 @@
         function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>alert("Eklendi")); }
 
         function listeleriGetir() {
-            // PROJELER (VİTRİN BUTONU İLE)
             db.collection("projeler").orderBy("tarih", "desc").onSnapshot(snap => {
                 let h = "";
                 snap.forEach(d => {
                     const v = d.data();
-                    // Tırnak işaretlerini kaçış karakteriyle düzelt
                     const safeBaslik = (v.baslik || "").replace(/'/g, "\\'");
                     const safeLink = (v.link || "").replace(/'/g, "\\'");
-                    
                     h += `<div class="list-item">
                             <div class="item-info"><strong>${v.baslik}</strong> <span style="font-size:0.8rem; color:#666;">(${v.kategori})</span></div>
                             <div class="item-actions">
@@ -193,7 +205,6 @@
                 document.getElementById('list-projeler').innerHTML = h || "Veri yok.";
             });
 
-            // DİĞERLERİ
             ['yazilar', 'tavsiyeler', 'duyurular'].forEach(tip => {
                 db.collection(tip).orderBy("tarih", "desc").onSnapshot(snap => {
                     let h = "";
@@ -207,10 +218,8 @@
         }
 
         function vitrinYap(baslik, aciklama, link) {
-            if(!confirm("Bu oyunu Ana Sayfa Vitrinine (Haftanın Oyunu) koymak istiyor musun?")) return;
-            db.collection("site_ayarlari").doc("haftanin_oyunu").set({
-                baslik: baslik, metin: aciklama, url: link, tarih: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => alert("✅ Vitrin Güncellendi!"));
+            if(!confirm("Vitrine eklensin mi?")) return;
+            db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik: baslik, metin: aciklama, url: link, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => alert("✅ Vitrin Güncellendi!"));
         }
 
         function sil(kol, id) { if(confirm("Silinsin mi?")) db.collection(kol).doc(id).delete(); }
@@ -222,9 +231,21 @@
         function robotAyarlariniKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('set-api').value, prompt: document.getElementById('set-prompt').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
         function daireAyarlariniKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ aktif: document.getElementById('set-circle-active').checked, daireMetni: document.getElementById('set-circle-text').value, mesaj: document.getElementById('set-circle-msg').value, link: document.getElementById('set-circle-link').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
 
+        // MESAJLAR (WHATSAPP BUTONU EKLENDİ)
         db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(snap => {
             let h=""; if(snap.size>0){ document.getElementById('btn-mesaj').classList.add('has-message'); document.getElementById('msg-badge').innerText=snap.size; document.getElementById('msg-badge').style.display='inline-block'; }
-            snap.forEach(d=>{ const v=d.data(); h+=`<div class="list-item"><div><strong>${v.ad_soyad}</strong> (${v.telefon})<br>${v.konu}</div><button onclick="sil('iletisim_talepleri','${d.id}')" class="btn-mini btn-sil">Sil</button></div>`; });
+            snap.forEach(d=>{ 
+                const v=d.data(); 
+                // Telefon numarasını temizle (boşlukları sil)
+                const telNo = v.telefon.replace(/\D/g,'');
+                h+=`<div class="list-item">
+                        <div><strong>${v.ad_soyad}</strong> (${v.telefon})<br>${v.konu}</div>
+                        <div class="item-actions">
+                            <a href="https://wa.me/90${telNo}" target="_blank" class="btn-mini btn-wa"><i class="fab fa-whatsapp"></i> Cevapla</a>
+                            <button onclick="sil('iletisim_talepleri','${d.id}')" class="btn-mini btn-sil">Sil</button>
+                        </div>
+                    </div>`; 
+            });
             document.getElementById('mesaj-listesi').innerHTML=h;
         });
     </script>
