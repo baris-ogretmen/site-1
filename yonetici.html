@@ -69,22 +69,17 @@
             display: flex; align-items: center; justify-content: center; text-align: center; 
             font-size: 0.75rem; font-weight: 800; color: white; margin: 15px auto; 
             box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; border: 3px solid white; 
-            
-            /* Otomatik Renk Geçişi (Rainbow) */
             background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
             background-size: 400%;
             animation: cafcaflimorph 3s infinite ease-in-out, parlama 5s linear infinite;
         }
-
-        /* Hem Şekil Hem Renk Değiştiren Animasyon */
         @keyframes cafcaflimorph {
             0% { border-radius: 50%; transform: rotate(0deg) scale(1); }
-            25% { border-radius: 10%; transform: rotate(5deg) scale(1.1); } /* Karemsi */
-            50% { border-radius: 50% 50% 0 50%; transform: rotate(-5deg) scale(1); } /* Damla */
-            75% { border-radius: 30%; transform: rotate(3deg) scale(1.1); } /* Yuvarlatılmış Kare */
+            25% { border-radius: 10%; transform: rotate(5deg) scale(1.1); } 
+            50% { border-radius: 50% 50% 0 50%; transform: rotate(-5deg) scale(1); } 
+            75% { border-radius: 30%; transform: rotate(3deg) scale(1.1); } 
             100% { border-radius: 50%; transform: rotate(0deg) scale(1); }
         }
-
         @keyframes parlama { 
             0% { background-position: 0% 50%; } 
             50% { background-position: 100% 50%; } 
@@ -136,10 +131,16 @@
             <input type="text" id="p-baslik" placeholder="Başlık (Örn: LGS Çalışma Kampı)">
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="p-link" placeholder="Link..." style="flex:2;">
+                
                 <select onchange="document.getElementById('p-link').value = this.value" style="flex:1; background:#fffbeb; font-weight:bold;">
-                    <option value="">Hızlı Sayfa 🔽</option>
+                    <option value="">Hızlı Sayfa Seç 🔽</option>
                     <option value="anaokulu.html">Anaokulu</option>
                     <option value="ilkokul.html">İlkokul</option>
+                    <option value="ortaokul.html">🏫 Ortaokul (Genel)</option>
+                    <option value="ortaokul.html#5">5️⃣ 5. Sınıf</option>
+                    <option value="ortaokul.html#6">6️⃣ 6. Sınıf</option>
+                    <option value="ortaokul.html#7">7️⃣ 7. Sınıf</option>
+                    <option value="ortaokul.html#8">8️⃣ 8. Sınıf (LGS)</option>
                     <option value="kocluk.html">Koçluk</option>
                     <option value="ozel-egitim.html">Özel Eğitim</option>
                     <option value="ben-ali.html">Ben Ali Kitabı</option>
@@ -149,6 +150,7 @@
                 <option value="Genel">Kategori Seçiniz...</option>
                 <option value="Anaokulu">🧸 Anaokulu</option>
                 <option value="İlkokul">🏫 İlkokul</option>
+                <option value="Ortaokul">📚 Ortaokul</option>
                 <option value="LGS Koçluk">🎯 Koçluk & Sınav</option>
                 <option value="Robotik">🤖 Robotik</option>
                 <option value="Özel Eğitim">🧩 Özel Eğitim</option>
@@ -233,7 +235,6 @@
     <script>
         const db = firebase.firestore();
         let tumMesajlar = []; 
-
         const YONETICI_SIFRESI = "123456"; 
 
         function girisYap() { 
@@ -268,15 +269,12 @@
         const bugunStr = new Date().toISOString().split('T')[0];
         db.collection("istatistik").doc(bugunStr).onSnapshot(d => { document.getElementById('ziyaret-sayisi').innerText = d.exists ? d.data().ziyaret : 0; });
 
-        // PROJELERİ OLDUĞU GİBİ KORUDUM (SENİN İSTEĞİN ÜZERİNE)
         function projeEkle() { db.collection("projeler").add({ baslik: document.getElementById('p-baslik').value, link: document.getElementById('p-link').value, kategori: document.getElementById('p-kategori').value, icon: document.getElementById('p-icon').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>alert("Eklendi")); }
-        
         function yaziEkle() { db.collection("yazilar").add({ baslik: document.getElementById('y-baslik').value, icerik: document.getElementById('y-icerik').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>alert("Eklendi")); }
         function tavsiyeEkle() { db.collection("tavsiyeler").add({ baslik: document.getElementById('t-baslik').value, aciklama: document.getElementById('t-aciklama').value, link: document.getElementById('t-link').value, icon: document.getElementById('t-icon').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>alert("Eklendi")); }
         function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>alert("Eklendi")); }
 
         function listeleriGetir() {
-            // PROJELER LİSTESİ (KORUNDU)
             db.collection("projeler").orderBy("tarih", "desc").onSnapshot(snap => {
                 let h = "";
                 snap.forEach(d => {
@@ -328,14 +326,13 @@
         }
         function robotAyarlariniKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('set-api').value, prompt: document.getElementById('set-prompt').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
         
-        // YENİ GEOMETRİK BUTON AYARI
         function daireAyarlariniKaydet() { 
             db.collection("site_ayarlari").doc("ozel_duyuru").set({ 
                 aktif: document.getElementById('set-circle-active').checked, 
                 daireMetni: document.getElementById('set-circle-text').value, 
                 mesaj: document.getElementById('set-circle-msg').value, 
                 link: document.getElementById('set-circle-link').value,
-                stil: "geometrik" // Yeni stil bilgisi
+                stil: "geometrik" 
             }, {merge:true}).then(()=>alert("Geometrik Buton Güncellendi!")); 
         }
 
