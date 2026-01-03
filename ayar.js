@@ -1,7 +1,7 @@
 // --- BARIŞ HOCA KONTROL PANELİ ---
 
 const SiteAyarlari = {
-    // 1. ROBOT İÇİN API ANAHTARI (AIzaSyAjP5jpALGYWIh8HJmkz9L1x8IikgMxsm4 )
+    // 1. ROBOT İÇİN API ANAHTARI (AIzaSyCqjX3wufvo0LpeqkHvEg4XG3l6l2hBZHc )
     apiKey: "BURAYA_API_ANAHTARINI_YAPISTIR", 
 
     // 2. ROBOTUN ADI VE GÖREVİ
