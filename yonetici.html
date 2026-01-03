@@ -7,6 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="firebase-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -96,10 +97,11 @@
     <div id="login-screen">
         <div class="login-box">
             <h2>KOKPİT GİRİŞİ</h2>
-            <p style="color:#aaa; font-size:0.9rem;">Güvenlik: Barış İlkan Özel</p>
-            <input type="password" id="password" class="login-input" placeholder="Yönetici Şifresi">
+            <p style="color:#aaa; font-size:0.9rem;">Barış İlkan Yönetici Paneli</p>
+            <input type="email" id="email" class="login-input" placeholder="E-posta Adresi">
+            <input type="password" id="password" class="login-input" placeholder="Şifre">
             <button onclick="girisYap()" class="login-btn">Giriş Yap</button>
-            <div id="hata-mesaji" class="error-msg" style="display:none; color:red; margin-top:10px;">Hatalı Şifre!</div>
+            <div id="hata-mesaji" class="error-msg" style="display:none; color:red; margin-top:10px;">Hatalı E-posta veya Şifre!</div>
         </div>
     </div>
 
@@ -134,16 +136,31 @@
                 
                 <select onchange="document.getElementById('p-link').value = this.value" style="flex:1; background:#fffbeb; font-weight:bold;">
                     <option value="">Hızlı Sayfa Seç 🔽</option>
-                    <option value="anaokulu.html">Anaokulu</option>
-                    <option value="ilkokul.html">İlkokul</option>
-                    <option value="ortaokul.html">🏫 Ortaokul (Genel)</option>
-                    <option value="ortaokul.html#5">5️⃣ 5. Sınıf</option>
-                    <option value="ortaokul.html#6">6️⃣ 6. Sınıf</option>
-                    <option value="ortaokul.html#7">7️⃣ 7. Sınıf</option>
-                    <option value="ortaokul.html#8">8️⃣ 8. Sınıf (LGS)</option>
-                    <option value="kocluk.html">Koçluk</option>
-                    <option value="ozel-egitim.html">Özel Eğitim</option>
-                    <option value="ben-ali.html">Ben Ali Kitabı</option>
+                    <optgroup label="Akademik">
+                        <option value="anaokulu.html">Anaokulu</option>
+                        <option value="ilkokul.html">İlkokul</option>
+                        <option value="ortaokul.html">🏫 Ortaokul (Genel)</option>
+                        <option value="ortaokul.html#5">-- 5. Sınıf</option>
+                        <option value="ortaokul.html#6">-- 6. Sınıf</option>
+                        <option value="ortaokul.html#7">-- 7. Sınıf</option>
+                        <option value="ortaokul.html#8">-- 8. Sınıf (LGS)</option>
+                        <option value="kocluk.html">LGS/YKS Koçluk</option>
+                    </optgroup>
+                    <optgroup label="Özel Eğitim & Gelişim">
+                        <option value="ozel-egitim.html">Özel Eğitim</option>
+                        <option value="dil-konusma.html">Dil ve Konuşma</option>
+                        <option value="karne.html">Gelişim Karnesi</option>
+                    </optgroup>
+                    <optgroup label="Vitrin & Oyunlar">
+                        <option value="akil-zeka.html">Akıl ve Zeka</option>
+                        <option value="robotik.html">Robotik Kodlama</option>
+                        <option value="satranc.html">Satranç</option>
+                    </optgroup>
+                    <optgroup label="Kitaplar & Müzik">
+                        <option value="ben-ali.html">Kitap: Ben Ali</option>
+                        <option value="en-guclu-cocuk-halid.html">Kitap: En Güçlü Çocuk</option>
+                        <option value="sarkilar.html">Müzik Kutusu</option>
+                    </optgroup>
                 </select>
             </div>
             <select id="p-kategori">
@@ -154,6 +171,8 @@
                 <option value="LGS Koçluk">🎯 Koçluk & Sınav</option>
                 <option value="Robotik">🤖 Robotik</option>
                 <option value="Özel Eğitim">🧩 Özel Eğitim</option>
+                <option value="Satranç">♞ Satranç</option>
+                <option value="Akıl Zeka">🧠 Akıl Zeka</option>
             </select>
             <select id="p-icon">
                 <option value="fa-star">⭐ Yıldız</option>
@@ -161,6 +180,9 @@
                 <option value="fa-book">📖 Kitap</option>
                 <option value="fa-robot">🤖 Robot</option>
                 <option value="fa-brain">🧠 Beyin</option>
+                <option value="fa-chess">♞ Satranç</option>
+                <option value="fa-music">🎵 Müzik</option>
+                <option value="fa-comments">💬 Konuşma</option>
             </select>
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
             <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
@@ -233,22 +255,29 @@
     </div>
     
     <script>
+        const auth = firebase.auth();
         const db = firebase.firestore();
         let tumMesajlar = []; 
-        const YONETICI_SIFRESI = "123456"; 
 
         function girisYap() { 
-            const girilenSifre = document.getElementById('password').value;
-            if(girilenSifre === YONETICI_SIFRESI) {
-                document.getElementById('login-screen').style.display = 'none'; 
-                document.getElementById('admin-panel').style.display = 'block'; 
-                baslat();
-            } else {
-                document.getElementById('hata-mesaji').style.display = 'block';
-            }
+            auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
+                .catch(() => document.getElementById('hata-mesaji').style.display='block'); 
         }
         
-        function cikisYap() { location.reload(); }
+        function cikisYap() { auth.signOut().then(()=>location.reload()); }
+
+        // OTURUM DURUMU KONTROLÜ
+        auth.onAuthStateChanged(u => {
+            if(u && !u.isAnonymous) { 
+                document.getElementById('login-screen').style.display = 'none'; 
+                document.getElementById('admin-panel').style.display = 'block'; 
+                baslat(); 
+            } else { 
+                document.getElementById('login-screen').style.display = 'flex'; 
+                document.getElementById('admin-panel').style.display = 'none'; 
+                if(u) auth.signOut(); // Anonimse at
+            }
+        });
 
         function baslat() {
             ayarlarYukle(); 
