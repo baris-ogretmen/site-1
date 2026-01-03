@@ -8,14 +8,43 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
     <script src="firebase-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 20px; color:#334155; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2563eb; margin-bottom: 20px; font-weight:900; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; margin: 0; padding: 0; color:#334155; }
         
+        /* --- GİRİŞ EKRANI (KİLİT) --- */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 20px; width: 320px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .login-btn:hover { background: #1d4ed8; }
+        .error-msg { color: red; font-size: 0.9rem; margin-top: 10px; display: none; }
+
+        /* --- PANEL İÇERİĞİ --- */
+        #admin-panel { display: none; max-width: 850px; margin: 40px auto; padding: 0 20px; padding-bottom: 50px; }
+        
+        .header-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; background:white; padding:15px 25px; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.05); }
+        .header-bar h2 { margin:0; color:#2563eb; display:flex; align-items:center; gap:10px; }
+        
+        .logout-btn { 
+            background: #ef4444; color: white; border: none; padding: 10px 20px; 
+            border-radius: 8px; cursor: pointer; font-weight:bold; display:flex; align-items:center; gap:5px;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); transition:0.3s;
+        }
+        .logout-btn:hover { background:#dc2626; transform:translateY(-2px); }
+
         .stat-card { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
         .stat-count { font-size: 3.5rem; font-weight: 800; line-height: 1; margin: 10px 0; }
         
@@ -26,11 +55,12 @@
         .tab-btn.active { background: #2563eb; color: white; box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
 
         /* BİLDİRİM EFEKTİ (SARI YANIP SÖNME) */
-        @keyframes sariAlarm { 0% { background: #e2e8f0; box-shadow: 0 0 0 rgba(255, 215, 0, 0); } 50% { background: #FFD700; color: black; box-shadow: 0 0 15px rgba(255, 215, 0, 0.7); } 100% { background: #e2e8f0; box-shadow: 0 0 0 rgba(255, 215, 0, 0); } }
-        .has-message { animation: sariAlarm 2s infinite; font-weight: 900 !important; border: 2px solid #FFD700 !important; }
-        .badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 50%; font-size: 0.75rem; position: absolute; top: -5px; right: -5px; display: none; }
+        @keyframes sariAlarm { 0% { background: #e2e8f0; box-shadow: 0 0 0 transparent; } 50% { background: #FFD700; color: black; box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); transform: scale(1.02); } 100% { background: #e2e8f0; box-shadow: 0 0 0 transparent; } }
+        .has-message { animation: sariAlarm 1.5s infinite; font-weight: 900 !important; border: 2px solid #b45309 !important; z-index: 10; }
+        .badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 50%; font-size: 0.8rem; position: absolute; top: -8px; right: -5px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border:2px solid white; }
 
         /* FORMLAR */
+        .panel-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .form-group { margin-bottom: 15px; }
         input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-family: inherit; transition:0.3s; }
         input:focus, textarea:focus { border-color: #2563eb; outline:none; }
@@ -38,13 +68,10 @@
         button.save-btn:hover { background: #059669; }
 
         /* LİSTE KARTLARI */
-        .item-card { background: #fff; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition:0.2s; display: flex; flex-direction: column; }
+        .item-card { background: #fff; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition:0.2s; position:relative; }
         .item-card:hover { transform:translateY(-2px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
-        .item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        
         .btn-action-group { display: flex; gap: 5px; margin-top: 10px; }
         .btn-mini { border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; flex: 1; display:flex; align-items:center; justify-content:center; gap:5px; }
-        
         .btn-vitrin { background: #FFD700; color: #000; }
         .btn-sil { background: #ef4444; color: white; flex: 0.3; }
         .btn-kat { background: #e2e8f0; color: #333; }
@@ -61,13 +88,28 @@
 
     <div class="message" id="mesaj-kutusu"></div>
 
-    <div class="container">
+    <div id="login-screen">
+        <div class="login-box">
+            <i class="fas fa-lock" style="font-size: 3rem; color: #2563eb; margin-bottom: 20px;"></i>
+            <h2>Yönetici Girişi</h2>
+            <input type="email" id="email" class="login-input" placeholder="E-posta Adresi">
+            <input type="password" id="password" class="login-input" placeholder="Şifre">
+            <button onclick="girisYap()" class="login-btn">Giriş Yap</button>
+            <div id="hata-mesaji" class="error-msg"></div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        
+        <div class="header-bar">
+            <h2><i class="fas fa-rocket"></i> Kokpit</h2>
+            <button onclick="cikisYap()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Güvenli Çıkış</button>
+        </div>
+
         <div class="stat-card">
             <div style="opacity:0.8; font-size:0.9rem;">Bugün Gelen Ziyaretçi</div>
             <div class="stat-count" id="ziyaret-sayisi">0</div>
         </div>
-
-        <h2><i class="fas fa-rocket"></i> Süper Yönetici Paneli</h2>
         
         <div class="tab-buttons">
             <button class="tab-btn active" id="btn-proje" onclick="tabDegis('proje')">Projeler</button>
@@ -79,7 +121,7 @@
             </button>
         </div>
 
-        <div id="proje-formu">
+        <div id="proje-formu" class="panel-card">
             <div class="fixed-box">
                 <span class="fixed-title"><i class="fas fa-book"></i> Sabit Eserlerim (Hızlı Vitrin)</span>
                 <div class="btn-action-group">
@@ -118,10 +160,11 @@
             
             <div class="form-group"><select id="p-icon"><option value="fa-book">📚 Kitap/Ders</option><option value="fa-gamepad">🎮 Oyun</option><option value="fa-brain">🧠 Zeka</option><option value="fa-robot">🤖 Robotik</option><option value="fa-chess-knight">♞ Satranç</option></select></div>
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
+            
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">📂 Mevcut Projeler</h4><div id="list-projeler"></div></div>
         </div>
 
-        <div id="tavsiye-formu" style="display:none;">
+        <div id="tavsiye-formu" class="panel-card" style="display:none;">
             <h3 style="color:#475569;">Tavsiye & Sosyal Link Ekle</h3>
             <div class="form-group"><input type="text" id="t-baslik" placeholder="Başlık (Örn: Instagram, Ayın Kitabı)"></div>
             <div class="form-group"><input type="text" id="t-aciklama" placeholder="Alt Başlık (Örn: Bizi Takip Edin)"></div>
@@ -134,19 +177,11 @@
                     <option value="fa-link">🔗 Genel Link İkonu</option>
                 </select>
             </div>
-            <div class="form-group">
-                <select id="t-renk">
-                    <option value="#E1306C">Instagram Rengi (Pembe)</option>
-                    <option value="#FF0000">YouTube Rengi (Kırmızı)</option>
-                    <option value="#2563eb">Mavi (Kitap/Genel)</option>
-                    <option value="#10b981">Yeşil (Özel)</option>
-                </select>
-            </div>
             <button onclick="tavsiyeEkle()" class="save-btn">Tavsiyeyi Ekle</button>
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">❤️ Aktif Tavsiyeler</h4><div id="list-tavsiyeler"></div></div>
         </div>
 
-        <div id="yazi-formu" style="display:none;">
+        <div id="yazi-formu" class="panel-card" style="display:none;">
             <h3 style="color:#475569;">Yeni Yazı Ekle</h3>
             <div class="form-group"><input type="text" id="y-baslik" placeholder="Yazı Başlığı"></div>
             <div class="form-group"><textarea id="y-icerik" rows="10" placeholder="İçerik (HTML destekler)..."></textarea></div>
@@ -154,14 +189,14 @@
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">📄 Mevcut Yazılar</h4><div id="list-yazilar"></div></div>
         </div>
 
-        <div id="duyuru-formu" style="display:none;">
+        <div id="duyuru-formu" class="panel-card" style="display:none;">
             <h3 style="color:#475569;">Yeni Duyuru</h3>
             <div class="form-group"><input type="text" id="d-metin" placeholder="Duyuru metni..."></div>
             <button onclick="duyuruEkle()" class="save-btn">Duyuruyu As</button>
             <div style="margin-top: 30px;"><h4 style="border-bottom:2px solid #eee; padding-bottom:10px;">📢 Aktif Duyurular</h4><div id="list-duyurular"></div></div>
         </div>
 
-        <div id="mesaj-formu" style="display:none;">
+        <div id="mesaj-formu" class="panel-card" style="display:none;">
             <h3 style="color:#475569;">Gelen Talepler</h3>
             <div id="mesaj-listesi"></div>
         </div>
@@ -169,7 +204,38 @@
     </div>
     
     <script>
+        const auth = firebase.auth();
         const db = firebase.firestore();
+
+        // --- GÜVENLİK KONTROLÜ (BEKÇİ) ---
+        function girisYap() {
+            const e = document.getElementById('email').value; const p = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(e, p).catch(err => { 
+                document.getElementById('hata-mesaji').style.display='block'; 
+                document.getElementById('hata-mesaji').innerText = "Hatalı Giriş! (E-posta veya Şifre Yanlış)"; 
+            });
+        }
+        
+        function cikisYap() { 
+            auth.signOut().then(() => location.reload()); 
+        }
+
+        // OTURUM DURUMU KONTROLÜ (ZORLA ÇIKIŞ)
+        auth.onAuthStateChanged(u => {
+            if (u && !u.isAnonymous) {
+                // Eğer kullanıcı giriş yapmışsa ve Anonim DEĞİLSE (Yani bizim e-posta ile girdiyse)
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+            } else {
+                // Anonimse veya kimse yoksa
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('admin-panel').style.display = 'none';
+                if(u && u.isAnonymous) {
+                    // Anonim giriş yakalanırsa hemen çıkış yap ve şifre ekranına at
+                    auth.signOut(); 
+                }
+            }
+        });
 
         // İstatistik
         const bugunStr = new Date().toISOString().split('T')[0];
@@ -177,47 +243,23 @@
 
         // SEKME GEÇİŞLERİ
         function tabDegis(tip) {
-            document.querySelectorAll('[id$="-formu"]').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.panel-card').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tip + '-formu').style.display = 'block';
             if(tip !== 'mesaj') document.getElementById('btn-' + tip).classList.add('active');
-            
-            // Mesajlar sekmesine basınca uyarıyı kaldır (İsteğe bağlı, şimdilik kalıcı olsun)
         }
 
         // --- EKLEME FONKSİYONLARI ---
         function projeEkle() {
-            const b = document.getElementById('p-baslik').value; 
-            const l = document.getElementById('p-link').value; 
-            const k = document.getElementById('p-kategori').value; 
-            const s = document.getElementById('p-sinif').value;
-            
+            const b = document.getElementById('p-baslik').value; const l = document.getElementById('p-link').value;
             if(!b || !l) { alert("Başlık ve Link zorunlu!"); return; }
-            
-            db.collection("projeler").add({ 
-                baslik: b, 
-                aciklama: document.getElementById('p-aciklama').value, 
-                link: l, 
-                kategori: k, 
-                sinif: s, 
-                icon: document.getElementById('p-icon').value, 
-                tarih: firebase.firestore.FieldValue.serverTimestamp() 
-            }).then(() => { resetForm('proje-formu'); });
+            db.collection("projeler").add({ baslik: b, aciklama: document.getElementById('p-aciklama').value, link: l, kategori: document.getElementById('p-kategori').value, sinif: document.getElementById('p-sinif').value, icon: document.getElementById('p-icon').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('proje-formu'); });
         }
 
         function tavsiyeEkle() {
-            const b = document.getElementById('t-baslik').value;
-            const l = document.getElementById('t-link').value;
+            const b = document.getElementById('t-baslik').value; const l = document.getElementById('t-link').value;
             if(!b || !l) { alert("Başlık ve Link giriniz."); return; }
-
-            db.collection("tavsiyeler").add({
-                baslik: b,
-                aciklama: document.getElementById('t-aciklama').value,
-                link: l,
-                icon: document.getElementById('t-icon').value,
-                renk: document.getElementById('t-renk').value,
-                tarih: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => { resetForm('tavsiye-formu'); });
+            db.collection("tavsiyeler").add({ baslik: b, aciklama: document.getElementById('t-aciklama').value, link: l, icon: document.getElementById('t-icon').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('tavsiye-formu'); });
         }
 
         function duyuruEkle() {
@@ -229,48 +271,31 @@
             db.collection("yazilar").add({ baslik: b, icerik: i, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => { resetForm('yazi-formu'); });
         }
 
-        // --- SÜPER LİSTELEME FONKSİYONU ---
+        // --- LİSTELEME ---
         function listeGetir(koleksiyon, divId, ikon) {
             db.collection(koleksiyon).orderBy("tarih", "desc").onSnapshot(snap => {
                 let html = "";
                 snap.forEach(doc => {
                     const d = doc.data();
-                    let baslik = d.baslik || d.metin;
-                    // Tırnak işaretlerini güvenli hale getir
-                    const safeBaslik = (baslik || "").replace(/'/g, "\\'");
-                    const safeAciklama = (d.aciklama || "İncelemek için tıkla.").replace(/'/g, "\\'");
-                    const safeLink = d.link ? d.link.replace(/'/g, "\\'") : "yazi"; 
+                    let safeBaslik = (d.baslik || d.metin || "").replace(/'/g, "\\'");
+                    let safeAciklama = (d.aciklama || "").replace(/'/g, "\\'");
+                    let safeLink = (d.link || "").replace(/'/g, "\\'");
                     
-                    let etiket = d.kategori ? `<span style="background:#e2e8f0; font-size:0.7rem; padding:2px 5px; border-radius:4px; margin-left:5px;">${d.kategori.toUpperCase()}</span>` : "";
-                    
-                    html += `
-                    <div class="item-card">
-                        <div class="item-header">
-                            <div>${ikon} <strong>${baslik}</strong> ${etiket}</div>
-                        </div>
-                        <div class="btn-action-group">
-                            ${(koleksiyon === 'projeler' || koleksiyon === 'yazilar') ? 
-                              `<button onclick="vitrinYap('${safeBaslik}', '${safeAciklama}', '${safeLink}')" class="btn-mini btn-vitrin"><i class="fas fa-star"></i> Vitrin</button>` : ''}
-                            
-                            <button onclick="kayitSil('${koleksiyon}', '${doc.id}')" class="btn-mini btn-sil"><i class="fas fa-trash"></i> Sil</button>
-                        </div>
-                    </div>`;
+                    html += `<div class="item-card"><div style="display:flex; justify-content:space-between;"><div>${ikon} <strong>${d.baslik || d.metin}</strong></div><button onclick="kayitSil('${koleksiyon}', '${doc.id}')" class="btn-mini btn-sil">Sil</button></div>
+                    ${(koleksiyon === 'projeler' || koleksiyon === 'yazilar') ? `<button onclick="vitrinYap('${safeBaslik}', '${safeAciklama}', '${safeLink}')" class="btn-mini btn-vitrin" style="margin-top:5px; width:100%;">Vitrin Yap</button>` : ''}</div>`;
                 });
-                document.getElementById(divId).innerHTML = html || "<div style='text-align:center; color:#999;'>Veri yok.</div>";
+                document.getElementById(divId).innerHTML = html || "<div style='color:#999; text-align:center;'>Veri yok.</div>";
             });
         }
 
-        // --- DİĞER FONKSİYONLAR ---
         function vitrinYap(baslik, aciklama, link) {
-            if(!confirm("Bu içeriği Ana Sayfa'da 'Haftanın Yıldızı' yapmak istiyor musun?")) return;
-            let url = link; if(link === 'yazi') url = 'index.html#kaynak-alani'; 
-            db.collection("site_ayarlari").doc("haftanin_oyunu").set({
-                baslik: baslik, metin: aciklama, url: url, tarih: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => gosterMesaj("✅ Ana Sayfa Vitrini Güncellendi!", "success"));
+            if(!confirm("Vitrine eklensin mi?")) return;
+            let url = link; if(link === 'yazi') url = 'index.html#kaynak-alani';
+            db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik: baslik, metin: aciklama, url: url, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(() => gosterMesaj("Vitrin Güncellendi!", "success"));
         }
 
-        function kayitSil(col, id) { if(confirm("Silmek istiyor musun?")) db.collection(col).doc(id).delete().then(()=> gosterMesaj("Silindi", "success")); }
-        function resetForm(id) { document.querySelectorAll('#'+id+' input, #'+id+' textarea').forEach(i=>i.value=""); gosterMesaj("Başarıyla Kaydedildi!", "success"); }
+        function kayitSil(col, id) { if(confirm("Silmek istiyor musun?")) db.collection(col).doc(id).delete(); }
+        function resetForm(id) { document.querySelectorAll('#'+id+' input, #'+id+' textarea').forEach(i=>i.value=""); gosterMesaj("Kaydedildi!", "success"); }
         function gosterMesaj(m, t) { const k = document.getElementById('mesaj-kutusu'); k.innerText=m; k.className="message "+t; k.style.display="block"; setTimeout(()=>k.style.display="none", 3000); }
 
         listeGetir("projeler", "list-projeler", "🎮");
@@ -278,23 +303,20 @@
         listeGetir("duyurular", "list-duyurular", "📢");
         listeGetir("tavsiyeler", "list-tavsiyeler", "❤️");
 
-        // MESAJ SİSTEMİ (AKILLI BİLDİRİM)
+        // AKILLI MESAJ BİLDİRİMİ
         db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(snap => {
             let html = "";
-            let sayi = snap.size; // Mesaj sayısı
+            let sayi = snap.size; 
             const btnMesaj = document.getElementById('btn-mesaj');
             const badge = document.getElementById('msg-badge');
 
-            // Bildirim Ayarları
             if (sayi > 0) {
-                btnMesaj.classList.add('has-message'); // Sarı yap
+                btnMesaj.classList.add('has-message'); 
                 badge.style.display = 'inline-block';
                 badge.innerText = sayi;
-                document.title = `(${sayi}) Yeni Mesaj | Yönetici Paneli`;
             } else {
                 btnMesaj.classList.remove('has-message');
                 badge.style.display = 'none';
-                document.title = `Süper Yönetici Paneli | Barış İlkan`;
             }
 
             snap.forEach(doc => {
@@ -304,7 +326,7 @@
                             <div style="font-size:0.9rem; margin:5px 0;">${v.konu}</div>
                             <div style="font-size:0.8rem; color:#666;">Tel: ${v.telefon}</div>
                             <div style="display:flex; gap:10px; margin-top:10px;">
-                                <a href="https://wa.me/90${v.telefon.replace(/\D/g,'')}" target="_blank" class="btn-mini" style="background:#25D366; color:white; text-decoration:none; flex:1;"><i class="fab fa-whatsapp"></i> Cevapla</a>
+                                <a href="https://wa.me/90${v.telefon.replace(/\D/g,'')}" target="_blank" class="btn-mini" style="background:#25D366; color:white; text-decoration:none; flex:1; text-align:center;">WhatsApp</a>
                                 <button onclick="kayitSil('iletisim_talepleri', '${doc.id}')" class="btn-mini btn-sil">Sil</button>
                             </div>
                         </div>`;
