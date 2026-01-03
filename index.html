@@ -65,7 +65,7 @@
         .bio-text { color: #334155; line-height: 1.8; text-align: justify; font-size: 1.05rem; }
         .bio-text p { margin-bottom: 20px; }
         
-        /* İSTEDİĞİN GİBİ: PARAGRAF İÇİNDE AMA BELİRGİN BAŞLIK GİBİ */
+        /* İSTEDİĞİN VURGU STİLİ (PARAGRAF İÇİNDE AMA BAŞLIK GİBİ GÜÇLÜ) */
         .bio-highlight { 
             font-weight: 900; 
             color: #000;
@@ -75,7 +75,7 @@
         }
 
         .cert-list { list-style: none; padding: 0; margin: 0; }
-        .cert-item { display: flex; align-items: center; gap: 15px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 600; font-size: 1rem; transition: 0.2s; }
+        .cert-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 600; font-size: 1rem; transition: 0.2s; }
         .cert-item:hover { color: var(--ana-renk); padding-left: 5px; }
         .cert-item i { color: #d97706; font-size: 1.3rem; min-width: 30px; text-align: center; }
 
@@ -85,7 +85,7 @@
         .section-title.ozel { background: var(--ozel-egitim); color: white; box-shadow: 5px 5px 0px #0f172a; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
 
-        /* MODERN KARTLAR */
+        /* MODERN KARTLAR (CAFCAFLI) */
         .modern-card { background: white; border-radius: 25px; padding: 25px; position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: all 0.4s ease; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; text-decoration: none; border: 2px solid white; }
         .modern-card:hover { transform: translateY(-10px); box-shadow: 0 25px 50px rgba(37, 99, 235, 0.2); border-color: var(--vurgu); }
         .card-icon { width: 70px; height: 70px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 20px; transition: 0.4s; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
@@ -335,11 +335,56 @@
     <footer>&copy; 2026 Barış İlkan - Tüm Hakları Saklıdır.</footer>
 
     <script>
+        // 1. GLOBAL DEĞİŞKENLERİ EN ÜSTTE TANIMLA
+        let robotConfig = { 
+            apiKey: "AIzaSyD0peT4qR1-s1y0dFfaoUT6khs3gjcnSmY", // VERDİĞİNİZ ANAHTAR
+            prompt: "Sen Barış Öğretmen'in yapay zeka asistanısın. Adın 'Biri'. Görevin herkese (öğrenci, veli, öğretmen) yardımcı olmak. Tarzın: Pedagojik, nazik, motive edici ve çözüm odaklı." 
+        };
+
         const db = firebase.firestore();
-        function waAc() { document.getElementById('wa-modal').style.display = 'flex'; }
-        function kapat(id) { document.getElementById(id).style.display = 'none'; }
         let makaleVerileri = {};
 
+        // 2. ROBOT PANEL AYARLARI
+        db.collection("site_ayarlari").doc("robot").onSnapshot(doc => { 
+            if(doc.exists && doc.data().apiKey) { robotConfig = doc.data(); } 
+        });
+
+        // 3. MESAJ GÖNDERME
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim(); if(!msg) return;
+            
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<div class="message msg-user">${msg}</div>`;
+            input.value = '';
+            
+            const loadingId = 'load'+Date.now();
+            chatBox.innerHTML += `<div class="message msg-bot" id="${loadingId}">...</div>`;
+            
+            try {
+                // MODELİ GÜNCELLEDİM: gemini-1.5-flash
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${robotConfig.apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: msg }] }], systemInstruction: { parts: [{ text: robotConfig.prompt }] } })
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error.message || response.statusText);
+                }
+
+                const data = await response.json();
+                document.getElementById(loadingId).innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
+            } catch (e) { 
+                document.getElementById(loadingId).innerHTML = `<b>Hata:</b> ${e.message}<br><small>Not: Bilgisayarınızda (yerel) çalışıyorsa çalışmayabilir. Sunucuya yükleyiniz.</small>`; 
+            }
+        }
+
+        // 4. DİĞER FONKSİYONLAR
+        function waAc() { document.getElementById('wa-modal').style.display = 'flex'; }
+        function kapat(id) { document.getElementById(id).style.display = 'none'; }
+        function openShareModal() { document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`; document.getElementById('share-modal').style.display = 'flex'; }
+        
         const sozler = ["İlim Çin'de de olsa alınız.", "Çocuklar geleceğimizdir.", "Öğrenmek yaşam boyudur.", "Başarı detayda gizlidir.", "Sabır başarının anahtarıdır."];
         document.getElementById('daily-quote').innerText = sozler[Math.floor(Math.random()*sozler.length)];
 
@@ -353,10 +398,8 @@
                 if(items.length > 0) {
                     const randomItem = items[Math.floor(Math.random() * items.length)];
                     let title = "Sürpriz İçerik";
-                    // H3 bulmaya çalış
                     const h3 = randomItem.querySelector('h3');
                     if(h3) title = h3.innerText;
-                    
                     document.getElementById('wheel-result-text').innerText = title;
                     document.getElementById('wheel-go-link').setAttribute('href', randomItem.getAttribute('href'));
                     document.getElementById('wheel-modal').style.display = 'flex';
@@ -364,51 +407,12 @@
             }, 100);
         }
 
-        // ROBOT (MODEL DÜZELTİLDİ: gemini-pro)
-        let robotConfig = { 
-            apiKey: "AIzaSyD0peT4qR1-s1y0dFfaoUT6khs3gjcnSmY", 
-            prompt: "Sen Barış Öğretmen'in asistanısın. Nazik ve eğitici cevaplar ver." 
-        };
-        db.collection("site_ayarlari").doc("robot").onSnapshot(doc => { 
-            if(doc.exists && doc.data().apiKey) { robotConfig = doc.data(); } 
-        });
-
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const msg = input.value.trim(); if(!msg) return;
-            document.getElementById('chat-box').innerHTML += `<div class="message msg-user">${msg}</div>`;
-            input.value = '';
-            const loadingId = 'load'+Date.now();
-            document.getElementById('chat-box').innerHTML += `<div class="message msg-bot" id="${loadingId}">...</div>`;
-            
-            try {
-                // GEMINI-PRO (EN KARARLI SÜRÜM)
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${robotConfig.apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: msg }] }] })
-                });
-                
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error.message || "Bilinmeyen bir hata oluştu.");
-                }
-
-                const data = await response.json();
-                document.getElementById(loadingId).innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
-            } catch (e) { 
-                document.getElementById(loadingId).innerHTML = `<b>Bağlantı Hatası:</b> ${e.message}`; 
-            }
-        }
-
-        function openShareModal() { document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`; document.getElementById('share-modal').style.display = 'flex'; }
-        
-        // SÜRPRİZ DAİRE
+        // VERİ ÇEKME
         db.collection("site_ayarlari").doc("ozel_duyuru").onSnapshot(doc => {
             const c = document.getElementById('special-circle');
             if(doc.exists && doc.data().aktif) { c.style.display = "flex"; c.innerText = doc.data().daireMetni || "DUYURU"; c.onclick = () => alert(doc.data().mesaj); } else c.style.display = "none";
         });
 
-        // VİTRİN DİNAMİK (BAŞLIK SABİT)
         db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => {
             if(doc.exists) {
                 const d = doc.data();
@@ -424,7 +428,6 @@
         
         db.collection("projeler").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>{const p=d.data(); h+=`<a href="${p.link}" class="card searchable" data-name="${p.baslik.toLowerCase()}"><div class="icon-box"><i class="fas ${p.icon}"></i></div><h3>${p.baslik}</h3></a>`}); if(h) document.getElementById('proje-alani').innerHTML=h; });
         
-        // YAZILAR (YENİ SÜPER KARTLAR)
         db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => { 
             let h=""; 
             s.forEach(d=>{ 
