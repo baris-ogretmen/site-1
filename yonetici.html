@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barış Hoca | Final Kokpit</title>
+    <title>Barış Hoca | Eğitim Üssü Kokpiti</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -97,7 +97,7 @@
         <div class="header-row">
             <div>
                 <h2 style="margin:0; color:var(--koyu);">Eğitim Üssü Yönetimi</h2>
-                <small style="color:#64748b; font-weight:600;">v6.0 Final Ultimate</small>
+                <small style="color:#64748b; font-weight:600;">v6.2 Final Ultimate</small>
             </div>
             <button onclick="auth.signOut()" class="btn btn-danger" style="width:auto; padding: 10px 25px;">Çıkış</button>
         </div>
@@ -182,9 +182,15 @@
                 </div>
             </div>
             <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:30px; font-size:1.2rem; padding:15px; width:100%;">✅ KAYDET VE YAYINLA</button>
+            
             <div style="margin-top:50px;">
-                <h3>📂 Yayındaki İçerikler</h3>
-                <table class="list-table"><thead><tr><th>İçerik</th><th>Kategoriler</th><th>Özel</th><th>İşlem</th></tr></thead><tbody id="content-list"></tbody></table>
+                <h3>📂 Yayındaki Oyunlar & Projeler</h3>
+                <table class="list-table"><thead><tr><th>İçerik</th><th>Kategoriler</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="content-list"></tbody></table>
+            </div>
+
+            <div style="margin-top:50px;">
+                <h3 style="color:#7c3aed;">📝 Yayındaki Köşe Yazıları</h3>
+                <table class="list-table"><thead><tr><th>Başlık</th><th>İçerik Türü</th><th>İşlem</th></tr></thead><tbody id="article-list"></tbody></table>
             </div>
         </div>
 
@@ -303,7 +309,6 @@
             else area.style.display = 'none';
         }
 
-        // --- İSTATİSTİK ---
         function istatistikGetir() {
             const bugun = new Date().toISOString().split('T')[0];
             db.collection("istatistik").doc(bugun).onSnapshot(d => { document.getElementById('stat-today').innerText = d.exists ? d.data().ziyaret : 0; });
@@ -313,7 +318,7 @@
         function formuGuncelle() {
             const tur = document.querySelector('input[name="tur"]:checked').value;
             const iconArea = document.getElementById('icon-area');
-            if(tur === 'yazilar') { iconArea.style.display = 'none'; document.getElementById('p-link').placeholder = "Yazı içeriği..."; } 
+            if(tur === 'yazilar') { iconArea.style.display = 'none'; document.getElementById('p-link').placeholder = "Yazı içeriğini yapıştır..."; } 
             else { iconArea.style.display = 'block'; document.getElementById('p-link').placeholder = "Dosya adı veya Link"; }
         }
 
@@ -358,6 +363,7 @@
         }
 
         function verileriYukle() {
+            // PROJELERİ LİSTELE
             db.collection("projeler").orderBy("tarih", "desc").limit(20).onSnapshot(snap => {
                 let h = "";
                 snap.forEach(d => {
@@ -365,6 +371,16 @@
                     h += `<tr><td><strong>${v.baslik}</strong><br><small>${v.link}</small></td><td><span class="badge">${v.kategori}</span></td><td>${v.vitrin ? '<span class="vitrin-badge">⭐ VİTRİN</span>' : ''}</td><td><button onclick="vitrinYap('${v.baslik}','${v.link}')" class="btn-mini btn-vitrin">⭐</button><button onclick="sil('projeler','${d.id}')" class="btn-mini btn-del">Sil</button></td></tr>`;
                 });
                 document.getElementById('content-list').innerHTML = h;
+            });
+
+            // YAZILARI LİSTELE (YENİ EKLENEN KISIM)
+            db.collection("yazilar").orderBy("tarih", "desc").limit(20).onSnapshot(snap => {
+                let h = "";
+                snap.forEach(d => {
+                    const v = d.data();
+                    h += `<tr><td><strong>${v.baslik}</strong></td><td><span class="badge" style="background:#f3e8ff; color:#7c3aed;">📝 Köşe Yazısı</span></td><td><button onclick="sil('yazilar','${d.id}')" class="btn-mini btn-del">Sil</button></td></tr>`;
+                });
+                document.getElementById('article-list').innerHTML = h;
             });
 
             db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(snap => {
@@ -382,7 +398,6 @@
             db.collection("tavsiyeler").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div style="padding:10px; border-bottom:1px solid #eee;"><span>⭐ ${d.data().baslik}</span><button onclick="sil('tavsiyeler','${d.id}')" class="btn-mini btn-del" style="float:right;">Sil</button></div>`); document.getElementById('list-tavsiyeler').innerHTML=h; });
             db.collection("arsiv_mesajlar").orderBy("arsiv_tarihi", "desc").limit(5).onSnapshot(s => { let h=""; s.forEach(d => h+=`<div style="padding:10px; font-size:0.9rem; color:#64748b; border-bottom:1px solid #eee;">${d.data().ad_soyad} <button onclick="sil('arsiv_mesajlar','${d.id}')" style="float:right; color:red; border:none; background:none; cursor:pointer;">x</button></div>`); document.getElementById('arsiv-listesi').innerHTML=h; });
             
-            // AYARLARI ÇEK
             db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => { if(d.exists) { 
                 const v = d.data(); 
                 document.getElementById('set-circle-active').checked = v.aktif; 
