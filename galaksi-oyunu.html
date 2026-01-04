@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Galaksi Akademisi | Astro-Savaş</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+
+        :root {
+
+            --neon-blue: #00f3ff;
+
+            --neon-pink: #bc13fe;
+
+            --neon-green: #0aff0a;
+
+            --neon-red: #ff003c;
+
+            --neon-yellow: #ffee00;
+
+            --bg-color: #050510;
+
+        }
+
+
+
+        body {
+
+            margin: 0;
+
+            overflow: hidden;
+
+            background-color: var(--bg-color);
+
+            font-family: 'Exo 2', sans-serif;
+
+            color: white;
+
+            touch-action: none;
+
+            user-select: none;
+
+            -webkit-user-select: none;
+
+        }
+
+
+
+        #game-container {
+
+            position: relative;
+
+            width: 100vw;
+
+            height: 100vh;
+
+            background: radial-gradient(circle at bottom, #1a1d2e 0%, #000 100%);
+
+        }
+
+
+
+        canvas { display: block; }
+
+
+
+        /* --- ARAYÜZ (HUD) --- */
+
+        .ui-layer {
+
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+
+            pointer-events: none;
+
+            display: flex; flex-direction: column;
+
+        }
+
+
+
+        .hud-top {
+
+            padding: 15px 20px;
+
+            display: flex; justify-content: space-between; align-items: flex-start;
+
+            font-family: 'Orbitron', sans-serif;
+
+            text-shadow: 0 0 10px var(--neon-blue);
+
+            z-index: 100; pointer-events: auto;
+
+        }
+
+
+
+        .lives-container {
+
+            display: flex; gap: 5px; color: var(--neon-red);
+
+            font-size: 1.5rem;
+
+            width: 100px;
+
+        }
+
+
+
+        .hud-center {
+
+            display: flex; flex-direction: column; align-items: center;
+
+        }
+
+
+
+        #score-display {
+
+            font-size: clamp(1.5rem, 3vw, 2rem);
+
+            font-weight: bold;
+
+        }
+
+
+
+        #rank-display {
+
+            font-size: 0.9rem;
+
+            color: var(--neon-yellow);
+
+            margin-top: 5px;
+
+            letter-spacing: 2px;
+
+            text-transform: uppercase;
+
+            font-weight: bold;
+
+            text-shadow: 0 0 10px var(--neon-yellow);
+
+            transition: transform 0.3s;
+
+        }
+
+        .rank-up-anim {
+
+            animation: rankPop 0.5s ease-out;
+
+        }
+
+        @keyframes rankPop {
+
+            0% { transform: scale(1); color: white; }
+
+            50% { transform: scale(1.5); color: var(--neon-green); }
+
+            100% { transform: scale(1); color: var(--neon-yellow); }
+
+        }
+
+
+
+        .pause-btn {
+
+            background: rgba(0, 243, 255, 0.1);
+
+            border: 2px solid var(--neon-blue);
+
+            color: white;
+
+            width: 50px; height: 50px;
+
+            border-radius: 50%;
+
+            cursor: pointer;
+
+            font-size: 1.2rem;
+
+            display: flex; align-items: center; justify-content: center;
+
+            transition: 0.3s;
+
+        }
+
+        .pause-btn:hover { background: var(--neon-blue); color: black; }
+
+
+
+        /* --- SORU KUTUSU --- */
+
+        .hud-question {
+
+            position: absolute; top: 15%; width: 100%;
+
+            display: flex; justify-content: center;
+
+            pointer-events: none; z-index: 10;
+
+        }
+
+
+
+        .question-box {
+
+            background: rgba(10, 25, 40, 0.9);
+
+            border: 2px solid var(--neon-blue);
+
+            padding: 1.5vh 3vw;
+
+            border-radius: 20px;
+
+            max-width: 90%; min-width: 300px;
+
+            text-align: center;
+
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+
+            backdrop-filter: blur(10px);
+
+            transform: translateY(-50px); opacity: 0;
+
+            transition: opacity 0.5s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        }
+
+        .question-box.visible { opacity: 1; transform: translateY(0); }
+
+
+
+        .subject-tag {
+
+            font-size: 1rem; color: var(--neon-pink); font-weight: bold; letter-spacing: 2px;
+
+            display: block; margin-bottom: 5px; text-transform: uppercase;
+
+        }
+
+        .question-text {
+
+            font-size: clamp(1.2rem, 4vw, 2rem);
+
+            font-weight: bold; color: white; line-height: 1.3;
+
+        }
+
+
+
+        /* --- MENÜ EKRANLARI --- */
+
+        .screen {
+
+            position: absolute; inset: 0;
+
+            background: rgba(5, 5, 16, 0.95);
+
+            display: flex; align-items: center; justify-content: center;
+
+            pointer-events: auto; z-index: 200;
+
+            transition: opacity 0.3s;
+
+            padding: 20px;
+
+        }
+
+        .hidden { opacity: 0; pointer-events: none; }
+
+
+
+        .start-layout {
+
+            display: flex; gap: 50px; flex-wrap: wrap;
+
+            justify-content: center; align-items: center;
+
+            width: 100%; max-width: 1200px;
+
+        }
+
+
+
+        .start-left { flex: 1; min-width: 300px; text-align: center; }
+
+        .start-right {
+
+            flex: 1; min-width: 300px; max-width: 400px;
+
+            background: rgba(255, 255, 255, 0.05);
+
+            padding: 30px; border-radius: 20px;
+
+            border: 1px solid rgba(255,255,255,0.1);
+
+        }
+
+
+
+        h1 {
+
+            font-family: 'Orbitron', sans-serif;
+
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+
+            margin: 0;
+
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-pink));
+
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4));
+
+        }
+
+
+
+        .option-group { margin-bottom: 25px; text-align: left; }
+
+        .option-label { color: var(--neon-green); font-family: 'Orbitron'; margin-bottom: 10px; display: block; font-size: 1.1rem; }
+
+        .option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+        
+
+        .opt-btn {
+
+            background: rgba(0,0,0,0.3); border: 1px solid #555; color: #aaa;
+
+            padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+
+            font-family: 'Exo 2'; font-weight: bold; text-align: center;
+
+        }
+
+        .opt-btn:hover { border-color: white; color: white; }
+
+        .opt-btn.selected {
+
+            background: var(--neon-blue); color: black; border-color: var(--neon-blue);
+
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+
+        }
+
+
+
+        .btn {
+
+            background: transparent;
+
+            border: 2px solid var(--neon-blue);
+
+            color: var(--neon-blue);
+
+            padding: 15px 50px;
+
+            font-size: 1.5rem;
+
+            font-family: 'Orbitron', sans-serif;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            margin-top: 20px;
+
+            text-transform: uppercase;
+
+            transition: 0.3s;
+
+            position: relative;
+
+            overflow: hidden;
+
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+
+            width: 100%;
+
+        }
+
+        .btn:hover {
+
+            background: var(--neon-blue); color: black;
+
+            box-shadow: 0 0 50px var(--neon-blue); transform: scale(1.05);
+
+        }
+
+
+
+        /* --- KONTROLLER --- */
+
+        #joystick-area {
+
+            position: absolute; bottom: 30px; left: 30px;
+
+            width: 140px; height: 140px; z-index: 150;
+
+            pointer-events: auto; display: none;
+
+        }
+
+        .joystick-base {
+
+            width: 100%; height: 100%;
+
+            background: rgba(255, 255, 255, 0.1);
+
+            border: 2px solid rgba(0, 243, 255, 0.3);
+
+            border-radius: 50%; position: relative;
+
+        }
+
+        .joystick-stick {
+
+            width: 50px; height: 50px;
+
+            background: var(--neon-blue);
+
+            border-radius: 50%;
+
+            position: absolute; top: 50%; left: 50%;
+
+            transform: translate(-50%, -50%);
+
+            box-shadow: 0 0 15px var(--neon-blue);
+
+            pointer-events: none;
+
+        }
+
+
+
+        #fire-btn {
+
+            position: absolute; bottom: 30px; right: 30px;
+
+            width: 90px; height: 90px;
+
+            background: rgba(255, 0, 60, 0.2);
+
+            border: 3px solid var(--neon-red);
+
+            border-radius: 50%;
+
+            color: var(--neon-red);
+
+            font-size: 2rem;
+
+            display: flex; align-items: center; justify-content: center;
+
+            cursor: pointer; pointer-events: auto;
+
+            z-index: 150;
+
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+
+            transition: 0.1s;
+
+        }
+
+        #fire-btn:active { background: var(--neon-red); color: white; transform: scale(0.95); }
+
+
+
+        .controls-hint {
+
+            margin-top: 20px; color: #888; font-size: 0.9rem;
+
+            display: flex; gap: 15px; justify-content: center; align-items: center;
+
+        }
+
+        .key {
+
+            border: 1px solid #555; padding: 4px 10px; border-radius: 6px;
+
+            color: #fff; background: #222; font-weight: bold; font-size: 0.8rem;
+
+        }
+
+
+
+        #damage-overlay {
+
+            position: absolute; inset: 0; pointer-events: none; z-index: 50;
+
+            transition: background 0.1s;
+
+        }
+
+        .damage-flash { background: rgba(255, 0, 0, 0.3); }
+
+
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+<div id="game-container">
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="damage-overlay"></div>
+
+
+
+    <!-- UI KATMANI -->
+
+    <div class="ui-layer" id="game-ui" style="display: none;">
+
+        <div class="hud-top">
+
+            <div class="lives-container" id="lives-display">
+
+                <i class="fas fa-heart"></i><i class="fas fa-heart"></i><i class="fas fa-heart"></i>
+
+            </div>
+
+            
+
+            <div class="hud-center">
+
+                <div id="score-display">00000</div>
+
+                <div id="rank-display">RÜTBE: ÇAYLAK</div>
+
+            </div>
+
+
+
+            <button class="pause-btn" onclick="togglePause()"><i class="fas fa-pause"></i></button>
+
+        </div>
+
+        
+
+        <div class="hud-question">
+
+            <div class="question-box" id="q-box">
+
+                <span class="subject-tag" id="q-subject">MATEMATİK</span>
+
+                <div class="question-text" id="q-text">Soru...</div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Kontroller -->
+
+        <div id="joystick-area">
+
+            <div class="joystick-base"><div class="joystick-stick" id="stick"></div></div>
+
+        </div>
+
+        <div id="fire-btn" onmousedown="fireBullet()" ontouchstart="fireBullet(event)">
+
+            <i class="fas fa-crosshairs"></i>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- GİRİŞ EKRANI -->
+
+    <div id="start-screen" class="screen">
+
+        <div class="start-layout">
+
+            <div class="start-left">
+
+                <div style="font-size: 4rem; color: var(--neon-blue); margin-bottom: 10px;">
+
+                    <i class="fas fa-rocket"></i>
+
+                </div>
+
+                <h1>GALAKSİ</h1>
+
+                <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin-top: -10px; color: white; -webkit-text-fill-color: white;">AKADEMİSİ</h1>
+
+                <p style="color: var(--neon-pink); letter-spacing: 4px; font-weight: bold; margin-top: 10px;">ASTRO SAVAŞLARI</p>
+
+                <button class="btn" onclick="startGame()">GÖREVE BAŞLA</button>
+
+                <div class="controls-hint">
+
+                    <div>Hareket: <span class="key"><i class="fas fa-arrows-alt-h"></i></span></div>
+
+                    <div>Ateş: <span class="key">BOŞLUK</span> veya <span class="key"><i class="fas fa-arrow-up"></i></span></div>
+
+                </div>
+
+            </div>
+
+            <div class="start-right">
+
+                <div class="option-group">
+
+                    <span class="option-label">SINIFINI SEÇ</span>
+
+                    <div class="option-grid">
+
+                        <div class="opt-btn" onclick="selectGrade(5, this)">5. SINIF</div>
+
+                        <div class="opt-btn" onclick="selectGrade(6, this)">6. SINIF</div>
+
+                        <div class="opt-btn" onclick="selectGrade(7, this)">7. SINIF</div>
+
+                        <div class="opt-btn selected" onclick="selectGrade(8, this)">8. SINIF</div>
+
+                    </div>
+
+                </div>
+
+                <div class="option-group">
+
+                    <span class="option-label">GÖREV BÖLGESİ</span>
+
+                    <div class="option-grid" style="grid-template-columns: repeat(3, 1fr);">
+
+                        <div class="opt-btn selected" onclick="selectSubject('mat', this)">MAT</div>
+
+                        <div class="opt-btn" onclick="selectSubject('fen', this)">FEN</div>
+
+                        <div class="opt-btn" onclick="selectSubject('tur', this)">TÜR</div>
+
+                        <div class="opt-btn" onclick="selectSubject('sos', this)">SOS</div>
+
+                        <div class="opt-btn" onclick="selectSubject('ing', this)">İNG</div>
+
+                        <div class="opt-btn" onclick="selectSubject('din', this)">DİN</div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- PAUSE & GAME OVER -->
+
+    <div id="pause-screen" class="screen hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); flex-direction: column;">
+
+        <h2 style="font-family: 'Orbitron'; color: white; font-size: 3rem;">DURAKLATILDI</h2>
+
+        <button class="btn" onclick="togglePause()" style="max-width:300px;">DEVAM ET</button>
+
+        <button class="btn" onclick="quitGame()" style="max-width:300px; border-color: var(--neon-red); color: var(--neon-red); font-size: 1rem; margin-top:10px;">ANA MENÜ</button>
+
+    </div>
+
+
+
+    <div id="game-over-screen" class="screen hidden" style="flex-direction: column;">
+
+        <h1 style="color: var(--neon-red); -webkit-text-fill-color: var(--neon-red);">GÖREV BİTTİ</h1>
+
+        <div style="font-size: 1.5rem; margin: 20px 0; color: #ddd;">
+
+            TOPLAM PUAN: <span id="final-score" style="color: var(--neon-blue); font-weight: bold;">0</span>
+
+        </div>
+
+        <div id="final-rank-display" style="border: 2px solid var(--neon-yellow); color: var(--neon-yellow); padding: 10px 30px; border-radius: 10px; margin-bottom: 20px; font-size: 1.5rem; font-weight: bold; font-family: 'Orbitron';">
+
+            Rütbe: Çaylak
+
+        </div>
+
+        <button class="btn" onclick="resetGame()" style="max-width:300px;">TEKRAR DENE</button>
+
+        <button class="btn" onclick="quitGame()" style="max-width:300px; margin-top:10px; border-color:#555; color:#aaa; font-size:1rem;">MENÜYE DÖN</button>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+    const canvas = document.getElementById('gameCanvas');
+
+    const ctx = canvas.getContext('2d');
+
+    
+
+    function resizeCanvas() {
+
+        canvas.width = window.innerWidth;
+
+        canvas.height = window.innerHeight;
+
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    resizeCanvas();
+
+
+
+    let selectedGrade = 8;
+
+    let selectedSubject = 'mat';
+
+
+
+    // GELİŞMİŞ RÜTBE LİSTESİ (Her biri ~10 soru, 1000 Puan)
+
+    const rankList = [
+
+        { limit: 0, title: "ÇAYLAK" },
+
+        { limit: 1000, title: "ASTEĞMEN" },
+
+        { limit: 2000, title: "TEĞMEN" },
+
+        { limit: 3000, title: "YÜZBAŞI" },
+
+        { limit: 4000, title: "BİNBAŞI" },
+
+        { limit: 5000, title: "YARBAY" },
+
+        { limit: 6000, title: "ALBAY" },
+
+        { limit: 8000, title: "TUĞGENERAL" },
+
+        { limit: 10000, title: "TÜMGENERAL" },
+
+        { limit: 12000, title: "ORGENERAL" },
+
+        { limit: 15000, title: "MAREŞAL" }
+
+    ];
+
+
+
+    // --- DEVASA SORU HAVUZU (Müfredat Uyumlu) ---
+
+    const masterQuestionBank = {
+
+        // --- 5. SINIF ---
+
+        5: {
+
+            mat: [
+
+                { q: "4 tam 1/2 kesri bileşik kesre çevrilirse?", a: "9/2", w: ["7/2", "5/2", "8/2"] },
+
+                { q: "Bir açısı 90 derece olan üçgen?", a: "Dik Üçgen", w: ["Dar", "Geniş", "Eşkenar"] },
+
+                { q: "%25 ifadesi kesir olarak nedir?", a: "1/4", w: ["1/2", "1/5", "1/10"] },
+
+                { q: "2 üssü 3 kaçtır?", a: "8", w: ["6", "9", "5"] },
+
+                { q: "Paydaları eşit kesirlerde sıralama?", a: "Payı büyük olan", w: ["Payı küçük olan", "Farketmez", "Eşittir"] },
+
+                { q: "3,14 ondalık gösteriminin okunuşu?", a: "3 tam %14", w: ["3 tam 10'da 4", "314", "Pi"] },
+
+                { q: "Bir doğru parçasının uzunluğu?", a: "Ölçülebilir", w: ["Sonsuzdur", "Ölçülemez", "Belirsizdir"] },
+
+                { q: "Sadeleştirme hangi işlemle yapılır?", a: "Bölme", w: ["Çarpma", "Toplama", "Çıkarma"] },
+
+                { q: "1 saat kaç saniyedir?", a: "3600", w: ["60", "360", "1200"] },
+
+                { q: "En küçük doğal sayı?", a: "0", w: ["1", "-1", "10"] }
+
+            ],
+
+            fen: [
+
+                { q: "Ay'ın evreleri yaklaşık kaç gün sürer?", a: "29", w: ["365", "1", "7"] },
+
+                { q: "Kuvveti ölçen alet?", a: "Dinamometre", w: ["Termometre", "Barometre", "Metre"] },
+
+                { q: "Sürtünme kuvveti hareketi...?", a: "Zorlaştırır", w: ["Kolaylaştırır", "Hızlandırır", "Etkilemez"] },
+
+                { q: "Genleşme hangi olayda görülür?", a: "Isınma", w: ["Soğuma", "Donma", "Yoğuşma"] },
+
+                { q: "Hangisi doğal ışık kaynağıdır?", a: "Güneş", w: ["Ampul", "Mum", "El Feneri"] },
+
+                { q: "Mantarlar bitki midir?", a: "Hayır", w: ["Evet", "Bazen", "Kısmen"] },
+
+                { q: "Gölge boyu ne zaman en kısadır?", a: "Öğle", w: ["Sabah", "Akşam", "Gece"] },
+
+                { q: "Suyun donma noktası?", a: "0°C", w: ["100°C", "-10°C", "25°C"] },
+
+                { q: "Hangisi omurgalı hayvandır?", a: "Balık", w: ["Solucan", "Arı", "Kelebek"] },
+
+                { q: "Opak madde nedir?", a: "Işığı geçirmeyen", w: ["Yarı geçiren", "Tam geçiren", "Saydam"] }
+
+            ],
+
+            tur: [
+
+                { q: "'Göz' kelimesinin sesteşi var mıdır?", a: "Yoktur", w: ["Vardır", "Belki", "Bilinmez"] },
+
+                { q: "Hangisi türemiş kelimedir?", a: "Gözlük", w: ["Göz", "Masa", "Kalem"] },
+
+                { q: "'Açık' kelimesinin zıttı?", a: "Kapalı", w: ["Koyu", "Dar", "Geniş"] },
+
+                { q: "Hangi kelime büyük ünlü uyumuna uyar?", a: "Çiçek", w: ["Kitap", "Kalem", "Anne"] },
+
+                { q: "Öznel yargı nedir?", a: "Kişisel görüş", w: ["Kanıtlanabilir", "Bilimsel", "Kesin"] }
+
+            ],
+
+            sos: [
+
+                { q: "Çocuk Hakları Sözleşmesi hangi kurumundur?", a: "BM", w: ["NATO", "AB", "TEMA"] },
+
+                { q: "Yeryüzü şekillerini gösteren harita?", a: "Fiziki", w: ["Siyasi", "Beşeri", "Özel"] },
+
+                { q: "Parayı ilk bulan uygarlık?", a: "Lidyalılar", w: ["Sümerler", "Hititler", "Urartular"] },
+
+                { q: "Başkenti Ankara olmadan önce?", a: "İstanbul", w: ["Sivas", "Erzurum", "Bursa"] },
+
+                { q: "Deprem çantasında ne olmaz?", a: "Televizyon", w: ["Su", "Fener", "Düdük"] }
+
+            ]
+
+        },
+
+        // --- 6. SINIF ---
+
+        6: {
+
+            mat: [
+
+                { q: "Hangi sayı hem 2 hem 3'e bölünür?", a: "6", w: ["9", "4", "8"] },
+
+                { q: "Boş kümenin eleman sayısı?", a: "0", w: ["1", "Yoktur", "Sonsuz"] },
+
+                { q: "Tümler iki açının toplamı?", a: "90", w: ["180", "360", "45"] },
+
+                { q: "En küçük asal sayı?", a: "2", w: ["1", "3", "5"] },
+
+                { q: "Bir sayının mutlak değeri ne olamaz?", a: "Negatif", w: ["Pozitif", "Sıfır", "Tam Sayı"] },
+
+                { q: "3x + 5 cebirsel ifadesinde x=2 ise?", a: "11", w: ["8", "10", "13"] },
+
+                { q: "Açıklık nedir?", a: "En büyük-En küçük", w: ["Ortalama", "Toplam", "Çarpım"] },
+
+                { q: "Ondalık kesirlerde virgül nereye kayar (x10)?", a: "Sağa", w: ["Sola", "Yukarı", "Aşağı"] },
+
+                { q: "Birler basamağı 0 olan sayı kime bölünür?", a: "5", w: ["3", "4", "9"] },
+
+                { q: "Asal sayıların kaç tanesi çifttir?", a: "1", w: ["0", "2", "Sonsuz"] }
+
+            ],
+
+            fen: [
+
+                { q: "Güneş sistemindeki en büyük gezegen?", a: "Jüpiter", w: ["Mars", "Dünya", "Satürn"] },
+
+                { q: "Sindirim nerede başlar?", a: "Ağız", w: ["Mide", "Bağırsak", "Yutak"] },
+
+                { q: "Kanı pompalayan organ?", a: "Kalp", w: ["Akciğer", "Beyin", "Damar"] },
+
+                { q: "Yoğunluğu suyun yoğunluğundan küçük olan?", a: "Yüzer", w: ["Batar", "Askıda kalır", "Erimez"] },
+
+                { q: "İletken madde hangisidir?", a: "Bakır", w: ["Plastik", "Tahta", "Cam"] },
+
+                { q: "Ses boşlukta...?", a: "Yayılmaz", w: ["Yayılır", "Yankılanır", "Hızlanır"] },
+
+                { q: "Kızıl gezegen hangisidir?", a: "Mars", w: ["Venüs", "Merkür", "Jüpiter"] },
+
+                { q: "Solunum sistemi organı?", a: "Akciğer", w: ["Karaciğer", "Kalp", "Mide"] },
+
+                { q: "En sıcak gezegen?", a: "Venüs", w: ["Merkür", "Mars", "Dünya"] },
+
+                { q: "Sabit süratli hareketin ivmesi?", a: "Sıfırdır", w: ["Artar", "Azalır", "Değişir"] }
+
+            ]
+
+        },
+
+        // --- 7. SINIF ---
+
+        7: {
+
+            mat: [
+
+                { q: "(-5) + (+3) işlemi?", a: "-2", w: ["-8", "+2", "+8"] },
+
+                { q: "Bir sayının çarpma işlemine göre tersi?", a: "Takla atması", w: ["İşaret değişimi", "Kendisi", "Sıfır"] },
+
+                { q: "Düzgün çokgenin dış açıları toplamı?", a: "360", w: ["180", "540", "720"] },
+
+                { q: "%20 karla satılan malın fiyatı?", a: "%120", w: ["%80", "%100", "%20"] },
+
+                { q: "Bir dairenin alanı formülü?", a: "π.r²", w: ["2.π.r", "π.r", "r²"] },
+
+                { q: "Çemberin çevresi?", a: "2.π.r", w: ["π.r²", "r²", "2.r"] },
+
+                { q: "İç ters açılar birbirine...?", a: "Eşittir", w: ["Tümlerdir", "Bütünlerdir", "Zıttır"] },
+
+                { q: "Doğru orantı grafiği nereden geçer?", a: "Orijinden", w: ["X ekseninden", "Y ekseninden", "Rastgele"] },
+
+                { q: "(-2) üssü 3 kaçtır?", a: "-8", w: ["8", "-6", "6"] },
+
+                { q: "Rasyonel sayılarda Q neyi ifade eder?", a: "Bölüm", w: ["Tam sayı", "Doğal sayı", "İrrasyonel"] }
+
+            ],
+
+            fen: [
+
+                { q: "Uzay kirliliğine yol açan?", a: "İşlevsiz uydu", w: ["Meteor", "Gezegen", "Yıldız"] },
+
+                { q: "Hücrenin enerji santrali?", a: "Mitokondri", w: ["Ribozom", "Koful", "Lizozom"] },
+
+                { q: "Mayoz bölünme nerede görülür?", a: "Üreme ana h.", w: ["Vücut hücresi", "Deri", "Kemik"] },
+
+                { q: "Kütle çekim kuvveti neye bağlıdır?", a: "Kütleye", w: ["Hacme", "Renge", "Sıcaklığa"] },
+
+                { q: "Atomun çekirdeğinde ne bulunur?", a: "Proton-Nötron", w: ["Elektron", "Sadece Proton", "Sadece Nötron"] },
+
+                { q: "Karışımlar...?", a: "Fizikseldir", w: ["Kimyasaldır", "Saf maddedir", "Formülle gösterilir"] },
+
+                { q: "Işığı en çok kıran renk?", a: "Mor", w: ["Kırmızı", "Yeşil", "Sarı"] },
+
+                { q: "Aynadaki görüntü simetrikse?", a: "Düz ayna", w: ["Çukur ayna", "Tümsek ayna", "Mercek"] },
+
+                { q: "Geri dönüştürülemeyen atık?", a: "Yemek artığı", w: ["Cam", "Kağıt", "Metal"] },
+
+                { q: "Yıldızların yakıtı nedir?", a: "Hidrojen", w: ["Oksijen", "Karbon", "Demir"] }
+
+            ]
+
+        },
+
+        // --- 8. SINIF (LGS) ---
+
+        8: {
+
+            mat: [
+
+                { q: "√144 + √25 işleminin sonucu?", a: "17", w: ["13", "19", "169"] },
+
+                { q: "8 ve 12'nin EKOK'u kaçtır?", a: "24", w: ["4", "48", "96"] },
+
+                { q: "Olasılık değeri 1 ise olay?", a: "Kesin", w: ["İmkansız", "Belirsiz", "Yarım"] },
+
+                { q: "2x - 10 = 0 ise x kaçtır?", a: "5", w: ["-5", "10", "20"] },
+
+                { q: "Pisagor bağıntısı hangi üçgende?", a: "Dik Üçgen", w: ["İkizkenar", "Eşkenar", "Geniş"] },
+
+                { q: "Eğim %100 ise açı kaç derecedir?", a: "45", w: ["90", "30", "60"] },
+
+                { q: "Bir üçgenin çizilebilmesi için?", a: "3 eleman", w: ["2 açı", "1 kenar", "Sadece çevre"] },
+
+                { q: "(a-b)² açılımı nedir?", a: "a²-2ab+b²", w: ["a²-b²", "a²+b²", "a²+2ab+b²"] },
+
+                { q: "Koordinat sisteminde yatay eksen?", a: "X (Apsis)", w: ["Y (Ordinat)", "Orijin", "Eğim"] },
+
+                { q: "Bilimsel gösterimde tam kısım?", a: "1 ile 10 arası", w: ["0 ile 1 arası", "10'dan büyük", "Rastgele"] },
+
+                { q: "√72 sayısı hangisine yakındır?", a: "8.5", w: ["7.9", "9.1", "6.5"] }
+
+            ],
+
+            fen: [
+
+                { q: "DNA'nın en küçük yapı birimi?", a: "Nükleotid", w: ["Gen", "Kromozom", "Kod"] },
+
+                { q: "Mevsimlerin oluşma sebebi?", a: "Eksen Eğikliği", w: ["Dünya'nın şekli", "Güneş'e uzaklık", "Ay"] },
+
+                { q: "Sıvı basıncı neye bağlıdır?", a: "Derinlik", w: ["Kap şekli", "Sıvı miktarı", "Yüzey alanı"] },
+
+                { q: "Periyodik tabloda dikey sıralar?", a: "Grup", w: ["Periyot", "Element", "Metal"] },
+
+                { q: "Asit yağmuruna sebep olan gaz?", a: "SO2", w: ["O2", "H2", "He"] },
+
+                { q: "Basit makineler ne kazandırır?", a: "İş kolaylığı", w: ["İş kazancı", "Enerji kazancı", "Zaman"] },
+
+                { q: "Fotosentez nerede gerçekleşir?", a: "Kloroplast", w: ["Mitokondri", "Çekirdek", "Koful"] },
+
+                { q: "Elektrik yüklerinin birimi?", a: "Coulomb", w: ["Amper", "Volt", "Watt"] },
+
+                { q: "Isı alarak gerçekleşen değişim?", a: "Erime", w: ["Donma", "Yoğuşma", "Kırağılaşma"] },
+
+                { q: "Mutasyon nerede olursa kalıtsaldır?", a: "Üreme hücresi", w: ["Vücut hücresi", "Deri", "Kas"] }
+
+            ],
+
+            tur: [
+
+                { q: "Fiilimsi eki alan kelime?", a: "Koşarak", w: ["Koştu", "Koş", "Koşar"] },
+
+                { q: "Cümlenin öğelerinde işi yapan?", a: "Özne", w: ["Yüklem", "Nesne", "Zarf"] },
+
+                { q: "Hangisi makale özelliğidir?", a: "Nesnellik", w: ["Öznellik", "Duygusallık", "Hayal ürünü"] }
+
+            ],
+
+            sos: [
+
+                { q: "M. Kemal Samsun'a ne zaman çıktı?", a: "1919", w: ["1920", "1923", "1915"] },
+
+                { q: "Lozan Antlaşması'nın önemi?", a: "Bağımsızlık", w: ["Savaş ilanı", "Borçlanma", "Teslimiyet"] },
+
+                { q: "Halkın kendi kendini yönetmesi?", a: "Cumhuriyet", w: ["Monarşi", "Oligarşi", "Teokrasi"] }
+
+            ],
+
+            ing: [
+
+                { q: "Opposite of 'Hardworking'?", a: "Lazy", w: ["Smart", "Funny", "Generous"] },
+
+                { q: "Past tense of 'Go'?", a: "Went", w: ["Goed", "Gone", "Going"] },
+
+                { q: "'Kitchen' means?", a: "Mutfak", w: ["Salon", "Banyo", "Bahçe"] }
+
+            ],
+
+            din: [
+
+                { q: "Kuran'ın indirildiği gece?", a: "Kadir", w: ["Miraç", "Berat", "Regaip"] },
+
+                { q: "Zekat kimlere verilir?", a: "İhtiyaç sahibi", w: ["Zengin", "Anne-Baba", "Çocuk"] }
+
+            ]
+
+        }
+
+    };
+
+    
+
+    // YEDEK SORULAR
+
+    const fallbackQuestions = [
+
+        { q: "Türkiye'nin başkenti?", a: "Ankara", w: ["İstanbul", "İzmir", "Adana"] },
+
+        { q: "Su kaç derecede kaynar?", a: "100", w: ["90", "50", "120"] },
+
+        { q: "1 metre kaç cm?", a: "100", w: ["10", "1000", "50"] },
+
+        { q: "Türkiye kaç bölgedir?", a: "7", w: ["5", "8", "3"] },
+
+        { q: "Futbol maçı kaç kişiyle oynanır?", a: "11", w: ["10", "12", "7"] }
+
+    ];
+
+
+
+    // --- OYUN DEĞİŞKENLERİ ---
+
+    const game = {
+
+        state: 'start',
+
+        score: 0,
+
+        rank: "ÇAYLAK",
+
+        lives: 3,
+
+        difficulty: 1,
+
+        questionPool: [],
+
+        player: null,
+
+        bullets: [],
+
+        enemies: [],
+
+        particles: [],
+
+        lastShot: 0
+
+    };
+
+
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        const t = audioCtx.currentTime;
+
+
+
+        if (type === 'shoot') {
+
+            osc.frequency.setValueAtTime(400, t); osc.frequency.exponentialRampToValueAtTime(100, t+0.1);
+
+            gain.gain.setValueAtTime(0.05, t); gain.gain.linearRampToValueAtTime(0, t+0.1);
+
+            osc.start(t); osc.stop(t+0.1);
+
+        } else if (type === 'hit') {
+
+            osc.type = 'sawtooth';
+
+            osc.frequency.setValueAtTime(100, t); osc.frequency.linearRampToValueAtTime(50, t+0.1);
+
+            gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t+0.1);
+
+            osc.start(t); osc.stop(t+0.1);
+
+        } else if (type === 'correct') {
+
+            osc.type = 'sine';
+
+            osc.frequency.setValueAtTime(600, t); osc.frequency.setValueAtTime(900, t+0.1);
+
+            gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t+0.3);
+
+            osc.start(t); osc.stop(t+0.3);
+
+        } else if (type === 'wrong') {
+
+            osc.type = 'square';
+
+            osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(100, t+0.3);
+
+            gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0, t+0.3);
+
+            osc.start(t); osc.stop(t+0.3);
+
+        }
+
+    }
+
+
+
+    function selectGrade(g, btn) {
+
+        selectedGrade = g;
+
+        document.querySelectorAll('.opt-btn').forEach(b => {
+
+            if(b.innerText.includes('SINIF')) b.classList.remove('selected');
+
+        });
+
+        btn.classList.add('selected');
+
+    }
+
+
+
+    function selectSubject(s, btn) {
+
+        selectedSubject = s;
+
+        const parent = btn.parentElement;
+
+        parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+
+        btn.classList.add('selected');
+
+    }
+
+
+
+    function startGame() {
+
+        let gradePool = masterQuestionBank[selectedGrade] || masterQuestionBank[8];
+
+        let subjectPool = gradePool[selectedSubject];
+
+
+
+        if (!subjectPool || subjectPool.length === 0) {
+
+            game.questionPool = [...fallbackQuestions];
+
+        } else {
+
+            // Soruları kopyala
+
+            game.questionPool = [...subjectPool];
+
+        }
+
+
+
+        game.player = new Player();
+
+        game.score = 0;
+
+        game.lives = 3;
+
+        game.difficulty = 1;
+
+        game.rank = "ÇAYLAK";
+
+        game.bullets = [];
+
+        game.enemies = [];
+
+        game.particles = [];
+
+        game.state = 'playing';
+
+
+
+        document.getElementById('start-screen').classList.add('hidden');
+
+        document.getElementById('game-over-screen').classList.add('hidden');
+
+        document.getElementById('game-ui').style.display = 'flex';
+
+        
+
+        const joyArea = document.getElementById('joystick-area');
+
+        if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+
+            joyArea.style.display = 'block';
+
+        } else {
+
+            joyArea.style.display = 'none';
+
+        }
+
+        
+
+        updateLivesUI();
+
+        updateRank(); 
+
+        loadQuestion();
+
+        requestAnimationFrame(gameLoop);
+
+    }
+
+
+
+    function updateLivesUI() {
+
+        const container = document.getElementById('lives-display');
+
+        container.innerHTML = '';
+
+        for(let i=0; i<game.lives; i++) {
+
+            container.innerHTML += '<i class="fas fa-heart"></i>';
+
+        }
+
+    }
+
+
+
+    function updateRank() {
+
+        let oldRank = game.rank;
+
+        let newRank = "ÇAYLAK";
+
+        
+
+        for(let r of rankList) {
+
+            if(game.score >= r.limit) newRank = r.title;
+
+        }
+
+        
+
+        game.rank = newRank;
+
+        const rankEl = document.getElementById('rank-display');
+
+        rankEl.innerText = "RÜTBE: " + game.rank;
+
+
+
+        if (newRank !== oldRank && game.score > 0) {
+
+            rankEl.classList.add('rank-up-anim');
+
+            setTimeout(() => rankEl.classList.remove('rank-up-anim'), 500);
+
+            createExplosion(canvas.width/2, 50, '#ffee00'); 
+
+            
+
+            // Zorluğu artır (Her rütbede hızlansın)
+
+            game.difficulty += 0.2; 
+
+        }
+
+    }
+
+
+
+    function getNextQuestion() {
+
+        if (game.questionPool.length === 0) {
+
+            // Havuz biterse yeniden doldur ama zorlaştır
+
+            let gradePool = masterQuestionBank[selectedGrade] || masterQuestionBank[8];
+
+            let subjectPool = gradePool[selectedSubject] || fallbackQuestions;
+
+            game.questionPool = [...subjectPool];
+
+            game.difficulty += 0.5;
+
+        }
+
+        const index = Math.floor(Math.random() * game.questionPool.length);
+
+        const question = game.questionPool[index];
+
+        game.questionPool.splice(index, 1);
+
+        return question;
+
+    }
+
+
+
+    function loadQuestion() {
+
+        game.enemies = [];
+
+        const qData = getNextQuestion();
+
+        
+
+        const box = document.getElementById('q-box');
+
+        box.classList.remove('visible');
+
+        
+
+        setTimeout(() => {
+
+            const subjects = { mat:"Matematik", fen:"Fen Bilimleri", tur:"Türkçe", sos:"Sosyal", ing:"İngilizce", din:"Din K." };
+
+            document.getElementById('q-subject').innerText = subjects[selectedSubject] || "GENEL";
+
+            document.getElementById('q-text').innerText = qData.q;
+
+            box.classList.add('visible');
+
+            
+
+            spawnEnemies(qData);
+
+        }, 500);
+
+    }
+
+
+
+    function spawnEnemies(qData) {
+
+        let answers = [{t: qData.a, correct: true}, ...qData.w.map(w => ({t: w, correct: false}))];
+
+        answers.sort(() => Math.random() - 0.5);
+
+
+
+        const laneW = canvas.width / answers.length;
+
+        answers.forEach((ans, i) => {
+
+            let ex = laneW * i + laneW/2;
+
+            let ey = -100 - Math.random() * 200;
+
+            game.enemies.push(new Enemy(ex, ey, ans.t, ans.correct));
+
+        });
+
+    }
+
+
+
+    function fireBullet(e) {
+
+        if(e) e.preventDefault();
+
+        if(game.state !== 'playing') return;
+
+        if(Date.now() - game.lastShot < 150) return; 
+
+        
+
+        game.bullets.push(new Bullet(game.player.x, game.player.y - 45));
+
+        playSound('shoot');
+
+        game.lastShot = Date.now();
+
+    }
+
+
+
+    const Input = { dir: 0, keys: {ArrowLeft:false, ArrowRight:false}, touchActive:false };
+
+    
+
+    window.addEventListener('keydown', e => { 
+
+        if(e.key==='ArrowLeft') Input.keys.ArrowLeft=true; 
+
+        if(e.key==='ArrowRight') Input.keys.ArrowRight=true;
+
+        if(e.code==='Space' || e.code==='ArrowUp') fireBullet(e);
+
+    });
+
+    window.addEventListener('keyup', e => { 
+
+        if(e.key==='ArrowLeft') Input.keys.ArrowLeft=false; 
+
+        if(e.key==='ArrowRight') Input.keys.ArrowRight=false; 
+
+    });
+
+
+
+    const joyArea = document.getElementById('joystick-area');
+
+    const stick = document.getElementById('stick');
+
+    let joyCenter = {x:0, y:0}, joyActive = false;
+
+    
+
+    joyArea.addEventListener('touchstart', e => {
+
+        e.preventDefault();
+
+        const r = joyArea.getBoundingClientRect();
+
+        joyCenter = {x:r.left+r.width/2, y:r.top+r.height/2};
+
+        joyActive = true; Input.touchActive = true;
+
+        handleJoy(e.touches[0]);
+
+    }, {passive:false});
+
+    
+
+    joyArea.addEventListener('touchmove', e => { e.preventDefault(); if(joyActive) handleJoy(e.touches[0]); }, {passive:false});
+
+    joyArea.addEventListener('touchend', e => { e.preventDefault(); joyActive=false; Input.touchActive=false; Input.dir=0; stick.style.transform = `translate(-50%, -50%)`; });
+
+
+
+    function handleJoy(t) {
+
+        let dx = t.clientX - joyCenter.x, dy = t.clientY - joyCenter.y;
+
+        let dist = Math.min(Math.hypot(dx,dy), 35);
+
+        let ang = Math.atan2(dy,dx);
+
+        stick.style.transform = `translate(calc(-50% + ${Math.cos(ang)*dist}px), calc(-50% + ${Math.sin(ang)*dist}px))`;
+
+        Input.dir = (Math.cos(ang)*dist)/35;
+
+    }
+
+
+
+    let targetX = null;
+
+    canvas.addEventListener('mousedown', e => targetX = e.clientX);
+
+    canvas.addEventListener('mousemove', e => { if(e.buttons===1) targetX = e.clientX; });
+
+    const fireBtn = document.getElementById('fire-btn');
+
+    canvas.addEventListener('touchstart', e => { 
+
+        if(!joyArea.contains(e.target) && !fireBtn.contains(e.target)) targetX = e.touches[0].clientX; 
+
+    }, {passive:false});
+
+    canvas.addEventListener('touchmove', e => { 
+
+        if(!joyArea.contains(e.target) && !fireBtn.contains(e.target)) { 
+
+            e.preventDefault(); targetX = e.touches[0].clientX; 
+
+        } 
+
+    }, {passive:false});
+
+
+
+    class Player {
+
+        constructor() { this.x = canvas.width/2; this.y = canvas.height-100; this.speed = 12; }
+
+        update() {
+
+            Input.dir = 0;
+
+            if(Input.keys.ArrowLeft) Input.dir = -1;
+
+            if(Input.keys.ArrowRight) Input.dir = 1;
+
+            
+
+            if(Input.touchActive) {}
+
+            else if(Input.dir !== 0) { targetX = null; this.x += Input.dir * this.speed; }
+
+            else if(targetX !== null) {
+
+                let dx = targetX - this.x;
+
+                if(Math.abs(dx)>5) this.x += dx * 0.2; else targetX = null;
+
+            }
+
+            if(this.x < 30) this.x = 30; if(this.x > canvas.width-30) this.x = canvas.width-30;
+
+        }
+
+        draw() {
+
+            ctx.save(); ctx.translate(this.x, this.y);
+
+            let tilt = (targetX!==null) ? (targetX-this.x)*0.005 : Input.dir*0.3;
+
+            ctx.rotate(tilt);
+
+            
+
+            ctx.fillStyle = `rgba(0,243,255,${Math.random()})`;
+
+            ctx.beginPath(); ctx.moveTo(-10,30); ctx.lineTo(0,50+Math.random()*20); ctx.lineTo(10,30); ctx.fill();
+
+            
+
+            ctx.shadowBlur=15; ctx.shadowColor='var(--neon-blue)';
+
+            ctx.fillStyle='#0b0d17'; ctx.strokeStyle='#00f3ff'; ctx.lineWidth=3;
+
+            ctx.beginPath(); ctx.moveTo(0,-40); ctx.lineTo(25,20); ctx.lineTo(35,30); ctx.lineTo(0,20); ctx.lineTo(-35,30); ctx.lineTo(-25,20); ctx.closePath();
+
+            ctx.fill(); ctx.stroke();
+
+            ctx.restore();
+
+        }
+
+    }
+
+
+
+    class Bullet {
+
+        constructor(x,y) { this.x=x; this.y=y; this.active=true; }
+
+        update() { this.y-=25; if(this.y<0) this.active=false; }
+
+        draw() { ctx.fillStyle='#fff'; ctx.shadowBlur=10; ctx.shadowColor='#00f3ff'; ctx.fillRect(this.x-3,this.y,6,20); }
+
+    }
+
+
+
+    class Enemy {
+
+        constructor(x,y,t,c) { 
+
+            this.x=x; this.y=y; this.t=t; this.c=c; this.active=true; this.ang=0; 
+
+            // Zorluk rütbeye göre artar
+
+            this.speed = 1.0 + (game.difficulty * 0.3); 
+
+        }
+
+        update() { this.y+=this.speed; this.ang+=0.02; }
+
+        draw() {
+
+            ctx.save(); ctx.translate(this.x,this.y);
+
+            ctx.shadowBlur=10; ctx.shadowColor='#bc13fe'; ctx.strokeStyle='#bc13fe'; ctx.lineWidth=2; ctx.fillStyle='rgba(20,0,30,0.8)';
+
+            ctx.rotate(this.ang);
+
+            ctx.beginPath(); for(let i=0;i<6;i++) ctx.lineTo(35*Math.cos(i*Math.PI/3), 35*Math.sin(i*Math.PI/3)); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            ctx.rotate(-this.ang);
+
+            ctx.fillStyle='white'; ctx.font="bold 16px 'Exo 2'"; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowBlur=0;
+
+            let txt=this.t.toString(); if(txt.length>8) txt=txt.substr(0,6)+'..';
+
+            ctx.fillText(txt,0,0);
+
+            ctx.restore();
+
+        }
+
+    }
+
+
+
+    class Particle {
+
+        constructor(x,y,c) { this.x=x; this.y=y; this.c=c; this.vx=(Math.random()-0.5)*10; this.vy=(Math.random()-0.5)*10; this.life=1; }
+
+        update() { this.x+=this.vx; this.y+=this.vy; this.life-=0.05; }
+
+        draw() { ctx.globalAlpha=this.life; ctx.fillStyle=this.c; ctx.beginPath(); ctx.arc(this.x,this.y,3,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+
+    }
+
+
+
+    function createExplosion(x,y,c) {
+
+        for(let i=0;i<15;i++) game.particles.push(new Particle(x,y,c));
+
+    }
+
+
+
+    function gameLoop() {
+
+        if(game.state !== 'playing') return;
+
+        ctx.fillStyle = 'rgba(5,5,16,0.4)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        
+
+        if(Math.random()<0.2) { ctx.fillStyle='white'; ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 2); }
+
+
+
+        game.player.update(); game.player.draw();
+
+
+
+        game.bullets.forEach((b,i) => { b.update(); b.draw(); if(!b.active) game.bullets.splice(i,1); });
+
+
+
+        let enemiesPassed = true;
+
+        game.enemies.forEach(e => {
+
+            if(e.active) {
+
+                e.update(); e.draw();
+
+                if(e.y < canvas.height) enemiesPassed = false;
+
+
+
+                game.bullets.forEach(b => {
+
+                    if(b.active && e.active && Math.hypot(b.x-e.x, b.y-e.y) < 45) {
+
+                        b.active = false; e.active = false;
+
+                        if(e.c) { // DOĞRU
+
+                            game.score += 100;
+
+                            updateRank(); 
+
+                            playSound('correct');
+
+                            createExplosion(e.x,e.y,'#0aff0a');
+
+                            game.enemies.forEach(o => { if(o.active) { o.active=false; createExplosion(o.x,o.y,'#bc13fe'); } });
+
+                            setTimeout(loadQuestion, 1000);
+
+                        } else { // YANLIŞ
+
+                            loseLife();
+
+                            playSound('wrong');
+
+                            createExplosion(e.x,e.y,'#ff003c');
+
+                        }
+
+                        document.getElementById('score-display').innerText = game.score.toString().padStart(5,'0');
+
+                    }
+
+                });
+
+            }
+
+        });
+
+
+
+        if(enemiesPassed && game.enemies.length > 0) {
+
+            loseLife();
+
+            game.enemies = []; 
+
+            setTimeout(loadQuestion, 1000);
+
+        }
+
+
+
+        game.particles.forEach((p,i) => { p.update(); p.draw(); if(p.life<=0) game.particles.splice(i,1); });
+
+
+
+        requestAnimationFrame(gameLoop);
+
+    }
+
+
+
+    function loseLife() {
+
+        game.lives--;
+
+        updateLivesUI();
+
+        document.getElementById('damage-overlay').classList.add('damage-flash');
+
+        setTimeout(()=>document.getElementById('damage-overlay').classList.remove('damage-flash'), 100);
+
+        
+
+        if(game.lives <= 0) {
+
+            game.state = 'gameover';
+
+            document.getElementById('game-ui').style.display = 'none';
+
+            document.getElementById('game-over-screen').classList.remove('hidden');
+
+            document.getElementById('final-score').innerText = game.score;
+
+            document.getElementById('final-rank-display').innerText = "Rütbe: " + game.rank;
+
+        }
+
+    }
+
+
+
+    function togglePause() {
+
+        if(game.state === 'playing') { game.state = 'paused'; document.getElementById('pause-screen').classList.remove('hidden'); }
+
+        else if(game.state === 'paused') { game.state = 'playing'; document.getElementById('pause-screen').classList.add('hidden'); requestAnimationFrame(gameLoop); }
+
+    }
+
+    function quitGame() { location.reload(); }
+
+    function resetGame() { startGame(); }
+
+
+
+</script>
+
+</body>
+
+</html> 
