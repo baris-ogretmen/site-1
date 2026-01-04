@@ -80,7 +80,6 @@
         <div id="proje-formu" class="panel-card">
             <h3>🎮 Yeni İçerik Ekle & Yönlendir</h3>
             <input type="text" id="p-baslik" placeholder="Başlık (Örn: LGS Çalışma Kampı)">
-            
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="p-link" placeholder="Link buraya gelecek..." style="flex:2;">
                 <select onchange="document.getElementById('p-link').value = this.value" style="flex:1; background:#fffbeb; font-weight:bold;">
@@ -94,7 +93,6 @@
                     <option value="ben-ali.html">Ben Ali Kitabı</option>
                 </select>
             </div>
-
             <select id="p-kategori">
                 <option value="Genel">Kategori Seçiniz...</option>
                 <option value="Anaokulu">🧸 Anaokulu</option>
@@ -106,7 +104,6 @@
                 <option value="Satranç">♞ Satranç</option>
                 <option value="Özel Eğitim">🧩 Özel Eğitim</option>
             </select>
-
             <select id="p-icon">
                 <option value="fa-star">⭐ Yıldız</option>
                 <option value="fa-gamepad">🎮 Oyun</option>
@@ -123,7 +120,6 @@
                 <option value="fa-puzzle-piece">🧩 Yapboz/Özel Eğt.</option>
                 <option value="fa-file-pdf">📄 PDF/Dosya</option>
             </select>
-
             <button onclick="projeEkle()" class="save-btn">Projeyi Kaydet</button>
             <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
                 <h4>📂 Mevcut Projeler (Vitrine Eklemek İçin Sarı Butona Bas)</h4>
@@ -169,15 +165,16 @@
             <div class="settings-box" style="background:#fff7ed; border-color:#fdba74;">
                 <h4>🔴 Sürpriz Daire Ayarları</h4>
                 <div style="margin-bottom:10px;"><input type="checkbox" id="set-circle-active"> <label>Aktif Olsun</label></div>
-                <input type="text" id="set-circle-text" placeholder="Daire Yazısı">
-                <input type="text" id="set-circle-msg" placeholder="Mesaj">
-                <input type="text" id="set-circle-link" placeholder="Link (Opsiyonel)">
+                <input type="text" id="set-circle-text" placeholder="Daire Yazısı (Örn: ACİL)">
+                <input type="text" id="set-circle-img" placeholder="Daireye Görsel URL (Varsa yazının yerine geçer)">
+                <input type="text" id="set-circle-msg" placeholder="Tıklayınca Çıkacak Mesaj">
+                <input type="text" id="set-circle-link" placeholder="Tıklayınca Gideceği Link (Opsiyonel)">
                 <button onclick="daireAyarlariniKaydet()" class="save-btn" style="background:#ea580c;">Daireyi Güncelle</button>
             </div>
         </div>
 
         <div id="mesaj-formu" class="panel-card" style="display:none;">
-            <h3>Gelen Mesajlar</h3>
+            <h3>Gelen Mesajlar & Talepler</h3>
             <div id="mesaj-listesi"></div>
         </div>
 
@@ -248,29 +245,48 @@
 
         function ayarlarYukle() {
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('set-api').value=d.data().apiKey; document.getElementById('set-prompt').value=d.data().prompt; } });
-            db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => { if(d.exists) { document.getElementById('set-circle-active').checked=d.data().aktif; document.getElementById('set-circle-text').value=d.data().daireMetni; document.getElementById('set-circle-msg').value=d.data().mesaj; document.getElementById('set-circle-link').value=d.data().link; } });
+            db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => { if(d.exists) { 
+                const v = d.data();
+                document.getElementById('set-circle-active').checked=v.aktif; 
+                document.getElementById('set-circle-text').value=v.daireMetni || ""; 
+                document.getElementById('set-circle-img').value=v.daireResim || ""; 
+                document.getElementById('set-circle-msg').value=v.mesaj || ""; 
+                document.getElementById('set-circle-link').value=v.link || ""; 
+            } });
         }
         function robotAyarlariniKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('set-api').value, prompt: document.getElementById('set-prompt').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
-        function daireAyarlariniKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ aktif: document.getElementById('set-circle-active').checked, daireMetni: document.getElementById('set-circle-text').value, mesaj: document.getElementById('set-circle-msg').value, link: document.getElementById('set-circle-link').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
+        function daireAyarlariniKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ aktif: document.getElementById('set-circle-active').checked, daireMetni: document.getElementById('set-circle-text').value, daireResim: document.getElementById('set-circle-img').value, mesaj: document.getElementById('set-circle-msg').value, link: document.getElementById('set-circle-link').value }, {merge:true}).then(()=>alert("Kaydedildi")); }
 
-        // MESAJLAR (OTOMATİK WHATSAPP CEVAPLI)
+        // --- MESAJLAR SİSTEMİ (HATASIZ & AKILLI CEVAP) ---
         db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(snap => {
-            let h=""; if(snap.size>0){ document.getElementById('btn-mesaj').classList.add('has-message'); document.getElementById('msg-badge').innerText=snap.size; document.getElementById('msg-badge').style.display='inline-block'; }
+            let h = ""; 
+            if(snap.size>0){ document.getElementById('btn-mesaj').classList.add('has-message'); document.getElementById('msg-badge').innerText=snap.size; document.getElementById('msg-badge').style.display='inline-block'; }
+            
             snap.forEach(d=>{ 
-                const v=d.data(); 
-                const telNo = v.telefon.replace(/\D/g,'');
-                // Otomatik Mesaj Şablonu
-                const autoMsg = `Merhaba, ben Barış Öğretmen. "${v.konu}" hakkında gönderdiğiniz talep üzerine yazıyorum. Size nasıl yardımcı olabilirim?`;
+                const v = d.data(); 
+                const ad = v.ad_soyad || "İsimsiz";
+                const konu = v.konu || "Konu Yok";
                 
-                h+=`<div class="list-item">
-                        <div><strong>${v.ad_soyad}</strong> (${v.telefon})<br>${v.konu}</div>
+                // OTOMATİK CEVAP OLUŞTURUCU
+                let cevapMetni = "Merhaba ben dijital asistanım size nasıl yardımcı olacağım?"; // Varsayılan
+                const k = konu.toLowerCase();
+                if(k.includes("lgs")) { cevapMetni = `Merhaba ${ad}, LGS süreciyle ilgili talebini aldım. Çalışma programımız hakkında bilgi vermek isterim.`; }
+                else if(k.includes("kitap")) { cevapMetni = `Merhaba ${ad}, kitap talebinle ilgili yardımcı olmak için yazıyorum.`; }
+                else if(k.includes("ders")) { cevapMetni = `Merhaba ${ad}, özel ders talebini inceledim. Detayları konuşabilir miyiz?`; }
+                else { cevapMetni = `Merhaba ${ad}, "${konu}" konulu mesajını aldım. Nasıl yardımcı olabilirim?`; }
+
+                h += `<div class="list-item">
+                        <div style="flex:1;">
+                            <strong>${ad}</strong> <span style="font-size:0.8rem; color:#888;">${new Date(v.tarih?.toDate()).toLocaleDateString('tr-TR')}</span><br>
+                            <span style="color:#2563eb; font-weight:bold;">Konu:</span> ${konu}
+                        </div>
                         <div class="item-actions">
-                            <a href="https://wa.me/90${telNo}?text=${encodeURIComponent(autoMsg)}" target="_blank" class="btn-mini btn-wa"><i class="fab fa-whatsapp"></i> Cevapla</a>
+                            <a href="https://wa.me/?text=${encodeURIComponent(cevapMetni)}" target="_blank" class="btn-mini btn-wa"><i class="fab fa-whatsapp"></i> ✅ Onayla / Cevapla</a>
                             <button onclick="sil('iletisim_talepleri','${d.id}')" class="btn-mini btn-sil">Sil</button>
                         </div>
                     </div>`; 
             });
-            document.getElementById('mesaj-listesi').innerHTML=h;
+            document.getElementById('mesaj-listesi').innerHTML = h || "<p style='text-align:center; color:#999;'>Gelen kutusu boş.</p>";
         });
     </script>
 </body>
