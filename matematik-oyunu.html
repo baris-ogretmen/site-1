@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Muhafız: Hiper Matematik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            touch-action: none;
+            -webkit-touch-callout: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* ARAYÜZ (UI) */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .stats-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .score-box {
+            font-size: 28px;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+            background: rgba(0, 20, 40, 0.7);
+            padding: 5px 20px;
+            border-radius: 8px;
+            border: 1px solid #0ff;
+            font-weight: bold;
+        }
+
+        .combo-box {
+            font-size: 24px;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffd700;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .combo-active { opacity: 1; animation: bounce 0.5s infinite alternate; }
+
+        /* MATEMATİK SORU KUTUSU */
+        .math-question {
+            font-size: 6vh;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 50px;
+            border: 2px solid #fff;
+            border-radius: 50px;
+            text-shadow: 0 0 20px #fff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            position: absolute;
+            left: 50%; top: 20px;
+            transform: translateX(-50%);
+        }
+
+        .health-bar-container {
+            width: 250px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ff0055;
+            transform: skewX(-20deg);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff0055, #ff00aa);
+            transition: width 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 15px #ff0055;
+        }
+
+        /* DOKUNMATİK KONTROLLER */
+        .touch-controls {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            height: 180px;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 60px;
+            box-sizing: border-box;
+            opacity: 0.8;
+            z-index: 100;
+        }
+
+        .joystick-container {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+            pointer-events: auto;
+            backdrop-filter: blur(2px);
+        }
+
+        .joystick-knob {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 255, 0.8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px #0ff;
+        }
+
+        .fire-btn {
+            width: 130px;
+            height: 130px;
+            background: rgba(255, 0, 85, 0.1);
+            border: 4px solid #ff0055;
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff0055;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
+            transition: all 0.1s;
+        }
+
+        .fire-btn.active {
+            background: rgba(255, 0, 85, 0.8);
+            color: white;
+            transform: scale(0.95);
+            box-shadow: 0 0 50px #ff0055;
+        }
+
+        /* MENÜLER */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 200;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 8vh;
+            background: linear-gradient(to right, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 10px 0;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.5));
+            letter-spacing: 5px;
+        }
+
+        p { color: #ccc; text-align: center; font-size: 2.5vh; margin: 10px 0; max-width: 800px; }
+
+        button {
+            margin-top: 40px;
+            padding: 15px 50px;
+            font-size: 30px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: bold;
+            background: transparent;
+            border: 2px solid #0ff;
+            color: #0ff;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+        }
+        button:hover { background: #0ff; color: #000; box-shadow: 0 0 50px #0ff; transform: scale(1.1); }
+
+        .hidden { display: none !important; }
+
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="stats-box">
+                <div class="score-box">SKOR: <span id="scoreEl">0</span></div>
+                <div id="comboEl" class="combo-box">KOMBO X1</div>
+            </div>
+            
+            <div class="health-bar-container">
+                <div id="healthEl" class="health-fill"></div>
+            </div>
+        </div>
+        
+        <div id="mathQuestion" class="math-question">HAZIRLAN!</div>
+
+        <!-- Dokunmatik Kontroller -->
+        <div class="touch-controls" id="touchControls" style="display: none;">
+            <div class="joystick-container" id="joystick">
+                <div class="joystick-knob" id="knob"></div>
+            </div>
+            <div class="fire-btn" id="fireBtn">ATEŞ</div>
+        </div>
+    </div>
+
+    <!-- BAŞLANGIÇ EKRANI -->
+    <div id="startScreen" class="overlay">
+        <h1>HİPER MATEMATİK</h1>
+        <p style="color: #ffd700; font-size: 3vh; font-weight: bold;">Üstteki işlemin sonucunu taşıyan gemileri yok et!</p>
+        <p>Arka arkaya doğru vurursan kombo yaparsın. Yanlış vurursan canın yanar.</p>
+        <p style="color: #0ff; margin-top: 20px;">DOKUNMATİK ve PC UYUMLU</p>
+        <button onclick="initGame()">BAŞLAT</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameOverScreen" class="overlay hidden">
+        <h1 style="color: #ff0055;">SİSTEM ÇÖKTÜ</h1>
+        <p>Matematik kalkanı devre dışı kaldı.</p>
+        <h2 style="font-size: 5vh; margin: 20px 0;">SKOR: <span id="finalScore">0</span></h2>
+        <button onclick="initGame()">TEKRAR DENE</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const scoreEl = document.getElementById('scoreEl');
+    const healthEl = document.getElementById('healthEl');
+    const questionEl = document.getElementById('mathQuestion');
+    const comboEl = document.getElementById('comboEl');
+    const finalScoreEl = document.getElementById('finalScore');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const touchControls = document.getElementById('touchControls');
+
+    // Game Globals
+    let canvasWidth, canvasHeight;
+    let animationId;
+    let score = 0;
+    let combo = 0;
+    let gameActive = false;
+    let frames = 0;
+    let shakeIntensity = 0;
+    
+    // Logic
+    let currentQuestion = { text: "Hazır", answer: 0 };
+    let spawnRate = 80;
+    let difficultyMultiplier = 1;
+
+    // Entities
+    let stars = [];
+    let projectiles = [];
+    let enemies = [];
+    let particles = [];
+    let powerups = [];
+    let player;
+
+    // Input
+    const mouse = { x: 0, y: 0 };
+    const keys = { w: false, a: false, s: false, d: false };
+    let isFiring = false;
+    let joystickActive = false;
+    let joystickData = { x: 0, y: 0 };
+    let joystickCenter = { x: 0, y: 0 };
+    const joystickBase = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('knob');
+    const maxJoystickDist = 60;
+
+    // --- SETUP ---
+    function resize() {
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        
+        // Stars Init
+        if(stars.length === 0) {
+            for(let i=0; i<100; i++) stars.push(new Star());
+        }
+
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if(isTouch) {
+            touchControls.style.display = 'flex';
+            setTimeout(() => {
+                const rect = joystickBase.getBoundingClientRect();
+                joystickCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+            }, 500);
+        }
+    }
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 100);
+
+    // --- CLASSES ---
+
+    class Star {
+        constructor() {
+            this.x = Math.random() * canvasWidth;
+            this.y = Math.random() * canvasHeight;
+            this.size = Math.random() * 2;
+            this.speed = Math.random() * 0.5 + 0.1;
+        }
+        update() {
+            this.y += this.speed + (gameActive ? 2 : 0); // Oyundayken warp efekti
+            if(this.y > canvasHeight) {
+                this.y = 0;
+                this.x = Math.random() * canvasWidth;
+            }
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.random()})`;
+            ctx.fillRect(this.x, this.y, this.size, this.size);
+        }
+    }
+
+    class Player {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.radius = 25;
+            this.angle = -Math.PI / 2;
+            this.health = 100;
+            this.speed = 7;
+            this.fireRate = 10;
+            this.powerupTimer = 0;
+            this.rapidFire = false;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+
+            // Nişangah (Lazer)
+            if(gameActive) {
+                ctx.beginPath();
+                ctx.moveTo(30, 0);
+                ctx.lineTo(canvasWidth, 0);
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Gemi
+            ctx.beginPath();
+            ctx.moveTo(30, 0); // Burun
+            ctx.lineTo(-20, 25);
+            ctx.lineTo(-10, 0);
+            ctx.lineTo(-20, -25);
+            ctx.closePath();
+            
+            ctx.fillStyle = this.rapidFire ? '#ff0055' : '#00ffff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.fill();
+
+            // Motor
+            if (joystickActive || keys.w || keys.a || keys.s || keys.d) {
+                ctx.beginPath();
+                ctx.moveTo(-22, 0);
+                ctx.lineTo(-40 - Math.random()*15, 0);
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        update() {
+            let moveX = 0;
+            let moveY = 0;
+
+            if (joystickActive || Math.abs(joystickData.x) > 0.1 || Math.abs(joystickData.y) > 0.1) {
+                moveX = joystickData.x;
+                moveY = joystickData.y;
+                this.angle = Math.atan2(moveY, moveX);
+            } else {
+                if (keys.w) moveY = -1;
+                if (keys.s) moveY = 1;
+                if (keys.a) moveX = -1;
+                if (keys.d) moveX = 1;
+
+                if (touchControls.style.display === 'none') {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    this.angle = Math.atan2(dy, dx);
+                } else if (moveX !== 0 || moveY !== 0) {
+                    this.angle = Math.atan2(moveY, moveX);
+                }
+            }
+
+            this.x += moveX * this.speed;
+            this.y += moveY * this.speed;
+
+            // Clamp
+            this.x = Math.max(30, Math.min(canvasWidth - 30, this.x));
+            this.y = Math.max(30, Math.min(canvasHeight - 30, this.y));
+
+            // Powerup Logic
+            if(this.rapidFire) {
+                this.powerupTimer--;
+                if(this.powerupTimer <= 0) this.rapidFire = false;
+            }
+
+            this.draw();
+        }
+
+        shoot() {
+            const speed = 20;
+            const velocity = {
+                x: Math.cos(this.angle) * speed,
+                y: Math.sin(this.angle) * speed
+            };
+            
+            projectiles.push(new Projectile(
+                this.x + Math.cos(this.angle) * 35, 
+                this.y + Math.sin(this.angle) * 35, 
+                velocity,
+                this.rapidFire
+            ));
+        }
+    }
+
+    class Projectile {
+        constructor(x, y, velocity, isPowerful) {
+            this.x = x;
+            this.y = y;
+            this.velocity = velocity;
+            this.radius = isPowerful ? 8 : 5;
+            this.color = isPowerful ? '#ff0055' : '#ffff00';
+            this.isPowerful = isPowerful;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        update() {
+            this.draw();
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+        }
+    }
+
+    class Enemy {
+        constructor(x, y, value, isCorrect) {
+            this.x = x;
+            this.y = y;
+            this.value = value;
+            this.isCorrect = isCorrect;
+            this.radius = 35;
+            this.angle = 0;
+            this.spinSpeed = (Math.random() - 0.5) * 0.1;
+            
+            // Oyuncuya doğru
+            const angleToPlayer = Math.atan2(player.y - y, player.x - x);
+            const speed = (1.5 + Math.random()) * difficultyMultiplier;
+            this.velocity = {
+                x: Math.cos(angleToPlayer) * speed,
+                y: Math.sin(angleToPlayer) * speed
+            };
+
+            this.sides = Math.floor(Math.random() * 3) + 4; // 4-6 kenarlı
+            this.hue = Math.random() * 360;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            
+            // Şekil Çiz
+            ctx.beginPath();
+            for (let i = 0; i < this.sides; i++) {
+                const rot = (i * 2 * Math.PI) / this.sides;
+                ctx.lineTo(Math.cos(rot) * this.radius, Math.sin(rot) * this.radius);
+            }
+            ctx.closePath();
+            
+            ctx.strokeStyle = `hsl(${this.hue}, 80%, 60%)`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = `hsla(${this.hue}, 80%, 20%, 0.6)`;
+            ctx.fill();
+            
+            ctx.restore();
+
+            // Sayı
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 28px Rajdhani';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.value, this.x, this.y);
+        }
+
+        update() {
+            this.angle += this.spinSpeed;
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            this.draw();
+
+            // Takip güncellemesi (her 30 karede)
+            if(frames % 30 === 0) {
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                this.velocity.x = Math.cos(angle) * 1.5 * difficultyMultiplier;
+                this.velocity.y = Math.sin(angle) * 1.5 * difficultyMultiplier;
+            }
+        }
+    }
+
+    class PowerUp {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type; // 'health' or 'rapid'
+            this.radius = 20;
+            this.angle = 0;
+        }
+        draw() {
+            this.angle += 0.05;
+            const yOffset = Math.sin(this.angle) * 5;
+            
+            ctx.save();
+            ctx.translate(this.x, this.y + yOffset);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+            ctx.fillStyle = this.type === 'health' ? '#0f0' : '#f0f';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.fill();
+
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 20px Rajdhani';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.type === 'health' ? '+' : '⚡', 0, 2);
+            
+            ctx.restore();
+        }
+    }
+
+    class Particle {
+        constructor(x, y, color, speed) {
+            this.x = x;
+            this.y = y;
+            this.radius = Math.random() * 4;
+            this.color = color;
+            const angle = Math.random() * Math.PI * 2;
+            const vel = Math.random() * speed;
+            this.velocity = {
+                x: Math.cos(angle) * vel,
+                y: Math.sin(angle) * vel
+            };
+            this.alpha = 1;
+            this.decay = Math.random() * 0.03 + 0.01;
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.restore();
+        }
+        update() {
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            this.alpha -= this.decay;
+            this.draw();
+        }
+    }
+
+    // --- FUNCTIONS ---
+
+    function generateQuestion() {
+        const difficulty = Math.min(Math.floor(score / 2000), 5); // Skor arttıkça zorlaşır
+        const ops = ['+', '-'];
+        if(difficulty > 1) ops.push('x');
+        
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        let a, b, ans;
+
+        if (op === '+') {
+            a = Math.floor(Math.random() * (20 + difficulty * 10)) + 1;
+            b = Math.floor(Math.random() * (20 + difficulty * 10)) + 1;
+            ans = a + b;
+        } else if (op === '-') {
+            a = Math.floor(Math.random() * (20 + difficulty * 10)) + 5;
+            b = Math.floor(Math.random() * a); 
+            ans = a - b;
+        } else {
+            a = Math.floor(Math.random() * (5 + difficulty)) + 2;
+            b = Math.floor(Math.random() * (5 + difficulty)) + 2;
+            ans = a * b;
+        }
+
+        currentQuestion = { text: `${a} ${op} ${b} = ?`, answer: ans };
+        questionEl.innerText = currentQuestion.text;
+        questionEl.style.color = '#fff';
+        questionEl.style.transform = "translateX(-50%) scale(1.3)";
+        setTimeout(() => questionEl.style.transform = "translateX(-50%) scale(1)", 200);
+    }
+
+    function spawnEnemy() {
+        if(frames % spawnRate === 0) {
+            const r = 40;
+            let x, y;
+            if(Math.random()<0.5) {
+                x = Math.random()<0.5 ? -r : canvasWidth+r;
+                y = Math.random() * canvasHeight;
+            } else {
+                x = Math.random() * canvasWidth;
+                y = Math.random()<0.5 ? -r : canvasHeight+r;
+            }
+
+            let hasCorrect = enemies.some(e => e.isCorrect);
+            let val, isCorrect;
+
+            if (!hasCorrect) {
+                val = currentQuestion.answer;
+                isCorrect = true;
+            } else {
+                do {
+                    val = currentQuestion.answer + Math.floor(Math.random() * 20) - 10;
+                    if(val === currentQuestion.answer) val++;
+                } while (val === currentQuestion.answer);
+                isCorrect = false;
+            }
+
+            enemies.push(new Enemy(x, y, val, isCorrect));
+            
+            // Spawn Rate Difficulty Cap
+            if(spawnRate > 40) spawnRate -= 0.5;
+            difficultyMultiplier += 0.005;
+        }
+    }
+
+    function createExplosion(x, y, color, size = 10) {
+        shakeIntensity = 5;
+        for(let i=0; i<size; i++) {
+            particles.push(new Particle(x, y, color, 8));
+        }
+    }
+
+    function dropPowerUp(x, y) {
+        if(Math.random() < 0.2) { // %20 ihtimal
+            const type = Math.random() < 0.6 ? 'health' : 'rapid';
+            powerups.push(new PowerUp(x, y, type));
+        }
+    }
+
+    function updateCombo(reset) {
+        if(reset) {
+            combo = 0;
+            comboEl.classList.remove('combo-active');
+            comboEl.style.opacity = 0;
+        } else {
+            combo++;
+            if(combo > 1) {
+                comboEl.innerText = `KOMBO X${combo}`;
+                comboEl.classList.add('combo-active');
+                comboEl.style.opacity = 1;
+            }
+        }
+    }
+
+    // --- GAME LOOP ---
+
+    function initGame() {
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        player = new Player(canvasWidth/2, canvasHeight/2);
+        score = 0;
+        combo = 0;
+        difficultyMultiplier = 1;
+        spawnRate = 80;
+        scoreEl.innerText = "0";
+        healthEl.style.width = "100%";
+        updateCombo(true);
+        
+        enemies = [];
+        projectiles = [];
+        particles = [];
+        powerups = [];
+        
+        gameActive = true;
+        generateQuestion();
+        animate();
+    }
+
+    function animate() {
+        if (!gameActive) return;
+        animationId = requestAnimationFrame(animate);
+        frames++;
+
+        // Screen Shake
+        let dx = 0, dy = 0;
+        if(shakeIntensity > 0) {
+            dx = (Math.random() - 0.5) * shakeIntensity;
+            dy = (Math.random() - 0.5) * shakeIntensity;
+            shakeIntensity *= 0.9;
+        }
+        
+        ctx.save();
+        ctx.translate(dx, dy);
+
+        // Background
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(-10, -10, canvasWidth+20, canvasHeight+20);
+        stars.forEach(star => star.update());
+
+        player.update();
+
+        // Fire control
+        if (isFiring) {
+            const rate = player.rapidFire ? 5 : player.fireRate;
+            if(frames % rate === 0) player.shoot();
+        }
+
+        // Powerups
+        powerups.forEach((p, i) => {
+            p.draw();
+            const dist = Math.hypot(player.x - p.x, player.y - p.y);
+            if(dist < player.radius + p.radius) {
+                if(p.type === 'health') {
+                    player.health = Math.min(100, player.health + 30);
+                    healthEl.style.width = player.health + '%';
+                } else {
+                    player.rapidFire = true;
+                    player.powerupTimer = 300; // 5 saniye
+                }
+                powerups.splice(i, 1);
+                createExplosion(player.x, player.y, '#fff', 5);
+                score += 50;
+                scoreEl.innerText = score;
+            }
+        });
+
+        // Particles
+        particles.forEach((p, i) => {
+            if(p.alpha <= 0) particles.splice(i, 1);
+            else p.update();
+        });
+
+        // Projectiles
+        projectiles.forEach((proj, pIndex) => {
+            proj.update();
+            if(proj.x < -50 || proj.x > canvasWidth+50 || proj.y < -50 || proj.y > canvasHeight+50) {
+                projectiles.splice(pIndex, 1);
+            }
+        });
+
+        // Enemies
+        enemies.forEach((enemy, eIndex) => {
+            enemy.update();
+
+            // Collision with Player
+            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (dist < enemy.radius + player.radius) {
+                player.health -= 25;
+                healthEl.style.width = Math.max(0, player.health) + '%';
+                enemies.splice(eIndex, 1);
+                createExplosion(enemy.x, enemy.y, '#f00', 20);
+                updateCombo(true); // Reset combo
+                shakeIntensity = 20;
+                
+                if(player.health <= 0) gameOver();
+            }
+
+            // Collision with Projectiles
+            projectiles.forEach((proj, pIndex) => {
+                const distP = Math.hypot(proj.x - enemy.x, proj.y - enemy.y);
+                if (distP < enemy.radius + proj.radius) {
+                    createExplosion(enemy.x, enemy.y, enemy.isCorrect ? '#0f0' : '#f00', 15);
+                    
+                    if (enemy.isCorrect) {
+                        // CORRECT
+                        const comboMult = combo > 0 ? combo : 1;
+                        score += 500 * comboMult;
+                        updateCombo(false);
+                        dropPowerUp(enemy.x, enemy.y);
+                        
+                        // Clear others
+                        enemies.forEach(e => {
+                            if(e !== enemy) createExplosion(e.x, e.y, '#fff', 5);
+                        });
+                        enemies = [];
+                        generateQuestion();
+                    } else {
+                        // WRONG
+                        score = Math.max(0, score - 200);
+                        player.health -= 10;
+                        healthEl.style.width = Math.max(0, player.health) + '%';
+                        updateCombo(true);
+                        shakeIntensity = 10;
+                        if(player.health <= 0) gameOver();
+                        enemies.splice(eIndex, 1);
+                    }
+                    
+                    scoreEl.innerText = score;
+                    projectiles.splice(pIndex, 1);
+                }
+            });
+        });
+
+        ctx.restore();
+        spawnEnemy();
+    }
+
+    function gameOver() {
+        gameActive = false;
+        cancelAnimationFrame(animationId);
+        finalScoreEl.innerText = score;
+        gameOverScreen.classList.remove('hidden');
+    }
+
+    // --- INPUTS ---
+    // Keyboard
+    window.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        if(k==='w' || e.key==='ArrowUp') keys.w = true;
+        if(k==='a' || e.key==='ArrowLeft') keys.a = true;
+        if(k==='s' || e.key==='ArrowDown') keys.s = true;
+        if(k==='d' || e.key==='ArrowRight') keys.d = true;
+    });
+    window.addEventListener('keyup', e => {
+        const k = e.key.toLowerCase();
+        if(k==='w' || e.key==='ArrowUp') keys.w = false;
+        if(k==='a' || e.key==='ArrowLeft') keys.a = false;
+        if(k==='s' || e.key==='ArrowDown') keys.s = false;
+        if(k==='d' || e.key==='ArrowRight') keys.d = false;
+    });
+
+    // Mouse
+    window.addEventListener('mousemove', e => {
+        if(touchControls.style.display === 'none') {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        }
+    });
+    window.addEventListener('mousedown', () => {
+        if(touchControls.style.display === 'none') isFiring = true;
+    });
+    window.addEventListener('mouseup', () => isFiring = false);
+
+    // Touch
+    joystickBase.addEventListener('touchstart', e => {
+        e.preventDefault();
+        joystickActive = true;
+        updateJoystick(e.changedTouches[0]);
+    }, {passive: false});
+
+    joystickBase.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if(joystickActive) updateJoystick(e.changedTouches[0]);
+    }, {passive: false});
+
+    const resetJoy = (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        joystickData = { x: 0, y: 0 };
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+    };
+    joystickBase.addEventListener('touchend', resetJoy);
+    joystickBase.addEventListener('touchcancel', resetJoy);
+
+    function updateJoystick(touch) {
+        let dx = touch.clientX - joystickCenter.x;
+        let dy = touch.clientY - joystickCenter.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > maxJoystickDist) {
+            const ratio = maxJoystickDist / dist;
+            dx *= ratio;
+            dy *= ratio;
+        }
+        joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        joystickData = { x: dx/maxJoystickDist, y: dy/maxJoystickDist };
+    }
+
+    const fireBtn = document.getElementById('fireBtn');
+    fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isFiring = true; fireBtn.classList.add('active'); }, {passive: false});
+    const stopFire = (e) => { e.preventDefault(); isFiring = false; fireBtn.classList.remove('active'); };
+    fireBtn.addEventListener('touchend', stopFire);
+    fireBtn.addEventListener('touchcancel', stopFire);
+
+</script>
+</body>
+</html>
