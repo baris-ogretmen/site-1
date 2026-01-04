@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minik Kâşifler Akademisi | Barış İlkan</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <!-- İkonlar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Konfeti Efekti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root { 
+            --sari: #FFD700; --turuncu: #f97316; --mavi: #3b82f6; 
+            --kirmizi: #ef4444; --yesil: #22c55e; --mor: #a855f7; 
+            --pembe: #ec4899; --cyan: #06b6d4; --bg: #fffbe7; 
+        }
+        
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; padding: 0; 
+            font-family: 'Fredoka', sans-serif; 
+            background: var(--bg); 
+            height: 100vh; height: 100dvh; 
+            overflow: hidden; 
+            display: flex; flex-direction: column; 
+        }
+
+        /* --- HEADER --- */
+        header { 
+            background: white; padding: 10px 20px; 
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 5px solid var(--sari); 
+            z-index: 100; flex-shrink: 0; height: 70px;
+        }
+        
+        .logo { font-size: 1.3rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; }
+        .logo i { color: var(--mavi); font-size: 1.5rem; }
+        
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .fullscreen-btn {
+            background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 12px;
+            width: 40px; height: 40px; cursor: pointer; color: #64748b; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .star-box { 
+            background: var(--sari); padding: 8px 16px; border-radius: 25px; 
+            font-weight: 800; font-size: 1.2rem; color: #422006; 
+            box-shadow: 0 4px 0 #d97706; display: flex; align-items: center; gap: 8px;
+            transition: transform 0.2s;
+        }
+        .star-box.animate { transform: scale(1.2); }
+
+        /* --- ANA MENÜ (GRID SYSTEM) --- */
+        #main-menu { 
+            flex: 1; 
+            display: grid; 
+            gap: 20px; 
+            padding: 20px;
+            max-width: 1200px; 
+            margin: 0 auto; 
+            width: 100%; 
+            align-content: center;
+            overflow-y: auto;
+        }
+
+        /* Responsive Grid Ayarları */
+        @media (min-width: 1024px) { #main-menu { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); } }
+        @media (min-width: 601px) and (max-width: 1023px) { #main-menu { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) {
+            #main-menu { grid-template-columns: 1fr; align-content: start; }
+            .zone-card { flex-direction: row; justify-content: flex-start; padding-left: 20px; gap: 15px; text-align: left; min-height: 100px; }
+            .zone-icon { font-size: 2.5rem; margin-bottom: 0; }
+        }
+
+        .zone-card {
+            background: white; border-radius: 25px; position: relative; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; border: 4px solid; transition: transform 0.1s; 
+            box-shadow: 0 6px 0 rgba(0,0,0,0.1); height: 100%; min-height: 140px;
+        }
+        .zone-card:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
+        .zone-icon { font-size: 3.5rem; margin-bottom: 10px; }
+        .zone-title { font-size: 1.3rem; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .zone-desc { font-size: 0.9rem; opacity: 0.8; font-weight: 600; }
+
+        /* Kategori Renkleri */
+        .z-math { border-color: var(--mavi); background: #eff6ff; color: var(--mavi); }
+        .z-lang { border-color: var(--kirmizi); background: #fef2f2; color: var(--kirmizi); }
+        .z-social { border-color: var(--yesil); background: #f0fdf4; color: var(--yesil); }
+        .z-think { border-color: var(--mor); background: #faf5ff; color: var(--mor); }
+        .z-emotion { border-color: var(--pembe); background: #fdf2f8; color: var(--pembe); }
+        .z-nature { border-color: var(--turuncu); background: #fff7ed; color: var(--turuncu); }
+
+        /* --- OYUN ALANI --- */
+        #game-modal {
+            position: fixed; inset: 0; background: var(--bg); z-index: 200;
+            display: none; flex-direction: column; 
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .modal-header { 
+            padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; 
+            background: white; border-bottom: 3px solid #eee; flex-shrink: 0; height: 70px;
+        }
+        
+        .header-title-group { display: flex; flex-direction: column; gap: 2px; }
+        .progress-badge { 
+            background: #f1f5f9; color: #475569; font-size: 0.9rem; padding: 4px 10px; 
+            border-radius: 12px; font-weight: bold; align-self: flex-start; border: 1px solid #cbd5e1;
+        }
+
+        .home-btn { 
+            background: #ffe4e6; color: #e11d48; border: none; padding: 10px 20px;
+            font-size: 1rem; cursor: pointer; border-radius: 12px; font-weight: bold;
+            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .home-btn:hover { background: #fecdd3; }
+        .home-btn:active { transform: scale(0.95); }
+
+        .game-content { 
+            flex: 1; padding: 20px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; text-align: center; 
+            overflow-y: auto; width: 100%; max-width: 1000px; margin: 0 auto;
+        }
+
+        /* Oyun Elementleri */
+        .question-text { font-size: 1.8rem; margin-bottom: 25px; color: #1e293b; font-weight: 700; line-height: 1.3; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; }
+        
+        .opt-btn { 
+            background: white; border: 4px solid #cbd5e1; border-radius: 20px; padding: 15px; 
+            font-size: 1.6rem; cursor: pointer; transition: 0.1s; box-shadow: 0 5px 0 #94a3b8;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;
+            word-break: break-word; line-height: 1.2;
+        }
+        .opt-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #94a3b8; }
+        .opt-btn.correct { background: #dcfce7; border-color: #22c55e; box-shadow: 0 5px 0 #15803d; animation: bounce 0.5s; }
+        .opt-btn.wrong { background: #fee2e2; border-color: #ef4444; box-shadow: 0 5px 0 #b91c1c; animation: shake 0.4s; }
+
+        .math-visual {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;
+            font-size: 3rem; width: 100%;
+        }
+
+        .phil-card {
+            background: white; padding: 30px; border-radius: 30px; border: 5px dashed var(--mor);
+            margin: 20px; max-width: 600px; width: 95%; transform: rotate(-1deg);
+            box-shadow: 8px 8px 0 rgba(168, 85, 247, 0.2);
+        }
+        .phil-question { font-family: 'Patrick Hand', cursive; font-size: 2rem; color: #581c87; }
+        
+        .spin-btn { 
+            margin-top: 20px; background: var(--mor); color: white; border: none; 
+            padding: 15px 30px; font-size: 1.3rem; border-radius: 50px; cursor: pointer; 
+            font-weight: bold; box-shadow: 0 5px 0 #7e22ce;
+        }
+
+        /* Oyun Sonu Ekranı */
+        .end-screen { animation: zoomIn 0.5s; }
+        .end-title { font-size: 3rem; color: var(--sari-koyu); margin-bottom: 20px; text-shadow: 2px 2px 0px #fff; }
+        .end-score { font-size: 1.5rem; margin-bottom: 30px; color: #555; background: white; padding: 15px 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .end-btn-group { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .end-btn {
+            padding: 15px 30px; border-radius: 15px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border: none;
+            transition: 0.2s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .btn-menu { background: #ef4444; color: white; }
+        .btn-replay { background: #3b82f6; color: white; }
+
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo"><i class="fas fa-rocket"></i> <span>Minik Kâşifler</span></div>
+        <div class="header-controls">
+            <div class="star-box" id="score-box">
+                <i class="fas fa-star" style="color:#FFF;"></i> <span id="score">0</span>
+            </div>
+            <button class="fullscreen-btn" onclick="toggleFullScreen()"><i class="fas fa-expand"></i></button>
+        </div>
+    </header>
+
+    <div id="main-menu">
+        <div class="zone-card z-math" onclick="startGame('math')">
+            <div class="zone-icon">🧮</div>
+            <div class="zone-title">Sayı Ormanı</div>
+            <div class="zone-desc">Matematik & Sayma</div>
+        </div>
+        <div class="zone-card z-lang" onclick="startGame('lang')">
+            <div class="zone-icon">🦜</div>
+            <div class="zone-title">Konuşan Papağan</div>
+            <div class="zone-desc">Dil & Kelimeler</div>
+        </div>
+        <div class="zone-card z-social" onclick="startGame('social')">
+            <div class="zone-icon">💖</div>
+            <div class="zone-title">Kalp Köyü</div>
+            <div class="zone-desc">Sosyal Beceriler</div>
+        </div>
+        <div class="zone-card z-think" onclick="startGame('think')">
+            <div class="zone-icon">☁️</div>
+            <div class="zone-title">Filozof Çocuk</div>
+            <div class="zone-desc">Düşünme Becerileri</div>
+        </div>
+        <div class="zone-card z-emotion" onclick="startGame('emotion')">
+            <div class="zone-icon">🎭</div>
+            <div class="zone-title">Duygu Dedektifi</div>
+            <div class="zone-desc">Empati & Duygular</div>
+        </div>
+        <div class="zone-card z-nature" onclick="startGame('nature')">
+            <div class="zone-icon">🌿</div>
+            <div class="zone-title">Doğa Kâşifi</div>
+            <div class="zone-desc">Bilim & Hayvanlar</div>
+        </div>
+    </div>
+
+    <div id="game-modal">
+        <div class="modal-header">
+            <div class="header-title-group">
+                <h2 id="modal-title" style="margin:0; font-size: 1.4rem; color:#333;">Oyun</h2>
+                <div id="progress-badge" class="progress-badge">Soru: 1/10</div>
+            </div>
+            <button class="home-btn" onclick="closeGame()">
+                <i class="fas fa-home"></i> Ana Menü
+            </button>
+        </div>
+        <div class="game-content" id="game-area"></div>
+    </div>
+
+    <script>
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e=>console.log(e));
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        let score = 0;
+        let currentRound = 0;
+        const MAX_ROUNDS = 10;
+        let currentGameType = '';
+        let sessionQuestions = []; // O anki oyun oturumu için seçilen sorular
+
+        // --- DEV SORU HAVUZLARI ---
+        const GAME_DATA = {
+            lang: [
+                { q: "Tavşan ne yemeyi sever?", a: "Havuç", o: ["Havuç", "Kemik", "Balık", "Taş"], i: "🐰" },
+                { q: "Araba nerede gider?", a: "Yol", o: ["Yol", "Deniz", "Hava", "Çatı"], i: "🚗" },
+                { q: "Gözlük nereye takılır?", a: "Göz", o: ["Göz", "Ayak", "El", "Diz"], i: "👓" },
+                { q: "Kışın üşümemek için ne giyeriz?", a: "Mont", o: ["Mont", "Mayo", "Terlik", "Şort"], i: "🌨️" },
+                { q: "'EL' hecesiyle hangisi başlar?", a: "ELMA", o: ["ELMA", "ARMUT", "MUZ", "KİRAZ"], i: "🤚" },
+                { q: "Geceleri gökyüzünde ne parlar?", a: "Ay", o: ["Ay", "Güneş", "Gökkuşağı", "Bulut"], i: "🌙" },
+                { q: "'Kedi' kelimesi hangi sesle başlar?", a: "K", o: ["K", "M", "S", "B"], i: "🐱" },
+                { q: "Hangi meyve sarı renklidir?", a: "Limon", o: ["Limon", "Çilek", "Patlıcan", "Bezelye"], i: "🍋" },
+                { q: "Kitap okumak için neye bakarız?", a: "Harf", o: ["Harf", "Duvar", "Ayakkabı", "Halı"], i: "📖" },
+                { q: "Dişlerimizi ne ile fırçalarız?", a: "Fırça", o: ["Fırça", "Kaşık", "Kalem", "Tarak"], i: "🦷" },
+                { q: "'Büyük' kelimesinin tersi nedir?", a: "Küçük", o: ["Küçük", "Uzun", "Geniş", "Şişman"], i: "🐘" },
+                { q: "'Sıcak' kelimesinin tersi nedir?", a: "Soğuk", o: ["Soğuk", "Ilık", "Yanık", "Ateş"], i: "🔥" },
+                { q: "Hangisi bir eşyadır?", a: "Masa", o: ["Masa", "Kedi", "Çiçek", "Bebek"], i: "🛋️" },
+                { q: "Hangisi uçabilir?", a: "Uçak", o: ["Uçak", "Tren", "Gemi", "Otobüs"], i: "✈️" },
+                { q: "Yağmur yağarken ne kullanırız?", a: "Şemsiye", o: ["Şemsiye", "Gözlük", "Terlik", "Havlu"], i: "☔" }
+            ],
+            social: [
+                { q: "Arkadaşın düştü, ne yaparsın?", a: "Yardım", o: ["Yardım", "Gülmek", "Kaçmak", "İtmek"], i: "🤕" },
+                { q: "Oyuncağını paylaşmak nasıl bir davranıştır?", a: "Güzel", o: ["Güzel", "Kötü", "Yanlış", "Komik"], i: "🧸" },
+                { q: "İzin almadan başkasının eşyasını almak?", a: "Yanlış", o: ["Yanlış", "Doğru", "Güzel", "Harika"], i: "🚫" },
+                { q: "Biri sana hediye verince ne dersin?", a: "Teşekkür", o: ["Teşekkür", "Hayır", "Git", "Sus"], i: "🎁" },
+                { q: "Yemekten önce ne yapmalıyız?", a: "El Yıka", o: ["El Yıka", "Uyu", "Koş", "Bağır"], i: "🧼" },
+                { q: "Sıra bekleyen arkadaşlarının önüne geçmek?", a: "Hata", o: ["Hata", "Doğru", "İyi", "Güzel"], i: "🚶" },
+                { q: "Biri konuşurken ne yapmalıyız?", a: "Dinle", o: ["Dinle", "Bağır", "Uyu", "Şarkı Söyle"], i: "👂" },
+                { q: "Yere çöp atmak doğru mudur?", a: "Hayır", o: ["Hayır", "Evet", "Belki", "Bazen"], i: "🚯" },
+                { q: "Arkadaşın üzgünse ne yaparsın?", a: "Sarıl", o: ["Sarıl", "Gül", "Kız", "Git"], i: "🫂" },
+                { q: "Hapşırırken ne yaparız?", a: "Ağzı Kapat", o: ["Ağzı Kapat", "Bağır", "Gül", "Zıpla"], i: "🤧" },
+                { q: "Parkta kaydırağa tersten binmek?", a: "Tehlikeli", o: ["Tehlikeli", "Güvenli", "Doğru", "İyi"], i: "🛝" },
+                { q: "Tanımadığın biri sana şeker verirse?", a: "Alma", o: ["Alma", "Ye", "Sakla", "İste"], i: "🍭" }
+            ],
+            nature: [
+                { q: "Hangi hayvan havada uçar?", a: "Kuş", o: ["Kuş", "Kedi", "Balık", "Köpek"], i: "🦅" },
+                { q: "Balıklar nerede yaşar?", a: "Su", o: ["Su", "Ağaç", "Bulut", "Toprak"], i: "🐠" },
+                { q: "Hangi meyve kırmızıdır?", a: "Çilek", o: ["Çilek", "Limon", "Salatalık", "Muz"], i: "🍓" },
+                { q: "Güneş ne renktir?", a: "Sarı", o: ["Sarı", "Mavi", "Yeşil", "Mor"], i: "☀️" },
+                { q: "Hangi hayvan 'Miyav' der?", a: "Kedi", o: ["Kedi", "Köpek", "İnek", "Ördek"], i: "🐱" },
+                { q: "Ağaçların yaprakları ne renktir?", a: "Yeşil", o: ["Yeşil", "Mavi", "Pembe", "Siyah"], i: "🌳" },
+                { q: "İnek bize ne verir?", a: "Süt", o: ["Süt", "Bal", "Yumurta", "Ekmek"], i: "🐄" },
+                { q: "Arılar ne yapar?", a: "Bal", o: ["Bal", "Süt", "Reçel", "Peynir"], i: "🐝" },
+                { q: "Hangi hayvanın uzun hortumu vardır?", a: "Fil", o: ["Fil", "Aslan", "Maymun", "Karınca"], i: "🐘" },
+                { q: "Kışın gökyüzünden ne yağar?", a: "Kar", o: ["Kar", "Kum", "Yaprak", "Çiçek"], i: "❄️" },
+                { q: "Tavuklar ne yumurtlar?", a: "Yumurta", o: ["Yumurta", "Elma", "Top", "Taş"], i: "🐔" },
+                { q: "Hangi hayvan çok yavaştır?", a: "Kaplumbağa", o: ["Kaplumbağa", "Çita", "Tavşan", "Kuş"], i: "🐢" },
+                { q: "Geceleri kim öter?", a: "Baykuş", o: ["Baykuş", "Horoz", "Karga", "Serçe"], i: "🦉" }
+            ],
+            emotion: [
+                { q: "Bu yüz ne hissediyor?", a: "Üzgün", o: ["Üzgün", "Mutlu", "Kızgın", "Şaşkın"], i: "😢" },
+                { q: "Bu yüz ne hissediyor?", a: "Mutlu", o: ["Mutlu", "Korkmuş", "Uykulu", "Üzgün"], i: "😄" },
+                { q: "Bu yüz ne hissediyor?", a: "Kızgın", o: ["Kızgın", "Mutlu", "Hasta", "Gülüyor"], i: "😡" },
+                { q: "Bu yüz ne hissediyor?", a: "Uykulu", o: ["Uykulu", "Heyecanlı", "Kızgın", "Şaşkın"], i: "😴" },
+                { q: "Bu yüz ne hissediyor?", a: "Korkmuş", o: ["Korkmuş", "Mutlu", "Sakin", "Acıkmış"], i: "😱" },
+                { q: "Bu yüz ne hissediyor?", a: "Şaşkın", o: ["Şaşkın", "Kızgın", "Uykulu", "Hasta"], i: "😲" },
+                { q: "Oyuncağın kırılınca ne hissedersin?", a: "Üzgün", o: ["Üzgün", "Mutlu", "Komik", "Harika"], i: "💔" },
+                { q: "Doğum gününde ne hissedersin?", a: "Mutlu", o: ["Mutlu", "Korkmuş", "Kızgın", "Yorgun"], i: "🎂" },
+                { q: "Karanlık bir odada yalnız kalsan?", a: "Korkmuş", o: ["Korkmuş", "Mutlu", "Gülmüş", "Sakin"], i: "🌑" },
+                { q: "Çok koşunca ne hissedersin?", a: "Yorgun", o: ["Yorgun", "Kızgın", "Şaşkın", "Üzgün"], i: "🏃" },
+                { q: "Annen sana sarılınca ne hissedersin?", a: "Sevgi", o: ["Sevgi", "Korku", "Öfke", "Acı"], i: "🥰" },
+                { q: "İstemediğin bir yemek varsa?", a: "İsteksiz", o: ["İsteksiz", "Heyecanlı", "Mutlu", "Aşık"], i: "🤢" }
+            ],
+            think: [
+                "Herkesin her dediğine 'Evet' demek zorunda mıyız?",
+                "Birini sevmek için ona benzemek gerekir mi?",
+                "Hata yapmak kötü bir şey midir, yoksa öğrenmek midir?",
+                "Görünmez olsan, yine de kurallara uyar mıydın?",
+                "Cesur olmak hiç korkmamak mıdır?",
+                "Mutluluk satın alınabilir mi?",
+                "Zaman hızlı mı geçer, yavaş mı?",
+                "Hayvanlar konuşabilseydi bize ne söylerdi?",
+                "Rüyalarımız nereye gidiyor uyandığımızda?",
+                "Sence en güçlü süper güç nedir?",
+                "Neden arkadaş oluruz?",
+                "Paylaşmak neden bazen zordur?",
+                "Büyümek sence ne demek?",
+                "Güzellik nedir? Gözle mi görülür, kalple mi?",
+                "Herkes aynı şeyi düşünseydi dünya nasıl olurdu?",
+                "Robotlar üzülebilir mi?",
+                "Ağaçlar konuşabilir mi?",
+                "Renkler olmasaydı dünya nasıl görünürdü?"
+            ]
+        };
+
+        function updateScore() {
+            score += 10;
+            document.getElementById('score').innerText = score;
+            const box = document.getElementById('score-box');
+            box.classList.add('animate');
+            setTimeout(() => box.classList.remove('animate'), 300);
+            if (typeof confetti === 'function') confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        }
+
+        // --- YARDIMCI FONKSİYON: KARIŞTIRMA (SHUFFLE) ---
+        // Bu fonksiyon diziyi rastgele karıştırır, böylece sorular hep farklı sırada gelir.
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Oyunu Başlat
+        function startGame(type) {
+            currentRound = 1;
+            currentGameType = type;
+            document.getElementById('game-modal').style.display = 'flex';
+            document.getElementById('game-area').innerHTML = '';
+            
+            const title = document.getElementById('modal-title');
+            if(type === 'math') title.style.color = "#3b82f6";
+            else if(type === 'lang') title.style.color = "#ef4444";
+            else if(type === 'social') title.style.color = "#22c55e";
+            else if(type === 'think') title.style.color = "#a855f7";
+            else if(type === 'emotion') title.style.color = "#ec4899";
+            else if(type === 'nature') title.style.color = "#f97316";
+
+            // SORU HAZIRLIĞI
+            if (type === 'math') {
+                // Matematik için özel hazırlık gerekmez, loadLevel'da dinamik üretilir.
+                sessionQuestions = []; 
+            } else {
+                // Diğer kategoriler için:
+                // 1. Havuzun kopyasını al
+                let poolCopy = [...GAME_DATA[type]];
+                // 2. Karıştır
+                shuffleArray(poolCopy);
+                // 3. İlk 10 tanesini seç ve oturum değişkenine ata
+                sessionQuestions = poolCopy.slice(0, MAX_ROUNDS);
+            }
+
+            loadLevel();
+        }
+
+        function loadLevel() {
+            const area = document.getElementById('game-area');
+            const badge = document.getElementById('progress-badge');
+
+            if (currentRound > MAX_ROUNDS) {
+                showEndScreen();
+                return;
+            }
+
+            badge.innerText = `Soru: ${currentRound} / ${MAX_ROUNDS}`;
+            area.innerHTML = ''; 
+
+            if (currentGameType === 'math') {
+                loadMathGame(area);
+            } else if (currentGameType === 'think') {
+                // Felsefe için sessionQuestions sadece string dizisi
+                loadThinkGame(area, sessionQuestions[currentRound - 1]);
+            } else {
+                // Diğerleri (lang, social, nature, emotion) nesne yapısında
+                loadStandardGame(area, sessionQuestions[currentRound - 1], currentGameType);
+            }
+        }
+
+        function closeGame() { document.getElementById('game-modal').style.display = 'none'; }
+
+        function showEndScreen() {
+            const area = document.getElementById('game-area');
+            const badge = document.getElementById('progress-badge');
+            badge.innerText = "Oyun Bitti!";
+            
+            area.innerHTML = `
+                <div class="end-screen">
+                    <div style="font-size:5rem; margin-bottom:10px;">🎉</div>
+                    <div class="end-title">Tebrikler!</div>
+                    <div class="end-score">Toplam Puan: <strong>${score}</strong></div>
+                    <div class="end-btn-group">
+                        <button class="end-btn btn-menu" onclick="closeGame()">🏠 Ana Menü</button>
+                        <button class="end-btn btn-replay" onclick="startGame('${currentGameType}')">🔄 Tekrar Oyna</button>
+                    </div>
+                </div>
+            `;
+            if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+        }
+
+        // --- MATEMATİK (Dinamik Üretim - Sonsuz Farklılık) ---
+        function loadMathGame(area) {
+            // Rastgelelik: Sayılar, İkon ve İşlem değişebilir (şimdilik sadece toplama)
+            const n1 = Math.floor(Math.random() * 5) + 1; 
+            const n2 = Math.floor(Math.random() * 5) + 1;
+            const correct = n1 + n2;
+            const icons = ['🍎', '🚙', '⭐', '🎈', '🍪', '🐱', '🦋', '⚽'];
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            
+            // Görseli oluştur
+            let v1 = Array(n1).fill(icon).join(' ');
+            let v2 = Array(n2).fill(icon).join(' ');
+
+            let html = `
+                <div class="math-visual" style="color:#3b82f6;">
+                    <span>${v1}</span>
+                    <span style="color:#333; margin:0 15px;">➕</span>
+                    <span>${v2}</span>
+                </div>
+                <div class="question-text">Toplam kaç tane var?</div>
+                <div class="options-grid">
+            `;
+            
+            // Şıkları oluştur ve karıştır
+            let opts = new Set([correct]);
+            while(opts.size < 4) {
+                let r = Math.floor(Math.random() * 10) + 1; 
+                if(r !== correct && r > 1) opts.add(r);
+            }
+            Array.from(opts).sort(() => Math.random() - 0.5).forEach(opt => {
+                html += `<div class="opt-btn" onclick="checkAnswer(this, ${opt}, ${correct})">${opt}</div>`;
+            });
+            html += `</div>`;
+            area.innerHTML = html;
+        }
+
+        // --- STANDART OYUN YAPISI (Lang, Social, Nature, Emotion) ---
+        function loadStandardGame(area, data, type) {
+            // data: { q: soru, a: cevap, o: şıklar, i: ikon }
+            let html = `
+                <div style="font-size:5rem; margin-bottom:15px;">${data.i}</div>
+                <div class="question-text">${data.q}</div>
+                <div class="options-grid" ${type==='lang' ? 'style="grid-template-columns:1fr;"' : ''}>
+            `;
+            
+            // Şıkları karıştır
+            let shuffledOpts = [...data.o]; // Kopyasını al
+            shuffleArray(shuffledOpts); // Karıştır
+
+            shuffledOpts.forEach(opt => {
+                html += `<div class="opt-btn" onclick="checkAnswer(this, '${opt}', '${data.a}')">${opt}</div>`;
+            });
+            html += `</div>`;
+            area.innerHTML = html;
+        }
+
+        // --- FELSEFE ---
+        function loadThinkGame(area, questionText) {
+            area.innerHTML = `
+                <div class="phil-card">
+                    <div style="font-size:4rem; margin-bottom:10px;">🤔</div>
+                    <div class="phil-question">${questionText}</div>
+                </div>
+                <p style="color:#666; font-size:1.1rem; margin-top:20px;">Bunu yanındakiyle konuş.</p>
+                <button class="spin-btn" onclick="nextRoundThink()">Sıradaki Soru ➡️</button>
+            `;
+        }
+
+        function nextRoundThink() {
+            currentRound++;
+            loadLevel();
+        }
+
+        // --- CEVAP KONTROL ---
+        function checkAnswer(btn, val, correct) {
+            if (val == correct) {
+                btn.classList.add('correct');
+                updateScore();
+                currentRound++; 
+                setTimeout(() => loadLevel(), 1000); 
+            } else {
+                btn.classList.add('wrong');
+            }
+        }
+    </script>
+</body>
+</html>
