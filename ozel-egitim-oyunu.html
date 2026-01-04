@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>8 Basamaklı Eğitim Yolculuğu | Barış İlkan</title>
+    
+    <!-- Fontlar ve İkonlar -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Konfeti Efekti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* Renk Paleti ve Temel Ayarlar */
+        :root { --ana: #2563eb; --sari: #FFD700; --yesil: #22c55e; --kirmizi: #ef4444; --bg: #f0f9ff; }
+        
+        body { 
+            margin: 0; padding: 0; 
+            font-family: 'Fredoka', sans-serif; 
+            background: var(--bg); 
+            height: 100vh; width: 100vw; 
+            overflow: hidden; display: flex; flex-direction: column; 
+        }
+
+        /* Üst Bilgi Çubuğu */
+        #top-bar {
+            height: 60px; flex-shrink: 0; 
+            background: white; display: flex; align-items: center; justify-content: space-between; 
+            padding: 0 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); z-index: 100;
+        }
+        .progress-container { flex: 1; margin: 0 15px; background: #e2e8f0; height: 12px; border-radius: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #FFD700, #f59e0b); width: 0%; transition: 1s; }
+        .level-badge { background: var(--ana); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; }
+
+        /* Oyun Sahnesi */
+        #game-stage { 
+            flex: 1; position: relative; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            padding: 10px; overflow: hidden;
+        }
+
+        /* Modal ve Kartlar (Giriş, Bilgi, Bitiş) */
+        .intro-card, .info-content { 
+            background: white; border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            width: 90%; max-width: 650px; 
+            padding: 30px; text-align: center; 
+            border: 4px solid var(--sari);
+            max-height: 85vh; overflow-y: auto;
+            position: relative; z-index: 1001;
+        }
+        
+        /* Modal Arka Planı */
+        #parent-info-modal, #intro-overlay {
+            position: absolute; inset: 0; 
+            background: rgba(30, 58, 138, 0.98); 
+            z-index: 2000; display: flex; align-items: center; justify-content: center;
+        }
+
+        .intro-title { font-size: clamp(1.8rem, 5vw, 2.8rem); color: #1e3a8a; margin-bottom: 20px; }
+        .intro-text, .info-desc { 
+            color: #475569; font-size: clamp(1.1rem, 3vw, 1.3rem); 
+            line-height: 1.6; font-family: 'Segoe UI', sans-serif; margin-bottom: 25px; 
+        }
+        
+        .start-btn { 
+            background: var(--sari); color: #000; border: none; 
+            padding: 15px 50px; font-size: clamp(1.2rem, 4vw, 1.8rem); 
+            border-radius: 50px; cursor: pointer; font-weight: bold; 
+            margin-top: 15px; box-shadow: 0 6px 0 #d97706; transition: 0.1s; 
+        }
+        .start-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #d97706; }
+
+        /* Oyun İçi Nesneler */
+        h2 { font-size: clamp(1.5rem, 5vw, 3rem); margin: 10px 0 20px 0; color: #1e293b; text-align: center; }
+
+        .grid-board { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(15px, 3vw, 40px); }
+        .game-card { 
+            width: clamp(120px, 25vmin, 220px); height: clamp(120px, 25vmin, 220px);
+            background: white; border-radius: 20px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: clamp(3rem, 10vmin, 6rem); 
+            box-shadow: 0 10px 0 #cbd5e1; cursor: pointer; transition: 0.2s; border: 3px solid white; 
+        }
+        .game-card:active { transform: translateY(5px); box-shadow: 0 5px 0 #cbd5e1; }
+        .game-card.correct { background: #bbf7d0; border-color: #22c55e; }
+        .game-card.wrong { background: #fecaca; animation: shake 0.4s; }
+
+        .moving-eye { 
+            font-size: clamp(5rem, 18vmin, 12rem); position: absolute; cursor: pointer; 
+            transition: top 2.5s ease-in-out, left 2.5s ease-in-out; 
+            z-index: 50; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+        }
+
+        .traffic-light { 
+            width: clamp(80px, 15vw, 150px); background: #333; padding: 15px; border-radius: 30px; 
+            display: flex; flex-direction: column; gap: 15px; margin: 0 auto;
+        }
+        .light { width: 100%; aspect-ratio: 1/1; border-radius: 50%; background: #555; transition: 0.3s; opacity: 0.3; }
+        .light.red.active { background: #ff0000; opacity: 1; box-shadow: 0 0 40px #ff0000; }
+        .light.green.active { background: #00ff00; opacity: 1; box-shadow: 0 0 40px #00ff00; }
+        #wait-btn { margin-top: 20px; padding: 15px 40px; font-size: clamp(1.2rem, 4vw, 2rem); border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
+
+        .basket { 
+            width: clamp(130px, 22vw, 220px); height: clamp(130px, 22vw, 220px);
+            border: 4px dashed #94a3b8; border-radius: 20px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            font-size: clamp(1rem, 2vw, 1.5rem); color: #64748b; font-weight: bold; background: rgba(255,255,255,0.6); 
+        }
+        .basket i { font-size: clamp(3rem, 6vw, 5rem); margin-bottom: 5px; }
+
+        .sound-btn { 
+            width: clamp(90px, 18vw, 180px); height: clamp(90px, 18vw, 180px);
+            border-radius: 50%; border: 4px solid white; font-size: clamp(2.5rem, 6vw, 5rem); 
+            margin: 10px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+        }
+
+        .word-bank { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+        .word-piece { 
+            background: white; padding: 10px 25px; border-radius: 15px; 
+            font-size: clamp(1rem, 3vw, 2rem); 
+            cursor: pointer; border: 3px solid #2563eb; color: #2563eb; font-weight: bold; 
+            box-shadow: 0 5px 0 #bfdbfe; 
+        }
+        .sentence-area { 
+            width: 95%; min-height: 80px; border-bottom: 3px solid #cbd5e1; margin-bottom: 20px; 
+            display: flex; align-items: center; justify-content: center; gap: 10px; 
+            font-size: clamp(1.2rem, 4vw, 2.5rem); font-weight: bold; color: #334155; 
+        }
+
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="top-bar">
+        <a href="#" onclick="if(confirm('Çıkmak istediğine emin misin?')) location.reload()" style="text-decoration:none; color:#333; font-weight:600; font-size: 1.1rem;"><i class="fas fa-home"></i> Yeniden Başla</a>
+        <div class="progress-container"><div class="progress-bar" id="global-progress"></div></div>
+        <div class="level-badge" id="level-display">Giriş</div>
+    </div>
+
+    <div id="game-stage">
+        
+        <!-- GİRİŞ EKRANI (Intro Overlay) -->
+        <div id="intro-overlay">
+            <div class="intro-card">
+                <div style="font-size: clamp(3rem, 8vw, 5rem); margin-bottom:10px;">👋</div>
+                <h1 class="intro-title">8 Basamaklı Eğitim Yolculuğu</h1>
+                <p class="intro-text">
+                    Merhaba! Ben <strong>Barış Öğretmen</strong>.<br><br>
+                    Özel eğitimi size <strong>sekiz temel başlıkta özetliyorum.</strong> Bu oyun, çocuğunuzun gelişimsel basamaklarını bilimsel bir sırayla (göz kontağı, dikkat, bekleme, yönerge takibi, taklit, ayırt etme, ses farkındalığı ve ifade edici dil) adım adım desteklemek için tasarlandı.<br><br>
+                    Her aşama bir sonraki becerinin temelidir. Hazırsanız, bu pedagojik yolculuğa birlikte başlayalım!
+                </p>
+                <button class="start-btn" onclick="startJourney()">BAŞLA 🚀</button>
+            </div>
+        </div>
+
+        <!-- Level 1: Göz -->
+        <div id="level-1" class="hidden" style="width:100%; height:100%;">
+            <h2 style="color:#2563eb;">Bana Bak! 👀</h2>
+            <div id="eye-target" class="moving-eye" onclick="eyeContactSuccess()">👁️</div>
+        </div>
+
+        <!-- Level 2: Dikkat -->
+        <div id="level-2" class="hidden">
+            <h2 id="l2-question" style="color:#334155;">ELMA Hangisi?</h2>
+            <div class="grid-board" id="l2-board"></div>
+        </div>
+
+        <!-- Level 3: Bekle -->
+        <div id="level-3" class="hidden" style="text-align:center;">
+            <h2 style="color:#334155;">Kırmızıda Dur, Yeşilde Bas!</h2>
+            <div class="traffic-light">
+                <div id="light-red" class="light red active"></div>
+                <div id="light-green" class="light green"></div>
+            </div>
+            <button id="wait-btn" style="background:#e2e8f0; color:#94a3b8;" disabled>BEKLE...</button>
+        </div>
+
+        <!-- Level 4: Yönerge -->
+        <div id="level-4" class="hidden" style="text-align:center;">
+            <h2 id="l4-instruction" style="color:#334155;">...</h2>
+            <div id="l4-options" style="display:flex; justify-content:center; gap: clamp(15px, 4vw, 40px); margin: 30px 0;"></div>
+            <div class="basket" style="margin: 0 auto;"><i class="fas fa-box-open"></i>KUTU</div>
+        </div>
+
+        <!-- Level 5: Taklit -->
+        <div id="level-5" class="hidden" style="text-align:center;">
+            <h2 style="color:#334155;">Benim Yaptığımı Yap!</h2>
+            <div id="simon-display" style="font-size: clamp(5rem, 15vmin, 10rem); margin: 20px;">🤖</div>
+            <div class="grid-board" id="l5-board"></div>
+        </div>
+
+        <!-- Level 6: Ayırt Etme -->
+        <div id="level-6" class="hidden" style="text-align:center;">
+            <h2 id="l6-question" style="color:#334155;">...</h2>
+            <div class="grid-board" id="l6-board"></div>
+        </div>
+
+        <!-- Level 7: Ses -->
+        <div id="level-7" class="hidden" style="text-align:center;">
+            <h2 id="l7-title" style="color:#334155;">...</h2>
+            <div id="l7-board" style="margin-top:20px; display:flex; justify-content:center; flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Level 8: Konuşma -->
+        <div id="level-8" class="hidden" style="text-align:center;">
+            <h2 style="color:#334155;">Cümleyi Tamamla</h2>
+            <div class="sentence-area" id="l8-sentence"></div>
+            <div class="word-bank" id="l8-words"></div>
+        </div>
+
+        <!-- Bitiş Ekranı -->
+        <div id="finish-screen" class="hidden intro-card" style="z-index: 1002; position: relative;">
+            <div style="font-size: clamp(4rem, 10vw, 8rem); margin-bottom:10px;">🏆</div>
+            <h1 style="color:#d97706; margin-bottom:10px; font-size: clamp(2rem, 5vw, 4rem);">TEBRİKLER!</h1>
+            <p class="intro-text">
+                8 Basamaklı Eğitim Yolculuğunu başarıyla tamamladın.
+            </p>
+            <p style="font-size: clamp(1.5rem, 4vw, 3rem); font-weight:bold; color:var(--ana); margin:20px 0;">SEN BİR ELMASSIN! 💎</p>
+            <button class="start-btn" onclick="location.reload()">Başa Dön</button>
+        </div>
+
+    </div>
+
+    <!-- Ebeveyn Modal -->
+    <div id="parent-info-modal" class="hidden">
+        <div class="info-content">
+            <div class="info-step" id="p-step">1. BASAMAK</div>
+            <h2 id="p-title" style="margin:0 0 15px 0; color:#1e293b;">Göz Kontağı</h2>
+            <p id="p-desc" class="info-desc">...</p>
+            <div style="margin-top:25px; padding:15px; background:#eff6ff; border-radius:10px; color:#1e40af;">
+                <i class="fas fa-bullseye" style="margin-right:5px;"></i> <strong>Hedef:</strong> <span id="p-goal">...</span>
+            </div>
+            <button class="start-btn" onclick="closeParentModal()" style="font-size:1.1rem; padding:12px 35px; margin-top:25px;">Anladım, Oynayalım ✅</button>
+        </div>
+    </div>
+
+    <script>
+        // GLOBAL DEĞİŞKENLER
+        let currentLevel = 0; // 0'dan başlıyor, nextLevel() bunu 1 yapacak.
+        let subLevel = 0;
+        const maxSubLevels = 3; 
+
+        // PEDAGOJİK BİLGİLER
+        const levelData = [
+            { step: "1. BASAMAK", title: "GÖZ KONTAĞI", desc: "İletişim bir bakışla başlar. Çocuğunuzun hareketli nesneyi gözüyle takip etmesini sağlayarak 'ortak dikkat' becerisini güçlendiriyoruz.", goal: "Hareketli Gözü Yakalamak" },
+            { step: "2. BASAMAK", title: "DİKKAT", desc: "Öğrenmenin temeli dikkattir. Çeldiriciler arasından (farklı nesneler) doğru olanı bulup ona odaklanması hedeflenir.", goal: "İstenen Nesneyi Bulmak" },
+            { step: "3. BASAMAK", title: "BEKLE (Dürtü Kontrolü)", desc: "Özdenetim becerisi. Çocuğun isteğine hemen ulaşmak yerine, durup beklemesi ve kurallara uyması (kırmızı ışık) çalışılır.", goal: "Yeşil Işık Yanana Kadar Beklemek" },
+            { step: "4. BASAMAK", title: "YÖNERGE TAKİBİ", desc: "Sözel komutları anlama. Renk, şekil ve eylem içeren komutları (Kırmızı kalbi kutuya koy vb.) işleyip yerine getirmesi gerekir.", goal: "Söylenen Şekli Seçmek" },
+            { step: "5. BASAMAK", title: "TAKLİT", desc: "Aynalama becerisi. 'Benim yaptığımı yap' diyerek, model alınan hareketi kopyalaması sosyal öğrenmeyi başlatır.", goal: "Robotun Hareketini Tekrar Etmek" },
+            { step: "6. BASAMAK", title: "AYIRT ETME", desc: "Kategorizasyon. Nesneleri işlevlerine veya sınıflarına (Meyve, Hayvan, Kıyafet) göre ayırma becerisidir.", goal: "Doğru Kategoriyi Seçmek" },
+            { step: "7. BASAMAK", title: "SES FARKINDALIĞI", desc: "İşitsel ayırt etme. Duyduğu sesin hangi kaynağa (hayvan, taşıt vb.) ait olduğunu tanımasıdır.", goal: "Sesi Duyulan Canlıyı Bulmak" },
+            { step: "8. BASAMAK", title: "İFADE EDİCİ DİL", desc: "Cümle kurma. Kelimeleri anlamlı bir bütün oluşturacak şekilde bir araya getirme (Özne-Nesne-Yüklem) çalışmasıdır.", goal: "Cümleyi Doğru Tamamlamak" }
+        ];
+
+        function startJourney() {
+            // DEĞİŞKENLERİ KESİN OLARAK SIFIRLA
+            currentLevel = 0;
+            subLevel = 0;
+            document.getElementById('intro-overlay').style.display = 'none';
+            nextLevel();
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            subLevel = 0;
+            
+            // Tüm levelleri gizle (Garanti olsun diye döngüyle)
+            for(let i=1; i<=8; i++) {
+                const el = document.getElementById(`level-${i}`);
+                if(el) el.classList.add('hidden');
+            }
+
+            // Bitiş kontrolü
+            if (currentLevel > 8) {
+                document.getElementById('finish-screen').classList.remove('hidden');
+                document.getElementById('level-display').innerText = "ZİRVE 🏆";
+                document.getElementById('global-progress').style.width = "100%";
+                launchConfetti();
+                return;
+            }
+
+            // Ebeveyn Modalını Hazırla
+            const data = levelData[currentLevel - 1];
+            if(data) {
+                document.getElementById('p-step').innerText = data.step;
+                document.getElementById('p-title').innerText = data.title;
+                document.getElementById('p-desc').innerText = data.desc;
+                document.getElementById('p-goal').innerText = data.goal;
+                
+                // Modalı Göster
+                const modal = document.getElementById('parent-info-modal');
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+
+            // İlerleme çubuğu
+            const progress = ((currentLevel - 1) / 8) * 100;
+            document.getElementById('global-progress').style.width = progress + "%";
+            document.getElementById('level-display').innerText = "Level " + currentLevel;
+        }
+
+        function closeParentModal() {
+            const modal = document.getElementById('parent-info-modal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            
+            const activeLevel = document.getElementById(`level-${currentLevel}`);
+            if(activeLevel) activeLevel.classList.remove('hidden');
+            
+            // Level başlatıcılarını çağır
+            try {
+                if(currentLevel === 1) initLevel1();
+                else if(currentLevel === 2) initLevel2();
+                else if(currentLevel === 3) initLevel3();
+                else if(currentLevel === 4) initLevel4();
+                else if(currentLevel === 5) initLevel5();
+                else if(currentLevel === 6) initLevel6();
+                else if(currentLevel === 7) initLevel7();
+                else if(currentLevel === 8) initLevel8();
+            } catch(e) {
+                console.error("Level başlatma hatası:", e);
+            }
+        }
+
+        function levelSuccess() {
+            subLevel++;
+            if(subLevel >= maxSubLevels) {
+                launchConfetti();
+                setTimeout(nextLevel, 1500);
+            } else {
+                // Aynı levelde yeni soru
+                try {
+                    if(currentLevel === 2) initLevel2();
+                    else if(currentLevel === 3) initLevel3();
+                    else if(currentLevel === 4) initLevel4();
+                    else if(currentLevel === 5) initLevel5();
+                    else if(currentLevel === 6) initLevel6();
+                    else if(currentLevel === 7) initLevel7();
+                    else if(currentLevel === 8) initLevel8();
+                } catch(e) {
+                    console.error("Level yenileme hatası:", e);
+                }
+            }
+        }
+        
+        function launchConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        // --- LEVEL 1: GÖZ ---
+        let eyeTimer;
+        function initLevel1() {
+            const eye = document.getElementById('eye-target');
+            if(eyeTimer) clearTimeout(eyeTimer);
+            moveEye();
+        }
+        function moveEye() {
+            if(currentLevel !== 1) return;
+            const eye = document.getElementById('eye-target');
+            const stage = document.getElementById('game-stage');
+            const eyeSize = eye.offsetWidth || 100; 
+            const maxX = stage.clientWidth - eyeSize - 20; 
+            const maxY = stage.clientHeight - eyeSize - 20; 
+            
+            const x = Math.max(0, Math.random() * maxX);
+            const y = Math.max(0, Math.random() * maxY);
+            
+            eye.style.left = x + 'px';
+            eye.style.top = y + 'px';
+            eyeTimer = setTimeout(moveEye, 3000); 
+        }
+        function eyeContactSuccess() {
+            launchConfetti();
+            levelSuccess();
+        }
+
+        // --- LEVEL 2: DİKKAT ---
+        const emojis = [
+            {n:"ELMA", i:"🍎"}, {n:"ARABA", i:"🚗"}, {n:"TOP", i:"⚽"}, {n:"KÖPEK", i:"🐶"}, 
+            {n:"GÖZLÜK", i:"👓"}, {n:"ÇİÇEK", i:"🌻"}, {n:"AYICIK", i:"🧸"}, {n:"UÇAK", i:"✈️"},
+            {n:"MUZ", i:"🍌"}, {n:"KEDİ", i:"🐱"}, {n:"ŞAPKA", i:"🎩"}, {n:"BALIK", i:"🐟"},
+            {n:"EV", i:"🏠"}, {n:"AĞAÇ", i:"🌳"}, {n:"DONDURMA", i:"🍦"}, {n:"GÜNEŞ", i:"☀️"}
+        ];
+        function initLevel2() {
+            const target = emojis[Math.floor(Math.random() * emojis.length)];
+            document.getElementById('l2-question').innerText = "Hangisi " + target.n + "?";
+            const board = document.getElementById('l2-board');
+            board.innerHTML = "";
+            
+            let wrong;
+            do { wrong = emojis[Math.floor(Math.random() * emojis.length)]; } while(wrong.n === target.n);
+            
+            const options = [{ icon: target.i, correct: true }, { icon: wrong.i, correct: false }];
+            if(Math.random() > 0.5) options.reverse();
+            
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'game-card';
+                div.innerText = opt.icon;
+                div.onclick = () => { 
+                    if(opt.correct) { div.classList.add('correct'); levelSuccess(); } 
+                    else { div.classList.add('wrong'); setTimeout(()=>div.classList.remove('wrong'), 500); } 
+                };
+                board.appendChild(div);
+            });
+        }
+
+        // --- LEVEL 3: BEKLE ---
+        function initLevel3() {
+            const btn = document.getElementById('wait-btn');
+            const red = document.getElementById('light-red');
+            const green = document.getElementById('light-green');
+            red.classList.add('active'); green.classList.remove('active');
+            btn.style.background = "#e2e8f0"; btn.style.color = "#94a3b8";
+            btn.innerText = "BEKLE..."; btn.disabled = true;
+            
+            // Temiz bir buton oluştur (eski event listener'ları silmek için)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            const waitTime = Math.floor(Math.random() * 2000) + 2000;
+            setTimeout(() => {
+                if(currentLevel === 3) {
+                    red.classList.remove('active'); green.classList.add('active');
+                    newBtn.style.background = "#22c55e"; newBtn.style.color = "white";
+                    newBtn.innerText = "BAS!"; newBtn.disabled = false;
+                    newBtn.onclick = () => { levelSuccess(); newBtn.onclick = null; };
+                }
+            }, waitTime);
+        }
+
+        // --- LEVEL 4: YÖNERGE ---
+        const instructions = [
+            { id:'red-circle', color:'#ef4444', icon:'fa-circle', text:'KIRMIZI DAİREYİ' },
+            { id:'blue-square', color:'#3b82f6', icon:'fa-square', text:'MAVİ KAREYİ' },
+            { id:'green-heart', color:'#22c55e', icon:'fa-heart', text:'YEŞİL KALBİ' },
+            { id:'yellow-star', color:'#eab308', icon:'fa-star', text:'SARI YILDIZI' },
+            { id:'purple-circle', color:'#a855f7', icon:'fa-circle', text:'MOR DAİREYİ' }
+        ];
+        
+        function initLevel4() {
+            const targetInst = instructions[Math.floor(Math.random() * instructions.length)];
+            document.getElementById('l4-instruction').innerText = `"${targetInst.text} Kutuya Koy"`;
+            
+            let wrongInst;
+            do { wrongInst = instructions[Math.floor(Math.random() * instructions.length)]; } while(wrongInst.id === targetInst.id);
+            
+            const opts = [targetInst, wrongInst];
+            if(Math.random() > 0.5) opts.reverse();
+
+            const container = document.getElementById('l4-options');
+            if(!container) return;
+            container.innerHTML = "";
+            
+            opts.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'game-card';
+                div.style.color = opt.color;
+                div.style.borderColor = opt.color;
+                div.innerHTML = `<i class="fas ${opt.icon}"></i>`;
+                div.onclick = () => {
+                    if(opt.id === targetInst.id) levelSuccess();
+                    else {
+                        const basket = document.querySelector('.basket');
+                        if(basket) {
+                            basket.style.borderColor = "#ef4444";
+                            setTimeout(()=> basket.style.borderColor = "#94a3b8", 500);
+                        }
+                    }
+                };
+                container.appendChild(div);
+            });
+        }
+
+        // --- LEVEL 5: TAKLİT ---
+        const actions = ['👏', '👋', '💪', '👍', '🙈', '🤫'];
+        let targetAction;
+        function initLevel5() {
+            targetAction = actions[Math.floor(Math.random() * actions.length)];
+            document.getElementById('simon-display').innerText = targetAction;
+            
+            let wrongAction;
+            do { wrongAction = actions[Math.floor(Math.random() * actions.length)]; } while(wrongAction === targetAction);
+            
+            const opts = [targetAction, wrongAction];
+            if(Math.random() > 0.5) opts.reverse();
+            
+            const board = document.getElementById('l5-board');
+            board.innerHTML = "";
+            opts.forEach(act => {
+                const btn = document.createElement('button');
+                btn.className = 'game-card';
+                btn.innerText = act;
+                btn.onclick = () => { if(act === targetAction) levelSuccess(); };
+                board.appendChild(btn);
+            });
+        }
+
+        // --- LEVEL 6: AYIRT ETME ---
+        const categories = [
+            { cat:"MEYVE", correct:"🍎", wrong:"🚗" },
+            { cat:"HAYVAN", correct:"🐱", wrong:"⚽" },
+            { cat:"ARAÇ", correct:"🚌", wrong:"🍌" },
+            { cat:"KIYAFET", correct:"👕", wrong:"🍏" },
+            { cat:"MOBİLYA", correct:"🪑", wrong:"🐕" }
+        ];
+        function initLevel6() {
+            const t = categories[Math.floor(Math.random() * categories.length)];
+            document.getElementById('l6-question').innerText = "Hangisi " + t.cat + "?";
+            const board = document.getElementById('l6-board');
+            board.innerHTML = "";
+            
+            const arr = [ {i:t.correct, c:true}, {i:t.wrong, c:false} ];
+            if(Math.random()>0.5) arr.reverse();
+
+            arr.forEach(opt => {
+                const d = document.createElement('div');
+                d.className = 'game-card';
+                d.innerText = opt.i;
+                d.onclick = () => { if(opt.c) levelSuccess(); else { d.classList.add('wrong'); setTimeout(()=>d.classList.remove('wrong'),500); } };
+                board.appendChild(d);
+            });
+        }
+
+        // --- LEVEL 7: SES ---
+        const soundData = [
+            {id:'cat', text:'Miyav', icon:'🐱'},
+            {id:'dog', text:'Hav Hav', icon:'🐶'},
+            {id:'cow', text:'Mööö', icon:'🐮'},
+            {id:'bird', text:'Cik Cik', icon:'🐦'},
+            {id:'duck', text:'Vak Vak', icon:'🦆'},
+            {id:'bee', text:'Vızzz', icon:'🐝'}
+        ];
+        let targetSound;
+        function initLevel7() {
+            const s = soundData[Math.floor(Math.random() * soundData.length)];
+            targetSound = s.id;
+            document.getElementById('l7-title').innerText = `"${s.text}" sesini kim çıkarır?`;
+            
+            let wrongS;
+            do { wrongS = soundData[Math.floor(Math.random() * soundData.length)]; } while(wrongS.id === s.id);
+            
+            const opts = [s, wrongS];
+            if(Math.random() > 0.5) opts.reverse();
+
+            const board = document.getElementById('l7-board');
+            board.innerHTML = "";
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'sound-btn';
+                btn.style.background = (opt.id === s.id || Math.random() > 0.5) ? '#e0f2fe' : '#fce7f3'; 
+                btn.innerText = opt.icon;
+                btn.onclick = () => { if(opt.id === targetSound) levelSuccess(); };
+                board.appendChild(btn);
+            });
+        }
+
+        // --- LEVEL 8: KONUŞMA ---
+        const sentences = [
+            { pre:"Ali", obj:"topu", ans:"AT", opts:["AT", "YEDİ", "UYUDU"] },
+            { pre:"Ayşe", obj:"sütü", ans:"İÇTİ", opts:["İÇTİ", "GİYDİ", "KOŞTU"] },
+            { pre:"Bebek", obj:"mışıl mışıl", ans:"UYUDU", opts:["UYUDU", "YEDİ", "UÇTU"] },
+            { pre:"Ahmet", obj:"kitap", ans:"OKUDU", opts:["OKUDU", "SÜRDÜ", "YIKADI"] }
+        ];
+        let currentSentence;
+        
+        function initLevel8() {
+            currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
+            
+            const sDiv = document.getElementById('l8-sentence');
+            sDiv.innerHTML = `
+                <span>${currentSentence.pre}</span> 
+                <span>${currentSentence.obj}</span> 
+                <span id="missing-word" style="border-bottom:3px dashed #334155; min-width:80px; text-align:center; color:#94a3b8;">?</span>
+            `;
+
+            const wDiv = document.getElementById('l8-words');
+            wDiv.innerHTML = "";
+            
+            const options = [...currentSentence.opts];
+            options.sort(() => Math.random() - 0.5);
+
+            options.forEach(word => {
+                const d = document.createElement('div');
+                d.className = 'word-piece';
+                d.innerText = word;
+                d.onclick = () => checkSentence(word);
+                wDiv.appendChild(d);
+            });
+        }
+
+        function checkSentence(word) {
+            if(word === currentSentence.ans) {
+                const missing = document.getElementById('missing-word');
+                missing.innerText = word;
+                missing.style.color = "#2563eb";
+                missing.style.borderBottom = "none";
+                levelSuccess();
+            }
+        }
+    </script>
+</body>
+</html>
