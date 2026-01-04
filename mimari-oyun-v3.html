@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimar Sensin v3: Medeniyet Kurucusu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --water: #a5d3e6; --primary: #ff6b6b; --secondary: #4ecdc4; --gold: #ffd700;
+            --text: #2d3436; --panel-bg: rgba(255, 255, 255, 0.95);
+        }
+        [data-theme="dark"] { --water: #1e3799; --text: #f1f2f6; --panel-bg: rgba(47, 53, 66, 0.95); }
+
+        body { margin: 0; overflow: hidden; font-family: 'Nunito', sans-serif; background-color: var(--water); color: var(--text); transition: background 1s; }
+
+        /* UI */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 10; }
+
+        .header {
+            pointer-events: auto; background: var(--panel-bg); padding: 10px 25px; border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; align-self: center; backdrop-filter: blur(5px);
+        }
+
+        .resource-box {
+            display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 1.1rem;
+            background: rgba(0,0,0,0.05); padding: 5px 15px; border-radius: 20px;
+        }
+        .gold-txt { color: #f1c40f; } .lvl-txt { color: #9b59b6; }
+
+        .weather-btn, .photo-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #555; transition: 0.2s; }
+        .weather-btn:hover, .photo-btn:hover { transform: scale(1.2); color: var(--secondary); }
+
+        .tools {
+            pointer-events: auto; background: var(--panel-bg); padding: 10px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; gap: 8px; align-self: center; margin-bottom: 20px;
+        }
+
+        .tool-btn {
+            width: 65px; height: 75px; border: none; border-radius: 12px; cursor: pointer; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.05); color: #94a3b8; transition: 0.2s;
+        }
+        .tool-btn i { font-size: 1.6rem; margin-bottom: 5px; }
+        .tool-btn span { font-size: 0.75rem; font-weight: bold; color: #555; }
+        .tool-btn.active { background: var(--primary); color: white; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); }
+        .tool-btn.active span { color: white; }
+
+        /* MODAL */
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .card { background: white; width: 450px; padding: 30px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center; transform: scale(0.8); transition: 0.3s; position: relative; color: #333; }
+        .modal-overlay.active .card { transform: scale(1); }
+
+        .q-badge { background: var(--secondary); color: white; padding: 5px 15px; border-radius: 15px; font-weight: bold; font-size: 0.9rem; display: inline-block; margin-bottom: 15px; }
+        .q-text { font-size: 1.3rem; font-weight: 800; margin-bottom: 20px; line-height: 1.4; }
+        .opt-btn { background: #f8fafc; border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: left; font-size: 1rem; margin-bottom: 8px; width: 100%; display: block; }
+        .opt-btn:hover { border-color: var(--secondary); background: #e0f2f1; }
+        .opt-btn.correct { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+        .opt-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+
+        /* BİLGİ KARTI */
+        .info-content { background: #fff9c4; padding: 15px; border-radius: 10px; font-size: 1rem; text-align: left; color: #555; border-left: 5px solid #fbc02d; margin-bottom: 20px; line-height: 1.5; }
+        .continue-btn { background: var(--secondary); color: white; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 30px; cursor: pointer; }
+
+        canvas { display: block; cursor: crosshair; }
+        
+        /* HAVA DURUMU EFEKTLERİ */
+        .weather-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="header">
+            <h3 style="margin:0; color:var(--primary);"><i class="fas fa-crown"></i> MEDENİYET</h3>
+            
+            <div class="resource-box">
+                <i class="fas fa-coins gold-txt"></i> <span id="gold-display">0</span>
+            </div>
+            <div class="resource-box">
+                <i class="fas fa-star lvl-txt"></i> <span id="lvl-display">1</span>
+            </div>
+
+            <button class="weather-btn" onclick="toggleWeather()" title="Hava Durumu"><i class="fas fa-cloud-sun"></i></button>
+            <button class="weather-btn" onclick="toggleNight()" title="Gece/Gündüz"><i class="fas fa-moon"></i></button>
+            <button class="photo-btn" onclick="takePhoto()" title="Fotoğraf Çek"><i class="fas fa-camera"></i></button>
+            
+            <select id="grade-select" style="margin-left:10px;">
+                <option value="8">8. Sınıf</option>
+                <option value="7">7. Sınıf</option>
+                <option value="6">6. Sınıf</option>
+                <option value="5">5. Sınıf</option>
+            </select>
+        </div>
+
+        <div class="tools">
+            <button class="tool-btn active" onclick="setTool(1, this, 10)">
+                <i class="fas fa-layer-group"></i> <span>Zemin<br>10 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            </button>
+            <button class="tool-btn" onclick="setTool(2, this, 50)">
+                <i class="fas fa-home"></i> <span>Ev<br>50 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            </button>
+            <button class="tool-btn" onclick="setTool(3, this, 100)">
+                <i class="fas fa-building"></i> <span>Bina<br>100 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            </button>
+            <button class="tool-btn" onclick="setTool(4, this, 200)">
+                <i class="fas fa-chess-rook"></i> <span>Kule<br>200 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            </button>
+            <button class="tool-btn" onclick="setTool(5, this, 30)">
+                <i class="fas fa-tree"></i> <span>Park<br>30 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            </button>
+            <button class="tool-btn" onclick="earnGold()" style="color:#f1c40f; border-color:#f1c40f;">
+                <i class="fas fa-gift"></i> <span>Altın<br>Kazan</span>
+            </button>
+            <button class="tool-btn" onclick="clearMap()" style="color:red;">
+                <i class="fas fa-trash"></i> <span>Sil</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="quiz-modal">
+        <div class="card">
+            <div class="q-badge" id="q-mode">İNŞAAT İZNİ</div>
+            <div class="q-text" id="q-text">Soru...</div>
+            <div class="options-grid" id="q-options"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="info-modal">
+        <div class="card info-card">
+            <div class="info-title">
+                <span><i class="fas fa-check-circle"></i> BAŞARILI!</span>
+                <button class="weather-btn" onclick="speakInfo()"><i class="fas fa-volume-up"></i></button>
+            </div>
+            <div class="info-content" id="info-text">Bilgi...</div>
+            <button class="continue-btn" onclick="finishBuild()">İNŞA ET</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <canvas id="weatherCanvas" class="weather-layer"></canvas>
+
+    <script>
+        // --- 1. OYUN VERİLERİ & EKONOMİ ---
+        const player = {
+            gold: 200, // Başlangıç parası
+            xp: 0,
+            level: 1
+        };
+
+        // Konular ve Sorular (Örnek Havuz)
+        const questions = {
+            8: [
+                { q: "DNA'nın yapısında hangisi bulunmaz?", a: "Protein kılıf", w: ["Fosfat", "Şeker", "Organik Baz"], info: "DNA'da Nükleotidler bulunur. Protein kılıf virüslerde olur." },
+                { q: "√100 sayısı kaçtır?", a: "10", w: ["50", "20", "100"], info: "10 x 10 = 100 olduğu için √100 = 10'dur." },
+                { q: "M.Kemal hangi şehirde doğdu?", a: "Selanik", w: ["Manastır", "İstanbul", "Şam"], info: "1881 yılında Selanik'te doğmuştur." },
+                { q: "Periyodik tabloda dikey sütunlara ne denir?", a: "Grup", w: ["Periyot", "Element", "Sıra"], info: "Dikey sütunlara Grup, yatay sıralara Periyot denir." }
+            ],
+            7: [ { q: "Hücrenin enerji santrali?", a: "Mitokondri", w: ["Koful", "Lizozom", "Çekirdek"], info: "Mitokondri oksijenli solunumla enerji üretir." } ],
+            6: [ { q: "Güneş sisteminin en büyüğü?", a: "Jüpiter", w: ["Mars", "Dünya", "Satürn"], info: "Jüpiter gaz devi olup sistemin en büyük gezegenidir." } ],
+            5: [ { q: "Işık doğrusal mı yayılır?", a: "Evet", w: ["Hayır", "Bazen", "Eğrisel"], info: "Işık her yöne ve doğrusal yayılır." } ]
+        };
+
+        // --- 2. GRAFİK MOTORU ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wCanvas = document.getElementById('weatherCanvas');
+        const wCtx = wCanvas.getContext('2d');
+
+        let width, height;
+        const GRID = 15; const TW = 60, TH = 35;
+        let map = [], weatherType = 'sun'; // sun, rain, snow
+        let raindrops = [];
+        let isNight = false;
+        
+        let currentTool = 1; 
+        let currentCost = 10;
+        let pendingBuild = null;
+
+        const COLORS = {
+            water: "#a5d3e6", nightWater: "#192a56",
+            land_top: "#e2e8f0", land_side: "#94a3b8",
+            house_top: "#ff7675", house_side: "#d63031",
+            build_top: "#ffeaa7", build_side: "#fdcb6e",
+            tower_top: "#a29bfe", tower_side: "#6c5ce7",
+            tree_top: "#55efc4", tree_side: "#00b894",
+            rubble_top: "#636e72", rubble_side: "#2d3436" // ENKAZ RENGİ
+        };
+
+        function init() {
+            window.addEventListener('resize', resize);
+            resize();
+            createMap();
+            loadGame();
+            updateUI();
+            animate();
+            animateWeather();
+        }
+
+        function resize() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = wCanvas.width = width;
+            canvas.height = wCanvas.height = height;
+        }
+
+        function createMap() {
+            map = [];
+            for(let x=0; x<GRID; x++) {
+                map[x] = [];
+                for(let y=0; y<GRID; y++) {
+                    map[x][y] = 0; // 0:Su, 1:Toprak, 99:Enkaz
+                }
+            }
+        }
+
+        // --- ÇİZİM ---
+        function drawTile(x, y, type, hover = false) {
+            const isoX = (x - y) * TW / 2 + width / 2;
+            const isoY = (x + y) * TH / 2 + height / 4;
+            
+            if(type === 0) return;
+
+            let cTop, cSide, lift = 0;
+            if(type===1) { cTop=COLORS.land_top; cSide=COLORS.land_side; lift=10; }
+            else if(type===2) { cTop=COLORS.house_top; cSide=COLORS.house_side; lift=35; }
+            else if(type===3) { cTop=COLORS.build_top; cSide=COLORS.build_side; lift=60; }
+            else if(type===4) { cTop=COLORS.tower_top; cSide=COLORS.tower_side; lift=90; }
+            else if(type===5) { cTop=COLORS.tree_top; cSide=COLORS.tree_side; lift=25; }
+            else if(type===99) { cTop=COLORS.rubble_top; cSide=COLORS.rubble_side; lift=15; } // Enkaz
+
+            if(isNight) {
+                // Basit karartma mantığı
+                // cTop ve cSide renklerini koyulaştırmak için CSS variable veya HSL kullanmak daha iyi ama burada basit filtre yapıyoruz
+                ctx.filter = "brightness(0.6)"; 
+            } else if (weatherType === 'snow') {
+                cTop = "#ffffff"; // Kar yağınca çatılar beyaz
+                ctx.filter = "none";
+            } else {
+                ctx.filter = "none";
+            }
+
+            // Gölge
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath(); ctx.moveTo(isoX, isoY+lift+15); ctx.lineTo(isoX+TW/2, isoY+lift+TH/2+15); ctx.lineTo(isoX, isoY+lift+TH+15); ctx.lineTo(isoX-TW/2, isoY+lift+TH/2+15); ctx.fill();
+
+            // Yan yüzler
+            ctx.fillStyle = cSide;
+            ctx.beginPath(); ctx.moveTo(isoX-TW/2, isoY+TH/2); ctx.lineTo(isoX, isoY+TH); ctx.lineTo(isoX+TW/2, isoY+TH/2); ctx.lineTo(isoX+TW/2, isoY+TH/2-lift); ctx.lineTo(isoX, isoY+TH-lift); ctx.lineTo(isoX-TW/2, isoY+TH/2-lift); ctx.fill();
+
+            // Üst yüz
+            ctx.fillStyle = cTop;
+            ctx.beginPath(); ctx.moveTo(isoX, isoY-lift); ctx.lineTo(isoX+TW/2, isoY+TH/2-lift); ctx.lineTo(isoX, isoY+TH-lift); ctx.lineTo(isoX-TW/2, isoY+TH/2-lift); ctx.fill();
+
+            // Kenar Çizgisi
+            ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1; ctx.stroke();
+
+            // Gece Pencereleri
+            if(isNight && (type===2 || type===3 || type===4)) {
+                ctx.filter = "none"; // Işık parlak olsun
+                ctx.fillStyle = "#f1c40f";
+                ctx.fillRect(isoX-5, isoY+TH/2-lift+10, 6, 8);
+                ctx.fillRect(isoX+8, isoY+TH/2-lift+20, 6, 8);
+            }
+            ctx.filter = "none"; // Reset
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Zemin rengi (Su)
+            document.body.style.backgroundColor = isNight ? COLORS.nightWater : COLORS.water;
+
+            for(let x=0; x<GRID; x++) {
+                for(let y=0; y<GRID; y++) {
+                    if(map[x][y] > 0) {
+                        drawTile(x, y, 1); // Zemin hep var
+                        if(map[x][y] > 1) drawTile(x, y, map[x][y]); // Üstüne bina
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // --- HAVA DURUMU SİSTEMİ ---
+        function animateWeather() {
+            wCtx.clearRect(0, 0, width, height);
+            
+            if(weatherType !== 'sun') {
+                if(raindrops.length < 100) {
+                    raindrops.push({
+                        x: Math.random() * width,
+                        y: -10,
+                        speed: Math.random() * 5 + 5,
+                        len: Math.random() * 10 + 5
+                    });
+                }
+
+                wCtx.strokeStyle = weatherType === 'rain' ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.8)";
+                wCtx.fillStyle = "white";
+                wCtx.lineWidth = weatherType === 'rain' ? 1 : 2;
+
+                for(let i=0; i<raindrops.length; i++) {
+                    let r = raindrops[i];
+                    r.y += r.speed;
+                    
+                    if(weatherType === 'rain') {
+                        wCtx.beginPath(); wCtx.moveTo(r.x, r.y); wCtx.lineTo(r.x - 2, r.y + r.len); wCtx.stroke();
+                    } else { // Snow
+                        wCtx.beginPath(); wCtx.arc(r.x, r.y, r.len/4, 0, Math.PI*2); wCtx.fill();
+                    }
+
+                    if(r.y > height) { r.y = -10; r.x = Math.random() * width; }
+                }
+            } else {
+                raindrops = [];
+            }
+            requestAnimationFrame(animateWeather);
+        }
+
+        function toggleWeather() {
+            if(weatherType === 'sun') weatherType = 'rain';
+            else if(weatherType === 'rain') weatherType = 'snow';
+            else weatherType = 'sun';
+        }
+        function toggleNight() { isNight = !isNight; }
+
+        // --- İNTERAKSİYON ---
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left - width/2;
+            const my = e.clientY - rect.top - height/4;
+            const gridY = Math.floor((my / (TH/2) - mx / (TW/2)) / 2);
+            const gridX = Math.floor((my / (TH/2) + mx / (TW/2)) / 2);
+
+            if(gridX >= 0 && gridX < GRID && gridY >= 0 && gridY < GRID) {
+                handleClick(gridX, gridY);
+            }
+        });
+
+        function handleClick(x, y) {
+            const tile = map[x][y];
+
+            // 1. ZEMİN İNŞASI
+            if(currentTool === 1) {
+                if(tile === 0) {
+                    if(spendGold(currentCost)) { map[x][y] = 1; playSound('pop'); }
+                } return;
+            }
+
+            // 2. ENKAZ TEMİZLEME (Tamirat)
+            if(tile === 99) {
+                pendingBuild = { x, y, type: 1, mode: 'repair' }; // Tamir edince boş arsa olur
+                askQuestion("ONARIM İÇİN");
+                return;
+            }
+
+            // 3. BİNA İNŞASI (Sadece Zemin Varsa)
+            if(tile === 1 && currentTool > 1) {
+                if(player.gold >= currentCost) {
+                    pendingBuild = { x, y, type: currentTool, mode: 'build' };
+                    askQuestion("İNŞAAT İZNİ");
+                } else {
+                    alert("Yetersiz Altın! Soru çözerek altın kazanmalısın.");
+                }
+            } else if (tile > 1) {
+                alert("Burada zaten bina var!");
+            } else if (tile === 0) {
+                alert("Önce zemin yapmalısın!");
+            }
+        }
+
+        function setTool(id, btn, cost) {
+            currentTool = id;
+            currentCost = cost || 0;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        }
+
+        function earnGold() {
+            pendingBuild = { mode: 'earn' };
+            askQuestion("Hazine Sandığı");
+        }
+
+        // --- EKONOMİ VE SORU SİSTEMİ ---
+        function updateUI() {
+            document.getElementById('gold-display').innerText = player.gold;
+            document.getElementById('lvl-display').innerText = player.level;
+            saveGame();
+        }
+
+        function spendGold(amount) {
+            if(player.gold >= amount) {
+                player.gold -= amount;
+                updateUI();
+                return true;
+            }
+            alert("Yetersiz Altın!");
+            return false;
+        }
+
+        function askQuestion(modeTitle) {
+            const grade = document.getElementById('grade-select').value;
+            const pool = questions[grade] || questions[8];
+            const qData = pool[Math.floor(Math.random() * pool.length)];
+
+            document.getElementById('q-mode').innerText = modeTitle || "SORU";
+            document.getElementById('q-text').innerText = qData.q;
+            document.getElementById('info-text').innerHTML = qData.info;
+
+            const opts = document.getElementById('q-options');
+            opts.innerHTML = "";
+            let all = [qData.a, ...qData.w].sort(() => Math.random() - 0.5);
+
+            all.forEach(opt => {
+                let btn = document.createElement('div');
+                btn.className = 'opt-btn'; btn.innerText = opt;
+                btn.onclick = () => checkAnswer(btn, opt, qData.a);
+                opts.appendChild(btn);
+            });
+
+            document.getElementById('quiz-modal').classList.add('active');
+        }
+
+        function checkAnswer(btn, val, correct) {
+            if(val === correct) {
+                btn.classList.add('correct');
+                playSound('success');
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').classList.remove('active');
+                    document.getElementById('info-modal').classList.add('active');
+                }, 500);
+            } else {
+                btn.classList.add('wrong');
+                playSound('wrong');
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').classList.remove('active');
+                    handleWrongAnswer();
+                }, 800);
+            }
+        }
+
+        function handleWrongAnswer() {
+            if(pendingBuild && pendingBuild.mode === 'build') {
+                // İnşaat çöker -> Enkaz olur
+                map[pendingBuild.x][pendingBuild.y] = 99; 
+                alert("Yanlış Cevap! İnşaat çöktü. Enkazı kaldırmak için tamir etmelisin.");
+                saveGame();
+            } else {
+                alert("Yanlış cevap! Altın kazanamadın.");
+            }
+            pendingBuild = null;
+        }
+
+        function finishBuild() {
+            document.getElementById('info-modal').classList.remove('active');
+            window.speechSynthesis.cancel();
+
+            if(pendingBuild) {
+                if(pendingBuild.mode === 'build') {
+                    spendGold(currentCost); // Parayı şimdi düş
+                    map[pendingBuild.x][pendingBuild.y] = pendingBuild.type;
+                    player.xp += 20;
+                    playSound('pop');
+                } else if(pendingBuild.mode === 'repair') {
+                    map[pendingBuild.x][pendingBuild.y] = 1; // Temizlendi
+                    alert("Enkaz temizlendi! Yeniden inşa edebilirsin.");
+                } else if(pendingBuild.mode === 'earn') {
+                    player.gold += 50;
+                    player.xp += 10;
+                    confetti({ particleCount: 50, origin: { y: 0.6 } });
+                }
+
+                // Level Up Check
+                if(player.xp >= player.level * 100) {
+                    player.level++;
+                    player.gold += 100; // Level bonusu
+                    confetti({ particleCount: 150, spread: 100 });
+                    alert("TEBRİKLER! SEVİYE ATLADIN: " + player.level);
+                }
+                updateUI();
+                pendingBuild = null;
+            }
+        }
+
+        // --- DİĞER ÖZELLİKLER ---
+        function takePhoto() {
+            // İki kanvası birleştirip indir (Basitçe oyun kanvasını alalım)
+            const link = document.createElement('a');
+            link.download = 'MimarSensin_Adam.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function clearMap() {
+            if(confirm("Tüm adayı silmek istediğine emin misin?")) {
+                createMap(); player.gold = 200; updateUI();
+            }
+        }
+
+        function speakInfo() {
+            const txt = document.getElementById('info-text').innerText;
+            const u = new SpeechSynthesisUtterance(txt); u.lang = 'tr-TR';
+            window.speechSynthesis.speak(u);
+        }
+
+        function saveGame() {
+            const data = { map, player };
+            localStorage.setItem('mimarSensinV3', JSON.stringify(data));
+        }
+
+        function loadGame() {
+            const data = JSON.parse(localStorage.getItem('mimarSensinV3'));
+            if(data) { map = data.map; player.gold = data.player.gold; player.level = data.player.level; player.xp = data.player.xp || 0; }
+        }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            const t = audioCtx.currentTime;
+            if(type==='pop') { osc.frequency.setValueAtTime(400,t); osc.frequency.linearRampToValueAtTime(600,t+0.1); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.1); osc.start(t); osc.stop(t+0.1); }
+            else if(type==='success') { osc.type='triangle'; osc.frequency.setValueAtTime(500,t); osc.frequency.linearRampToValueAtTime(800,t+0.2); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.4); osc.start(t); osc.stop(t+0.4); }
+            else { osc.type='sawtooth'; osc.frequency.setValueAtTime(150,t); osc.frequency.linearRampToValueAtTime(50,t+0.2); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.3); osc.start(t); osc.stop(t+0.3); }
+        }
+
+        init();
+    </script>
+</body>
+</html>
