@@ -15,7 +15,7 @@
     <style>
         body { margin: 0; font-family: 'Exo 2', sans-serif; background: #f3e8ff; color: #333; }
         
-        /* HEADER */
+        /* HEADER - TASARIM KORUNDU */
         header { 
             background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
             padding: 30px; text-align: center; color: white; 
@@ -36,10 +36,11 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; 
             transition: 0.3s; border-top: 4px solid transparent; 
         }
-        .class-card:hover, .class-card.active { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .class-card.active { background: #faf5ff; border-top-width: 6px; }
+        .class-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        /* Aktif buton stili eklendi */
+        .class-card.active { background: #faf5ff; border-top-width: 6px; transform: scale(1.02); box-shadow: 0 5px 15px rgba(124, 58, 237, 0.2); }
         
-        /* Sınıf Renkleri */
+        /* Sınıf Renkleri - KORUNDU */
         .c-5 { border-color: #3b82f6; } .c-5 i { color: #3b82f6; background: #dbeafe; }
         .c-6 { border-color: #10b981; } .c-6 i { color: #10b981; background: #d1fae5; }
         .c-7 { border-color: #f59e0b; } .c-7 i { color: #f59e0b; background: #fef3c7; }
@@ -54,9 +55,9 @@
             background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; 
             display: flex; align-items: center; justify-content: space-between; 
             border: 1px solid #e9d5ff; cursor: pointer; text-decoration: none; color: inherit;
-            animation: fadeIn 0.5s;
+            animation: fadeIn 0.5s; transition: 0.2s;
         }
-        .lesson-item:hover { border-color: #a855f7; background: #faf5ff; }
+        .lesson-item:hover { border-color: #a855f7; background: #faf5ff; transform: translateX(5px); }
         
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
@@ -92,9 +93,12 @@
             </div>
         </div>
 
-        <div class="section-title" id="liste-baslik">📚 Tüm Ders Notları</div>
+        <div class="section-title" id="liste-baslik">📚 Tüm Ortaokul İçerikleri</div>
+        
         <div id="ders-listesi" class="lesson-list">
-            <div style="text-align:center; color:#999; margin-top:20px;">Yükleniyor...</div>
+            <div style="text-align:center; color:#999; margin-top:20px;">
+                <i class="fas fa-spinner fa-spin"></i> İçerikler Yükleniyor...
+            </div>
         </div>
 
     </div>
@@ -103,71 +107,80 @@
         const db = firebase.firestore();
         let tumProjeler = [];
 
-        // 1. TÜM ORTAOKUL VERİLERİNİ ÇEK VE HAFIZADA TUT
-        db.collection("projeler").orderBy("tarih", "desc").get().then((snapshot) => {
+        // 1. VERİTABANINDAN VERİLERİ ÇEK (Sadece 1 kere çalışır)
+        db.collection("projeler").orderBy("tarih", "desc").onSnapshot((snapshot) => {
+            tumProjeler = [];
             snapshot.forEach((doc) => {
                 const veri = doc.data();
-                const kat = (veri.kategori || "").toLowerCase();
-                
-                // Sadece "Ortaokul" veya "Ders" kategorisindekileri al
-                if (kat.includes("ortaokul") || kat.includes("ders")) {
+                // Verinin kategorisi 5, 6, 7, 8 veya Ortaokul içeriyor mu?
+                const k = veri.kategori || "";
+                if (k.includes("5") || k.includes("6") || k.includes("7") || k.includes("8") || k.includes("Ortaokul")) {
                     tumProjeler.push(veri);
                 }
             });
-            // Sayfa açılışında hepsini göster
+            
+            // İlk açılışta hepsini göster
             listele(tumProjeler);
         });
 
-        // 2. FİLTRELEME FONKSİYONU
+        // 2. FİLTRELEME BUTONLARI İÇİN
         function filtrele(sinif, kartElement) {
-            // Aktif kart görselini güncelle
+            // Butonların rengini ayarla (Aktif olanı belirt)
             document.querySelectorAll('.class-card').forEach(c => c.classList.remove('active'));
             if(kartElement) kartElement.classList.add('active');
 
             // Başlığı güncelle
-            document.getElementById('liste-baslik').innerText = sinif ? `📚 ${sinif}. Sınıf İçerikleri` : "📚 Tüm Ders Notları";
+            document.getElementById('liste-baslik').innerText = `📚 ${sinif}. Sınıf İçerikleri`;
 
-            // Verileri filtrele
-            if (sinif) {
-                const filtrelenmis = tumProjeler.filter(p => p.sinif === sinif);
-                listele(filtrelenmis);
-            } else {
-                listele(tumProjeler);
-            }
+            // Listeyi filtrele (İçinde "6. Sınıf" geçenleri bul gibi)
+            const filtrelenmis = tumProjeler.filter(p => {
+                return p.kategori && p.kategori.includes(sinif); 
+            });
+
+            listele(filtrelenmis);
         }
 
-        // 3. LİSTELEME (EKRANA BASMA)
+        // 3. EKRANA BASMA (HTML OLUŞTURMA)
         function listele(liste) {
             const div = document.getElementById('ders-listesi');
             div.innerHTML = "";
 
             if (liste.length === 0) {
-                div.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>Bu sınıf için henüz içerik eklenmemiş.</div>";
+                div.innerHTML = "<div style='text-align:center; padding:20px; color:#999; background:white; border-radius:10px;'>😔 Bu sınıf için henüz içerik eklenmemiş.</div>";
                 return;
             }
 
             liste.forEach(p => {
-                // İkona karar ver (Matematikse cetvel, fense deney tüpü vb.)
-                let ikon = "fa-book";
-                let renk = "#6d28d9"; // Varsayılan mor
-                const baslikKucuk = p.baslik.toLowerCase();
+                // İkon Belirleme (Panelden geleni kullan, yoksa tahmin et)
+                let ikonClass = p.icon || "fa-gamepad"; 
+                
+                // Eğer panelden ikon seçilmemişse isme göre otomatik ikon ata (Yedek Plan)
+                if(!p.icon) {
+                    const ad = p.baslik.toLowerCase();
+                    if(ad.includes("mat")) ikonClass = "fa-square-root-alt";
+                    else if(ad.includes("fen")) ikonClass = "fa-flask";
+                    else if(ad.includes("türkçe")) ikonClass = "fa-book";
+                    else if(ad.includes("sosyal") || ad.includes("inkılap")) ikonClass = "fa-globe";
+                    else if(ad.includes("din")) ikonClass = "fa-mosque";
+                    else if(ad.includes("ing")) ikonClass = "fa-language";
+                }
 
-                if(baslikKucuk.includes("mat")) { ikon = "fa-square-root-alt"; renk = "#3b82f6"; } // Mavi
-                else if(baslikKucuk.includes("fen")) { ikon = "fa-flask"; renk = "#ef4444"; } // Kırmızı
-                else if(baslikKucuk.includes("türkçe") || baslikKucuk.includes("sözel")) { ikon = "fa-feather-alt"; renk = "#f59e0b"; } // Turuncu
-                else if(baslikKucuk.includes("sosyal") || baslikKucuk.includes("inkılap")) { ikon = "fa-globe-europe"; renk = "#10b981"; } // Yeşil
-
-                div.innerHTML += `
-                <a href="${p.link}" target="_blank" class="lesson-item">
+                // HTML'i oluştur
+                const html = `
+                <a href="${p.link}" class="lesson-item">
                     <div style="display:flex; align-items:center;">
-                        <i class="fas ${ikon}" style="color:${renk}; font-size:1.4rem; margin-right:15px; width:30px; text-align:center;"></i>
+                        <i class="fas ${ikonClass}" style="color:#7c3aed; font-size:1.5rem; margin-right:15px; width:40px; text-align:center; background:#f3e8ff; padding:10px; border-radius:50%;"></i>
                         <div>
-                            <div style="font-weight:bold; color:#333;">${p.baslik}</div>
-                            <small style="color:#666;">${p.aciklama || 'Ders içeriği'}</small>
+                            <div style="font-weight:bold; color:#333; font-size:1.1rem;">${p.baslik}</div>
+                            <div style="color:#666; font-size:0.85rem;">
+                                <span style="background:#eee; padding:2px 8px; border-radius:10px;">${p.kategori}</span>
+                            </div>
                         </div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color:#d8b4fe;"></i>
+                    <i class="fas fa-play-circle" style="color:#d8b4fe; font-size:1.5rem;"></i>
                 </a>`;
+                
+                div.innerHTML += html;
             });
         }
     </script>
