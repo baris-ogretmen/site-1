@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaman Kırılması: 7. Seviye</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --terminal: #0f0;
+            --error: #f00;
+            --warn: #ff9900;
+            --ui-bg: rgba(0, 20, 0, 0.9);
+        }
+
+        body {
+            margin: 0; overflow: hidden; background-color: var(--bg);
+            color: var(--terminal); font-family: 'Share Tech Mono', monospace;
+            display: flex; align-items: center; justify-content: center; height: 100vh;
+        }
+
+        /* ARKA PLAN MATRİS EFEKTİ */
+        canvas { position: absolute; top: 0; left: 0; z-index: 0; opacity: 0.2; }
+
+        /* ARAYÜZ */
+        #game-interface {
+            position: relative; z-index: 10; width: 800px; max-width: 95%;
+            background: var(--ui-bg); border: 2px solid var(--terminal);
+            padding: 2px; box-shadow: 0 0 20px var(--terminal);
+            display: flex; flex-direction: column; height: 500px;
+        }
+
+        .header-bar {
+            background: var(--terminal); color: black; padding: 10px; font-weight: bold;
+            display: flex; justify-content: space-between; text-transform: uppercase;
+        }
+
+        .screen-content {
+            flex: 1; padding: 30px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            position: relative; overflow: hidden;
+        }
+
+        /* GLITCH EFEKTİ (BAŞLIK İÇİN) */
+        .glitch {
+            font-size: 3rem; font-weight: bold; text-transform: uppercase;
+            position: relative; text-shadow: 2px 2px 0px var(--warn);
+            animation: glitch 1s infinite;
+        }
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px 0px var(--warn); transform: translate(0); }
+            20% { text-shadow: -2px -2px 0px var(--error); transform: translate(-2px, 2px); }
+            40% { text-shadow: 2px -2px 0px var(--terminal); transform: translate(2px, -2px); }
+            100% { text-shadow: 2px 2px 0px var(--warn); transform: translate(0); }
+        }
+
+        /* BUTONLAR */
+        .cyber-btn {
+            background: transparent; border: 2px solid var(--terminal); color: var(--terminal);
+            padding: 15px 40px; font-size: 1.5rem; font-family: inherit; cursor: pointer;
+            margin-top: 20px; transition: 0.2s; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .cyber-btn:hover { background: var(--terminal); color: black; box-shadow: 0 0 15px var(--terminal); }
+
+        /* SORU EKRANI */
+        .status-bar {
+            width: 100%; display: flex; justify-content: space-between; margin-bottom: 20px;
+            border-bottom: 1px solid #333; padding-bottom: 10px;
+        }
+        .q-box { font-size: 1.8rem; margin-bottom: 30px; line-height: 1.4; color: #fff; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .opt-btn {
+            background: rgba(0, 50, 0, 0.5); border: 1px solid var(--terminal); color: var(--terminal);
+            padding: 15px; cursor: pointer; font-size: 1.2rem; font-family: inherit; text-align: left;
+            transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .opt-btn:hover { background: rgba(0, 255, 0, 0.2); }
+        .opt-btn::before { content: '> '; opacity: 0.5; }
+
+        /* DİNAMİK BARLAR */
+        .integrity-bar { width: 200px; height: 10px; background: #333; border: 1px solid #555; }
+        .fill { width: 100%; height: 100%; background: var(--terminal); transition: width 0.3s; }
+
+        /* SONUÇ EKRANI */
+        .result-screen { display: none; flex-direction: column; align-items: center; }
+        .access-granted { color: var(--terminal); font-size: 4rem; border: 5px solid var(--terminal); padding: 20px; transform: rotate(-5deg); margin-bottom: 20px; }
+        .access-denied { color: var(--error); font-size: 4rem; border: 5px solid var(--error); padding: 20px; transform: rotate(5deg); margin-bottom: 20px; }
+
+        /* GİZLİ */
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <div id="game-interface">
+        <div class="header-bar">
+            <span>SİSTEM: 7. SEVİYE PROTOKOLÜ</span>
+            <span>DURUM: <span id="sys-status">BEKLİYOR</span></span>
+        </div>
+
+        <div id="screen-intro" class="screen-content">
+            <div class="glitch">ZAMAN KIRILMASI</div>
+            <p style="margin: 20px 0; max-width: 600px; font-size: 1.2rem;">
+                DİKKAT AJAN! Zaman çizelgesinde 7. Yüzyıl ile 21. Yüzyıl arasında kırılmalar tespit edildi.
+                <br><br>
+                Matematiksel denklemleri çöz, Fen yasalarını onar ve Tarihi bilgileri doğrula.
+            </p>
+            <button class="cyber-btn" onclick="startGame()">BAĞLANTI KUR</button>
+        </div>
+
+        <div id="screen-game" class="screen-content hidden">
+            <div class="status-bar">
+                <div>SEVİYE: <span id="level-txt">1/10</span></div>
+                <div>ZAMAN BÜTÜNLÜĞÜ: <div class="integrity-bar" style="display:inline-block; vertical-align:middle;"><div class="fill" id="health-bar"></div></div></div>
+            </div>
+            
+            <div id="question-text" class="q-box">Sistem Yükleniyor...</div>
+            
+            <div class="options-grid" id="opt-container">
+                </div>
+        </div>
+
+        <div id="screen-result" class="screen-content hidden">
+            <div id="res-title" class="access-granted">GÖREV BAŞARILI</div>
+            <p id="res-msg" style="font-size: 1.5rem;">Sistem onarıldı.</p>
+            <button class="cyber-btn" onclick="location.reload()">SİSTEMİ YENİLE</button>
+        </div>
+    </div>
+
+    <script>
+        // --- MATRİS EFEKTİ ---
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const chars = "017MATFEN SOSYAL"; 
+        const drops = Array(Math.floor(canvas.width/20)).fill(1);
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(5, 5, 5, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#0f0"; ctx.font = "15px monospace";
+            for(let i=0; i<drops.length; i++) {
+                const text = chars[Math.floor(Math.random()*chars.length)];
+                ctx.fillText(text, i*20, drops[i]*20);
+                if(drops[i]*20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            } requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+
+        // --- OYUN VERİSİ (7. SINIF MÜFREDATI) ---
+        const questions = [
+            // MATEMATİK
+            { q: "Bir sayının 3 katının 5 eksiği 16 ise, bu sayı kaçtır?", a: "7", w: ["6", "8", "5"] },
+            { q: "(-8) + (+12) işleminin sonucu nedir?", a: "+4", w: ["-4", "-20", "+20"] },
+            { q: "Aşağıdakilerden hangisi rasyonel sayı değildir?", a: "√5", w: ["0", "-3", "1/2"] },
+            { q: "Bir dış açısının ölçüsü 45 derece olan düzgün çokgen kaç kenarlıdır?", a: "8", w: ["6", "10", "12"] },
+            // FEN
+            { q: "Mitoz bölünme sonucunda kaç hücre oluşur?", a: "2", w: ["4", "1", "8"] },
+            { q: "Potansiyel enerji neye bağlıdır?", a: "Yükseklik ve Kütle", w: ["Sürat", "Zaman", "Yol"] },
+            { q: "Gök cisimlerini inceleyen bilim dalı?", a: "Astronomi", w: ["Astroloji", "Biyoloji", "Jeoloji"] },
+            { q: "Hangisi saf maddedir?", a: "Element", w: ["Karışım", "Çözelti", "Ayran"] },
+            // SOSYAL
+            { q: "Osmanlı Devleti'nin kurucusu kimdir?", a: "Osman Bey", w: ["Orhan Bey", "Fatih Sultan Mehmet", "Yavuz Sultan Selim"] },
+            { q: "İletişimde 'Ben Dili' kullanmak ne sağlar?", a: "Anlaşmayı kolaylaştırır", w: ["Kavgayı artırır", "Suçlayıcıdır", "Kötüdür"] }
+        ];
+
+        let currentQ = 0;
+        let health = 100;
+        let score = 0;
+
+        function startGame() {
+            document.getElementById('screen-intro').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('sys-status').innerText = "HACKLENİYOR...";
+            document.getElementById('sys-status').style.color = "var(--warn)";
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQ >= questions.length) { endGame(true); return; }
+            if (health <= 0) { endGame(false); return; }
+
+            const data = questions[currentQ];
+            document.getElementById('question-text').innerText = `>_ ${data.q}`;
+            document.getElementById('level-txt').innerText = `${currentQ+1}/${questions.length}`;
+
+            const opts = document.getElementById('opt-container');
+            opts.innerHTML = "";
+            
+            let all = [data.a, ...data.w].sort(() => Math.random() - 0.5);
+            all.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, data.a);
+                opts.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            const btns = document.querySelectorAll('.opt-btn');
+            btns.forEach(b => b.disabled = true);
+
+            if (selected === correct) {
+                playSound('success');
+                currentQ++;
+                setTimeout(loadQuestion, 500);
+            } else {
+                playSound('fail');
+                health -= 20;
+                document.getElementById('health-bar').style.width = health + "%";
+                document.getElementById('health-bar').style.backgroundColor = "var(--error)";
+                setTimeout(() => {
+                    document.getElementById('health-bar').style.backgroundColor = "var(--terminal)";
+                    // Yanlış yapsa da geçsin ama canı azalsın
+                    currentQ++; 
+                    loadQuestion(); 
+                }, 500);
+            }
+        }
+
+        function endGame(win) {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('sys-status').innerText = win ? "GÜVENLİ" : "KRİTİK HATA";
+            
+            const title = document.getElementById('res-title');
+            const msg = document.getElementById('res-msg');
+
+            if(win) {
+                title.className = "access-granted";
+                title.innerText = "ERİŞİM BAŞARILI";
+                title.style.borderColor = "var(--terminal)";
+                title.style.color = "var(--terminal)";
+                msg.innerText = "Tarih ve Bilim veritabanı onarıldı. Tebrikler Ajan!";
+            } else {
+                title.className = "access-denied";
+                title.innerText = "BAĞLANTI KOPTU";
+                msg.innerText = "Sistem bütünlüğü bozuldu. Zaman çizelgesi çöktü.";
+            }
+        }
+
+        // BASİT SES SENTEZİ
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if(type === 'success') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+    </script>
+</body>
+</html>
