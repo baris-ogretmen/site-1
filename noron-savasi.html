@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nöron Savaşı: Siber Labirent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg: #050510;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff00;
+            --neon-red: #ff0000;
+        }
+
+        body {
+            margin: 0; overflow: hidden; background: var(--bg); font-family: 'Exo 2', sans-serif;
+            color: white; height: 100dvh; display: flex; flex-direction: column;
+            user-select: none; -webkit-user-select: none;
+        }
+
+        /* UI KATMANI */
+        .hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center; z-index: 20;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+        .stats { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; text-shadow: 0 0 10px var(--neon-blue); }
+        .health-bar { width: 150px; height: 10px; background: #333; border: 1px solid white; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .health-fill { width: 100%; height: 100%; background: var(--neon-green); transition: 0.3s; }
+
+        .back-btn {
+            pointer-events: auto; text-decoration: none; color: white; border: 1px solid var(--neon-blue);
+            padding: 8px 15px; border-radius: 5px; background: rgba(0, 243, 255, 0.1); font-weight: bold;
+        }
+
+        /* OYUN ALANI */
+        #game-container {
+            flex: 1; display: flex; justify-content: center; align-items: center; position: relative;
+            background-image: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+        }
+        canvas {
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1); border-radius: 10px; border: 2px solid #333;
+        }
+
+        /* SORU MODALI (MANTIK KAPISI) */
+        #logic-gate {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 100;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); animation: fadeIn 0.3s;
+        }
+        .gate-box {
+            background: #111; border: 2px solid var(--neon-pink); padding: 30px; border-radius: 20px;
+            text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 50px var(--neon-pink);
+        }
+        .gate-title { font-family: 'Orbitron', sans-serif; color: var(--neon-pink); font-size: 1.5rem; margin-bottom: 20px; }
+        .gate-question { font-size: 2rem; margin-bottom: 30px; font-weight: bold; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .opt-btn {
+            background: rgba(255, 0, 255, 0.1); border: 1px solid var(--neon-pink); color: white;
+            padding: 15px; font-size: 1.2rem; cursor: pointer; transition: 0.2s; border-radius: 10px;
+        }
+        .opt-btn:active { background: var(--neon-pink); color: black; }
+
+        /* KONTROLLER */
+        .controls {
+            position: absolute; bottom: 20px; right: 20px; display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; z-index: 10;
+        }
+        .c-btn {
+            width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px; color: white; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .c-btn:active { background: var(--neon-blue); border-color: var(--neon-blue); }
+        .c-up { grid-column: 2; }
+        .c-left { grid-row: 2; grid-column: 1; }
+        .c-down { grid-row: 2; grid-column: 2; }
+        .c-right { grid-row: 2; grid-column: 3; }
+
+        /* OYUN SONU */
+        #game-over {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none;
+            flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
+        .go-title { font-family: 'Orbitron'; font-size: 3rem; color: var(--neon-red); margin-bottom: 10px; }
+        .go-score { font-size: 1.5rem; margin-bottom: 30px; color: #ccc; }
+        .retry-btn {
+            background: var(--neon-blue); color: black; padding: 15px 40px; border: none;
+            font-size: 1.5rem; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+
+    </style>
+</head>
+<body>
+
+    <div class="hud">
+        <div>
+            <div class="stats">SKOR: <span id="score">0</span></div>
+            <div class="stats" style="font-size:0.9rem; color:#aaa;">SEVİYE: <span id="level">1</span></div>
+        </div>
+        <div>
+            <div class="health-bar"><div class="health-fill" id="hp-bar"></div></div>
+            <a href="akil-zeka.html" class="back-btn" style="margin-top:5px; display:inline-block;">ÇIKIŞ</a>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="logic-gate">
+        <div class="gate-box">
+            <div class="gate-title"><i class="fas fa-lock"></i> GÜVENLİK DUVARI</div>
+            <p style="color:#aaa;">Kapıyı açmak için şifreyi çöz:</p>
+            <div class="gate-question" id="question-text">5 + 3 = ?</div>
+            <div class="options-grid" id="options-area"></div>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <div class="go-title">SİSTEM ÇÖKTÜ</div>
+        <div class="go-score">Toplam Skor: <span id="final-score">0</span></div>
+        <button class="retry-btn" onclick="restartGame()">SİSTEMİ YENİLE</button>
+    </div>
+
+    <div class="controls" id="mobile-controls">
+        <div class="c-btn c-up" ontouchstart="input.up=true" ontouchend="input.up=false"><i class="fas fa-arrow-up"></i></div>
+        <div class="c-btn c-left" ontouchstart="input.left=true" ontouchend="input.left=false"><i class="fas fa-arrow-left"></i></div>
+        <div class="c-btn c-down" ontouchstart="input.down=true" ontouchend="input.down=false"><i class="fas fa-arrow-down"></i></div>
+        <div class="c-btn c-right" ontouchstart="input.right=true" ontouchend="input.right=false"><i class="fas fa-arrow-right"></i></div>
+    </div>
+
+    <script>
+        // --- SES MOTORU ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            
+            if(type === 'collect') { // Puan
+                o.type='sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime+0.1);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1); o.start(); setTimeout(()=>o.stop(),100);
+            } else if (type === 'hit') { // Hasar
+                o.type='sawtooth'; o.frequency.setValueAtTime(100, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(50, audioCtx.currentTime+0.3);
+                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3); o.start(); setTimeout(()=>o.stop(),300);
+            } else if (type === 'unlock') { // Kapı Açıldı
+                o.type='square'; o.frequency.setValueAtTime(400, audioCtx.currentTime); o.frequency.linearRampToValueAtTime(800, audioCtx.currentTime+0.2);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.4); o.start(); setTimeout(()=>o.stop(),400);
+            }
+        }
+
+        // --- OYUN AYARLARI ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let TILE = 40;
+        let ROWS = 15, COLS = 20;
+        
+        // Boyutlandırma
+        function resize() {
+            const w = document.getElementById('game-container').clientWidth;
+            const h = document.getElementById('game-container').clientHeight;
+            COLS = Math.floor(w / 40) - 1;
+            ROWS = Math.floor(h / 40) - 1;
+            TILE = Math.min(Math.floor(w/COLS), Math.floor(h/ROWS));
+            canvas.width = COLS * TILE;
+            canvas.height = ROWS * TILE;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Değişkenler
+        let player = { x: 1, y: 1, hp: 100 };
+        let input = { up: false, down: false, left: false, right: false };
+        let map = []; // 0:Yol, 1:Duvar, 2:Kapı, 3:Puan, 4:Çıkış
+        let enemies = [];
+        let particles = [];
+        let score = 0;
+        let level = 1;
+        let isPaused = false;
+        let gatePos = null;
+
+        // --- HARİTA OLUŞTURUCU (SİBER LABİRENT) ---
+        function generateLevel() {
+            map = [];
+            // Boş harita
+            for(let y=0; y<ROWS; y++) {
+                let row = [];
+                for(let x=0; x<COLS; x++) {
+                    // Kenarlar duvar, içi rastgele duvarlar
+                    if(y===0 || y===ROWS-1 || x===0 || x===COLS-1) row.push(1);
+                    else row.push(Math.random() > 0.8 ? 1 : 0);
+                }
+                map.push(row);
+            }
+            
+            // Oyuncu alanı temizle
+            map[1][1] = 0; map[1][2] = 0; map[2][1] = 0;
+
+            // Kapılar ve Puanlar
+            let gateCount = 0;
+            for(let y=1; y<ROWS-1; y++) {
+                for(let x=1; x<COLS-1; x++) {
+                    if(map[y][x] === 0) {
+                        if(Math.random() > 0.95 && gateCount < 2) { map[y][x] = 2; gateCount++; } // Kapı
+                        else if(Math.random() > 0.9) map[y][x] = 3; // Puan (Veri)
+                    }
+                }
+            }
+
+            // Çıkış (Sağ Alt Köşe)
+            map[ROWS-2][COLS-2] = 4;
+            map[ROWS-2][COLS-3] = 0; map[ROWS-3][COLS-2] = 0; // Çıkış yolu aç
+
+            // Düşmanlar
+            enemies = [];
+            let enemyCount = 2 + Math.floor(level / 2);
+            for(let i=0; i<enemyCount; i++) {
+                enemies.push({ 
+                    x: Math.floor(Math.random()*(COLS-2))+1, 
+                    y: Math.floor(Math.random()*(ROWS-2))+1,
+                    vx: 0.1, vy: 0.1 
+                });
+            }
+        }
+
+        // --- OYUN DÖNGÜSÜ ---
+        let lastTime = 0;
+        function loop(timestamp) {
+            if(!isPaused) {
+                update();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function update() {
+            // Oyuncu Hareketi (Yumuşak değil, kare kare değil, hibrit akıcı)
+            let speed = 0.15;
+            let nextX = player.x;
+            let nextY = player.y;
+
+            if(input.up) nextY -= speed;
+            if(input.down) nextY += speed;
+            if(input.left) nextX -= speed;
+            if(input.right) nextX += speed;
+
+            // Çarpışma Kontrolü (Duvar)
+            if(!checkWall(nextX, player.y)) player.x = nextX;
+            if(!checkWall(player.x, nextY)) player.y = nextY;
+
+            // Obje Etkileşimi
+            checkTileInteraction();
+
+            // Düşman Hareketi (Oyuncuya doğru yavaşça gel)
+            enemies.forEach(e => {
+                let dx = player.x - e.x;
+                let dy = player.y - e.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist > 0) {
+                    let moveX = (dx/dist) * 0.04 * (1 + level*0.1);
+                    let moveY = (dy/dist) * 0.04 * (1 + level*0.1);
+                    if(!checkWall(e.x + moveX, e.y)) e.x += moveX;
+                    if(!checkWall(e.x, e.y + moveY)) e.y += moveY;
+                }
+                // Hasar
+                if(dist < 0.6) {
+                    player.hp -= 1;
+                    updateUI();
+                    if(Math.random()>0.8) playSound('hit');
+                    if(player.hp <= 0) gameOver();
+                }
+            });
+
+            // Parçacıklar
+            updateParticles();
+        }
+
+        function checkWall(x, y) {
+            // Köşe noktaları kontrol et
+            let margin = 0.2;
+            let x1 = Math.floor(x + margin), x2 = Math.floor(x + 1 - margin);
+            let y1 = Math.floor(y + margin), y2 = Math.floor(y + 1 - margin);
+            
+            try {
+                if(map[y1][x1] === 1 || map[y1][x2] === 1 || map[y2][x1] === 1 || map[y2][x2] === 1) return true; // Duvar
+                if(map[y1][x1] === 2 || map[y1][x2] === 2 || map[y2][x1] === 2 || map[y2][x2] === 2) {
+                    // Kapıya çarptı
+                    let gy = Math.floor(y + 0.5);
+                    let gx = Math.floor(x + 0.5);
+                    if(map[gy][gx] === 2) openLogicGate(gx, gy);
+                    return true;
+                }
+            } catch(e) { return true; }
+            return false;
+        }
+
+        function checkTileInteraction() {
+            let cx = Math.floor(player.x + 0.5);
+            let cy = Math.floor(player.y + 0.5);
+            
+            if(map[cy][cx] === 3) { // Puan (Veri)
+                map[cy][cx] = 0;
+                score += 50;
+                updateUI();
+                playSound('collect');
+                createParticles(cx, cy, '#00ff00');
+            }
+            if(map[cy][cx] === 4) { // Çıkış
+                levelUp();
+            }
+        }
+
+        function draw() {
+            // Arka Plan Temizle
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Harita Çiz
+            for(let y=0; y<ROWS; y++) {
+                for(let x=0; x<COLS; x++) {
+                    let val = map[y][x];
+                    let px = x * TILE;
+                    let py = y * TILE;
+                    
+                    if(val === 1) { // Duvar
+                        ctx.fillStyle = '#1e1e2e';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#00f3ff';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px+5, py+5, TILE-10, TILE-10);
+                    } else if (val === 2) { // Kapı
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'white';
+                        ctx.font = '20px Arial';
+                        ctx.fillText('🔒', px+8, py+28);
+                    } else if (val === 3) { // Puan
+                        ctx.fillStyle = '#00ff00';
+                        ctx.beginPath(); ctx.arc(px+TILE/2, py+TILE/2, 5, 0, Math.PI*2); ctx.fill();
+                        ctx.shadowBlur = 10; ctx.shadowColor = '#00ff00';
+                        ctx.fill(); ctx.shadowBlur = 0;
+                    } else if (val === 4) { // Çıkış
+                        ctx.fillStyle = '#f1c40f';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'black';
+                        ctx.fillText('EXIT', px+2, py+25);
+                    }
+                }
+            }
+
+            // Oyuncu Çiz
+            let px = player.x * TILE;
+            let py = player.y * TILE;
+            ctx.fillStyle = '#00f3ff';
+            ctx.shadowBlur = 20; ctx.shadowColor = '#00f3ff';
+            ctx.beginPath(); ctx.arc(px+TILE/2, py+TILE/2, TILE/3, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Düşman Çiz
+            enemies.forEach(e => {
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                let ex = e.x * TILE + TILE/2;
+                let ey = e.y * TILE + TILE/2;
+                ctx.arc(ex, ey, TILE/3, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Parçacıklar
+            drawParticles();
+        }
+
+        // --- MANTIK KAPISI SİSTEMİ ---
+        function openLogicGate(x, y) {
+            isPaused = true;
+            gatePos = {x, y};
+            document.getElementById('logic-gate').style.display = 'flex';
+            input = { up:false, down:false, left:false, right:false }; // Hareketi durdur
+            
+            generateQuestion();
+        }
+
+        function generateQuestion() {
+            // Rastgele Matematik veya Mantık
+            let type = Math.random();
+            let qStr = "", ans = 0, opts = [];
+
+            if(type < 0.5) { // Basit Matematik
+                let a = Math.floor(Math.random()*10) + 1;
+                let b = Math.floor(Math.random()*10) + 1;
+                if(Math.random()>0.5) { qStr = `${a} + ${b} = ?`; ans = a+b; }
+                else { qStr = `${a} x ${b} = ?`; ans = a*b; }
+            } else { // Örüntü
+                let start = Math.floor(Math.random()*5);
+                let step = Math.floor(Math.random()*4)+1;
+                qStr = `${start}, ${start+step}, ${start+step*2}, ?`;
+                ans = start+step*3;
+            }
+
+            document.getElementById('question-text').innerText = qStr;
+            
+            // Şıklar
+            opts = [ans, ans+1, ans-1, ans+Math.floor(Math.random()*5)+2];
+            opts.sort(() => Math.random() - 0.5); // Karıştır
+
+            let html = "";
+            opts.forEach(o => {
+                html += `<div class="opt-btn" onclick="checkAnswer(${o}, ${ans})">${o}</div>`;
+            });
+            document.getElementById('options-area').innerHTML = html;
+        }
+
+        function checkAnswer(selected, correct) {
+            if(selected === correct) {
+                // Doğru
+                playSound('unlock');
+                map[gatePos.y][gatePos.x] = 0; // Kapıyı sil
+                document.getElementById('logic-gate').style.display = 'none';
+                createParticles(gatePos.x, gatePos.y, '#ff00ff');
+                score += 100;
+                updateUI();
+                isPaused = false;
+            } else {
+                // Yanlış
+                playSound('hit');
+                player.hp -= 20;
+                updateUI();
+                document.getElementById('question-text').style.color = 'red';
+                setTimeout(() => { 
+                    if(player.hp <= 0) { document.getElementById('logic-gate').style.display = 'none'; gameOver(); }
+                    else { document.getElementById('question-text').style.color = 'white'; generateQuestion(); }
+                }, 500);
+            }
+        }
+
+        // --- SİSTEM ---
+        function levelUp() {
+            level++;
+            score += 200;
+            player.hp = Math.min(player.hp + 20, 100);
+            player.x = 1; player.y = 1;
+            generateLevel();
+            updateUI();
+            playSound('unlock');
+        }
+
+        function gameOver() {
+            isPaused = true;
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('final-score').innerText = score;
+        }
+
+        function restartGame() {
+            player.hp = 100;
+            score = 0;
+            level = 1;
+            player.x = 1; player.y = 1;
+            generateLevel();
+            updateUI();
+            isPaused = false;
+            document.getElementById('game-over').style.display = 'none';
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('level').innerText = level;
+            document.getElementById('hp-bar').style.width = player.hp + "%";
+            document.getElementById('hp-bar').style.background = player.hp > 30 ? '#00ff00' : '#ff0000';
+        }
+
+        // --- EFEKTLER ---
+        function createParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: x*TILE + TILE/2, y: y*TILE + TILE/2,
+                    vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5,
+                    life: 1, color: color
+                });
+            }
+        }
+        function updateParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if(p.life <= 0) particles.splice(i, 1);
+            });
+        }
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // Klavye Kontrolü
+        window.addEventListener('keydown', e => {
+            if(e.key === 'ArrowUp') input.up = true;
+            if(e.key === 'ArrowDown') input.down = true;
+            if(e.key === 'ArrowLeft') input.left = true;
+            if(e.key === 'ArrowRight') input.right = true;
+        });
+        window.addEventListener('keyup', e => {
+            if(e.key === 'ArrowUp') input.up = false;
+            if(e.key === 'ArrowDown') input.down = false;
+            if(e.key === 'ArrowLeft') input.left = false;
+            if(e.key === 'ArrowRight') input.right = false;
+        });
+
+        // Başlat
+        generateLevel();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>
