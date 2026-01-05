@@ -2,423 +2,615 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimar Sensin v3: Medeniyet Kurucusu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mimar Sensin v4: Ultimate</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
         :root {
-            --water: #a5d3e6; --primary: #ff6b6b; --secondary: #4ecdc4; --gold: #ffd700;
-            --text: #2d3436; --panel-bg: rgba(255, 255, 255, 0.95);
+            --water: #a5d3e6; --primary: #6c5ce7; --accent: #00b894; --gold: #ffeaa7;
+            --text: #2d3436; --panel-bg: rgba(255, 255, 255, 0.98);
         }
-        [data-theme="dark"] { --water: #1e3799; --text: #f1f2f6; --panel-bg: rgba(47, 53, 66, 0.95); }
-
-        body { margin: 0; overflow: hidden; font-family: 'Nunito', sans-serif; background-color: var(--water); color: var(--text); transition: background 1s; }
-
-        /* UI */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 10; }
-
-        .header {
-            pointer-events: auto; background: var(--panel-bg); padding: 10px 25px; border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; align-self: center; backdrop-filter: blur(5px);
+        body { 
+            margin: 0; overflow: hidden; font-family: 'Nunito', sans-serif; 
+            background-color: var(--water); color: var(--text); touch-action: none; /* Mobilde kaydırmayı engeller */
         }
 
-        .resource-box {
-            display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 1.1rem;
-            background: rgba(0,0,0,0.05); padding: 5px 15px; border-radius: 20px;
+        /* --- UI KATMANI --- */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; z-index: 10; }
+
+        .top-bar {
+            pointer-events: auto; background: var(--panel-bg); padding: 8px 20px; border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; align-items: center; gap: 15px; align-self: center;
         }
-        .gold-txt { color: #f1c40f; } .lvl-txt { color: #9b59b6; }
 
-        .weather-btn, .photo-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #555; transition: 0.2s; }
-        .weather-btn:hover, .photo-btn:hover { transform: scale(1.2); color: var(--secondary); }
+        .stat-badge {
+            background: #dfe6e9; padding: 5px 12px; border-radius: 15px; font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 5px;
+        }
+        .gold-icon { color: #fdcb6e; text-shadow: 1px 1px 0 #d35400; }
 
-        .tools {
+        .control-btn {
+            background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #636e72; transition: 0.2s;
+        }
+        .control-btn:active { transform: scale(0.9); }
+        .rotate-active { color: var(--primary); animation: spin 0.5s; }
+
+        select { padding: 5px; border-radius: 10px; border: 1px solid #b2bec3; font-family: inherit; font-weight: bold; }
+
+        /* --- ALT ARAÇ ÇUBUĞU --- */
+        .toolbar-scroll {
             pointer-events: auto; background: var(--panel-bg); padding: 10px; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; gap: 8px; align-self: center; margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); align-self: center; margin-bottom: 10px;
+            max-width: 95vw; overflow-x: auto; display: flex; gap: 8px; scroll-behavior: smooth;
         }
-
+        
         .tool-btn {
-            width: 65px; height: 75px; border: none; border-radius: 12px; cursor: pointer; position: relative;
+            min-width: 70px; height: 80px; border: 2px solid transparent; border-radius: 15px; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.05); color: #94a3b8; transition: 0.2s;
+            background: #f1f2f6; color: #636e72; transition: 0.2s; position: relative;
         }
-        .tool-btn i { font-size: 1.6rem; margin-bottom: 5px; }
-        .tool-btn span { font-size: 0.75rem; font-weight: bold; color: #555; }
-        .tool-btn.active { background: var(--primary); color: white; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); }
-        .tool-btn.active span { color: white; }
+        .tool-btn i { font-size: 1.5rem; margin-bottom: 5px; }
+        .tool-btn span { font-size: 0.7rem; font-weight: 800; text-align: center; line-height: 1.1; }
+        .tool-btn small { font-size: 0.65rem; color: #e17055; font-weight: bold; }
+        
+        .tool-btn.active { background: var(--primary); color: white; border-color: #a29bfe; transform: translateY(-5px); }
+        .tool-btn.active small { color: #ffeaa7; }
 
-        /* MODAL */
-        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .action-btn { min-width: 50px; background: #ffeaa7; border-color: #fdcb6e; }
+        .delete-btn { color: #d63031; border-color: #fab1a0; }
+        .delete-btn.active { background: #d63031; color: white; }
+
+        /* --- MODAL (SORU PENCERESİ) --- */
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .card { background: white; width: 450px; padding: 30px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center; transform: scale(0.8); transition: 0.3s; position: relative; color: #333; }
+        
+        .card { background: white; width: 90%; max-width: 500px; padding: 25px; border-radius: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); transform: scale(0.8); transition: 0.3s; border: 4px solid var(--primary); }
         .modal-overlay.active .card { transform: scale(1); }
 
-        .q-badge { background: var(--secondary); color: white; padding: 5px 15px; border-radius: 15px; font-weight: bold; font-size: 0.9rem; display: inline-block; margin-bottom: 15px; }
-        .q-text { font-size: 1.3rem; font-weight: 800; margin-bottom: 20px; line-height: 1.4; }
-        .opt-btn { background: #f8fafc; border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: left; font-size: 1rem; margin-bottom: 8px; width: 100%; display: block; }
-        .opt-btn:hover { border-color: var(--secondary); background: #e0f2f1; }
-        .opt-btn.correct { background: #dcfce7; border-color: #22c55e; color: #15803d; }
-        .opt-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
-
-        /* BİLGİ KARTI */
-        .info-content { background: #fff9c4; padding: 15px; border-radius: 10px; font-size: 1rem; text-align: left; color: #555; border-left: 5px solid #fbc02d; margin-bottom: 20px; line-height: 1.5; }
-        .continue-btn { background: var(--secondary); color: white; border: none; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 30px; cursor: pointer; }
+        .q-tag { background: var(--primary); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-bottom: 15px; }
+        .q-text { font-size: 1.3rem; font-weight: 900; color: #2d3436; margin-bottom: 25px; }
+        
+        .opt-btn { background: #f1f2f6; border: 2px solid #dfe6e9; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; margin-bottom: 10px; width: 100%; text-align: left; transition: 0.2s; font-size: 1rem; }
+        .opt-btn:active { transform: scale(0.98); }
+        .opt-btn.correct { background: #00b894; color: white; border-color: #00b894; }
+        .opt-btn.wrong { background: #d63031; color: white; border-color: #d63031; }
 
         canvas { display: block; cursor: crosshair; }
         
-        /* HAVA DURUMU EFEKTLERİ */
-        .weather-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0.6; }
+        /* Bildirim */
+        .toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 10px 20px; border-radius: 30px; opacity: 0; transition: 0.5s; font-weight: bold; z-index: 50; }
+        .toast.show { opacity: 1; top: 80px; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
-        <div class="header">
-            <h3 style="margin:0; color:var(--primary);"><i class="fas fa-crown"></i> MEDENİYET</h3>
+        <div class="top-bar">
+            <h3 style="margin:0; color:var(--primary); font-weight:900;">MİMAR v4</h3>
             
-            <div class="resource-box">
-                <i class="fas fa-coins gold-txt"></i> <span id="gold-display">0</span>
-            </div>
-            <div class="resource-box">
-                <i class="fas fa-star lvl-txt"></i> <span id="lvl-display">1</span>
-            </div>
+            <div class="stat-badge"><i class="fas fa-coins gold-icon"></i> <span id="gold-display">0</span></div>
+            <div class="stat-badge"><i class="fas fa-layer-group" style="color:#0984e3"></i> <span id="lvl-display">1. Seviye</span></div>
 
-            <button class="weather-btn" onclick="toggleWeather()" title="Hava Durumu"><i class="fas fa-cloud-sun"></i></button>
-            <button class="weather-btn" onclick="toggleNight()" title="Gece/Gündüz"><i class="fas fa-moon"></i></button>
-            <button class="photo-btn" onclick="takePhoto()" title="Fotoğraf Çek"><i class="fas fa-camera"></i></button>
-            
-            <select id="grade-select" style="margin-left:10px;">
-                <option value="8">8. Sınıf</option>
-                <option value="7">7. Sınıf</option>
-                <option value="6">6. Sınıf</option>
+            <select id="grade-select" onchange="changeGrade()">
                 <option value="5">5. Sınıf</option>
+                <option value="6">6. Sınıf</option>
+                <option value="7">7. Sınıf</option>
+                <option value="8">8. Sınıf</option>
             </select>
+
+            <button class="control-btn" onclick="rotateObj()" title="Yönü Çevir"><i class="fas fa-sync-alt"></i> Döndür</button>
+            <button class="control-btn" onclick="undoLast()" title="Geri Al"><i class="fas fa-undo"></i> Geri</button>
+            <button class="control-btn" onclick="saveGame(true)" title="Kaydet"><i class="fas fa-save"></i></button>
         </div>
 
-        <div class="tools">
-            <button class="tool-btn active" onclick="setTool(1, this, 10)">
-                <i class="fas fa-layer-group"></i> <span>Zemin<br>10 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+        <div class="toolbar-scroll">
+            <button class="tool-btn active" onclick="setTool(1, 10, this)">
+                <i class="fas fa-vector-square"></i> <span>Zemin</span> <small>10 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="setTool(2, this, 50)">
-                <i class="fas fa-home"></i> <span>Ev<br>50 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            <button class="tool-btn" onclick="setTool(2, 20, this)">
+                <i class="fas fa-road"></i> <span>Yol</span> <small>20 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="setTool(3, this, 100)">
-                <i class="fas fa-building"></i> <span>Bina<br>100 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            <button class="tool-btn" onclick="setTool(3, 30, this)">
+                <i class="fas fa-bars"></i> <span>Çit</span> <small>30 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="setTool(4, this, 200)">
-                <i class="fas fa-chess-rook"></i> <span>Kule<br>200 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            <button class="tool-btn" onclick="setTool(4, 150, this)">
+                <i class="fas fa-home"></i> <span>Ev</span> <small>150 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="setTool(5, this, 30)">
-                <i class="fas fa-tree"></i> <span>Park<br>30 <i class="fas fa-coins" style="font-size:0.7rem"></i></span>
+            <button class="tool-btn" onclick="setTool(5, 300, this)">
+                <i class="fas fa-building"></i> <span>Bina</span> <small>300 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="earnGold()" style="color:#f1c40f; border-color:#f1c40f;">
-                <i class="fas fa-gift"></i> <span>Altın<br>Kazan</span>
+            <button class="tool-btn" onclick="setTool(6, 50, this)">
+                <i class="fas fa-tree"></i> <span>Ağaç</span> <small>50 <i class="fas fa-coins"></i></small>
             </button>
-            <button class="tool-btn" onclick="clearMap()" style="color:red;">
-                <i class="fas fa-trash"></i> <span>Sil</span>
+            <button class="tool-btn" onclick="setTool(7, 200, this)">
+                <i class="fas fa-car-side"></i> <span>Araba</span> <small>200 <i class="fas fa-coins"></i></small>
+            </button>
+            
+            <div style="width:1px; background:#ccc; margin:0 5px;"></div>
+
+            <button class="tool-btn action-btn" onclick="earnGoldMode()">
+                <i class="fas fa-question-circle"></i> <span>Soru<br>Çöz</span> <small>+50</small>
+            </button>
+            <button class="tool-btn delete-btn" onclick="setTool(0, 0, this)">
+                <i class="fas fa-eraser"></i> <span>Sil</span> <small>Ücretsiz</small>
             </button>
         </div>
     </div>
 
     <div class="modal-overlay" id="quiz-modal">
         <div class="card">
-            <div class="q-badge" id="q-mode">İNŞAAT İZNİ</div>
-            <div class="q-text" id="q-text">Soru...</div>
-            <div class="options-grid" id="q-options"></div>
+            <div class="q-tag" id="q-category">FEN BİLİMLERİ</div>
+            <div class="q-text" id="q-text">Soru yükleniyor...</div>
+            <div id="q-options"></div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="info-modal">
-        <div class="card info-card">
-            <div class="info-title">
-                <span><i class="fas fa-check-circle"></i> BAŞARILI!</span>
-                <button class="weather-btn" onclick="speakInfo()"><i class="fas fa-volume-up"></i></button>
-            </div>
-            <div class="info-content" id="info-text">Bilgi...</div>
-            <button class="continue-btn" onclick="finishBuild()">İNŞA ET</button>
-        </div>
-    </div>
+    <div class="toast" id="toast">Oyun Kaydedildi!</div>
 
     <canvas id="gameCanvas"></canvas>
-    <canvas id="weatherCanvas" class="weather-layer"></canvas>
 
     <script>
-        // --- 1. OYUN VERİLERİ & EKONOMİ ---
-        const player = {
-            gold: 200, // Başlangıç parası
-            xp: 0,
-            level: 1
-        };
-
-        // Konular ve Sorular (Örnek Havuz)
-        const questions = {
-            8: [
-                { q: "DNA'nın yapısında hangisi bulunmaz?", a: "Protein kılıf", w: ["Fosfat", "Şeker", "Organik Baz"], info: "DNA'da Nükleotidler bulunur. Protein kılıf virüslerde olur." },
-                { q: "√100 sayısı kaçtır?", a: "10", w: ["50", "20", "100"], info: "10 x 10 = 100 olduğu için √100 = 10'dur." },
-                { q: "M.Kemal hangi şehirde doğdu?", a: "Selanik", w: ["Manastır", "İstanbul", "Şam"], info: "1881 yılında Selanik'te doğmuştur." },
-                { q: "Periyodik tabloda dikey sütunlara ne denir?", a: "Grup", w: ["Periyot", "Element", "Sıra"], info: "Dikey sütunlara Grup, yatay sıralara Periyot denir." }
-            ],
-            7: [ { q: "Hücrenin enerji santrali?", a: "Mitokondri", w: ["Koful", "Lizozom", "Çekirdek"], info: "Mitokondri oksijenli solunumla enerji üretir." } ],
-            6: [ { q: "Güneş sisteminin en büyüğü?", a: "Jüpiter", w: ["Mars", "Dünya", "Satürn"], info: "Jüpiter gaz devi olup sistemin en büyük gezegenidir." } ],
-            5: [ { q: "Işık doğrusal mı yayılır?", a: "Evet", w: ["Hayır", "Bazen", "Eğrisel"], info: "Işık her yöne ve doğrusal yayılır." } ]
-        };
-
-        // --- 2. GRAFİK MOTORU ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wCanvas = document.getElementById('weatherCanvas');
-        const wCtx = wCanvas.getContext('2d');
-
-        let width, height;
-        const GRID = 15; const TW = 60, TH = 35;
-        let map = [], weatherType = 'sun'; // sun, rain, snow
-        let raindrops = [];
-        let isNight = false;
+        // --- 1. VERİ YAPISI VE AYARLAR ---
+        const GRID_SIZE = 16;
+        let TILE_W = 60, TILE_H = 30; // İzometrik oranlar
+        let canvas, ctx, width, height;
         
-        let currentTool = 1; 
-        let currentCost = 10;
-        let pendingBuild = null;
-
-        const COLORS = {
-            water: "#a5d3e6", nightWater: "#192a56",
-            land_top: "#e2e8f0", land_side: "#94a3b8",
-            house_top: "#ff7675", house_side: "#d63031",
-            build_top: "#ffeaa7", build_side: "#fdcb6e",
-            tower_top: "#a29bfe", tower_side: "#6c5ce7",
-            tree_top: "#55efc4", tree_side: "#00b894",
-            rubble_top: "#636e72", rubble_side: "#2d3436" // ENKAZ RENGİ
+        // Oyun Durumu
+        let state = {
+            map: [], // Harita verisi [x][y] = {type: 1, dir: 0}
+            gold: 500,
+            level: 1,
+            history: [], // Geri alma için
+            currentTool: 1, // Seçili araç ID
+            currentCost: 10,
+            rotation: 0, // 0: Sol-Alt, 1: Sağ-Alt
+            grade: 5 // Sınıf seviyesi
         };
 
+        let pendingAction = null; // Soru çözünce yapılacak işlem
+        let usedQuestions = []; // Sorulan soruları tutar
+
+        // --- 2. SORU HAVUZU (5-8. SINIF) ---
+        const questionPool = {
+            5: [
+                {c:"Fen", q:"Ay'ın evrelerinden hangisi kapkaranlıktır?", a:"Yeni Ay", w:["Dolunay", "İlk Dördün", "Son Dördün"]},
+                {c:"Mat", q:"Birim kesir nedir?", a:"Payı 1 olan", w:["Paydası 1 olan", "Bileşik kesir", "Tam sayılı kesir"]},
+                {c:"Sos", q:"Anadolu'daki ilk uygarlık?", a:"Hititler", w:["Lidyalılar", "Frigler", "Urartular"]},
+                {c:"Fen", q:"Kuvvetin birimi nedir?", a:"Newton", w:["Kilogram", "Metre", "Joule"]},
+                {c:"Mat", q:"2 üssü 3 kaçtır?", a:"8", w:["6", "9", "5"]}
+            ],
+            6: [
+                {c:"Fen", q:"Güneş sisteminin en büyük gezegeni?", a:"Jüpiter", w:["Mars", "Dünya", "Satürn"]},
+                {c:"Mat", q:"Asal sayıların en küçüğü?", a:"2", w:["1", "3", "0"]},
+                {c:"Sos", q:"İpek Yolu hangi ülkeden başlar?", a:"Çin", w:["Hindistan", "Türkiye", "İran"]},
+                {c:"Fen", q:"Kanı vücuda pompalayan organ?", a:"Kalp", w:["Akciğer", "Mide", "Böbrek"]},
+                {c:"Tr", q:"'Ak akçe kara gün içindir' ne anlama gelir?", a:"Tasarruf", w:["Cömertlik", "Temizlik", "Çalışkanlık"]}
+            ],
+            7: [
+                {c:"Fen", q:"Hücrenin yönetim merkezi?", a:"Çekirdek", w:["Sitoplazma", "Zar", "Koful"]},
+                {c:"Mat", q:"Negatif sayıların çarpımı?", a:"Pozitif", w:["Negatif", "Sıfır", "Tanımsız"]},
+                {c:"Sos", q:"Osmanlı'nın ilk başkenti?", a:"Söğüt", w:["Bursa", "Edirne", "İstanbul"]},
+                {c:"Fen", q:"Kinetik enerji neye bağlıdır?", a:"Sürat", w:["Yükseklik", "Esneklik", "Renk"]},
+                {c:"İng", q:"'Honest' kelimesinin zıttı?", a:"Dishonest", w:["Unhonest", "Inhonest", "Nonhonest"]}
+            ],
+            8: [
+                {c:"Fen", q:"DNA'nın yapı birimi?", a:"Nükleotid", w:["Gen", "Kromozom", "Protein"]},
+                {c:"Mat", q:"Pisagor bağıntısı hangi üçgende olur?", a:"Dik Üçgen", w:["İkizkenar", "Eşkenar", "Çeşitkenar"]},
+                {c:"İnk", q:"M.Kemal'in Samsun'a çıkışı?", a:"19 Mayıs 1919", w:["23 Nisan 1920", "29 Ekim 1923", "30 Ağustos 1922"]},
+                {c:"Fen", q:"Asitlerin tadı nasıldır?", a:"Ekşi", w:["Acı", "Tatsız", "Tuzlu"]},
+                {c:"Mat", q:"√144 kaçtır?", a:"12", w:["14", "10", "11"]}
+            ]
+        };
+
+        // --- 3. BAŞLATMA VE AYARLAR ---
         function init() {
-            window.addEventListener('resize', resize);
-            resize();
-            createMap();
-            loadGame();
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Kayıtlı oyunu yükle
+            const saved = localStorage.getItem('mimarv4_save');
+            if(saved) {
+                const data = JSON.parse(saved);
+                state = {...state, ...data}; // Verileri birleştir
+            } else {
+                initMap();
+            }
+
+            // UI Güncelle
+            document.getElementById('grade-select').value = state.grade;
             updateUI();
-            animate();
-            animateWeather();
+
+            // Event Listeners
+            window.addEventListener('resize', resize);
+            // Hem fare hem dokunmatik için
+            canvas.addEventListener('mousedown', handleInput);
+            canvas.addEventListener('touchstart', handleInput, {passive: false});
+
+            resize();
+            loop();
+        }
+
+        function initMap() {
+            state.map = [];
+            for(let x=0; x<GRID_SIZE; x++) {
+                state.map[x] = [];
+                for(let y=0; y<GRID_SIZE; y++) {
+                    state.map[x][y] = null; // Boş
+                }
+            }
         }
 
         function resize() {
-            width = window.innerWidth; height = window.innerHeight;
-            canvas.width = wCanvas.width = width;
-            canvas.height = wCanvas.height = height;
-        }
-
-        function createMap() {
-            map = [];
-            for(let x=0; x<GRID; x++) {
-                map[x] = [];
-                for(let y=0; y<GRID; y++) {
-                    map[x][y] = 0; // 0:Su, 1:Toprak, 99:Enkaz
-                }
-            }
-        }
-
-        // --- ÇİZİM ---
-        function drawTile(x, y, type, hover = false) {
-            const isoX = (x - y) * TW / 2 + width / 2;
-            const isoY = (x + y) * TH / 2 + height / 4;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
             
-            if(type === 0) return;
+            // Mobilde daha büyük görünüm için
+            if(width < 600) { TILE_W = 50; TILE_H = 25; } 
+            else { TILE_W = 70; TILE_H = 35; }
+        }
 
-            let cTop, cSide, lift = 0;
-            if(type===1) { cTop=COLORS.land_top; cSide=COLORS.land_side; lift=10; }
-            else if(type===2) { cTop=COLORS.house_top; cSide=COLORS.house_side; lift=35; }
-            else if(type===3) { cTop=COLORS.build_top; cSide=COLORS.build_side; lift=60; }
-            else if(type===4) { cTop=COLORS.tower_top; cSide=COLORS.tower_side; lift=90; }
-            else if(type===5) { cTop=COLORS.tree_top; cSide=COLORS.tree_side; lift=25; }
-            else if(type===99) { cTop=COLORS.rubble_top; cSide=COLORS.rubble_side; lift=15; } // Enkaz
-
-            if(isNight) {
-                // Basit karartma mantığı
-                // cTop ve cSide renklerini koyulaştırmak için CSS variable veya HSL kullanmak daha iyi ama burada basit filtre yapıyoruz
-                ctx.filter = "brightness(0.6)"; 
-            } else if (weatherType === 'snow') {
-                cTop = "#ffffff"; // Kar yağınca çatılar beyaz
-                ctx.filter = "none";
+        // --- 4. OYUN MANTIĞI ---
+        function handleInput(e) {
+            e.preventDefault(); // Sayfa kaymasını engelle
+            
+            // Koordinatları al
+            let clientX, clientY;
+            if(e.type === 'touchstart') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
             } else {
-                ctx.filter = "none";
+                clientX = e.clientX;
+                clientY = e.clientY;
             }
 
-            // Gölge
-            ctx.fillStyle = "rgba(0,0,0,0.2)";
-            ctx.beginPath(); ctx.moveTo(isoX, isoY+lift+15); ctx.lineTo(isoX+TW/2, isoY+lift+TH/2+15); ctx.lineTo(isoX, isoY+lift+TH+15); ctx.lineTo(isoX-TW/2, isoY+lift+TH/2+15); ctx.fill();
+            // Merkeze göre tıklandığı yeri bul
+            const centerX = width / 2;
+            const centerY = height / 4; // Biraz yukarıda olsun
 
-            // Yan yüzler
-            ctx.fillStyle = cSide;
-            ctx.beginPath(); ctx.moveTo(isoX-TW/2, isoY+TH/2); ctx.lineTo(isoX, isoY+TH); ctx.lineTo(isoX+TW/2, isoY+TH/2); ctx.lineTo(isoX+TW/2, isoY+TH/2-lift); ctx.lineTo(isoX, isoY+TH-lift); ctx.lineTo(isoX-TW/2, isoY+TH/2-lift); ctx.fill();
+            const x = clientX - centerX;
+            const y = clientY - centerY;
 
-            // Üst yüz
-            ctx.fillStyle = cTop;
-            ctx.beginPath(); ctx.moveTo(isoX, isoY-lift); ctx.lineTo(isoX+TW/2, isoY+TH/2-lift); ctx.lineTo(isoX, isoY+TH-lift); ctx.lineTo(isoX-TW/2, isoY+TH/2-lift); ctx.fill();
-
-            // Kenar Çizgisi
-            ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1; ctx.stroke();
-
-            // Gece Pencereleri
-            if(isNight && (type===2 || type===3 || type===4)) {
-                ctx.filter = "none"; // Işık parlak olsun
-                ctx.fillStyle = "#f1c40f";
-                ctx.fillRect(isoX-5, isoY+TH/2-lift+10, 6, 8);
-                ctx.fillRect(isoX+8, isoY+TH/2-lift+20, 6, 8);
-            }
-            ctx.filter = "none"; // Reset
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
+            // İzometrikten Grid'e çevir
+            // ScreenX = (gridX - gridY) * TILE_W / 2
+            // ScreenY = (gridX + gridY) * TILE_H / 2
             
-            // Zemin rengi (Su)
-            document.body.style.backgroundColor = isNight ? COLORS.nightWater : COLORS.water;
+            const gridY = Math.floor((y / (TILE_H/2) - x / (TILE_W/2)) / 2);
+            const gridX = Math.floor((y / (TILE_H/2) + x / (TILE_W/2)) / 2);
 
-            for(let x=0; x<GRID; x++) {
-                for(let y=0; y<GRID; y++) {
-                    if(map[x][y] > 0) {
-                        drawTile(x, y, 1); // Zemin hep var
-                        if(map[x][y] > 1) drawTile(x, y, map[x][y]); // Üstüne bina
+            if(gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
+                interact(gridX, gridY);
+            }
+        }
+
+        function interact(x, y) {
+            const cell = state.map[x][y];
+
+            // SİLME MODU (Akıllı Silgi)
+            if(state.currentTool === 0) {
+                if(cell) {
+                    saveHistory(); // Geri alma için kaydet
+                    // Eğer üstünde bir şey varsa (Ev, Ağaç vs.) sadece onu sil, zemini bırak
+                    if(cell.type > 1) {
+                        state.map[x][y] = { type: 1, dir: 0 }; // Zemin yap
+                    } else {
+                        state.map[x][y] = null; // Zemini de sil (boşluk)
                     }
+                    showToast("Silindi");
                 }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        // --- HAVA DURUMU SİSTEMİ ---
-        function animateWeather() {
-            wCtx.clearRect(0, 0, width, height);
-            
-            if(weatherType !== 'sun') {
-                if(raindrops.length < 100) {
-                    raindrops.push({
-                        x: Math.random() * width,
-                        y: -10,
-                        speed: Math.random() * 5 + 5,
-                        len: Math.random() * 10 + 5
-                    });
-                }
-
-                wCtx.strokeStyle = weatherType === 'rain' ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.8)";
-                wCtx.fillStyle = "white";
-                wCtx.lineWidth = weatherType === 'rain' ? 1 : 2;
-
-                for(let i=0; i<raindrops.length; i++) {
-                    let r = raindrops[i];
-                    r.y += r.speed;
-                    
-                    if(weatherType === 'rain') {
-                        wCtx.beginPath(); wCtx.moveTo(r.x, r.y); wCtx.lineTo(r.x - 2, r.y + r.len); wCtx.stroke();
-                    } else { // Snow
-                        wCtx.beginPath(); wCtx.arc(r.x, r.y, r.len/4, 0, Math.PI*2); wCtx.fill();
-                    }
-
-                    if(r.y > height) { r.y = -10; r.x = Math.random() * width; }
-                }
-            } else {
-                raindrops = [];
-            }
-            requestAnimationFrame(animateWeather);
-        }
-
-        function toggleWeather() {
-            if(weatherType === 'sun') weatherType = 'rain';
-            else if(weatherType === 'rain') weatherType = 'snow';
-            else weatherType = 'sun';
-        }
-        function toggleNight() { isNight = !isNight; }
-
-        // --- İNTERAKSİYON ---
-        canvas.addEventListener('mousedown', e => {
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left - width/2;
-            const my = e.clientY - rect.top - height/4;
-            const gridY = Math.floor((my / (TH/2) - mx / (TW/2)) / 2);
-            const gridX = Math.floor((my / (TH/2) + mx / (TW/2)) / 2);
-
-            if(gridX >= 0 && gridX < GRID && gridY >= 0 && gridY < GRID) {
-                handleClick(gridX, gridY);
-            }
-        });
-
-        function handleClick(x, y) {
-            const tile = map[x][y];
-
-            // 1. ZEMİN İNŞASI
-            if(currentTool === 1) {
-                if(tile === 0) {
-                    if(spendGold(currentCost)) { map[x][y] = 1; playSound('pop'); }
-                } return;
-            }
-
-            // 2. ENKAZ TEMİZLEME (Tamirat)
-            if(tile === 99) {
-                pendingBuild = { x, y, type: 1, mode: 'repair' }; // Tamir edince boş arsa olur
-                askQuestion("ONARIM İÇİN");
                 return;
             }
 
-            // 3. BİNA İNŞASI (Sadece Zemin Varsa)
-            if(tile === 1 && currentTool > 1) {
-                if(player.gold >= currentCost) {
-                    pendingBuild = { x, y, type: currentTool, mode: 'build' };
-                    askQuestion("İNŞAAT İZNİ");
-                } else {
-                    alert("Yetersiz Altın! Soru çözerek altın kazanmalısın.");
+            // İNŞA MODU
+            // 1. Zemin (Tool 1) boşluğa yapılabilir.
+            if(state.currentTool === 1) {
+                if(!cell) {
+                    tryBuild(x, y, 1);
                 }
-            } else if (tile > 1) {
-                alert("Burada zaten bina var!");
-            } else if (tile === 0) {
-                alert("Önce zemin yapmalısın!");
+                return;
+            }
+
+            // 2. Diğerleri (Ev, Yol vs.) sadece Zemin (Type 1) üzerine yapılabilir.
+            if(cell && cell.type === 1) {
+                tryBuild(x, y, state.currentTool);
+            } else if (!cell) {
+                showToast("Önce Zemin Yapmalısın!", "red");
+            } else {
+                showToast("Burası Dolu!", "orange");
             }
         }
 
-        function setTool(id, btn, cost) {
-            currentTool = id;
-            currentCost = cost || 0;
+        function tryBuild(x, y, type) {
+            if(state.gold >= state.currentCost) {
+                // Soru sormaya gerek var mı? (Her 3 inşaatta 1 veya pahalıysa)
+                if(Math.random() > 0.6 || state.currentCost > 100) {
+                    pendingAction = { x, y, type, cost: state.currentCost };
+                    openQuiz();
+                } else {
+                    // Direkt İnşa
+                    executeBuild(x, y, type, state.currentCost);
+                }
+            } else {
+                showToast("Altının Yetmiyor! Soru Çöz.", "red");
+            }
+        }
+
+        function executeBuild(x, y, type, cost) {
+            saveHistory();
+            state.gold -= cost;
+            state.map[x][y] = { type: type, dir: state.rotation };
+            
+            // Efekt
+            confetti({ origin: { x: 0.5, y: 0.5 }, particleCount: 20, spread: 40 });
+            updateUI();
+        }
+
+        // --- 5. ÇİZİM MOTORU ---
+        function loop() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Haritayı çiz (Arka plandan ön plana doğru)
+            const centerX = width / 2;
+            const centerY = height / 4;
+
+            for(let y = 0; y < GRID_SIZE; y++) {
+                for(let x = 0; x < GRID_SIZE; x++) {
+                    // Koordinat Hesapla
+                    const screenX = centerX + (x - y) * (TILE_W / 2);
+                    const screenY = centerY + (x + y) * (TILE_H / 2);
+
+                    const cell = state.map[x][y];
+                    
+                    // Önce sanal bir grid (yardımcı çizgi)
+                    if(!cell) {
+                        drawGrid(screenX, screenY);
+                    } else {
+                        drawObject(screenX, screenY, cell);
+                    }
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function drawGrid(sx, sy) {
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + TILE_W/2, sy + TILE_H/2);
+            ctx.lineTo(sx, sy + TILE_H);
+            ctx.lineTo(sx - TILE_W/2, sy + TILE_H/2);
+            ctx.closePath();
+            ctx.strokeStyle = "rgba(0,0,0,0.05)";
+            ctx.stroke();
+        }
+
+        function drawObject(sx, sy, cell) {
+            const { type, dir } = cell;
+            
+            // Renk Paleti
+            const colors = {
+                1: '#b2bec3', // Zemin (Beton)
+                2: '#636e72', // Yol (Asfalt)
+                3: '#e17055', // Çit (Ahşap)
+                4: '#0984e3', // Ev (Mavi Çatılı)
+                5: '#6c5ce7', // Bina (Yüksek)
+                6: '#00b894', // Ağaç
+                7: '#d63031'  // Araba (Kırmızı)
+            };
+
+            // Temel Blok Çizimi (Zemin Yükseltisi)
+            let height = (type === 1 || type === 2) ? 5 : 0; 
+            
+            // Eğer Zemin ise
+            if(type === 1) drawBlock(sx, sy, colors[1], 5);
+            
+            // Eğer Yol ise
+            if(type === 2) {
+                drawBlock(sx, sy, '#2d3436', 2);
+                // Yol Şeritleri
+                ctx.fillStyle = '#fff';
+                if(dir === 0) ctx.fillRect(sx-5, sy+15, 10, 2); // Yatay
+                else ctx.fillRect(sx-2, sy+10, 2, 10); // Dikey
+            }
+
+            // Ev ve Bina
+            if(type === 4 || type === 5) {
+                drawBlock(sx, sy, colors[1], 5); // Alt Zemin
+                let h = type === 4 ? 30 : 60; // Bina yüksekliği
+                // Yönüne göre hafif renk değişimi
+                let c = colors[type];
+                drawStructure(sx, sy, c, h, dir);
+            }
+
+            // Ağaç
+            if(type === 6) {
+                drawBlock(sx, sy, '#badc58', 5); // Çim zemin
+                drawTree(sx, sy);
+            }
+
+            // Araba
+            if(type === 7) {
+                drawBlock(sx, sy, '#2d3436', 2); // Altı asfalt
+                drawCar(sx, sy, dir);
+            }
+
+            // Çit
+            if(type === 3) {
+                drawBlock(sx, sy, '#6ab04c', 5); // Çim
+                drawFence(sx, sy, dir);
+            }
+        }
+
+        // Basit İzometrik Blok Çizen Yardımcı
+        function drawBlock(x, y, color, h) {
+            ctx.fillStyle = shadeColor(color, -20); // Yan (Karanlık)
+            ctx.beginPath(); 
+            ctx.moveTo(x, y); ctx.lineTo(x+TILE_W/2, y+TILE_H/2); ctx.lineTo(x+TILE_W/2, y+TILE_H/2-h); ctx.lineTo(x, y-h); ctx.fill();
+            
+            ctx.fillStyle = shadeColor(color, -10); // Ön (Orta)
+            ctx.beginPath();
+            ctx.moveTo(x, y+TILE_H); ctx.lineTo(x+TILE_W/2, y+TILE_H/2); ctx.lineTo(x+TILE_W/2, y+TILE_H/2-h); ctx.lineTo(x, y+TILE_H-h); ctx.lineTo(x-TILE_W/2, y+TILE_H/2-h); ctx.lineTo(x-TILE_W/2, y+TILE_H/2); ctx.fill();
+
+            ctx.fillStyle = color; // Üst (Aydınlık)
+            ctx.beginPath();
+            ctx.moveTo(x, y-h); ctx.lineTo(x+TILE_W/2, y+TILE_H/2-h); ctx.lineTo(x, y+TILE_H-h); ctx.lineTo(x-TILE_W/2, y+TILE_H/2-h); ctx.fill();
+            
+            // Kenar çizgisi
+            ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 1; ctx.stroke();
+        }
+
+        function drawStructure(x, y, color, h, dir) {
+            // Ev Gövdesi
+            let offsetY = 10;
+            drawBlock(x, y-offsetY, color, h);
+            
+            // Kapı/Pencere Yönü
+            ctx.fillStyle = "#dfe6e9";
+            if(dir === 0) { // Ön-Sol
+                ctx.fillRect(x-15, y+5, 10, 15); // Kapı
+                ctx.fillStyle = "#81ecec"; ctx.fillRect(x+5, y-10, 10, 10); // Pencere
+            } else { // Ön-Sağ
+                ctx.fillRect(x+5, y+5, 10, 15);
+                ctx.fillStyle = "#81ecec"; ctx.fillRect(x-15, y-10, 10, 10);
+            }
+            
+            // Çatı
+            ctx.fillStyle = "#d63031";
+            ctx.beginPath();
+            ctx.moveTo(x, y-h-20-offsetY);
+            ctx.lineTo(x+TILE_W/2+5, y+TILE_H/2-h-offsetY);
+            ctx.lineTo(x, y+TILE_H-h-5-offsetY);
+            ctx.lineTo(x-TILE_W/2-5, y+TILE_H/2-h-offsetY);
+            ctx.fill();
+        }
+
+        function drawCar(x, y, dir) {
+            let cx = x, cy = y - 5;
+            // Araba yönü
+            ctx.fillStyle = "#d63031"; // Gövde
+            if(dir === 0) {
+                ctx.fillRect(cx-15, cy, 30, 10); // Yatay gibi
+                ctx.fillStyle="#000"; ctx.fillRect(cx-10, cy+8, 5, 5); ctx.fillRect(cx+5, cy+8, 5, 5); // Tekerlek
+            } else {
+                ctx.fillRect(cx-10, cy-5, 20, 15);
+            }
+        }
+
+        function drawTree(x, y) {
+            // Gövde
+            ctx.fillStyle = "#836e52";
+            ctx.fillRect(x-3, y-10, 6, 15);
+            // Yapraklar
+            ctx.fillStyle = "#00b894";
+            ctx.beginPath(); ctx.arc(x, y-20, 15, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawFence(x, y, dir) {
+            ctx.strokeStyle = "#a29bfe"; ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x, y-15); // Direk
+            if(dir === 0) { ctx.moveTo(x-20, y-10); ctx.lineTo(x+20, y-10); } // Yatay
+            else { ctx.moveTo(x, y-5); ctx.lineTo(x, y-20); } // Basit dikey
+            ctx.stroke();
+        }
+
+        // Renk koyulaştırıcı
+        function shadeColor(color, percent) {
+            var num = parseInt(color.replace("#",""),16),
+            amt = Math.round(2.55 * percent),
+            R = (num >> 16) + amt,
+            B = (num >> 8 & 0x00FF) + amt,
+            G = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (B<255?B<1?0:B:255)*0x100 + (G<255?G<1?0:G:255)).toString(16).slice(1);
+        }
+
+        // --- 6. ARAÇLAR VE İŞLEMLER ---
+        function setTool(id, cost, btn) {
+            state.currentTool = id;
+            state.currentCost = cost;
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
         }
 
-        function earnGold() {
-            pendingBuild = { mode: 'earn' };
-            askQuestion("Hazine Sandığı");
+        function rotateObj() {
+            state.rotation = state.rotation === 0 ? 1 : 0;
+            const btn = document.querySelector('button[title="Yönü Çevir"] i');
+            btn.classList.toggle('fa-sync-alt');
+            btn.classList.toggle('fa-random');
+            showToast("Yön Değişti");
         }
 
-        // --- EKONOMİ VE SORU SİSTEMİ ---
-        function updateUI() {
-            document.getElementById('gold-display').innerText = player.gold;
-            document.getElementById('lvl-display').innerText = player.level;
+        function saveHistory() {
+            // Basit deep copy
+            if(state.history.length > 5) state.history.shift(); // Max 5 geri alma
+            state.history.push(JSON.stringify(state.map));
+        }
+
+        function undoLast() {
+            if(state.history.length > 0) {
+                const last = state.history.pop();
+                state.map = JSON.parse(last);
+                saveGame();
+                showToast("Geri Alındı");
+            } else {
+                showToast("Geri alınacak hamle yok", "red");
+            }
+        }
+
+        function changeGrade() {
+            state.grade = parseInt(document.getElementById('grade-select').value);
             saveGame();
         }
 
-        function spendGold(amount) {
-            if(player.gold >= amount) {
-                player.gold -= amount;
-                updateUI();
-                return true;
-            }
-            alert("Yetersiz Altın!");
-            return false;
+        function updateUI() {
+            document.getElementById('gold-display').innerText = state.gold;
+            document.getElementById('lvl-display').innerText = state.level + ". Seviye";
+            saveGame();
         }
 
-        function askQuestion(modeTitle) {
-            const grade = document.getElementById('grade-select').value;
-            const pool = questions[grade] || questions[8];
-            const qData = pool[Math.floor(Math.random() * pool.length)];
+        function showToast(msg, color="#2d3436") {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.backgroundColor = color;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
 
-            document.getElementById('q-mode').innerText = modeTitle || "SORU";
-            document.getElementById('q-text').innerText = qData.q;
-            document.getElementById('info-text').innerHTML = qData.info;
+        // --- 7. SORU SİSTEMİ ---
+        function earnGoldMode() {
+            pendingAction = { mode: 'earn' };
+            openQuiz();
+        }
 
+        function openQuiz() {
+            const pool = questionPool[state.grade];
+            // Daha önce sorulmamış veya az sorulmuş soru bul (Basit randomize)
+            let q;
+            let attempts = 0;
+            do {
+                q = pool[Math.floor(Math.random() * pool.length)];
+                attempts++;
+            } while (usedQuestions.includes(q.q) && attempts < 10);
+            
+            if(attempts < 10) usedQuestions.push(q.q);
+            if(usedQuestions.length > pool.length - 2) usedQuestions = []; // Sıfırla
+
+            document.getElementById('q-category').innerText = q.c;
+            document.getElementById('q-text').innerText = q.q;
+            
             const opts = document.getElementById('q-options');
-            opts.innerHTML = "";
-            let all = [qData.a, ...qData.w].sort(() => Math.random() - 0.5);
-
+            opts.innerHTML = '';
+            
+            let all = [q.a, ...q.w].sort(() => Math.random() - 0.5);
             all.forEach(opt => {
                 let btn = document.createElement('div');
-                btn.className = 'opt-btn'; btn.innerText = opt;
-                btn.onclick = () => checkAnswer(btn, opt, qData.a);
+                btn.className = 'opt-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(btn, opt, q.a);
                 opts.appendChild(btn);
             });
 
@@ -428,107 +620,46 @@
         function checkAnswer(btn, val, correct) {
             if(val === correct) {
                 btn.classList.add('correct');
-                playSound('success');
                 setTimeout(() => {
                     document.getElementById('quiz-modal').classList.remove('active');
-                    document.getElementById('info-modal').classList.add('active');
+                    finishAction(true);
                 }, 500);
             } else {
                 btn.classList.add('wrong');
-                playSound('wrong');
                 setTimeout(() => {
                     document.getElementById('quiz-modal').classList.remove('active');
-                    handleWrongAnswer();
+                    finishAction(false);
                 }, 800);
             }
         }
 
-        function handleWrongAnswer() {
-            if(pendingBuild && pendingBuild.mode === 'build') {
-                // İnşaat çöker -> Enkaz olur
-                map[pendingBuild.x][pendingBuild.y] = 99; 
-                alert("Yanlış Cevap! İnşaat çöktü. Enkazı kaldırmak için tamir etmelisin.");
-                saveGame();
+        function finishAction(success) {
+            if(!success) {
+                showToast("Yanlış Cevap! İşlem İptal.", "red");
+                return;
+            }
+
+            if(pendingAction.mode === 'earn') {
+                state.gold += 50;
+                showToast("+50 Altın Kazanıldı!");
+                confetti({ particleCount: 50, origin: { y: 0.8 } });
             } else {
-                alert("Yanlış cevap! Altın kazanamadın.");
+                executeBuild(pendingAction.x, pendingAction.y, pendingAction.type, pendingAction.cost);
+                showToast("İnşaat Başarılı!");
             }
-            pendingBuild = null;
+            pendingAction = null;
+            updateUI();
         }
 
-        function finishBuild() {
-            document.getElementById('info-modal').classList.remove('active');
-            window.speechSynthesis.cancel();
-
-            if(pendingBuild) {
-                if(pendingBuild.mode === 'build') {
-                    spendGold(currentCost); // Parayı şimdi düş
-                    map[pendingBuild.x][pendingBuild.y] = pendingBuild.type;
-                    player.xp += 20;
-                    playSound('pop');
-                } else if(pendingBuild.mode === 'repair') {
-                    map[pendingBuild.x][pendingBuild.y] = 1; // Temizlendi
-                    alert("Enkaz temizlendi! Yeniden inşa edebilirsin.");
-                } else if(pendingBuild.mode === 'earn') {
-                    player.gold += 50;
-                    player.xp += 10;
-                    confetti({ particleCount: 50, origin: { y: 0.6 } });
-                }
-
-                // Level Up Check
-                if(player.xp >= player.level * 100) {
-                    player.level++;
-                    player.gold += 100; // Level bonusu
-                    confetti({ particleCount: 150, spread: 100 });
-                    alert("TEBRİKLER! SEVİYE ATLADIN: " + player.level);
-                }
-                updateUI();
-                pendingBuild = null;
-            }
-        }
-
-        // --- DİĞER ÖZELLİKLER ---
-        function takePhoto() {
-            // İki kanvası birleştirip indir (Basitçe oyun kanvasını alalım)
-            const link = document.createElement('a');
-            link.download = 'MimarSensin_Adam.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        }
-
-        function clearMap() {
-            if(confirm("Tüm adayı silmek istediğine emin misin?")) {
-                createMap(); player.gold = 200; updateUI();
-            }
-        }
-
-        function speakInfo() {
-            const txt = document.getElementById('info-text').innerText;
-            const u = new SpeechSynthesisUtterance(txt); u.lang = 'tr-TR';
-            window.speechSynthesis.speak(u);
-        }
-
-        function saveGame() {
-            const data = { map, player };
-            localStorage.setItem('mimarSensinV3', JSON.stringify(data));
-        }
-
-        function loadGame() {
-            const data = JSON.parse(localStorage.getItem('mimarSensinV3'));
-            if(data) { map = data.map; player.gold = data.player.gold; player.level = data.player.level; player.xp = data.player.xp || 0; }
-        }
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            osc.connect(g); g.connect(audioCtx.destination);
-            const t = audioCtx.currentTime;
-            if(type==='pop') { osc.frequency.setValueAtTime(400,t); osc.frequency.linearRampToValueAtTime(600,t+0.1); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.1); osc.start(t); osc.stop(t+0.1); }
-            else if(type==='success') { osc.type='triangle'; osc.frequency.setValueAtTime(500,t); osc.frequency.linearRampToValueAtTime(800,t+0.2); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.4); osc.start(t); osc.stop(t+0.4); }
-            else { osc.type='sawtooth'; osc.frequency.setValueAtTime(150,t); osc.frequency.linearRampToValueAtTime(50,t+0.2); g.gain.setValueAtTime(0.1,t); g.gain.linearRampToValueAtTime(0,t+0.3); osc.start(t); osc.stop(t+0.3); }
+        // --- 8. KAYIT SİSTEMİ ---
+        function saveGame(manual) {
+            const data = JSON.stringify(state);
+            localStorage.setItem('mimarv4_save', data);
+            if(manual) showToast("Oyun Kaydedildi");
         }
 
         init();
+
     </script>
 </body>
 </html>
