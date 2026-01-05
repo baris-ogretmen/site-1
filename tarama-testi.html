@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişim Pusulası | Profesyonel Analiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f766e; /* Teal */
+            --secondary: #0d9488;
+            --accent: #f59e0b; /* Amber */
+            --bg: #f0fdfa;
+            --card: #ffffff;
+            --text: #334155;
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 50px; }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, #0f766e, #115e59); color: white;
+            padding: 20px; border-radius: 0 0 30px 30px; box-shadow: 0 10px 30px rgba(15, 118, 110, 0.3);
+            position: relative; overflow: hidden;
+        }
+        .header-content { position: relative; z-index: 2; max-width: 800px; margin: 0 auto; text-align: center; }
+        .back-btn { 
+            position: absolute; top: 20px; left: 20px; color: white; background: rgba(255,255,255,0.2); 
+            padding: 8px 15px; border-radius: 20px; text-decoration: none; font-weight: bold; backdrop-filter: blur(5px);
+        }
+        h1 { margin: 10px 0 5px; font-size: 1.8rem; letter-spacing: -1px; }
+        .badge { background: var(--accent); color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* KONTEYNER */
+        .container { max-width: 700px; margin: -30px auto 0; padding: 0 20px; position: relative; z-index: 5; }
+
+        /* KARTLAR */
+        .card {
+            background: var(--card); border-radius: 20px; padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05); margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.05); animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* FORM ELEMANLARI */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 10px; color: #475569; }
+        select, input {
+            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #e2e8f0;
+            font-size: 1rem; background: #f8fafc; color: #333; outline: none; transition: 0.3s;
+        }
+        select:focus, input:focus { border-color: var(--secondary); background: white; }
+
+        /* BUTONLAR */
+        .btn-primary {
+            background: var(--secondary); color: white; border: none; padding: 18px; width: 100%;
+            border-radius: 15px; font-size: 1.1rem; font-weight: 800; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(13, 148, 136, 0.3); transition: 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* SORU KARTLARI */
+        .question-item {
+            background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 15px;
+            margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;
+            transition: 0.2s; cursor: pointer;
+        }
+        .question-item:hover { border-color: var(--secondary); background: #f0fdfa; }
+        .question-item.checked { border-color: var(--secondary); background: #ccfbf1; }
+        .q-text { font-weight: 600; font-size: 1rem; flex: 1; margin-right: 15px; }
+        
+        /* CHECKBOX CUSTOM */
+        .custom-check {
+            width: 25px; height: 25px; border: 2px solid #cbd5e1; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .question-item.checked .custom-check { background: var(--secondary); border-color: var(--secondary); color: white; }
+
+        /* SONUÇ EKRANI */
+        .result-dashboard { display: none; }
+        .score-card {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;
+        }
+        .score-box {
+            background: #f8fafc; padding: 15px; border-radius: 15px; text-align: center;
+            border-left: 5px solid #ccc;
+        }
+        .score-val { font-size: 1.5rem; font-weight: 800; display: block; }
+        .score-label { font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+        .chart-container { position: relative; height: 300px; width: 100%; margin: 20px 0; }
+
+        .risk-alert {
+            padding: 15px; border-radius: 12px; margin-top: 20px; font-weight: 600; font-size: 0.95rem; display: flex; gap: 10px; align-items: center;
+        }
+        .risk-low { background: #dcfce7; color: #166534; }
+        .risk-med { background: #fef9c3; color: #854d0e; }
+        .risk-high { background: #fee2e2; color: #991b1b; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <a href="ozel-egitim.html" class="back-btn"><i class="fas fa-arrow-left"></i> Geri</a>
+            <div class="badge">KLİNİK ANALİZ MODÜLÜ v2.0</div>
+            <h1>Gelişim Pusulası</h1>
+            <p style="opacity: 0.9;">0-6 Yaş Gelişimsel Tarama Envanteri</p>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <div id="step-1" class="card">
+            <h2 style="color:var(--secondary); margin-top:0;">Çocuk Bilgileri</h2>
+            <p style="color:#666; font-size:0.9rem; line-height:1.5;">Bu test, çocuğunuzun gelişimsel basamaklarını bilimsel normlara göre analiz eder. Lütfen doğum tarihini doğru giriniz.</p>
+            
+            <div class="form-group">
+                <label>Çocuğun Adı (Opsiyonel)</label>
+                <input type="text" id="childName" placeholder="Örn: Ali">
+            </div>
+
+            <div class="form-group">
+                <label>Doğum Tarihi</label>
+                <input type="date" id="birthDate">
+            </div>
+
+            <div class="form-group">
+                <label>Cinsiyet</label>
+                <select id="gender">
+                    <option value="boy">Erkek</option>
+                    <option value="girl">Kız</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="startTest()">
+                ANALİZİ BAŞLAT <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div id="step-2" class="card" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 id="age-group-title" style="margin:0; color:var(--secondary);">Tarama Başlıyor...</h3>
+                <span style="font-size:0.8rem; color:#999;" id="q-progress">0/0</span>
+            </div>
+            
+            <div id="questions-container">
+                </div>
+
+            <button class="btn-primary" onclick="calculateResults()">
+                RAPORU OLUŞTUR <i class="fas fa-chart-pie"></i>
+            </button>
+        </div>
+
+        <div id="step-3" class="result-dashboard card" style="display:none;">
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="width:60px; height:60px; background:#ccfbf1; color:var(--secondary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 10px;">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 style="margin:0;">Gelişim Analiz Raporu</h2>
+                <p style="color:#666; font-size:0.9rem;">Oluşturulma Tarihi: <span id="report-date"></span></p>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="skillsChart"></canvas>
+            </div>
+
+            <div class="score-card">
+                <div class="score-box" style="border-color:#3b82f6;">
+                    <span class="score-val" id="score-dil">0%</span>
+                    <span class="score-label">Dil & Konuşma</span>
+                </div>
+                <div class="score-box" style="border-color:#ef4444;">
+                    <span class="score-val" id="score-motor">0%</span>
+                    <span class="score-label">İnce Motor</span>
+                </div>
+                <div class="score-box" style="border-color:#10b981;">
+                    <span class="score-val" id="score-kaba">0%</span>
+                    <span class="score-label">Kaba Motor</span>
+                </div>
+                <div class="score-box" style="border-color:#f59e0b;">
+                    <span class="score-val" id="score-sosyal">0%</span>
+                    <span class="score-label">Sosyal & Özbakım</span>
+                </div>
+            </div>
+
+            <div id="risk-analysis" class="risk-alert">
+                </div>
+
+            <button class="btn-primary" onclick="window.print()" style="margin-top:20px; background:#334155;">
+                <i class="fas fa-print"></i> ÇIKTI AL / PDF KAYDET
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- KLİNİK VERİ TABANI (MİLADİ GELİŞİM ENVANTERİ ÖRNEĞİ) ---
+        // Not: Gerçek bir tıbbi tanı için değildir, örnek veri setidir.
+        
+        const inventory = {
+            '0-12': [
+                { id: 'm1', cat: 'kaba', text: 'Desteksiz oturabiliyor mu?' },
+                { id: 'm2', cat: 'ince', text: 'Nesneleri bir elinden diğerine geçiriyor mu?' },
+                { id: 'l1', cat: 'dil', text: 'Bababa, dedede gibi sesler çıkarıyor mu?' },
+                { id: 's1', cat: 'sosyal', text: 'Ce-ee oyununa tepki veriyor mu?' }
+            ],
+            '12-24': [
+                { id: 'm3', cat: 'kaba', text: 'Yürürken topa tekme atabiliyor mu?' },
+                { id: 'm4', cat: 'ince', text: 'İki küple kule yapabiliyor mu?' },
+                { id: 'l2', cat: 'dil', text: 'Tek kelimelik (anne, su) yönergeleri anlıyor mu?' },
+                { id: 's2', cat: 'sosyal', text: 'Basit ev işlerini taklit ediyor mu? (Toz alma vb.)' }
+            ],
+            '24-36': [
+                { id: 'm5', cat: 'kaba', text: 'Çift ayakla zıplayabiliyor mu?' },
+                { id: 'm6', cat: 'ince', text: 'Kalemi avuç içiyle değil parmaklarıyla tutmaya başladı mı?' },
+                { id: 'l3', cat: 'dil', text: 'İki kelimelik cümleler kuruyor mu? (Baba gel)' },
+                { id: 's3', cat: 'sosyal', text: 'Kendi başına kaşık/çatal kullanıyor mu?' }
+            ],
+            '36-48': [
+                { id: 'm7', cat: 'kaba', text: 'Tek ayak üzerinde 2-3 saniye durabiliyor mu?' },
+                { id: 'm8', cat: 'ince', text: 'Artı (+) işaretini bakarak çizebiliyor mu?' },
+                { id: 'l4', cat: 'dil', text: '"Neden, Nasıl" sorularını sormaya başladı mı?' },
+                { id: 's4', cat: 'sosyal', text: 'Arkadaşlarıyla kurallı oyun oynayabiliyor mu?' },
+                { id: 's5', cat: 'sosyal', text: 'Tuvaletini kendi başına yapabiliyor mu?' }
+            ],
+            '48-60': [
+                { id: 'm9', cat: 'kaba', text: 'Topu havaya atıp tutabiliyor mu?' },
+                { id: 'm10', cat: 'ince', text: 'İnsan resmi çizerken en az 3 organ (göz, ağız, kafa) yapıyor mu?' },
+                { id: 'l5', cat: 'dil', text: 'Geçmiş ve gelecek zamanı doğru kullanıyor mu?' },
+                { id: 's6', cat: 'sosyal', text: 'Düğmelerini ilikleyip çözebiliyor mu?' }
+            ]
+        };
+
+        let currentAgeGroup = '';
+        let answers = {};
+
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            const months = (today.getFullYear() - birth.getFullYear()) * 12 + (today.getMonth() - birth.getMonth());
+            return months;
+        }
+
+        function startTest() {
+            const dateInput = document.getElementById('birthDate').value;
+            if(!dateInput) { alert("Lütfen doğum tarihi giriniz."); return; }
+
+            const months = calculateAge(dateInput);
+            
+            // Yaş grubunu belirle
+            if(months <= 12) currentAgeGroup = '0-12';
+            else if(months <= 24) currentAgeGroup = '12-24';
+            else if(months <= 36) currentAgeGroup = '24-36';
+            else if(months <= 48) currentAgeGroup = '36-48';
+            else if(months <= 60) currentAgeGroup = '48-60';
+            else { alert("Bu test 0-60 ay (5 yaş) arası içindir."); return; }
+
+            // UI Geçişi
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+            document.getElementById('age-group-title').innerText = `${months} Aylık Gelişim Analizi`;
+
+            loadQuestions();
+        }
+
+        function loadQuestions() {
+            const container = document.getElementById('questions-container');
+            const data = inventory[currentAgeGroup];
+            document.getElementById('q-progress').innerText = `Toplam ${data.length} Soru`;
+            
+            container.innerHTML = "";
+            data.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.onclick = () => toggleCheck(item, q.id);
+                item.innerHTML = `
+                    <span class="q-text">${q.text}</span>
+                    <div class="custom-check" id="chk-${q.id}"><i class="fas fa-check" style="display:none; font-size:0.8rem;"></i></div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleCheck(el, id) {
+            const chk = el.querySelector('.custom-check');
+            const icon = chk.querySelector('i');
+            
+            if(answers[id]) {
+                delete answers[id];
+                el.classList.remove('checked');
+                icon.style.display = 'none';
+            } else {
+                answers[id] = true;
+                el.classList.add('checked');
+                icon.style.display = 'block';
+            }
+        }
+
+        function calculateResults() {
+            const data = inventory[currentAgeGroup];
+            let scores = { kaba: 0, ince: 0, dil: 0, sosyal: 0 };
+            let totals = { kaba: 0, ince: 0, dil: 0, sosyal: 0 };
+
+            // Puanları hesapla
+            data.forEach(q => {
+                totals[q.cat]++;
+                if(answers[q.id]) scores[q.cat]++;
+            });
+
+            // Yüzdeleri hesapla
+            const pDil = totals.dil ? Math.round((scores.dil / totals.dil) * 100) : 0;
+            const pKaba = totals.kaba ? Math.round((scores.kaba / totals.kaba) * 100) : 0;
+            const pInce = totals.ince ? Math.round((scores.ince / totals.ince) * 100) : 0;
+            const pSosyal = totals.sosyal ? Math.round((scores.sosyal / totals.sosyal) * 100) : 0;
+
+            // UI GÜNCELLE
+            document.getElementById('step-2').style.display = 'none';
+            document.getElementById('step-3').style.display = 'block';
+            document.getElementById('report-date').innerText = new Date().toLocaleDateString('tr-TR');
+
+            document.getElementById('score-dil').innerText = `%${pDil}`;
+            document.getElementById('score-kaba').innerText = `%${pKaba}`;
+            document.getElementById('score-ince').innerText = `%${pInce}`;
+            document.getElementById('score-sosyal').innerText = `%${pSosyal}`;
+
+            // RISK ANALIZI
+            const riskBox = document.getElementById('risk-analysis');
+            const avg = (pDil + pKaba + pInce + pSosyal) / 4;
+            
+            if(avg >= 80) {
+                riskBox.className = "risk-alert risk-low";
+                riskBox.innerHTML = '<i class="fas fa-check-circle"></i> Gelişim yaşıtlarıyla uyumlu görünüyor.';
+            } else if(avg >= 50) {
+                riskBox.className = "risk-alert risk-med";
+                riskBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Bazı alanlarda destek gerekebilir. Takip önerilir.';
+            } else {
+                riskBox.className = "risk-alert risk-high";
+                riskBox.innerHTML = '<i class="fas fa-times-circle"></i> Gelişimsel gecikme riski olabilir. Bir uzmana danışmanız önerilir.';
+            }
+
+            // RADAR GRAFİĞİ ÇİZ
+            renderChart(pDil, pKaba, pInce, pSosyal);
+        }
+
+        function renderChart(dil, kaba, ince, sosyal) {
+            const ctx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Dil & Konuşma', 'Kaba Motor', 'İnce Motor', 'Sosyal & Özbakım'],
+                    datasets: [{
+                        label: 'Gelişim Düzeyi',
+                        data: [dil, kaba, ince, sosyal],
+                        backgroundColor: 'rgba(13, 148, 136, 0.2)',
+                        borderColor: '#0d9488',
+                        pointBackgroundColor: '#0f766e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#e2e8f0' },
+                            pointLabels: {
+                                font: { size: 12, weight: 'bold' },
+                                color: '#334155'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
