@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sonsuz LGS Yıldız Avcısı</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #0f0f1a;
+            color: white;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Arayüz Katmanı */
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 20px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            font-size: 28px;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #scoreBox { color: #ffd700; }
+        #livesBox { color: #ff4444; }
+        #levelBox { color: #00f2fe; }
+
+        /* Ortak Ekran Stili */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 15, 26, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 100;
+            transition: opacity 0.3s;
+            padding: 20px;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #f83600 0%, #f9d423 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        h2 { font-size: 2rem; margin-bottom: 15px; color: #00f2fe; }
+
+        /* Butonlar */
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 0 #0d47a1;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-green { background: #4CAF50; box-shadow: 0 4px 0 #1B5E20; }
+        .btn-red { background: #F44336; box-shadow: 0 4px 0 #b71c1c; }
+
+        /* Soru Modalı */
+        #questionModal {
+            background: rgba(20, 20, 35, 0.98);
+            z-index: 200;
+        }
+
+        .question-card {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .category-badge {
+            background: #673AB7;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .question-text {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            padding: 20px;
+            font-size: 1.2rem;
+            background: #f1f1f1;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover { background: #e3f2fd; border-color: #2196F3; }
+        
+        .correct-answer { background: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .wrong-answer { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+
+        /* Liderlik Tablosu */
+        #leaderboardTable {
+            width: 80%;
+            max-width: 600px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #leaderboardTable th, #leaderboardTable td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            font-size: 1.2rem;
+        }
+
+        #leaderboardTable th { background: rgba(0,0,0,0.3); color: #ffd700; }
+        
+        .input-group { margin: 20px 0; }
+        #playerNameInput { padding: 15px; font-size: 1.2rem; border-radius: 5px; border: none; width: 250px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .options-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2.5rem; }
+            .question-text { font-size: 1.2rem; }
+            .option-btn { font-size: 1rem; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Oyun Arayüzü -->
+    <div id="uiLayer">
+        <div class="hud">
+            <div id="scoreBox">Puan: 0</div>
+            <div id="levelBox">Soru: 0/5</div>
+            <div id="livesBox">Can: 3</div>
+        </div>
+    </div>
+
+    <!-- Başlangıç Ekranı -->
+    <div id="startScreen" class="screen">
+        <h1>🚀 LGS Yıldız Avcısı</h1>
+        <p style="text-align: center; font-size: 1.3rem; margin-bottom: 30px; color: #ccc;">
+            Uzay gemisini yönet, yıldızları topla!<br>
+            Her 5 yıldızda bir Matematik veya Sözel LGS sorusu gelir.<br>
+            <span style="color:#00f2fe; font-size: 1rem;">(Matematik soruları her seferinde otomatik üretilir)</span>
+        </p>
+        <div>
+            <button class="btn btn-green" onclick="startGame()">Oyuna Başla</button>
+            <button class="btn" onclick="showLeaderboardFromStart()">Liderlik Tablosu</button>
+        </div>
+    </div>
+
+    <!-- Soru Modalı -->
+    <div id="questionModal" class="screen hidden">
+        <div class="question-card">
+            <span id="qCategory" class="category-badge">Kategori</span>
+            <div id="qText" class="question-text">Soru...</div>
+            <div class="options-grid" id="optionsContainer"></div>
+            <div id="feedbackText" style="margin-top:15px; font-weight:bold; min-height:25px;"></div>
+        </div>
+    </div>
+
+    <!-- Oyun Bitti -->
+    <div id="gameOverScreen" class="screen hidden">
+        <h1>Oyun Bitti!</h1>
+        <h2 id="finalScoreText">Skorun: 0</h2>
+        <p>Liderlik tablosuna girmek için ismini yaz:</p>
+        <div class="input-group">
+            <input type="text" id="playerNameInput" placeholder="İsminiz (Örn: Ayşe 8/B)" maxlength="15">
+        </div>
+        <button class="btn btn-green" onclick="saveScore()">Kaydet</button>
+        <button class="btn btn-red" onclick="resetGame()">Tekrar Oyna</button>
+    </div>
+
+    <!-- Liderlik -->
+    <div id="leaderboardScreen" class="screen hidden">
+        <h1>🏆 En İyiler 🏆</h1>
+        <table id="leaderboardTable">
+            <thead><tr><th>Sıra</th><th>İsim</th><th>Puan</th></tr></thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+        <button class="btn" onclick="returnToMenu()">Ana Menüye Dön</button>
+    </div>
+
+    <script>
+        // --- 1. MATEMATİK SORU ÜRETİCİSİ (SONSUZ) ---
+        // Bu fonksiyon rastgele sayılarla yeni sorular üretir.
+        function generateMathQuestion() {
+            const types = ['uslu', 'koklu', 'denklem', 'ebobekok'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            let q = "", a = [], correctIndex = 0;
+
+            if (type === 'uslu') {
+                const base = Math.floor(Math.random() * 4) + 2; // 2-5 arası taban
+                const exp = Math.floor(Math.random() * 4) + 2; // 2-5 arası üs
+                const res = Math.pow(base, exp);
+                q = `${base} üssü ${exp} (${base}⁵ değil ${base} üzeri ${exp}) kaçtır?`; 
+                // HTML gösterimi için düzeltme
+                q = `${base} üssü ${exp} (${base}<sup>${exp}</sup>) kaçtır?`;
+                
+                correctIndex = Math.floor(Math.random() * 4);
+                for(let i=0; i<4; i++) {
+                    if(i === correctIndex) a.push(res);
+                    else {
+                        let wrong = res + (Math.floor(Math.random() * 20) - 10);
+                        if(wrong === res) wrong += 5;
+                        a.push(wrong);
+                    }
+                }
+            } else if (type === 'koklu') {
+                const inner = Math.floor(Math.random() * 12) + 2; // 2-13
+                const square = inner * inner;
+                q = `√${square} sayısı kaça eşittir?`;
+                correctIndex = Math.floor(Math.random() * 4);
+                for(let i=0; i<4; i++) {
+                    if(i === correctIndex) a.push(inner);
+                    else {
+                        let wrong = inner + (Math.floor(Math.random() * 10) - 5);
+                        if(wrong === inner || wrong < 0) wrong += 3;
+                        a.push(wrong);
+                    }
+                }
+            } else if (type === 'denklem') {
+                const x = Math.floor(Math.random() * 10) + 1;
+                const add = Math.floor(Math.random() * 20) + 1;
+                const total = x + add;
+                q = `x + ${add} = ${total} ise, x kaçtır?`;
+                correctIndex = Math.floor(Math.random() * 4);
+                for(let i=0; i<4; i++) {
+                    if(i === correctIndex) a.push(x);
+                    else a.push(x + (i - correctIndex) * 2 + 1); // Rastgele yanlışlar
+                }
+            } else { // EBOB basit
+                const val = Math.floor(Math.random() * 5) + 2; // Ortak bölen
+                const n1 = val * 3;
+                const n2 = val * 4;
+                q = `EBOB(${n1}, ${n2}) kaçtır?`;
+                correctIndex = Math.floor(Math.random() * 4);
+                for(let i=0; i<4; i++) {
+                    if(i === correctIndex) a.push(val);
+                    else a.push(val + (i - correctIndex) + 2);
+                }
+            }
+
+            return { cat: "Matematik", q: q, a: a, correct: correctIndex };
+        }
+
+        // --- 2. SÖZEL SORU HAVUZU (GENİŞLETİLMİŞ) ---
+        // Bu sorular karıştırılacak ve sırayla sorulacak.
+        const staticQuestions = [
+            // FEN BİLİMLERİ
+            { cat: "Fen Bilimleri", q: "Mevsimlerin oluşumunun temel sebebi nedir?", a: ["Güneşe uzaklık", "Eksen eğikliği", "Dünya'nın şekli", "Ay'ın evreleri"], correct: 1 },
+            { cat: "Fen Bilimleri", q: "DNA'nın yapı birimi nedir?", a: ["Gen", "Kromozom", "Nükleotid", "Organik Baz"], correct: 2 },
+            { cat: "Fen Bilimleri", q: "Hangi element soygazdır?", a: ["Hidrojen", "Oksijen", "Demir", "Helyum"], correct: 3 },
+            { cat: "Fen Bilimleri", q: "Basınç birimi nedir?", a: ["Newton", "Pascal", "Joule", "Watt"], correct: 1 },
+            { cat: "Fen Bilimleri", q: "Asit yağmurlarına sebep olan gazlardan biri hangisidir?", a: ["Oksijen", "Azot", "Kükürt dioksit", "Helyum"], correct: 2 },
+            { cat: "Fen Bilimleri", q: "Mendel genetiğinde 'saf döl' neyi ifade eder?", a: ["Melez", "Homozigot", "Heterozigot", "Çekinik"], correct: 1 },
+            { cat: "Fen Bilimleri", q: "Katı basıncı hangisine bağlıdır?", a: ["Sadece ağırlık", "Sadece yüzey alanı", "Ağırlık ve yüzey alanı", "Hacim"], correct: 2 },
+
+            // TÜRKÇE
+            { cat: "Türkçe", q: "Hangisi bir fiilimsi türü DEĞİLDİR?", a: ["İsim-fiil", "Sıfat-fiil", "Zarf-fiil", "Zamir-fiil"], correct: 3 },
+            { cat: "Türkçe", q: "Hangi cümlede 'amaç-sonuç' ilişkisi vardır?", a: ["Seni görmek için geldim.", "Yağmur yağınca ıslandım.", "Çok çalıştığımdan yoruldum.", "Ev soğuktu, üşüdüm."], correct: 0 },
+            { cat: "Türkçe", q: "'Demir gibi bileği vardı.' cümlesindeki söz sanatı nedir?", a: ["Kişileştirme", "Benzetme", "Abartma", "Konuşturma"], correct: 1 },
+            { cat: "Türkçe", q: "Hangi kelime büyük ünlü uyumuna uymaz?", a: ["Kitap", "Kalem", "Masa", "Anne"], correct: 3 },
+            { cat: "Türkçe", q: "Aşağıdakilerden hangisi öznel bir yargıdır?", a: ["Türkiye'nin başkenti Ankara'dır.", "Film 2 saat sürdü.", "Bu kitap çok sürükleyici.", "Su 100 derecede kaynar."], correct: 2 },
+
+            // İNKILAP TARİHİ
+            { cat: "İnkılap Tarihi", q: "Mustafa Kemal'in 'Geldikleri gibi giderler' dediği yer neresidir?", a: ["Çanakkale", "İstanbul Boğazı", "Samsun", "İzmir"], correct: 1 },
+            { cat: "İnkılap Tarihi", q: "TBMM'nin açılış tarihi nedir?", a: ["19 Mayıs 1919", "23 Nisan 1920", "29 Ekim 1923", "30 Ağustos 1922"], correct: 1 },
+            { cat: "İnkılap Tarihi", q: "Manda ve himaye ilk kez nerede reddedildi?", a: ["Sivas Kongresi", "Erzurum Kongresi", "Amasya Genelgesi", "Havza Genelgesi"], correct: 1 },
+            { cat: "İnkılap Tarihi", q: "Hangi antlaşma Sevr Antlaşması'nı geçersiz kılmıştır?", a: ["Mondros", "Mudanya", "Lozan", "Gümrü"], correct: 2 },
+            { cat: "İnkılap Tarihi", q: "Mustafa Kemal'e 'Gazilik' unvanı hangi savaştan sonra verildi?", a: ["I. İnönü", "II. İnönü", "Sakarya", "Büyük Taarruz"], correct: 2 },
+
+            // İNGİLİZCE
+            { cat: "İngilizce", q: "Which one means 'to trust'?", a: ["Count on", "Get on well", "Back up", "Refuse"], correct: 0 },
+            { cat: "İngilizce", q: "If you want to make a cake, you need some ___.", a: ["Meat", "Flour", "Onion", "Pepper"], correct: 1 },
+            { cat: "İngilizce", q: "What is the opposite of 'generous'?", a: ["Mean", "Kind", "Honest", "Stubborn"], correct: 0 },
+            { cat: "İngilizce", q: "'Unbearable' means...", a: ["Very nice", "Can't stand it", "Delicious", "Healthy"], correct: 1 },
+            { cat: "İngilizce", q: "Which tool do we use to peel potatoes?", a: ["Grater", "Peeler", "Strainer", "Whisk"], correct: 1 }
+        ];
+
+        // Soru Sırasını Karıştırmak İçin Yardımcı
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        let shuffledQuestions = [];
+        let currentQuestionIndex = 0;
+
+        function prepareQuestions() {
+            // Statik soruları kopyala ve karıştır
+            shuffledQuestions = [...staticQuestions];
+            shuffleArray(shuffledQuestions);
+            currentQuestionIndex = 0;
+        }
+
+        // --- OYUN DEĞİŞKENLERİ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'START';
+        let score = 0;
+        let lives = 3;
+        let frameCount = 0;
+        let difficultyMultiplier = 1;
+        let starsCollected = 0;
+        const questionInterval = 5; 
+        
+        let width, height;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const mouse = { x: width / 2, y: height - 100 };
+        function updateInput(e) {
+            if (gameState !== 'PLAYING') return;
+            e.preventDefault();
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            mouse.x = clientX;
+            mouse.y = clientY;
+        }
+        window.addEventListener('mousemove', updateInput);
+        window.addEventListener('touchmove', updateInput, { passive: false });
+        window.addEventListener('touchstart', updateInput, { passive: false });
+
+        const player = { x: width / 2, y: height - 100, radius: 25, color: '#00f2fe', trail: [] };
+        let enemies = [];
+        let stars = [];
+
+        class Enemy {
+            constructor() {
+                this.radius = Math.random() * 20 + 20;
+                this.x = Math.random() * (width - this.radius * 2) + this.radius;
+                this.y = -this.radius;
+                this.speed = (Math.random() * 3 + 3) * difficultyMultiplier;
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.fillStyle = '#666';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.arc(this.x - 5, this.y - 5, this.radius / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Star {
+            constructor() {
+                this.radius = 15;
+                this.x = Math.random() * (width - this.radius * 2) + this.radius;
+                this.y = -this.radius;
+                this.speed = 4 * difficultyMultiplier;
+                this.rot = 0;
+            }
+            update() { this.y += this.speed; this.rot += 0.1; }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rot);
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                for(let i=0; i<5; i++){
+                    ctx.lineTo(Math.cos((18+i*72)*0.0174)*this.radius, -Math.sin((18+i*72)*0.0174)*this.radius);
+                    ctx.lineTo(Math.cos((54+i*72)*0.0174)*(this.radius/2), -Math.sin((54+i*72)*0.0174)*(this.radius/2));
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function startGame() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById('uiLayer').classList.remove('hidden');
+            
+            score = 0;
+            lives = 3;
+            starsCollected = 0;
+            difficultyMultiplier = 1;
+            enemies = [];
+            stars = [];
+            player.x = width / 2;
+            player.y = height - 100;
+            mouse.x = width / 2;
+            
+            prepareQuestions(); // Soruları karıştır ve sıfırla
+
+            gameState = 'PLAYING';
+            updateHUD();
+            loop();
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreBox').innerText = "Puan: " + score;
+            document.getElementById('livesBox').innerText = "Can: " + "❤️".repeat(lives);
+            document.getElementById('levelBox').innerText = `Soruya: ${questionInterval - (starsCollected % questionInterval)}`;
+        }
+
+        function triggerQuestion() {
+            gameState = 'QUESTION';
+            const modal = document.getElementById('questionModal');
+            modal.classList.remove('hidden');
+            
+            let qData;
+            
+            // %40 ihtimalle Matematik (Rastgele Üretim), %60 ihtimalle Havuzdan Sözel
+            // Veya havuz bittiyse sadece Matematik
+            const useMath = Math.random() < 0.4 || currentQuestionIndex >= shuffledQuestions.length;
+
+            if (useMath) {
+                qData = generateMathQuestion();
+            } else {
+                qData = shuffledQuestions[currentQuestionIndex];
+                currentQuestionIndex++; // Sıradakine geç
+            }
+            
+            document.getElementById('qCategory').innerText = qData.cat;
+            document.getElementById('qText').innerHTML = qData.q; // innerHTML çünkü math sup tag kullanabilir
+            document.getElementById('feedbackText').innerText = "";
+            
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            qData.a.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                const labels = ['A', 'B', 'C', 'D'];
+                btn.innerHTML = `<span style="font-weight:900; margin-right:10px;">${labels[index]})</span> ${opt}`;
+                btn.onclick = () => checkAnswer(index, qData.correct, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, correctIndex, btnElement) {
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct-answer');
+                document.getElementById('feedbackText').innerText = "DOĞRU! +100 PUAN +1 CAN";
+                document.getElementById('feedbackText').style.color = "green";
+                score += 100;
+                lives = Math.min(lives + 1, 5);
+            } else {
+                btnElement.classList.add('wrong-answer');
+                allBtns[correctIndex].classList.add('correct-answer');
+                document.getElementById('feedbackText').innerText = "YANLIŞ CEVAP!";
+                document.getElementById('feedbackText').style.color = "red";
+            }
+
+            updateHUD();
+            
+            setTimeout(() => {
+                document.getElementById('questionModal').classList.add('hidden');
+                gameState = 'PLAYING';
+                loop();
+            }, 2000);
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            document.getElementById('finalScoreText').innerText = "Skorun: " + score;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            startGame();
+        }
+
+        function returnToMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        // Liderlik Tablosu
+        const HIGHSCORE_KEY = 'lgs_infinite_scores';
+        function getHighScores() { return JSON.parse(localStorage.getItem(HIGHSCORE_KEY) || "[]"); }
+        function saveScore() {
+            const name = (document.getElementById('playerNameInput').value.trim() || "Anonim").substring(0,15);
+            const highScores = getHighScores();
+            highScores.push({ score, name });
+            highScores.sort((a, b) => b.score - a.score);
+            localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(highScores.slice(0, 5)));
+            showLeaderboard();
+        }
+        function showLeaderboard() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = getHighScores().length ? getHighScores().map((s,i) => `<tr><td>${i+1}.</td><td>${s.name}</td><td>${s.score}</td></tr>`).join('') : '<tr><td colspan="3">Henüz kayıt yok.</td></tr>';
+        }
+        function showLeaderboardFromStart() { showLeaderboard(); }
+
+        // Oyun Loop
+        function loop() {
+            if (gameState !== 'PLAYING') return;
+            ctx.fillStyle = 'rgba(15, 15, 26, 0.4)';
+            ctx.fillRect(0, 0, width, height);
+            
+            player.x += (mouse.x - player.x) * 0.15;
+            
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.beginPath();
+            ctx.moveTo(0, -30); ctx.lineTo(20, 20); ctx.lineTo(0, 10); ctx.lineTo(-20, 20); ctx.closePath();
+            ctx.fillStyle = player.color; ctx.fill();
+            ctx.restore();
+
+            if (frameCount % Math.max(20, 50 - Math.floor(score/100)) === 0) enemies.push(new Enemy());
+            if (frameCount % 80 === 0) stars.push(new Star());
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i]; e.update(); e.draw();
+                if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + e.radius) {
+                    lives--; enemies.splice(i, 1); updateHUD();
+                    ctx.translate(5, 5); setTimeout(() => ctx.setTransform(1,0,0,1,0,0), 50);
+                    if (lives <= 0) gameOver();
+                } else if (e.y > height) enemies.splice(i, 1);
+            }
+
+            for (let i = stars.length - 1; i >= 0; i--) {
+                let s = stars[i]; s.update(); s.draw();
+                if (Math.hypot(player.x - s.x, player.y - s.y) < player.radius + s.radius + 10) {
+                    score += 10; starsCollected++; stars.splice(i, 1); updateHUD();
+                    if (starsCollected % questionInterval === 0) { triggerQuestion(); return; }
+                } else if (s.y > height) stars.splice(i, 1);
+            }
+            frameCount++;
+            requestAnimationFrame(loop);
+        }
+    </script>
+</body>
+</html>
+
+
