@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihirli Ressam | Barış Öğretmen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel: #16213e;
+            --accent: #e94560;
+            --text: #fff;
+        }
+
+        body {
+            margin: 0; overflow: hidden; background: var(--bg); font-family: 'Fredoka', sans-serif;
+            touch-action: none; /* Mobilde kaydırmayı engelle */
+        }
+
+        /* --- UI KATMANI --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        /* HEADER */
+        .header {
+            pointer-events: auto; background: rgba(22, 33, 62, 0.9); padding: 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid var(--accent); backdrop-filter: blur(5px);
+        }
+        .logo { color: var(--accent); font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 10px var(--accent); }
+        .back-btn {
+            background: #fff; color: var(--bg); border: none; padding: 8px 15px;
+            border-radius: 20px; font-weight: bold; cursor: pointer; text-decoration: none;
+        }
+
+        /* ARAÇ ÇUBUĞU (ALTTA) */
+        .toolbar {
+            pointer-events: auto; background: rgba(255, 255, 255, 0.1); padding: 15px;
+            display: flex; gap: 15px; justify-content: center; align-items: center;
+            backdrop-filter: blur(10px); border-radius: 30px 30px 0 0;
+            overflow-x: auto; max-width: 100%;
+        }
+
+        .tool-btn {
+            width: 60px; height: 60px; border-radius: 50%; border: 3px solid transparent;
+            background: white; font-size: 1.5rem; color: var(--bg); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+            flex-shrink: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .tool-btn:active { transform: scale(0.9); }
+        .tool-btn.active { border-color: var(--accent); transform: translateY(-10px); box-shadow: 0 0 20px var(--accent); }
+
+        /* RENK SEÇİCİLER */
+        .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; transform: scale(1); transition: 0.2s; }
+        .color-btn.active { transform: scale(1.3); border-color: var(--accent); }
+
+        /* CANLI CANVAS */
+        canvas { display: block; background: #000; cursor: crosshair; }
+
+        /* POP-UP MESAJ */
+        .msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 20px;
+            font-size: 2rem; display: none; pointer-events: none; border: 2px solid var(--accent);
+            animation: popUp 0.5s ease-out;
+        }
+        @keyframes popUp { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="mainCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="header">
+            <a href="anaokulu.html" class="back-btn"><i class="fas fa-arrow-left"></i> Çıkış</a>
+            <div class="logo"><i class="fas fa-magic"></i> SİHİRLİ RESSAM</div>
+            <button class="back-btn" onclick="downloadArt()" style="background:var(--accent); color:white;">
+                <i class="fas fa-camera"></i> Kaydet
+            </button>
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn active" onclick="setBrush('neon', this)" title="Neon Işık">
+                <i class="fas fa-bolt"></i>
+            </button>
+            <button class="tool-btn" onclick="setBrush('rainbow', this)" title="Gökkuşağı">
+                <i class="fas fa-rainbow"></i>
+            </button>
+            <button class="tool-btn" onclick="setBrush('mirror', this)" title="Sihirli Ayna (Mandala)">
+                <i class="fas fa-snowflake"></i>
+            </button>
+            <button class="tool-btn" onclick="setBrush('eraser', this)" title="Silgi">
+                <i class="fas fa-eraser"></i>
+            </button>
+
+            <div style="width:2px; height:40px; background:rgba(255,255,255,0.3); margin:0 10px;"></div>
+
+            <div class="color-btn active" style="background:#ff0055;" onclick="setColor('#ff0055', this)"></div>
+            <div class="color-btn" style="background:#00f3ff;" onclick="setColor('#00f3ff', this)"></div>
+            <div class="color-btn" style="background:#0aff0a;" onclick="setColor('#0aff0a', this)"></div>
+            <div class="color-btn" style="background:#ffee00;" onclick="setColor('#ffee00', this)"></div>
+            <div class="color-btn" style="background:#bc13fe;" onclick="setColor('#bc13fe', this)"></div>
+
+            <div style="width:2px; height:40px; background:rgba(255,255,255,0.3); margin:0 10px;"></div>
+
+            <button class="tool-btn" onclick="clearCanvas()" style="color:#ff4757;" title="Temizle">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="msg" id="saveMsg">📸 Resim Galeriye Kaydedildi!</div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let painting = false;
+        let brushType = 'neon'; // neon, rainbow, mirror, eraser
+        let color = '#ff0055';
+        let hue = 0; // Gökkuşağı için
+        let particles = [];
+
+        // AYARLAR
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            // Arka planı temizle
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- ÇİZİM MANTIĞI ---
+        function startPosition(e) {
+            painting = true;
+            draw(e);
+            playSound('start');
+        }
+        function endPosition() {
+            painting = false;
+            ctx.beginPath();
+        }
+        function draw(e) {
+            if (!painting) return;
+            e.preventDefault(); // Sayfa kaymasını engelle
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            ctx.lineWidth = brushType === 'eraser' ? 30 : 5;
+            ctx.lineCap = 'round';
+
+            // FIRÇA EFEKTLERİ
+            if (brushType === 'neon') {
+                ctx.strokeStyle = color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = color;
+                createParticles(clientX, clientY, color);
+            } else if (brushType === 'rainbow') {
+                hue += 2;
+                const dynamicColor = `hsl(${hue}, 100%, 50%)`;
+                ctx.strokeStyle = dynamicColor;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = dynamicColor;
+                createParticles(clientX, clientY, dynamicColor);
+            } else if (brushType === 'mirror') {
+                ctx.strokeStyle = color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
+                // Ayna efekti için özel çizim aşağıda
+            } else if (brushType === 'eraser') {
+                ctx.strokeStyle = '#000000';
+                ctx.shadowBlur = 0;
+            }
+
+            // ÇİZİMİ YAP
+            if (brushType === 'mirror') {
+                drawSymmetry(clientX, clientY);
+            } else {
+                ctx.lineTo(clientX, clientY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(clientX, clientY);
+            }
+        }
+
+        // --- SİMETRİ (MANDALA) MODU ---
+        function drawSymmetry(x, y) {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const dx = x - centerX;
+            const dy = y - centerY;
+
+            const positions = [
+                { x: centerX + dx, y: centerY + dy },
+                { x: centerX - dx, y: centerY + dy },
+                { x: centerX + dx, y: centerY - dy },
+                { x: centerX - dx, y: centerY - dy },
+                { x: centerX + dy, y: centerY + dx }, // Çaprazlar
+                { x: centerX - dy, y: centerY + dx },
+                { x: centerX + dy, y: centerY - dx },
+                { x: centerX - dy, y: centerY - dx }
+            ];
+
+            ctx.beginPath(); // Her seferinde yeni yol
+            positions.forEach(pos => {
+                ctx.moveTo(pos.x, pos.y);
+                ctx.fillRect(pos.x - 2, pos.y - 2, 4, 4); // Nokta nokta çizim (daha estetik mandala için)
+            });
+            ctx.fill();
+        }
+
+        // --- PARÇACIK SİSTEMİ (Sihir Efekti) ---
+        class Particle {
+            constructor(x, y, col) {
+                this.x = x; this.y = y; this.color = col;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.life = 1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life -= 0.05;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function createParticles(x, y, col) {
+            for(let i=0; i<2; i++) {
+                particles.push(new Particle(x, y, col));
+            }
+        }
+
+        function animateParticles() {
+            // Parçacıkları güncelle ama tüm ekranı silme (iz kalsın)
+            // Sadece efekt katmanı için
+            // Performans için burayı basit tutuyoruz, ana çizim kalıcı
+            
+            // Eğer parçacıkları çizip silersek ana resim de gider.
+            // Bu yüzden parçacıkları sadece anlık çizeceğiz.
+            for(let i=0; i<particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if(particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // --- KONTROLLER ---
+        function setBrush(type, btn) {
+            brushType = type;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playSound('click');
+        }
+
+        function setColor(col, btn) {
+            color = col;
+            brushType = 'neon'; // Renk seçince neona dön
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playSound('click');
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+            playSound('clear');
+        }
+
+        function downloadArt() {
+            const link = document.createElement('a');
+            link.download = 'sihirli-resim.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            const msg = document.getElementById('saveMsg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 2000);
+            playSound('success');
+        }
+
+        // --- OLAY DİNLEYİCİLER ---
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+
+        canvas.addEventListener('touchstart', startPosition);
+        canvas.addEventListener('touchend', endPosition);
+        canvas.addEventListener('touchmove', draw);
+
+        // --- BASİT SESLER ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            const t = audioCtx.currentTime;
+            if(type==='click') {
+                osc.frequency.setValueAtTime(600, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.start(t); osc.stop(t + 0.1);
+            } else if(type==='clear') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, t);
+                osc.frequency.linearRampToValueAtTime(100, t+0.3);
+                gain.gain.linearRampToValueAtTime(0, t+0.3);
+                osc.start(t); osc.stop(t + 0.3);
+            } else if(type==='success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.setValueAtTime(600, t+0.1);
+                gain.gain.linearRampToValueAtTime(0, t+0.4);
+                osc.start(t); osc.stop(t + 0.4);
+            }
+        }
+
+    </script>
+</body>
+</html>
