@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ateş Çemberi | Barış Hoca</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --lava: #ef4444;
+            --warn: #f59e0b;
+            --safe: #10b981;
+            --neon-blue: #0ea5e9;
+            --tile-dark: #1e293b;
+            --tile-light: #334155;
+        }
+
+        body {
+            margin: 0; overflow: hidden; background: var(--bg); font-family: 'Roboto', sans-serif;
+            color: white; height: 100dvh; display: flex; flex-direction: column;
+            user-select: none; -webkit-user-select: none; touch-action: none;
+        }
+
+        /* ARKA PLAN EFEKTİ */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; }
+
+        /* UI KATMANI */
+        .hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8); pointer-events: none;
+        }
+        .score-box { font-family: 'Black Ops One', cursive; font-size: 2rem; color: var(--neon-blue); }
+        .timer-box { font-family: 'Black Ops One', cursive; font-size: 1.5rem; color: var(--lava); }
+        
+        .back-btn {
+            pointer-events: auto; text-decoration: none; color: white; background: rgba(255,255,255,0.1);
+            padding: 8px 15px; border-radius: 8px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* OYUN ALANI */
+        #game-wrapper {
+            flex: 1; display: flex; justify-content: center; align-items: center; position: relative; perspective: 1000px;
+        }
+        
+        #board {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+            width: 95vw; max-width: 500px; aspect-ratio: 1;
+            background: #000; padding: 5px; border-radius: 10px;
+            box-shadow: 0 0 50px rgba(14, 165, 233, 0.2);
+            transition: transform 0.1s;
+        }
+
+        .tile {
+            background: var(--tile-dark); border-radius: 6px; position: relative; cursor: pointer;
+            transition: 0.3s; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; overflow: hidden;
+        }
+        .tile:nth-child(even) { background: var(--tile-light); }
+        
+        /* DURUMLAR */
+        .tile.warning { background: var(--warn) !important; animation: blink 0.5s infinite; }
+        .tile.lava { background: var(--lava) !important; box-shadow: inset 0 0 20px #7f1d1d; }
+        .tile.valid-move { box-shadow: inset 0 0 0 4px var(--safe); background: rgba(16, 185, 129, 0.2); }
+        .tile.valid-move::after { content: ''; width: 10px; height: 10px; background: var(--safe); border-radius: 50%; }
+
+        /* OYUNCU (AT) */
+        .player-piece {
+            color: var(--neon-blue); font-size: 2.5rem; filter: drop-shadow(0 0 10px var(--neon-blue));
+            animation: bounce 0.5s infinite alternate; z-index: 5;
+        }
+
+        /* TOPLANABİLİR ALTIN */
+        .coin {
+            color: #ffd700; font-size: 1.8rem; filter: drop-shadow(0 0 5px #ffd700);
+            animation: spin 2s infinite linear;
+        }
+
+        /* EFEKTLER */
+        @keyframes blink { 0% {opacity:1;} 50% {opacity:0.5;} 100% {opacity:1;} }
+        @keyframes bounce { from {transform: translateY(0);} to {transform: translateY(-5px);} }
+        @keyframes spin { 100% {transform: rotateY(360deg);} }
+        @keyframes shake { 0% {transform:translate(1px,1px);} 50% {transform:translate(-1px,-1px);} 100% {transform:translate(1px,-1px);} }
+
+        .shake-screen { animation: shake 0.3s; }
+
+        /* OVERLAY (OYUN SONU) */
+        #overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; backdrop-filter: blur(5px);
+        }
+        .title-glitch { font-family: 'Black Ops One', cursive; font-size: 3rem; color: var(--lava); text-shadow: 2px 2px var(--neon-blue); margin-bottom: 20px; }
+        .big-btn {
+            background: linear-gradient(45deg, var(--neon-blue), #3b82f6); color: white; border: none;
+            padding: 20px 50px; font-size: 1.5rem; font-weight: bold; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 0 30px rgba(14, 165, 233, 0.5); transition: 0.2s; font-family: 'Roboto', sans-serif;
+        }
+        .big-btn:active { transform: scale(0.9); }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="hud">
+        <a href="satranc.html" class="back-btn"><i class="fas fa-arrow-left"></i> Çıkış</a>
+        <div class="score-box" id="score">0</div>
+    </div>
+
+    <div id="game-wrapper">
+        <div id="board"></div>
+    </div>
+
+    <div id="overlay">
+        <div class="title-glitch">ATEŞ ÇEMBERİ</div>
+        <p style="color:#aaa; max-width:300px; margin-bottom:30px;">Zemin çöküyor! Atınla sadece "L" çizerek güvenli karelere zıpla ve altınları topla.</p>
+        <button class="big-btn" onclick="startGame()">OYUNA BAŞLA</button>
+    </div>
+
+    <script>
+        // --- SES MOTORU ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            
+            if(type === 'jump') {
+                o.frequency.setValueAtTime(150, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                o.start(); setTimeout(() => o.stop(), 100);
+            } else if (type === 'coin') {
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(600, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                o.start(); setTimeout(() => o.stop(), 200);
+            } else if (type === 'die') {
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(100, audioCtx.currentTime);
+                o.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.5);
+                g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+                o.start(); setTimeout(() => o.stop(), 500);
+            }
+        }
+
+        // --- OYUN DEĞİŞKENLERİ ---
+        const BOARD_SIZE = 6;
+        let board = [];
+        let playerPos = { r: 2, c: 2 };
+        let score = 0;
+        let gameActive = false;
+        let lavaInterval;
+        let difficulty = 1000; // Milisaniye cinsinden lav hızı
+
+        // --- BAŞLATMA ---
+        function createBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            board = [];
+            for(let r=0; r<BOARD_SIZE; r++) {
+                let row = [];
+                for(let c=0; c<BOARD_SIZE; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.r = r;
+                    tile.dataset.c = c;
+                    tile.onclick = () => tryMove(r, c);
+                    boardEl.appendChild(tile);
+                    row.push({ el: tile, state: 'safe', hasCoin: false }); // state: safe, warning, lava
+                }
+                board.push(row);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('overlay').style.display = 'none';
+            createBoard();
+            playerPos = { r: Math.floor(Math.random()*BOARD_SIZE), c: Math.floor(Math.random()*BOARD_SIZE) };
+            score = 0;
+            difficulty = 1500;
+            gameActive = true;
+            
+            updateBoard();
+            spawnCoin();
+            
+            // Lav Döngüsü
+            if(lavaInterval) clearInterval(lavaInterval);
+            lavaLoop();
+        }
+
+        function lavaLoop() {
+            lavaInterval = setTimeout(() => {
+                if(!gameActive) return;
+                
+                // 1. Rastgele bir kareyi uyar
+                let r, c;
+                do {
+                    r = Math.floor(Math.random()*BOARD_SIZE);
+                    c = Math.floor(Math.random()*BOARD_SIZE);
+                } while(board[r][c].state !== 'safe' || (r===playerPos.r && c===playerPos.c));
+                
+                board[r][c].state = 'warning';
+                board[r][c].el.classList.add('warning');
+
+                // 2. Uyarılanları Lava Çevir (Gecikmeli)
+                setTimeout(() => {
+                    if(!gameActive) return;
+                    // Tüm warning olanları lava yap
+                    for(let i=0; i<BOARD_SIZE; i++) {
+                        for(let j=0; j<BOARD_SIZE; j++) {
+                            if(board[i][j].state === 'warning') {
+                                board[i][j].state = 'lava';
+                                board[i][j].el.className = 'tile lava';
+                                // Eğer oyuncu üstündeyse ölür
+                                if(i === playerPos.r && j === playerPos.c) gameOver();
+                            }
+                        }
+                    }
+                    // Eski lavları temizle (Bazen şans ver)
+                    if(Math.random() > 0.7) cleanLava();
+                    
+                }, difficulty);
+
+                // Zorluğu artır
+                if(difficulty > 400) difficulty -= 10;
+                lavaLoop();
+
+            }, difficulty / 1.5);
+        }
+
+        function cleanLava() {
+            let r = Math.floor(Math.random()*BOARD_SIZE);
+            let c = Math.floor(Math.random()*BOARD_SIZE);
+            if(board[r][c].state === 'lava') {
+                board[r][c].state = 'safe';
+                board[r][c].el.className = 'tile';
+            }
+        }
+
+        function updateBoard() {
+            document.getElementById('score').innerText = score;
+            
+            // Temizle
+            document.querySelectorAll('.player-piece').forEach(e => e.remove());
+            document.querySelectorAll('.valid-move').forEach(e => e.classList.remove('valid-move'));
+
+            // Oyuncuyu Koy
+            const pTile = board[playerPos.r][playerPos.c].el;
+            pTile.innerHTML = `<i class="fas fa-chess-knight player-piece"></i>`;
+            
+            // Altın Kontrolü
+            if(board[playerPos.r][playerPos.c].hasCoin) {
+                board[playerPos.r][playerPos.c].hasCoin = false;
+                score += 10;
+                playSound('coin');
+                spawnCoin();
+            }
+
+            // Gidilebilir Yerleri Göster (L Hareketi)
+            showValidMoves();
+        }
+
+        function showValidMoves() {
+            const moves = [
+                {r: -2, c: -1}, {r: -2, c: 1}, {r: -1, c: -2}, {r: -1, c: 2},
+                {r: 1, c: -2}, {r: 1, c: 2}, {r: 2, c: -1}, {r: 2, c: 1}
+            ];
+
+            moves.forEach(m => {
+                let nr = playerPos.r + m.r;
+                let nc = playerPos.c + m.c;
+                if(nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+                    // Sadece güvenli karelere zıplayabilir
+                    if(board[nr][nc].state !== 'lava') {
+                        board[nr][nc].el.classList.add('valid-move');
+                    }
+                }
+            });
+        }
+
+        function tryMove(r, c) {
+            if(!gameActive) return;
+            
+            // Geçerli L hareketi mi?
+            const dr = Math.abs(r - playerPos.r);
+            const dc = Math.abs(c - playerPos.c);
+            
+            if(dr * dc === 2) {
+                // Lava değilse git
+                if(board[r][c].state !== 'lava') {
+                    playerPos = {r, c};
+                    playSound('jump');
+                    score++;
+                    
+                    // Ekranı salla (Aksiyon hissi)
+                    document.getElementById('board').classList.add('shake-screen');
+                    setTimeout(() => document.getElementById('board').classList.remove('shake-screen'), 300);
+                    
+                    updateBoard();
+                } else {
+                    playSound('die'); // Lava atladı
+                    gameOver();
+                }
+            }
+        }
+
+        function spawnCoin() {
+            let r, c;
+            do {
+                r = Math.floor(Math.random()*BOARD_SIZE);
+                c = Math.floor(Math.random()*BOARD_SIZE);
+            } while((r===playerPos.r && c===playerPos.c) || board[r][c].state === 'lava');
+            
+            board[r][c].hasCoin = true;
+            // Mevcut içeriği bozmadan coin ekle (eğer boşsa)
+            if(!board[r][c].el.querySelector('.player-piece')) {
+                board[r][c].el.innerHTML = `<i class="fas fa-star coin"></i>`;
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            clearInterval(lavaInterval);
+            playSound('die');
+            document.getElementById('overlay').style.display = 'flex';
+            document.querySelector('#overlay h1') ? document.querySelector('#overlay h1').innerText = "YANDIN!" : null;
+            document.querySelector('#overlay p').innerText = `Skorun: ${score}\nAtınla lavlara düştün!`;
+            document.querySelector('.big-btn').innerText = "TEKRAR DENE";
+        }
+
+        // --- ARKA PLAN (MATRIX RAIN) ---
+        const c = document.getElementById('bg-canvas');
+        const ctx = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
+        const fontSize = 16;
+        const columns = c.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, c.width, c.height);
+            ctx.fillStyle = "#0ea5e9"; // Neon mavi
+            ctx.font = fontSize + "px monospace";
+            for(let i=0; i<drops.length; i++) {
+                const text = letters[Math.floor(Math.random()*letters.length)];
+                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+                if(drops[i]*fontSize > c.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+            requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+        window.addEventListener('resize', () => { c.width = window.innerWidth; c.height = window.innerHeight; });
+
+    </script>
+</body>
+</html>
