@@ -15,12 +15,12 @@
     <style>
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0fdfa; color: #333; padding-bottom: 50px; }
         
-        /* HEADER */
+        /* HEADER - MEVCUT TASARIM */
         header { background: linear-gradient(135deg, #0d9488 0%, #115e59 100%); padding: 30px 20px; text-align: center; color: white; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2); }
         .back-btn { display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-bottom: 15px; backdrop-filter: blur(5px); }
         .container { max-width: 850px; margin: 30px auto; padding: 0 15px; }
         
-        /* BAŞLIK VE GRID YAPISI (İlkokul Tarzı) */
+        /* BAŞLIK VE GRID */
         .section-title { font-weight: 800; color: #0f766e; margin: 40px 0 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
         .section-title::after { content: ''; flex: 1; height: 2px; background: #ccfbf1; margin-left: 10px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
@@ -131,42 +131,60 @@
         const db = firebase.firestore();
         let makaleVerileri = {};
 
-        // 1. PANEL OYUNLARINI ÇEK (İLKOKUL GİBİ ÇALIŞAN KISIM)
-        db.collection("projeler").get().then((snapshot) => {
+        // 1. DİNAMİK PROJELERİ ÇEK
+        db.collection("projeler").orderBy("tarih", "desc").onSnapshot((snapshot) => {
             const liste = document.getElementById("panel-oyunlari");
             const baslik = document.getElementById("panel-baslik");
             
+            liste.innerHTML = ""; // Temizle
+            let icerikVar = false;
+
+            // Zaten sayfada elle ekli olan linkler (Tekrar göstermemek için)
+            const sabitLinkler = [
+                "https://baris-ogretmen.github.io/rapor-degerlendirme/",
+                "https://baris-ogretmen.github.io/sevimli-canavar/",
+                "https://baris-ogretmen.github.io/goz-temasi/"
+            ];
+
             snapshot.forEach((doc) => {
                 const veri = doc.data();
-                // Kategori ismini küçük harfe çevirip kontrol et
-                let kat = (veri.kategori || "").toLowerCase();
+                const k = (veri.kategori || "").toLowerCase();
 
-                if (kat.includes("özel") || kat.includes("ozel")) {
-                    // Sabit olanları tekrar gösterme
-                    const sabitLinkler = [
-                        "https://baris-ogretmen.github.io/rapor-degerlendirme/",
-                        "https://baris-ogretmen.github.io/sevimli-canavar/",
-                        "https://baris-ogretmen.github.io/goz-temasi/"
-                    ];
-
+                // Filtre: Özel, Ozel, Otizm, Rehabilitasyon
+                if (k.includes("özel") || k.includes("ozel") || k.includes("otizm") || k.includes("rehabilitasyon")) {
+                    
+                    // Eğer link zaten sabitlerde varsa atla
                     if (!sabitLinkler.includes(veri.link)) {
-                        baslik.style.display = "block"; // Başlığı görünür yap
-                        
-                        // YENİ EKLENEN KART (Grid Yapısına Uygun)
+                        icerikVar = true;
+
+                        // İkon Seçimi
+                        let ikon = veri.icon || "fa-puzzle-piece";
+                        if(!veri.icon) {
+                            if(veri.baslik.toLowerCase().includes("dikkat")) ikon = "fa-eye";
+                            else if(veri.baslik.toLowerCase().includes("dil")) ikon = "fa-comments";
+                        }
+
+                        // Kartı Oluştur
                         liste.innerHTML += `
-                            <a href="${veri.link}" target="_blank" class="tool-card" style="border-left: 5px solid #2ecc71; background:#f0fdf4;">
-                                <div class="icon-box" style="background:#dcfce7; color:#2ecc71;"><i class="fas fa-puzzle-piece"></i></div>
-                                <div class="card-info">
-                                    <h3>${veri.baslik}</h3>
-                                    <p>${veri.aciklama || 'Yeni özel eğitim materyali.'}</p>
-                                </div>
-                            </a>`;
+                        <a href="${veri.link}" target="_blank" class="tool-card" style="border-left: 5px solid #10b981; background:#f0fdf4;">
+                            <div class="icon-box" style="background:#dcfce7; color:#10b981;">
+                                <i class="fas ${ikon}"></i>
+                            </div>
+                            <div class="card-info">
+                                <h3>${veri.baslik}</h3>
+                                <p>${veri.aciklama || 'Yeni özel eğitim materyali.'}</p>
+                            </div>
+                        </a>`;
                     }
                 }
             });
+
+            // Eğer yeni içerik varsa başlığı göster
+            if(icerikVar) baslik.style.display = "flex";
+            else baslik.style.display = "none";
         });
 
-        // 2. YAZILARI ÇEK (ORJİNAL YAPI)
+        // 2. YAZILARI ÇEK (BLOG)
         db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(snap => {
             let html = "";
             if (snap.empty) {
