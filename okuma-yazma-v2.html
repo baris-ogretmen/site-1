@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minik Bilginler v2 | Okuma Yazma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #e0f7fa;
+            --primary: #ff6b6b;
+            --secondary: #4ecdc4;
+            --accent: #ffe66d;
+            --dark: #2d3436;
+            --success: #2ecc71;
+            --error: #e74c3c;
+        }
+
+        body {
+            margin: 0; font-family: 'Fredoka', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#b2ebf2 2px, transparent 2px);
+            background-size: 30px 30px;
+            color: var(--dark);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; overflow-x: hidden; user-select: none;
+        }
+
+        /* --- HEADER --- */
+        header {
+            background: #fff; width: 100%; padding: 15px 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-bottom: 5px solid var(--secondary);
+            position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-area h1 { margin: 0; color: var(--primary); font-size: 1.5rem; letter-spacing: 1px; text-shadow: 2px 2px 0 #ffeaa7; }
+        .star-counter {
+            background: var(--accent); padding: 8px 20px; border-radius: 30px;
+            font-size: 1.3rem; font-weight: bold; color: #d35400;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 0 #e67e22; transition: 0.3s;
+        }
+        .star-counter.pulse { transform: scale(1.2); }
+
+        /* --- PROGRESS BAR --- */
+        .progress-container {
+            width: 100%; height: 8px; background: #ddd; position: fixed; top: 78px; z-index: 99; display: none;
+        }
+        .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.5s; }
+
+        /* --- GRUP SEÇİMİ --- */
+        .settings-bar {
+            margin: 20px 0; background: white; padding: 8px 15px;
+            border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex; gap: 5px; align-items: center;
+        }
+        .group-btn {
+            border: none; background: #f1f2f6; color: #95a5a6;
+            padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer;
+            transition: 0.3s; font-family: 'Fredoka';
+        }
+        .group-btn.active { background: var(--secondary); color: white; box-shadow: 0 4px 0 rgba(22, 160, 133, 0.4); }
+
+        /* --- MENÜ KARTLARI --- */
+        .menu-container {
+            display: flex; gap: 25px; flex-wrap: wrap; justify-content: center;
+            margin-top: 30px; width: 100%; max-width: 900px; padding-bottom: 50px;
+        }
+        .menu-card {
+            background: white; border-radius: 35px; padding: 30px; width: 260px;
+            text-align: center; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.05); border: 4px solid #fff;
+            position: relative; overflow: hidden;
+        }
+        .menu-card:hover { transform: translateY(-8px); border-color: var(--secondary); }
+        .menu-card:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.05); }
+        
+        .icon-box { font-size: 4rem; margin-bottom: 10px; transition: 0.3s; }
+        .menu-card:hover .icon-box { transform: scale(1.2) rotate(10deg); }
+        .card-title { font-size: 1.5rem; font-weight: bold; color: var(--dark); }
+        .card-desc { font-size: 0.95rem; color: #888; margin-top: 5px; }
+
+        /* --- OYUN ALANI --- */
+        #game-area {
+            display: none; flex-direction: column; align-items: center;
+            width: 100%; max-width: 800px; margin-top: 10px; padding: 0 15px;
+            animation: bounceIn 0.5s;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .nav-bar { width: 100%; display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .back-btn {
+            background: #fff; border: 2px solid #ddd; padding: 10px 20px;
+            border-radius: 20px; font-weight: bold; cursor: pointer; color: #555;
+            font-family: 'Fredoka'; box-shadow: 0 4px 0 #ddd;
+        }
+        .back-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* HARF GRID */
+        .letter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 15px; width: 100%; }
+        .letter-btn {
+            background: white; height: 120px; border-radius: 25px; border-bottom: 8px solid #e0e0e0;
+            font-size: 4rem; font-weight: bold; color: var(--primary); cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: 0.1s;
+        }
+        .letter-btn span { font-size: 1rem; color: #aaa; margin-top: -5px; font-weight: normal; }
+        .letter-btn:active { transform: translateY(6px); border-bottom: 2px solid #e0e0e0; }
+        .letter-btn:hover { background: #fffbe7; color: #f1c40f; border-color: #f1c40f; }
+
+        /* SAHNE (Hece/Kelime) */
+        .stage-box {
+            background: white; padding: 40px; border-radius: 40px;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.05); text-align: center; width: 100%; max-width: 600px;
+            border: 5px solid var(--secondary); position: relative;
+        }
+        
+        .display-area {
+            font-size: 3.5rem; font-weight: bold; color: var(--dark); margin: 20px 0;
+            min-height: 90px; display: flex; justify-content: center; align-items: center; gap: 10px;
+            flex-wrap: wrap; transition: 0.3s;
+        }
+
+        .part {
+            background: #f8fafc; padding: 15px 25px; border-radius: 20px;
+            border: 3px dashed #cbd5e1; min-width: 60px; transition: 0.3s;
+        }
+        .part.filled { border: 3px solid var(--secondary); background: #e0f2f1; animation: popIn 0.3s; }
+        .part.merged { background: #d1fae5; border-color: #27ae60; color: #27ae60; transform: scale(1.1); box-shadow: 0 10px 20px rgba(39, 174, 96, 0.2); }
+        
+        .options-area { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+        
+        .opt-btn {
+            background: var(--primary); color: white; border: none; padding: 15px 35px;
+            font-size: 2.2rem; border-radius: 25px; cursor: pointer; font-family: 'Fredoka';
+            box-shadow: 0 8px 0 #c0392b; transition: 0.1s;
+        }
+        .opt-btn:active { transform: translateY(8px); box-shadow: none; }
+        .opt-btn:disabled { background: #bdc3c7; box-shadow: none; transform: translateY(8px); cursor: default; }
+
+        /* FEEDBACK */
+        .feedback-msg {
+            font-size: 2rem; font-weight: bold; margin-top: 20px; height: 40px;
+            text-shadow: 2px 2px 0 white; opacity: 0; transition: 0.3s;
+        }
+        .feedback-msg.show { opacity: 1; transform: scale(1.2); }
+
+        /* SES BUTONU */
+        .sound-btn {
+            background: #ffeaa7; width: 60px; height: 60px; border-radius: 50%;
+            border: none; font-size: 1.5rem; color: #d35400; cursor: pointer;
+            position: absolute; top: 20px; right: 20px; box-shadow: 0 6px 0 #e67e22;
+        }
+        .sound-btn:active { transform: translateY(6px); box-shadow: none; }
+
+        /* NEXT BUTON */
+        .next-btn {
+            background: #2ecc71; color: white; border: none; padding: 15px 40px;
+            font-size: 1.5rem; border-radius: 50px; cursor: pointer; font-family: 'Fredoka';
+            box-shadow: 0 8px 0 #27ae60; margin-top: 20px; display: none; animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <h1><i class="fas fa-shapes"></i> MİNİK BİLGİNLER</h1>
+            <div class="subtitle">Eğlenerek Öğreniyoruz</div>
+        </div>
+        <div class="star-counter" id="star-box">
+            <i class="fas fa-star"></i> <span id="score">0</span>
+        </div>
+    </header>
+
+    <div class="progress-container" id="prog-bar-cont">
+        <div class="progress-fill" id="prog-fill"></div>
+    </div>
+
+    <div class="settings-bar" id="settings-bar">
+        <span>Grup:</span>
+        <button class="group-btn active" onclick="setGroup('ANETİL', this)">1. (ANETİL)</button>
+        <button class="group-btn" onclick="setGroup('ELAKİN', this)">Eski (ELAKİN)</button>
+    </div>
+
+    <div class="menu-container" id="main-menu">
+        <div class="menu-card" onclick="startMode('letters')">
+            <div class="icon-box" style="color: #ff6b6b;">🅰️</div>
+            <div class="card-title">HARFLERİ TANI</div>
+            <div class="card-desc">Sesleri dinle ve öğren</div>
+        </div>
+        
+        <div class="menu-card" onclick="startMode('syllables')">
+            <div class="icon-box" style="color: #4ecdc4;">🚂</div>
+            <div class="card-title">HECE TRENİ</div>
+            <div class="card-desc">Harfleri birleştir, hece yap</div>
+        </div>
+
+        <div class="menu-card" onclick="startMode('words')">
+            <div class="icon-box" style="color: #ffe66d;">✏️</div>
+            <div class="card-title">KELİME YAZ</div>
+            <div class="card-desc">Görsele bak, kelimeyi yaz</div>
+        </div>
+    </div>
+
+    <div id="game-area">
+        <div class="nav-bar">
+            <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> MENÜ</button>
+            <h2 id="game-title" style="color:#555; margin:0;">Oyun</h2>
+            <div style="width:80px;"></div>
+        </div>
+
+        <div id="letters-game" style="display:none; width:100%;">
+            <div class="letter-grid" id="letter-grid"></div>
+        </div>
+
+        <div id="interactive-game" style="display:none; width:100%; display:flex; flex-direction:column; align-items:center;">
+            <div class="stage-box">
+                <button class="sound-btn" onclick="repeatSound()"><i class="fas fa-volume-up"></i></button>
+                <div id="img-display" style="font-size:6rem; margin-bottom:10px;">🍎</div>
+                <div id="word-display" class="display-area"></div>
+                <div id="options-container" class="options-area"></div>
+            </div>
+            
+            <div id="feedback" class="feedback-msg"></div>
+            <button id="next-btn" class="next-btn" onclick="nextLevel()">DEVAM ET <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const lettersDB = {
+            'ANETİL': [
+                { l: "A", w: "At", i: "🐴" }, { l: "N", w: "Nar", i: "🥣" },
+                { l: "E", w: "Elma", i: "🍎" }, { l: "T", w: "Top", i: "⚽" },
+                { l: "İ", w: "İncir", i: "🍈" }, { l: "L", w: "Limon", i: "🍋" }
+            ],
+            'ELAKİN': [
+                { l: "E", w: "Elma", i: "🍎" }, { l: "L", w: "Limon", i: "🍋" },
+                { l: "A", w: "Araba", i: "🚗" }, { l: "K", w: "Kalem", i: "✏️" },
+                { l: "İ", w: "İnek", i: "🐄" }, { l: "N", w: "Nar", i: "🥣" }
+            ]
+        };
+
+        const syllablesDB = {
+            'ANETİL': [
+                { p1: "A", p2: "L", res: "AL", img: "🛍️" }, { p1: "E", p2: "L", res: "EL", img: "✋" },
+                { p1: "A", p2: "T", res: "AT", img: "🐴" }, { p1: "E", p2: "T", res: "ET", img: "🥩" },
+                { p1: "İ", p2: "T", res: "İT", img: "🐕" }, { p1: "L", p2: "A", res: "LA", img: "🎶" }
+            ],
+            'ELAKİN': [
+                { p1: "E", p2: "L", res: "EL", img: "✋" }, { p1: "L", p2: "A", res: "LA", img: "🎶" },
+                { p1: "A", p2: "L", res: "AL", img: "🛍️" }, { p1: "E", p2: "K", res: "EK", img: "🍞" }
+            ]
+        };
+
+        const wordsDB = {
+            'ANETİL': [
+                { q: "ANNE", parts: ["AN", "NE"], img: "👩" }, { q: "NANE", parts: ["NA", "NE"], img: "🌿" },
+                { q: "LALE", parts: ["LA", "LE"], img: "🌷" }, { q: "ALET", parts: ["A", "LET"], img: "🔨" },
+                { q: "ALİ", parts: ["A", "Lİ"], img: "👦" }
+            ],
+            'ELAKİN': [
+                { q: "LALE", parts: ["LA", "LE"], img: "🌷" }, { q: "ELA", parts: ["E", "LA"], img: "👧" },
+                { q: "KEK", parts: ["K", "E", "K"], img: "🧁" }, { q: "KALEM", parts: ["KA", "LEM"], img: "✏️" }
+            ]
+        };
+
+        // --- STATE ---
+        let currentGroup = 'ANETİL';
+        let currentMode = "";
+        let currentIndex = 0;
+        let currentItem = null;
+        let builtWord = [];
+        let score = parseInt(localStorage.getItem('minikBilginlerScore')) || 0;
+
+        // --- INIT ---
+        document.getElementById('score').innerText = score;
+
+        // --- SOUND ENGINE (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const t = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(500, t); 
+                osc.frequency.exponentialRampToValueAtTime(1000, t + 0.1);
+                gain.gain.setValueAtTime(0.3, t); 
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                osc.start(t); osc.stop(t + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(150, t); 
+                osc.frequency.linearRampToValueAtTime(100, t + 0.3);
+                gain.gain.setValueAtTime(0.3, t); 
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                osc.start(t); osc.stop(t + 0.4);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, t);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'tr-TR'; u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- CORE FUNCTIONS ---
+        function setGroup(group, btn) {
+            currentGroup = group;
+            document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(document.getElementById('game-area').style.display === 'flex') goBack();
+        }
+
+        function startMode(mode) {
+            playTone('click');
+            currentMode = mode;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('settings-bar').style.display = 'none';
+            document.getElementById('game-area').style.display = 'flex';
+            document.getElementById('prog-bar-cont').style.display = 'block';
+            
+            document.getElementById('letters-game').style.display = 'none';
+            document.getElementById('interactive-game').style.display = 'none';
+
+            // Reset UI
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('feedback').classList.remove('show');
+
+            if(mode === 'letters') {
+                document.getElementById('game-title').innerText = "HARF DİNLEME";
+                setupLetters();
+            } else if(mode === 'syllables') {
+                document.getElementById('game-title').innerText = "HECE TRENİ";
+                setupInteractive(); loadSyllable();
+            } else if(mode === 'words') {
+                document.getElementById('game-title').innerText = "KELİME YAZMA";
+                setupInteractive(); loadWord();
+            }
+        }
+
+        function goBack() {
+            playTone('click');
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+            document.getElementById('settings-bar').style.display = 'flex';
+            document.getElementById('prog-bar-cont').style.display = 'none';
+            window.speechSynthesis.cancel();
+        }
+
+        function updateScore(pts) {
+            score += pts;
+            localStorage.setItem('minikBilginlerScore', score);
+            const el = document.getElementById('score');
+            el.innerText = score;
+            document.getElementById('star-box').classList.add('pulse');
+            setTimeout(()=>document.getElementById('star-box').classList.remove('pulse'), 300);
+        }
+
+        function updateProgress(total) {
+            const percent = ((currentIndex) / total) * 100;
+            document.getElementById('prog-fill').style.width = percent + '%';
+        }
+
+        // --- HARF MODU ---
+        function setupLetters() {
+            document.getElementById('letters-game').style.display = 'block';
+            const grid = document.getElementById('letter-grid');
+            grid.innerHTML = "";
+            const data = lettersDB[currentGroup];
+            document.getElementById('prog-fill').style.width = '100%';
+
+            data.forEach(item => {
+                let btn = document.createElement('div');
+                btn.className = 'letter-btn';
+                btn.innerHTML = `${item.l} <span>${item.w}</span>`;
+                btn.onclick = () => {
+                    playTone('click');
+                    speak(item.l + "....... " + item.w);
+                    confetti({ particleCount: 15, spread: 30, origin: { x: btn.getBoundingClientRect().left/window.innerWidth, y: btn.getBoundingClientRect().top/window.innerHeight } });
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        // --- INTERACTIVE ENGINE ---
+        function setupInteractive() {
+            document.getElementById('interactive-game').style.display = 'flex';
+            currentIndex = 0;
+        }
+
+        function loadSyllable() {
+            const data = syllablesDB[currentGroup];
+            updateProgress(data.length);
+            if(currentIndex >= data.length) { finishGame(); return; }
+
+            currentItem = data[currentIndex];
+            document.getElementById('img-display').innerText = currentItem.img;
+            
+            const disp = document.getElementById('word-display');
+            disp.innerHTML = `
+                <div class="part filled">${currentItem.p1}</div>
+                <i class="fas fa-plus" style="color:#aaa;"></i>
+                <div class="part filled">${currentItem.p2}</div>
+                <i class="fas fa-arrow-right" style="color:#aaa;"></i>
+                <div class="part" id="target-slot" style="background:#fff; border-color:var(--primary); min-width:80px;">?</div>
+            `;
+
+            const opts = document.getElementById('options-container');
+            opts.innerHTML = "";
+            
+            let answers = [currentItem.res, currentItem.p2+currentItem.p1, "LA", "LE"].sort(() => Math.random()-0.5);
+            answers = [...new Set(answers)]; // Unique
+
+            answers.forEach(ans => {
+                let btn = document.createElement('button');
+                btn.className = 'opt-btn'; btn.innerText = ans;
+                btn.onclick = () => checkSyllable(ans, btn);
+                opts.appendChild(btn);
+            });
+            speak(`${currentItem.p1}... ile ...${currentItem.p2} birleşirse ne olur?`);
+        }
+
+        function checkSyllable(ans, btn) {
+            if(ans === currentItem.res) {
+                playTone('correct');
+                const slot = document.getElementById('target-slot');
+                slot.innerText = ans;
+                slot.className = "part merged";
+                
+                showFeedback("HARİKA!", "#2ecc71");
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+                speak("Aferin! " + currentItem.res);
+                
+                document.getElementById('options-container').innerHTML = "";
+                document.getElementById('next-btn').style.display = "block";
+                updateScore(10);
+            } else {
+                playTone('wrong');
+                btn.disabled = true;
+                showFeedback("TEKRAR DENE", "#e74c3c");
+            }
+        }
+
+        function loadWord() {
+            const data = wordsDB[currentGroup];
+            updateProgress(data.length);
+            if(currentIndex >= data.length) { finishGame(); return; }
+
+            currentItem = data[currentIndex];
+            builtWord = [];
+            document.getElementById('img-display').innerText = currentItem.img;
+
+            const disp = document.getElementById('word-display');
+            disp.innerHTML = "";
+            currentItem.parts.forEach((_, i) => {
+                disp.innerHTML += `<div class="part" id="slot-${i}">?</div>`;
+            });
+
+            const opts = document.getElementById('options-container');
+            opts.innerHTML = "";
+            let parts = [...currentItem.parts].sort(()=>Math.random()-0.5);
+
+            parts.forEach(part => {
+                let btn = document.createElement('button');
+                btn.className = 'opt-btn'; btn.innerText = part;
+                btn.onclick = () => addToWord(part, btn);
+                opts.appendChild(btn);
+            });
+            speak("Bu nedir? Hadi yazalım.");
+        }
+
+        function addToWord(part, btn) {
+            playTone('click');
+            if(builtWord.length >= currentItem.parts.length) return;
+
+            let idx = builtWord.length;
+            let slot = document.getElementById(`slot-${idx}`);
+            slot.innerText = part;
+            slot.classList.add('filled');
+            builtWord.push(part);
+            btn.style.visibility = "hidden";
+            speak(part);
+
+            if(builtWord.length === currentItem.parts.length) {
+                if(builtWord.join('') === currentItem.parts.join('')) {
+                    playTone('correct');
+                    showFeedback("DOĞRU!", "#2ecc71");
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    speak("Harika! " + currentItem.q);
+                    document.getElementById('options-container').innerHTML = "";
+                    document.getElementById('next-btn').style.display = "block";
+                    updateScore(15);
+                } else {
+                    playTone('wrong');
+                    showFeedback("YANLIŞ OLDU", "#e74c3c");
+                    setTimeout(()=>{
+                        loadWord(); // Reset
+                    }, 1500);
+                }
+            }
+        }
+
+        function nextLevel() {
+            playTone('click');
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('feedback').classList.remove('show');
+            currentIndex++;
+            if(currentMode === 'syllables') loadSyllable();
+            else loadWord();
+        }
+
+        function finishGame() {
+            confetti({ particleCount: 300, spread: 150 });
+            playTone('correct');
+            document.getElementById('game-title').innerText = "OYUN BİTTİ!";
+            document.getElementById('interactive-game').innerHTML = `
+                <div style="font-size:3rem;">🎉👑</div>
+                <h2>HARİKASIN!</h2>
+                <p>Bu bölümü tamamladın.</p>
+                <button class="opt-btn" onclick="goBack()">MENÜYE DÖN</button>
+            `;
+        }
+
+        function showFeedback(text, color) {
+            const el = document.getElementById('feedback');
+            el.innerText = text;
+            el.style.color = color;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 1500);
+        }
+
+        function repeatSound() {
+            if(currentMode === 'syllables') speak(currentItem.p1 + " ile " + currentItem.p2);
+            if(currentMode === 'words') speak(currentItem.q);
+        }
+
+    </script>
+</body>
+</html>
