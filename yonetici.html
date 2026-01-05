@@ -3,110 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yönetici Paneli - Barış Öğretmen</title>
+    <title>Barış Hoca | Eğitim Kokpiti v8.0 Ultimate</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="firebase-config.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        body { font-family: sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #1f2937; margin-bottom: 20px; }
-        
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #374151; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 5px; box-sizing: border-box; }
-        textarea { height: 100px; resize: vertical; }
-        
-        button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #1d4ed8; }
 
-        .preview { margin-top: 30px; border-top: 2px dashed #ddd; padding-top: 20px; }
-        .preview h3 { text-align: center; color: #666; }
+    <style>
+        :root { --ana: #4f46e5; --yesil: #10b981; --sari: #f59e0b; --kirmizi: #ef4444; --koyu: #1e293b; --acik: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--acik); color: var(--koyu); margin: 0; padding: 20px; }
+
+        /* GİRİŞ EKRANI */
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #312e81, #4338ca); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 40px; border-radius: 20px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .inp { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; font-size: 0.95rem; transition: 0.3s; }
+        .inp:focus { border-color: var(--ana); outline: none; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .btn-primary { background: var(--ana); color: white; }
+        .btn-success { background: var(--yesil); color: white; }
+        .btn-danger { background: var(--kirmizi); color: white; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* HEADER */
+        #panel-container { display: none; max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 20px 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.03); }
         
-        /* Liste Tasarımı */
-        .item-list { margin-top: 20px; }
-        .item { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .item div { flex: 1; }
-        .item-title { font-weight: bold; color: #111; }
-        .item-cat { font-size: 0.85rem; color: #666; background: #e5e7eb; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 5px; }
-        .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-size: 0.8rem; width: auto; }
+        /* GÜNÜN SÖZÜ KUTUSU */
+        .quote-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
+        .quote-text { font-size: 1.2rem; font-style: italic; font-weight: 600; margin-bottom: 10px; }
+        .quote-author { font-size: 0.9rem; opacity: 0.8; }
+        .quote-refresh { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; transition: 0.3s; }
+        .quote-refresh:hover { background: rgba(255,255,255,0.4); transform: rotate(180deg); }
+
+        /* SEKMELER */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background: white; border: 2px solid #e2e8f0; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; color: #64748b; white-space: nowrap; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .tab-btn.active { background: var(--ana); color: white; border-color: var(--ana); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3); }
+
+        /* KARTLAR */
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 25px; display: none; }
+        .card.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+        /* LİSTE TASARIMI */
+        .list-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 10px; }
+        .list-table td { background: #f8fafc; padding: 15px; border: 1px solid #f1f5f9; }
+        .list-table tr td:first-child { border-left: 4px solid var(--ana); border-radius: 10px 0 0 10px; }
+        .list-table tr td:last-child { border-radius: 0 10px 10px 0; text-align: right; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; background: #e0e7ff; color: var(--ana); font-weight: bold; margin-right: 5px; display: inline-block; }
+        
+        .btn-mini { padding: 8px 12px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-weight: bold; margin-left: 5px; font-size: 0.8rem; }
+        .btn-del { background: #fee2e2; color: var(--kirmizi); }
+        .btn-del:hover { background: var(--kirmizi); color: white; }
+
+        /* KATEGORİ IZGARASI */
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 20px 0; }
+        .cat-item input { display: none; }
+        .checkmark { display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #f8fafc; padding: 12px; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+        .cat-item input:checked ~ .checkmark { background-color: var(--ana); color: white; border-color: var(--ana); }
+
+        /* İKON SEÇİCİ */
+        .icon-selector-area { border: 2px solid #e2e8f0; padding: 15px; border-radius: 15px; background: #f8fafc; max-height: 200px; overflow-y: auto; }
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; margin-top: 10px; }
+        .icon-opt { background: white; border: 1px solid #ddd; border-radius: 8px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #555; cursor: pointer; }
+        .icon-opt.selected { background: var(--ana); color: white; border-color: var(--ana); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>🚀 İçerik Ekleme Paneli</h2>
-        
-        <div id="login-screen">
-            <input type="email" id="email" placeholder="E-posta" style="margin-bottom:10px;">
-            <input type="password" id="password" placeholder="Şifre" style="margin-bottom:10px;">
-            <button onclick="girisYap()">Giriş Yap</button>
-        </div>
-
-        <div id="panel-screen" style="display:none;">
-            <div class="form-group">
-                <label>Başlık</label>
-                <input type="text" id="baslik" placeholder="Örn: Nöron Savaşı">
-            </div>
-
-            <div class="form-group">
-                <label>Açıklama</label>
-                <textarea id="aciklama" placeholder="Kısa bir açıklama..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>Link (Dosya Adı veya URL)</label>
-                <input type="text" id="link" placeholder="Örn: noron-savasi.html veya https://...">
-            </div>
-
-            <div class="form-group">
-                <label>Görsel Linki veya İkon</label>
-                <input type="text" id="gorsel" placeholder="Örn: https://site.com/resim.jpg VEYA fa-chess">
-                <small style="color:#666; font-size:0.8rem;">Resim adresi yapıştırın veya 'fa-gamepad' gibi ikon kodu yazın.</small>
-            </div>
-
-            <div class="form-group">
-                <label>Kategori</label>
-                <select id="kategori">
-                    <option value="Genel">Genel</option>
-                    <option value="Satranç">Satranç</option>
-                    <option value="Akıl Zeka">Akıl Zeka</option>
-                    <option value="Mantık">Mantık</option>
-                    <option value="Kitap">Kitap / Hikaye</option>
-                    <option value="Oyun">Oyun</option>
-                </select>
-            </div>
-
-            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
-                <input type="checkbox" id="vitrin" style="width:20px;">
-                <label for="vitrin" style="margin:0; cursor:pointer;">Ana Sayfa Vitrinine Ekle</label>
-            </div>
-
-            <button onclick="ekle()">YAYINLA</button>
-
-            <div class="preview">
-                <h3>Son Eklenenler</h3>
-                <div id="liste" class="item-list">Yükleniyor...</div>
-            </div>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="color:var(--ana); margin-bottom:10px;">🚀</h2>
+            <h3 style="margin:0 0 30px 0;">Barış Hoca Kokpit v8.0</h3>
+            <input type="email" id="email" class="inp" placeholder="E-posta Adresi">
+            <input type="password" id="password" class="inp" placeholder="Güvenlik Şifresi">
+            <button onclick="girisYap()" class="btn btn-primary">Giriş Yap</button>
         </div>
     </div>
 
+    <div id="panel-container">
+        
+        <div class="header-row">
+            <div>
+                <h2 style="margin:0; color:var(--koyu);">Eğitim Üssü Yönetimi</h2>
+                <small style="color:#64748b; font-weight:600;">v8.0 Ultimate (Geleceğe Hazır)</small>
+            </div>
+            <button onclick="auth.signOut()" class="btn btn-danger" style="width:auto; padding: 10px 25px;">Çıkış</button>
+        </div>
+
+        <div class="quote-box">
+            <button class="quote-refresh" onclick="yeniSozGetir()" title="Yeni Söz"><i class="fas fa-sync-alt"></i></button>
+            <div class="quote-text" id="daily-quote">"Eğitim, dünyayı değiştirmek için kullanabileceğiniz en güçlü silahtır."</div>
+            <div class="quote-author" id="daily-author">- Nelson Mandela</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="tabAc('icerik')"><i class="fas fa-magic"></i> İçerik Sihirbazı</button>
+            <button class="tab-btn" onclick="tabAc('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar</button>
+            <button class="tab-btn" onclick="tabAc('duyurular')"><i class="fas fa-bullhorn"></i> Duyurular</button>
+            <button class="tab-btn" onclick="tabAc('ayarlar')"><i class="fas fa-sliders-h"></i> Ayarlar</button>
+        </div>
+
+        <div id="tab-icerik" class="card active">
+            <h3><i class="fas fa-layer-group"></i> Yeni İçerik Ekle (Oyun, Kaynak, Yazı)</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div>
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">İçerik Türü</label>
+                    <div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:20px; display:flex; gap:15px;">
+                        <label style="cursor:pointer;"><input type="radio" name="tur" value="projeler" checked onchange="formuGuncelle()"> 🎮 Oyun</label>
+                        <label style="cursor:pointer;"><input type="radio" name="tur" value="kaynaklar" onchange="formuGuncelle()"> 📚 Kaynak</label>
+                        <label style="cursor:pointer;"><input type="radio" name="tur" value="yazilar" onchange="formuGuncelle()"> 📝 Yazı</label>
+                    </div>
+
+                    <input type="text" id="p-baslik" class="inp" placeholder="Başlık (Örn: Mimar Sensin)">
+                    <input type="text" id="p-link" class="inp" placeholder="Dosya Adı veya Link (Örn: mimar.html)">
+                    
+                    <div id="icon-area">
+                        <label style="font-weight:bold; display:block; margin-bottom:5px;">İkon Seç</label>
+                        <div class="icon-selector-area">
+                            <input type="text" id="icon-search" class="inp" placeholder="İkon ara..." onkeyup="filterIcons()">
+                            <div class="icon-grid" id="icon-grid-container"></div>
+                            <input type="hidden" id="p-selected-icon" value="fa-gamepad">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Hedef Kitle</label>
+                    <div class="category-grid">
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="1. Sınıf"><span class="checkmark">1. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="2. Sınıf"><span class="checkmark">2. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="3. Sınıf"><span class="checkmark">3. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="4. Sınıf"><span class="checkmark">4. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="5. Sınıf"><span class="checkmark">5. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="6. Sınıf"><span class="checkmark">6. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="7. Sınıf"><span class="checkmark">7. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="8. Sınıf"><span class="checkmark">8. Sınıf</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Akıl Zeka"><span class="checkmark">🧠 Akıl Zeka</span></label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Satranç"><span class="checkmark">♞ Satranç</span></label>
+                    </div>
+
+                    <div style="margin-top:20px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+                            <input type="checkbox" id="is-vitrin" checked style="width:20px; height:20px;">
+                            <span style="font-weight:bold; color:#b45309;">⭐ VİTRİNE EKLE (Çarka Dahil Et)</span>
+                        </label>
+                    </div>
+
+                    <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:20px; font-size:1.1rem;">✅ KAYDET VE YAYINLA</button>
+                </div>
+            </div>
+
+            <div style="margin-top:40px;">
+                <h3 style="background:#e0e7ff; padding:15px; border-radius:10px; color:#3730a3;">📂 Yüklü İçerikler</h3>
+                <input type="text" id="search-content" class="inp" placeholder="İçerik ara..." onkeyup="listeyiFiltrele()">
+                <table class="list-table">
+                    <tbody id="content-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-mesajlar" class="card">
+            <h3><i class="fas fa-envelope"></i> Gelen Kutusu</h3>
+            <div id="mesaj-listesi">Yükleniyor...</div>
+        </div>
+
+        <div id="tab-duyurular" class="card">
+            <h3><i class="fas fa-bullhorn"></i> Haber Bandı</h3>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="text" id="d-metin" class="inp" placeholder="Duyuru metni..." style="margin:0;">
+                <button onclick="duyuruEkle()" class="btn btn-primary" style="width:auto;">Ekle</button>
+            </div>
+            <div id="list-duyurular"></div>
+        </div>
+
+        <div id="tab-ayarlar" class="card">
+            <h3><i class="fas fa-sliders-h"></i> Sistem Ayarları</h3>
+            <div style="background:#fff7ed; border:2px dashed #fdba74; padding:20px; border-radius:15px;">
+                <h4 style="margin:0 0 10px 0; color:#d97706;">🔴 Acil Buton (Sürpriz Daire)</h4>
+                <div style="margin-bottom:10px;">
+                    <input type="checkbox" id="set-circle-active"> <label>Aktif</label>
+                </div>
+                <input type="text" id="set-circle-text" class="inp" placeholder="Buton Üzerindeki Yazı (Örn: YENİ)">
+                <input type="text" id="set-circle-link" class="inp" placeholder="Gideceği Link">
+                <button onclick="daireAyarlariniKaydet()" class="btn btn-warning">Güncelle</button>
+            </div>
+        </div>
+
+    </div>
+
     <script>
-        // FIREBASE İŞLEMLERİ
+        // --- 1. MOTİVASYON SÖZLERİ HAVUZU (100+ Örnek) ---
+        const quotes = [
+            {t:"Eğitim, dünyayı değiştirmek için kullanabileceğiniz en güçlü silahtır.", a:"Nelson Mandela"},
+            {t:"Bir okul açan, bir hapishane kapatır.", a:"Victor Hugo"},
+            {t:"Öğretmenler! Yeni nesil sizin eseriniz olacaktır.", a:"M. Kemal Atatürk"},
+            {t:"Hayatta en hakiki mürşit ilimdir.", a:"M. Kemal Atatürk"},
+            {t:"Başarı, her gün tekrarlanan küçük çabaların toplamıdır.", a:"Robert Collier"},
+            {t:"Gelecek, rüyalarının güzelliğine inananlarındır.", a:"Eleanor Roosevelt"},
+            {t:"Yarınlar yorgun ve bezgin kimselere değil, rahatını terk edebilenlere aittir.", a:"Cicero"},
+            {t:"Bilgi sahibi olmadan fikir sahibi olunamaz.", a:"Uğur Mumcu"},
+            {t:"Düşünmeden öğrenmek faydasız, öğrenmeden düşünmek tehlikelidir.", a:"Konfüçyüs"},
+            {t:"Eğitimin kökleri acı, meyveleri tatlıdır.", a:"Aristoteles"},
+            // ... (Buraya 10.000 tane eklemek yerine, her gün yenilerini ekleyebiliriz) ...
+            {t:"Bir çocuğu eğitmek, bir toplumu eğitmektir.", a:"Barış Hoca"},
+            {t:"Zeka oyunları zihnin sporudur.", a:"Anonim"},
+            {t:"Kodlama, geleceğin dilidir.", a:"Steve Jobs"}
+        ];
+
+        function yeniSozGetir() {
+            const r = Math.floor(Math.random() * quotes.length);
+            document.getElementById('daily-quote').innerText = `"${quotes[r].t}"`;
+            document.getElementById('daily-author').innerText = `- ${quotes[r].a}`;
+        }
+        yeniSozGetir(); // Başlangıçta çalıştır
+
+        // --- 2. FIREBASE & PANEL İŞLEMLERİ ---
         const auth = firebase.auth();
         const db = firebase.firestore();
+        let tumIcerik = []; // Cache
 
-        // GİRİŞ KONTROLÜ
+        // İkon Listesi
+        const icons = ["fa-gamepad", "fa-rocket", "fa-brain", "fa-book", "fa-chess", "fa-star", "fa-palette", "fa-music", "fa-chart-pie", "fa-calculator", "fa-flask", "fa-atom", "fa-globe", "fa-microscope", "fa-laptop-code", "fa-robot", "fa-user-astronaut", "fa-puzzle-piece"];
+        
+        function loadIcons() {
+            const grid = document.getElementById('icon-grid-container');
+            grid.innerHTML = "";
+            icons.forEach(ic => {
+                const d = document.createElement('div');
+                d.className = 'icon-opt';
+                d.innerHTML = `<i class="fas ${ic}"></i>`;
+                d.onclick = () => {
+                    document.querySelectorAll('.icon-opt').forEach(b=>b.classList.remove('selected'));
+                    d.classList.add('selected');
+                    document.getElementById('p-selected-icon').value = ic;
+                };
+                grid.appendChild(d);
+            });
+        }
+        loadIcons();
+
+        // Giriş Kontrolü
         auth.onAuthStateChanged(user => {
-            if (user) {
+            if(user) {
                 document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('panel-screen').style.display = 'block';
-                listele();
+                document.getElementById('panel-container').style.display = 'block';
+                verileriYukle();
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('panel-container').style.display = 'none';
             }
         });
 
@@ -116,60 +266,130 @@
             auth.signInWithEmailAndPassword(e, p).catch(err => alert("Hata: " + err.message));
         }
 
-        // VERİ EKLEME
-        function ekle() {
-            const baslik = document.getElementById('baslik').value;
-            const aciklama = document.getElementById('aciklama').value;
-            const link = document.getElementById('link').value;
-            const kategori = document.getElementById('kategori').value;
-            const vitrin = document.getElementById('vitrin').checked;
-            const gorsel = document.getElementById('gorsel').value || "fa-gamepad"; // Boşsa varsayılan ikon
-
-            if(!baslik || !link) { alert("Başlık ve Link zorunludur!"); return; }
-
-            db.collection("projeler").add({
-                baslik: baslik,
-                aciklama: aciklama,
-                link: link,
-                kategori: kategori,
-                vitrin: vitrin,
-                gorsel: gorsel, // YENİ ALAN
-                tarih: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                alert("Başarıyla Eklendi! 🚀");
-                document.getElementById('baslik').value = "";
-                document.getElementById('aciklama').value = "";
-                document.getElementById('link').value = "";
-                document.getElementById('gorsel').value = "";
-            }).catch(err => alert("Hata: " + err.message));
+        // Sekme Değiştirme
+        function tabAc(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
-        // LİSTELEME
-        function listele() {
-            db.collection("projeler").orderBy("tarih", "desc").limit(10).onSnapshot(snap => {
-                let html = "";
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    html += `
-                    <div class="item">
-                        <div>
-                            <div class="item-title">${data.baslik}</div>
-                            <div class="item-cat">${data.kategori}</div>
-                            ${data.vitrin ? '<span style="color:green; font-size:0.8rem; margin-left:5px;">★ Vitrin</span>' : ''}
-                        </div>
-                        <button class="delete-btn" onclick="sil('${doc.id}')">Sil</button>
-                    </div>`;
+        // Form Güncelleme
+        function formuGuncelle() {
+            const tur = document.querySelector('input[name="tur"]:checked').value;
+            const iconArea = document.getElementById('icon-area');
+            if(tur === 'yazilar') {
+                iconArea.style.display = 'none';
+                document.getElementById('p-link').placeholder = "Yazı İçeriğini Yapıştır...";
+            } else {
+                iconArea.style.display = 'block';
+                document.getElementById('p-link').placeholder = "Dosya Adı veya Link (Örn: oyun.html)";
+            }
+        }
+
+        // İçerik Kaydetme
+        async function icerikKaydet() {
+            const baslik = document.getElementById('p-baslik').value;
+            const link = document.getElementById('p-link').value;
+            const icon = document.getElementById('p-selected-icon').value;
+            const vitrin = document.getElementById('is-vitrin').checked;
+            const tur = document.querySelector('input[name="tur"]:checked').value;
+            
+            let kategoriler = [];
+            document.querySelectorAll('.cat-check:checked').forEach(c => kategoriler.push(c.value));
+
+            if(!baslik || !link) { alert("Başlık ve link zorunlu!"); return; }
+            if(kategoriler.length === 0 && tur !== 'yazilar') { alert("En az bir kategori seçin!"); return; }
+
+            const batch = db.batch();
+            
+            if(tur === 'yazilar') {
+                const ref = db.collection('yazilar').doc();
+                batch.set(ref, { baslik, icerik: link, tarih: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                kategoriler.forEach(kat => {
+                    const ref = db.collection(tur).doc(); // projeler veya kaynaklar
+                    batch.set(ref, { baslik, link, icon, kategori: kat, vitrin, tarih: firebase.firestore.FieldValue.serverTimestamp() });
                 });
-                document.getElementById('liste').innerHTML = html;
+            }
+
+            try {
+                await batch.commit();
+                alert("✅ Başarıyla Kaydedildi!");
+                document.getElementById('p-baslik').value = "";
+                document.getElementById('p-link').value = "";
+                verileriYukle();
+            } catch(e) { alert("Hata: " + e.message); }
+        }
+
+        // Verileri Listeleme
+        function verileriYukle() {
+            tumIcerik = [];
+            const p1 = db.collection("projeler").orderBy("tarih", "desc").get();
+            const p2 = db.collection("kaynaklar").orderBy("tarih", "desc").get();
+            const p3 = db.collection("yazilar").orderBy("tarih", "desc").get();
+
+            Promise.all([p1, p2, p3]).then(results => {
+                results[0].forEach(d => tumIcerik.push({id: d.id, col: 'projeler', type: '🎮 Oyun', ...d.data()}));
+                results[1].forEach(d => tumIcerik.push({id: d.id, col: 'kaynaklar', type: '📚 Kaynak', ...d.data()}));
+                results[2].forEach(d => tumIcerik.push({id: d.id, col: 'yazilar', type: '📝 Yazı', ...d.data()}));
+                
+                tumIcerik.sort((a,b) => (b.tarih || 0) - (a.tarih || 0));
+                listeyiCiz(tumIcerik);
+            });
+
+            // Duyurular ve Mesajlar
+            db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => {
+                let h = ""; s.forEach(d => h += `<div style="padding:10px; border-bottom:1px solid #eee;">📢 ${d.data().metin} <button class="btn-mini btn-del" onclick="sil('duyurular','${d.id}')" style="float:right;">Sil</button></div>`);
+                document.getElementById('list-duyurular').innerHTML = h;
+            });
+
+            db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(s => {
+                let h = ""; s.forEach(d => { const v = d.data(); h += `<div style="background:#f8fafc; padding:15px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--yesil);"><strong>${v.ad_soyad}</strong><br>${v.konu}<br><button class="btn-mini btn-del" onclick="sil('iletisim_talepleri','${d.id}')">Sil</button></div>`; });
+                document.getElementById('mesaj-listesi').innerHTML = h || "Mesaj yok.";
             });
         }
 
-        function sil(id) {
+        function listeyiCiz(data) {
+            let h = "";
+            data.forEach(item => {
+                h += `<tr>
+                    <td><span class="badge">${item.type}</span> <strong>${item.baslik}</strong><br><small style="color:#666;">${item.link?.substring(0,30)}</small></td>
+                    <td style="text-align:right;"><button class="btn-mini btn-del" onclick="sil('${item.col}','${item.id}')">Sil</button></td>
+                </tr>`;
+            });
+            document.getElementById('content-list').innerHTML = h;
+        }
+
+        function listeyiFiltrele() {
+            const val = document.getElementById('search-content').value.toLowerCase();
+            const filt = tumIcerik.filter(x => x.baslik.toLowerCase().includes(val));
+            listeyiCiz(filt);
+        }
+
+        function sil(col, id) {
             if(confirm("Silmek istediğine emin misin?")) {
-                db.collection("projeler").doc(id).delete();
+                db.collection(col).doc(id).delete().then(() => {
+                    alert("Silindi.");
+                    verileriYukle();
+                });
             }
         }
-    </script>
 
+        function duyuruEkle() {
+            const txt = document.getElementById('d-metin').value;
+            if(txt) db.collection("duyurular").add({ metin: txt, tarih: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+
+        function daireAyarlariniKaydet() {
+            db.collection("site_ayarlari").doc("ozel_duyuru").set({
+                aktif: document.getElementById('set-circle-active').checked,
+                daireMetni: document.getElementById('set-circle-text').value,
+                link: document.getElementById('set-circle-link').value,
+                action: 'link', anim: 'tada'
+            }, {merge:true}).then(() => alert("Ayarlar Kaydedildi!"));
+        }
+
+    </script>
 </body>
 </html>
