@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Barış Hoca | Ebeveyn Köşesi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #333; }
+        
+        /* HEADER (Başlık Kısmı) */
+        header { 
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); 
+            padding: 40px 20px; color: white; text-align: center; 
+            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; 
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+        }
+        .back-btn { 
+            text-decoration: none; color: white; font-weight: bold; 
+            background: rgba(255,255,255,0.2); padding: 10px 25px; border-radius: 30px; 
+            display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        h1 { margin: 0; font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; }
+        .subtitle { opacity: 0.9; margin-top: 10px; font-size: 1.1rem; }
+
+        .container { max-width: 800px; margin: 50px auto; padding: 0 20px; }
+
+        /* YÜKLENİYOR SİMGESİ */
+        #loading { text-align: center; margin-top: 50px; color: #94a3b8; font-size: 1.2rem; }
+
+        /* YAZI KUTULARI ARASI BOŞLUK */
+        .yazi-blogu { 
+            margin-bottom: 60px; 
+            animation: fadeIn 0.6s ease-out; 
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Eğer Düz Yazı Gelirse Diye Standart Kart Tasarımı */
+        .default-card {
+            background: white; padding: 40px; border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+        }
+        .default-title { font-size: 1.8rem; color: #1e293b; margin: 0 0 20px 0; font-weight: 800; }
+        .default-content { line-height: 1.8; color: #475569; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Ana Sayfaya Dön</a>
+        <h1>Ebeveyn Köşesi</h1>
+        <div class="subtitle">Kalbe dokunan notlar, tecrübeler ve rehberlik.</div>
+    </header>
+
+    <div class="container">
+        <div id="loading"><i class="fas fa-spinner fa-spin"></i> Yazılar Yükleniyor...</div>
+        
+        <div id="yazi-akisi"></div>
+    </div>
+
+    <script>
+        const db = firebase.firestore();
+
+        // Veritabanındaki 'yazilar' bölümünü dinle
+        db.collection("yazilar").orderBy("tarih", "desc").onSnapshot((snapshot) => {
+            const alan = document.getElementById("yazi-akisi");
+            const loading = document.getElementById("loading");
+            
+            loading.style.display = "none"; // Yükleniyor yazısını gizle
+            alan.innerHTML = ""; // Sayfayı temizle (tekrar etmemesi için)
+
+            if (snapshot.empty) {
+                alan.innerHTML = "<div style='text-align:center; padding:50px; color:#999; background:white; border-radius:20px;'>Henüz hiç yazı eklenmemiş.<br>Panelden eklediğinizde burada görünecek.</div>";
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const veri = doc.data();
+                const div = document.createElement("div");
+                div.className = "yazi-blogu";
+
+                // ÖZEL TASARIM KONTROLÜ
+                // Eğer içerik HTML kodu içeriyorsa (Bizim özel tasarım gibi), olduğu gibi bas.
+                if (veri.icerik && veri.icerik.trim().startsWith("<")) {
+                    div.innerHTML = veri.icerik;
+                } 
+                // Eğer düz yazıysa, standart beyaz kart içine koy
+                else {
+                    div.innerHTML = `
+                        <div class="default-card">
+                            <h2 class="default-title">${veri.baslik}</h2>
+                            <div class="default-content">${veri.icerik}</div>
+                        </div>
+                    `;
+                }
+                
+                alan.appendChild(div);
+            });
+        });
+    </script>
+
+</body>
+</html>
