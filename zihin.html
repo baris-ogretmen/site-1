@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zihin Akademisi: PRO MAX v2.2 (FIXED) ⚡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #7000ff;
+            --bg: #050505;
+            --panel: rgba(20, 20, 30, 0.95);
+            --danger: #ff0055;
+            --success: #00ff9d;
+        }
+
+        * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100dvh;
+            display: flex; flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.2) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(20,20,20,0) 50%);
+        }
+
+        #app-container { flex: 1; position: relative; width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; }
+        
+        /* EKRANLAR */
+        .screen {
+            position: absolute; inset: 0; display: flex; flex-direction: column; 
+            padding: 20px; padding-bottom: 100px; opacity: 0; pointer-events: none; 
+            transform: scale(0.95); transition: all 0.3s ease;
+        }
+        .screen.active { opacity: 1; pointer-events: all; transform: scale(1); }
+
+        /* PANEL */
+        .glass-box {
+            background: var(--panel); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* HIZ SEÇİCİ */
+        .speed-switch { display: flex; background: rgba(0,0,0,0.5); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .speed-opt { flex: 1; padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; opacity: 0.5; display: flex; flex-direction: column; align-items: center; }
+        .speed-opt ion-icon { font-size: 2rem; margin-bottom: 5px; }
+        .speed-opt.active { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 12px; text-shadow: 0 0 10px currentColor; transform: scale(1.05); }
+        .speed-opt.turtle.active { color: #00ff9d; box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
+        .speed-opt.rabbit.active { color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.2); }
+
+        /* MATRİS GRID */
+        .matrix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; aspect-ratio: 1; max-width: 350px; margin: 0 auto; }
+        .matrix-cell {
+            background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px; cursor: pointer; transition: background 0.1s, transform 0.1s;
+        }
+        /* Işık Yanma Efekti - Daha Belirgin */
+        .matrix-cell.lit { 
+            background: #fff !important; 
+            box-shadow: 0 0 40px #fff, inset 0 0 20px var(--primary); 
+            border-color: var(--primary); 
+            transform: scale(0.95);
+        }
+        .matrix-cell.wrong { background: var(--danger) !important; animation: shake 0.3s; }
+        .matrix-cell:active { transform: scale(0.9); }
+
+        /* STROOP */
+        .stroop-word { font-size: 3.5rem; font-weight: 900; font-family: 'Orbitron'; margin: 30px 0; text-shadow: 0 0 20px currentColor; }
+        .color-btn { height: 70px; border-radius: 15px; font-weight: bold; font-size: 1.2rem; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white; }
+        
+        /* NAVBAR */
+        .navbar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 10px 30px;
+            display: flex; gap: 40px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .nav-item { font-size: 1.8rem; color: #666; transition: 0.3s; cursor: pointer;}
+        .nav-item.active { color: var(--primary); transform: translateY(-5px); text-shadow: 0 0 15px var(--primary); }
+
+        /* MODAL */
+        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        .timer-bar { width: 100%; height: 6px; background: #333; border-radius: 10px; margin-top: 15px; overflow: hidden; }
+        .timer-fill { height: 100%; width: 100%; background: var(--primary); transition: width 0.1s linear; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+
+        <div id="screen-home" class="screen active">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="font-[Orbitron] text-2xl text-[var(--primary)] font-bold">ZİHİN ÜSSÜ</h1>
+                    <div class="text-xs text-gray-400">HOŞ GELDİN, PİLOT</div>
+                </div>
+                <div class="glass-box px-3 py-1 flex items-center gap-2">
+                    <ion-icon name="diamond" class="text-yellow-400"></ion-icon>
+                    <span id="coin-display" class="font-mono font-bold text-yellow-400">0</span>
+                </div>
+            </div>
+
+            <div class="speed-switch">
+                <div class="speed-opt turtle active" onclick="setSpeed('turtle')">
+                    <ion-icon name="leaf"></ion-icon>
+                    <div class="font-bold text-sm">KAPLUMBAĞA</div>
+                    <div class="text-[10px]">Yavaş & Öğretici</div>
+                </div>
+                <div class="speed-opt rabbit" onclick="setSpeed('rabbit')">
+                    <ion-icon name="flash"></ion-icon>
+                    <div class="font-bold text-sm">TAVŞAN</div>
+                    <div class="text-[10px]">Hızlı & Puan x2</div>
+                </div>
+            </div>
+
+            <h2 class="text-gray-400 text-xs mb-3 font-bold tracking-[0.2em]">SİMÜLASYONLAR</h2>
+            
+            <div class="grid grid-cols-1 gap-3 overflow-y-auto pb-4">
+                <div onclick="openGame('matrix')" class="glass-box p-4 flex items-center gap-4 active:scale-95 transition cursor-pointer border-r-4 border-[var(--success)]">
+                    <div class="bg-[var(--success)]/20 p-3 rounded-xl text-[var(--success)]"><ion-icon name="grid" class="text-2xl"></ion-icon></div>
+                    <div class="flex-1">
+                        <div class="font-bold text-lg">MATRİS HAFIZA</div>
+                        <div class="text-xs text-gray-400">Görsel Bellek (Sırayı İzle)</div>
+                    </div>
+                    <ion-icon name="play-circle" class="text-3xl opacity-50"></ion-icon>
+                </div>
+
+                <div onclick="openGame('stroop')" class="glass-box p-4 flex items-center gap-4 active:scale-95 transition cursor-pointer border-r-4 border-[var(--danger)]">
+                    <div class="bg-[var(--danger)]/20 p-3 rounded-xl text-[var(--danger)]"><ion-icon name="color-palette" class="text-2xl"></ion-icon></div>
+                    <div class="flex-1">
+                        <div class="font-bold text-lg">NÖRO REFLEKS</div>
+                        <div class="text-xs text-gray-400">Dikkat Testi (Stroop)</div>
+                    </div>
+                    <ion-icon name="play-circle" class="text-3xl opacity-50"></ion-icon>
+                </div>
+
+                <div onclick="openGame('math')" class="glass-box p-4 flex items-center gap-4 active:scale-95 transition cursor-pointer border-r-4 border-[var(--primary)]">
+                    <div class="bg-[var(--primary)]/20 p-3 rounded-xl text-[var(--primary)]"><ion-icon name="calculator" class="text-2xl"></ion-icon></div>
+                    <div class="flex-1">
+                        <div class="font-bold text-lg">HIZLI İŞLEM</div>
+                        <div class="text-xs text-gray-400">Matematik Refleksi</div>
+                    </div>
+                    <ion-icon name="play-circle" class="text-3xl opacity-50"></ion-icon>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-matrix" class="screen">
+            <div class="flex justify-between items-center mb-4">
+                <div onclick="nav('screen-home')" class="p-2 bg-gray-800 rounded-lg cursor-pointer"><ion-icon name="close"></ion-icon></div>
+                <div class="text-center">
+                    <div class="text-[var(--success)] text-xs font-bold">SEVİYE</div>
+                    <div class="text-2xl font-mono" id="matrix-lvl">1</div>
+                </div>
+                <div class="flex gap-1 text-[var(--danger)]" id="matrix-lives">❤️❤️❤️</div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center">
+                <div class="matrix-grid" id="matrix-board">
+                    </div>
+                <div class="mt-6 text-center text-sm font-bold animate-pulse text-[var(--primary)]" id="matrix-msg">HAZIR OL...</div>
+            </div>
+        </div>
+
+        <div id="game-stroop" class="screen">
+            <div class="flex justify-between items-center mb-8">
+                <div onclick="nav('screen-home')" class="p-2 bg-gray-800 rounded-lg cursor-pointer"><ion-icon name="close"></ion-icon></div>
+                <div class="text-xl font-mono text-[var(--primary)]" id="stroop-score">0</div>
+                <div class="flex gap-1 text-[var(--danger)]" id="stroop-lives">❤️❤️❤️</div>
+            </div>
+            
+            <div class="glass-box p-8 flex flex-col items-center justify-center flex-1 text-center relative overflow-hidden">
+                <div class="text-xs text-gray-500 font-bold tracking-widest mb-4">RENGİ SEÇ, YAZIYI DEĞİL!</div>
+                <div id="stroop-word" class="stroop-word">TEST</div>
+                <div class="timer-bar"><div id="stroop-timer" class="timer-fill"></div></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-4" id="stroop-opts"></div>
+        </div>
+
+        <div id="game-math" class="screen">
+            <div class="flex justify-between items-center mb-8">
+                <div onclick="nav('screen-home')" class="p-2 bg-gray-800 rounded-lg cursor-pointer"><ion-icon name="close"></ion-icon></div>
+                <div class="text-xl font-mono text-[var(--primary)]" id="math-score">0</div>
+                <div class="flex gap-1 text-[var(--danger)]" id="math-lives">❤️❤️❤️</div>
+            </div>
+
+            <div class="glass-box p-8 flex flex-col items-center justify-center flex-1 text-center">
+                <div class="text-6xl font-[Orbitron] font-bold tracking-widest mb-4" id="math-q">?</div>
+                <div class="timer-bar w-full"><div id="math-timer" class="timer-fill"></div></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-4" id="math-opts"></div>
+        </div>
+
+        <div id="modal-overlay">
+            <div class="bg-[#1a1a2e] p-8 rounded-3xl text-center border border-[var(--primary)] shadow-[0_0_50px_rgba(0,242,255,0.3)] max-w-sm w-full mx-4">
+                <h2 class="text-4xl font-[Orbitron] font-bold text-white mb-2">OYUN BİTTİ</h2>
+                <p class="text-gray-400 text-sm mb-6">SİMÜLASYON SONLANDI</p>
+                <div class="text-5xl font-mono text-[var(--primary)] mb-6" id="final-score">0</div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-black/30 p-3 rounded-xl">
+                        <div class="text-xs text-gray-500">MOD</div>
+                        <div class="font-bold text-white uppercase" id="final-mode">-</div>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-xl">
+                        <div class="text-xs text-gray-500">KAZANÇ</div>
+                        <div class="font-bold text-yellow-400">+<span id="final-coin">0</span></div>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-full bg-[var(--primary)] text-black font-bold py-4 rounded-xl text-lg hover:bg-white transition">ANA EKRAN</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="navbar">
+        <div class="nav-item active" onclick="nav('screen-home')"><ion-icon name="home"></ion-icon></div>
+        <div class="nav-item" onclick="alert('Mağaza yakında açılacak!')"><ion-icon name="cart"></ion-icon></div>
+    </div>
+
+    <script>
+        // --- SES EFEKTLERİ ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'tap') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1);
+                osc.start(now); osc.stop(now+0.1);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(50, now+0.3);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+                if(navigator.vibrate) navigator.vibrate(200);
+            } else if (type === 'success') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(800, now+0.15);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                osc.start(now); osc.stop(now+0.3);
+            }
+        }
+
+        // --- AYARLAR VE DURUM ---
+        let userCoins = parseInt(localStorage.getItem('coins')) || 0;
+        document.getElementById('coin-display').innerText = userCoins;
+
+        let settings = { speed: 'turtle' }; 
+        let game = { active: false, score: 0, lives: 3, timer: null };
+
+        function setSpeed(mode) {
+            settings.speed = mode;
+            document.querySelectorAll('.speed-opt').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.speed-opt.${mode}`).classList.add('active');
+            playSfx('tap');
+        }
+
+        function nav(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            game.active = false;
+            if(game.timer) clearTimeout(game.timer);
+        }
+
+        function openGame(type) {
+            nav(`game-${type}`);
+            game = { active: true, score: 0, lives: 3, timer: null };
+            updateLives(type);
+            
+            if(type === 'matrix') {
+                document.getElementById('matrix-lvl').innerText = 1;
+                initMatrix();
+            } else {
+                document.getElementById(`${type}-score`).innerText = 0;
+                if(type === 'stroop') initStroop();
+                if(type === 'math') initMath();
+            }
+        }
+
+        function updateLives(type) {
+            let h = ''; for(let i=0; i<game.lives; i++) h += '❤️';
+            document.getElementById(`${type}-lives`).innerHTML = h;
+        }
+
+        function gameOver() {
+            game.active = false;
+            playSfx('error');
+            const multiplier = settings.speed === 'rabbit' ? 2 : 1;
+            const earned = Math.floor(game.score / 10) * multiplier;
+            
+            userCoins += earned;
+            localStorage.setItem('coins', userCoins);
+            document.getElementById('coin-display').innerText = userCoins;
+
+            document.getElementById('final-score').innerText = game.score;
+            document.getElementById('final-mode').innerText = settings.speed === 'rabbit' ? 'TAVŞAN' : 'KAPLUMBAĞA';
+            document.getElementById('final-coin').innerText = earned;
+            
+            document.getElementById('modal-overlay').style.display = 'flex';
+            if(game.score > 50 && typeof confetti === 'function') confetti();
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            nav('screen-home');
+        }
+
+        function startTimer(barId, seconds, onFinish) {
+            if(game.timer) clearTimeout(game.timer);
+            let adjustedTime = settings.speed === 'turtle' ? seconds * 2.0 : seconds * 0.7;
+            const bar = document.getElementById(barId);
+            bar.style.transition = 'none'; bar.style.width = '100%';
+            setTimeout(() => { bar.style.transition = `width ${adjustedTime}s linear`; bar.style.width = '0%'; }, 50);
+            game.timer = setTimeout(() => { if(game.active) onFinish(); }, adjustedTime * 1000);
+        }
+
+        // --- MATRİS (HAFIZA) - DÜZELTİLMİŞ MOTOR ---
+        let sequence = [];
+        let playerStep = 0;
+        let matLevel = 1;
+
+        function initMatrix() {
+            const grid = document.getElementById('matrix-board');
+            grid.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                const c = document.createElement('div');
+                c.className = 'matrix-cell';
+                c.id = `mat-${i}`;
+                c.onclick = () => clickMatrix(i);
+                grid.appendChild(c);
+            }
+            matLevel = 1;
+            sequence = [];
+            // Oyunu başlat (beklemesiz)
+            playSequence();
+        }
+
+        // YENİ ASYNC FONKSİYON: Takılmayı önler
+        async function playSequence() {
+            if(!game.active) return;
+            playerStep = 0;
+            const msg = document.getElementById('matrix-msg');
+            const board = document.getElementById('matrix-board');
+            
+            msg.innerText = "İZLE...";
+            msg.classList.add('animate-pulse');
+            board.style.pointerEvents = 'none'; // Tıklamayı kapat
+
+            // Yeni adım ekle
+            sequence.push(Math.floor(Math.random() * 9));
+            document.getElementById('matrix-lvl').innerText = matLevel;
+
+            // Hız Ayarı
+            const speed = settings.speed === 'rabbit' ? 250 : 600; // Yanma süresi
+            const gap = 100; // Bekleme süresi
+
+            // Sırayı Oynat
+            for (let i = 0; i < sequence.length; i++) {
+                if(!game.active) return; // Oyun kapandıysa dur
+                
+                const id = sequence[i];
+                const el = document.getElementById(`mat-${id}`);
+                
+                // Işığı Yak
+                el.classList.add('lit');
+                playSfx('tap');
+                
+                // Bekle
+                await new Promise(r => setTimeout(r, speed));
+                
+                // Işığı Söndür
+                el.classList.remove('lit');
+                await new Promise(r => setTimeout(r, gap));
+            }
+
+            // Sıra Oyuncuda
+            if(game.active) {
+                msg.innerText = "SIRA SENDE!";
+                msg.classList.remove('animate-pulse');
+                board.style.pointerEvents = 'auto'; // Tıklamayı aç
+            }
+        }
+
+        function clickMatrix(id) {
+            const el = document.getElementById(`mat-${id}`);
+            el.classList.add('lit');
+            playSfx('tap');
+            setTimeout(() => el.classList.remove('lit'), 150);
+
+            if(id === sequence[playerStep]) {
+                playerStep++;
+                if(playerStep === sequence.length) {
+                    playSfx('success');
+                    game.score += (matLevel * 10);
+                    matLevel++;
+                    setTimeout(playSequence, 800);
+                }
+            } else {
+                el.classList.add('wrong');
+                setTimeout(() => el.classList.remove('wrong'), 300);
+                handleWrong('matrix');
+                // Hata yapınca aynı seviyeyi tekrar göster
+                if(game.active && game.lives > 0) setTimeout(replayCurrentSequence, 1000);
+            }
+        }
+
+        // Hata yapınca yeni sayı eklemeden tekrar oynat
+        async function replayCurrentSequence() {
+             if(!game.active) return;
+            playerStep = 0;
+            const msg = document.getElementById('matrix-msg');
+            const board = document.getElementById('matrix-board');
+            msg.innerText = "TEKRAR İZLE...";
+            board.style.pointerEvents = 'none';
+
+            const speed = settings.speed === 'rabbit' ? 250 : 600;
+            const gap = 100;
+
+            for (let i = 0; i < sequence.length; i++) {
+                if(!game.active) return;
+                const id = sequence[i];
+                const el = document.getElementById(`mat-${id}`);
+                el.classList.add('lit');
+                playSfx('tap');
+                await new Promise(r => setTimeout(r, speed));
+                el.classList.remove('lit');
+                await new Promise(r => setTimeout(r, gap));
+            }
+
+            if(game.active) {
+                msg.innerText = "SIRA SENDE!";
+                board.style.pointerEvents = 'auto';
+            }
+        }
+
+        // --- STROOP ---
+        const colors = [{n:'KIRMIZI', c:'#ff0055'}, {n:'MAVİ', c:'#00f2ff'}, {n:'YEŞİL', c:'#00ff9d'}, {n:'SARI', c:'#ffcc00'}];
+        let correctColor = '';
+
+        function initStroop() {
+            if(!game.active) return;
+            startTimer('stroop-timer', 3, () => handleWrong('stroop'));
+            const txt = colors[Math.floor(Math.random()*colors.length)];
+            const clr = colors[Math.floor(Math.random()*colors.length)];
+            const el = document.getElementById('stroop-word');
+            el.innerText = txt.n; el.style.color = clr.c; correctColor = clr.n;
+            const div = document.getElementById('stroop-opts'); div.innerHTML = '';
+            [...colors].sort(()=>Math.random()-0.5).forEach(o => {
+                const btn = document.createElement('button'); btn.className = 'color-btn'; btn.innerText = o.n;
+                btn.onclick = () => { if(o.n === correctColor) { playSfx('success'); game.score+=10; document.getElementById('stroop-score').innerText=game.score; initStroop(); } else handleWrong('stroop'); };
+                div.appendChild(btn);
+            });
+        }
+
+        // --- MATH ---
+        let mathAns = 0;
+        function initMath() {
+            if(!game.active) return;
+            startTimer('math-timer', 4, () => handleWrong('math'));
+            const n1 = Math.floor(Math.random()*20)+1; const n2 = Math.floor(Math.random()*20)+1;
+            const isPlus = Math.random()>0.5; mathAns = isPlus ? n1+n2 : n1-n2;
+            document.getElementById('math-q').innerText = `${n1} ${isPlus?'+':'-'} ${n2}`;
+            let opts = new Set([mathAns]); while(opts.size<4) opts.add(mathAns+Math.floor(Math.random()*10)-5);
+            const div = document.getElementById('math-opts'); div.innerHTML = '';
+            Array.from(opts).sort(()=>Math.random()-0.5).forEach(o => {
+                const btn = document.createElement('button'); btn.className = 'color-btn'; btn.innerText = o;
+                btn.onclick = () => { if(o === mathAns) { playSfx('success'); game.score+=15; document.getElementById('math-score').innerText=game.score; initMath(); } else handleWrong('math'); };
+                div.appendChild(btn);
+            });
+        }
+
+        function handleWrong(type) {
+            playSfx('error'); game.lives--; updateLives(type);
+            if(game.lives <= 0) gameOver();
+            else { if(type === 'stroop') initStroop(); if(type === 'math') initMath(); }
+        }
+    </script>
+</body>
+</html>
