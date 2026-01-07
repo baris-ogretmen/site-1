@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonbahar Dikte: Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            user-select: none;
+            background: #111;
+        }
+
+        section {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        section .bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 110%; /* Pan effect width */
+            height: 110%;
+            object-fit: cover;
+            pointer-events: none;
+            filter: brightness(0.5); 
+            animation: panImage 30s linear infinite alternate;
+        }
+
+        @keyframes panImage {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(-5%, -5%) scale(1.1); }
+        }
+
+        .game-card {
+            position: relative;
+            padding: 30px;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+            color: white;
+        }
+
+        .score-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timer-badge {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-variant-numeric: tabular-nums;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .time-bonus {
+            position: absolute;
+            top: -20px;
+            right: 0;
+            color: #2ecc71;
+            font-weight: bold;
+            font-size: 0.9em;
+            animation: floatUp 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-20px); opacity: 0; }
+        }
+
+        .combo-badge {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.9em;
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.4);
+            text-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .combo-active {
+            transform: scale(1);
+        }
+
+        .word-container {
+            position: relative;
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            perspective: 1000px;
+        }
+
+        .word-display {
+            font-size: 3.2em;
+            font-weight: 800;
+            color: #ecf0f1;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 1px;
+            z-index: 2;
+            transition: transform 0.2s;
+        }
+
+        .speaker-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+        }
+        
+        .speaker-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .type-input {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.6em;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: #fff;
+            font-weight: 600;
+            outline: none;
+            transition: 0.3s;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .type-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #e67e22;
+            box-shadow: 0 0 25px rgba(230, 126, 34, 0.2), inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .type-input::placeholder {
+            color: rgba(255,255,255,0.3);
+            font-weight: 300;
+            font-size: 0.8em;
+        }
+
+        /* Keyboard Particle */
+        .key-particle {
+            position: absolute;
+            color: #e67e22;
+            font-weight: bold;
+            pointer-events: none;
+            animation: particleFly 0.6s ease-out forwards;
+            font-size: 1.2em;
+            z-index: 20;
+        }
+
+        @keyframes particleFly {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -150px) scale(1.5); opacity: 0; }
+        }
+
+        /* Leaves & Confetti */
+        .leaves, .confetti-container {
+            position: absolute;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .leaves .set div {
+            position: absolute;
+            display: block;
+            font-size: 2em;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 5px 5px rgba(0,0,0,0.2);
+        }
+        
+        .leaves .set div:nth-child(1) { left: 20%; animation: animate 20s linear infinite; animation-delay: -7s; }
+        .leaves .set div:nth-child(2) { left: 50%; animation: animate 14s linear infinite; animation-delay: -5s; }
+        .leaves .set div:nth-child(3) { left: 70%; animation: animate 12s linear infinite; animation-delay: 0s; }
+        .leaves .set div:nth-child(4) { left: 5%; animation: animate 15s linear infinite; animation-delay: -5s; }
+        .leaves .set div:nth-child(5) { left: 85%; animation: animate 18s linear infinite; animation-delay: -10s; }
+
+        @keyframes animate {
+            0% { opacity: 0; top: -10%; transform: translateX(20px) rotate(0deg); }
+            10% { opacity: 1; }
+            100% { top: 110%; transform: translateX(20px) rotate(225deg); }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #f00;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        /* Overlays */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(15px);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: opacity 0.3s;
+        }
+        
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #e67e22, #d35400);
+            color: white;
+            padding: 18px 60px;
+            border-radius: 16px;
+            font-size: 1.5em;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 25px;
+            box-shadow: 0 10px 30px rgba(230, 126, 34, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(230, 126, 34, 0.6);
+        }
+        
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-primary:hover::after {
+            left: 100%;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 20px 30px;
+            border-radius: 16px;
+            text-align: center;
+            margin: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            min-width: 130px;
+        }
+
+        /* Typing Highlights */
+        .matched-char { color: #2ecc71; text-shadow: 0 0 15px rgba(46,204,113,0.6); }
+        .incorrect-char { color: #e74c3c; text-decoration: underline wavy; }
+        .unmatched-char { color: rgba(255,255,255,0.4); }
+        
+        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: #e74c3c !important; }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 15px;
+            padding: 0 10px;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .icon-toggle {
+            cursor: pointer;
+            color: rgba(255,255,255,0.5);
+            transition: 0.3s;
+            font-size: 1.2em;
+        }
+        .icon-toggle:hover { color: white; }
+        .icon-toggle.active { color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+
+        .skip-btn {
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .skip-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+
+    <section>
+        <img src="https://images.unsplash.com/photo-1507788938933-72c050a41d66?q=80&w=1920&auto=format&fit=crop" class="bg" alt="Forest Background">
+
+        <!-- Start Overlay -->
+        <div id="start-overlay" class="overlay">
+            <div class="text-center mb-8">
+                <div class="inline-block bg-orange-500/20 text-orange-400 px-4 py-1 rounded-full text-sm font-bold mb-4 tracking-widest border border-orange-500/30">ARCADE MODE</div>
+                <h1 class="text-6xl font-bold text-white drop-shadow-2xl tracking-tight">SONBAHAR<br><span class="text-orange-500">DİKTE</span></h1>
+            </div>
+            
+            <div class="bg-black/40 p-6 rounded-2xl backdrop-blur-md border border-white/10 max-w-md text-center">
+                <p class="text-lg text-gray-300 mb-4">Kelimeleri duy ve yaz.</p>
+                <div class="grid grid-cols-2 gap-4 text-sm text-gray-400 text-left">
+                    <div class="flex items-center gap-2"><i class="fas fa-bolt text-yellow-400"></i> Doğru kelime +2 Sn</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-keyboard text-green-400"></i> Seri yap, puanı katla</div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="startGame()">Başla</button>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="game-over-overlay" class="overlay hidden">
+            <h2 class="text-6xl font-bold mb-2 text-white">SÜRE BİTTİ</h2>
+            <p class="text-xl text-orange-300 mb-8 font-light">Sonbahar rüzgarı dindi...</p>
+            
+            <div class="flex flex-wrap justify-center mb-8 gap-4">
+                <div class="stat-box">
+                    <p class="text-xs uppercase tracking-widest opacity-60 mb-2">Skor</p>
+                    <p class="text-5xl font-bold text-yellow-400" id="final-score">0</p>
+                </div>
+                <div class="stat-box">
+                    <p class="text-xs uppercase tracking-widest opacity-60 mb-2">Max Seri</p>
+                    <p class="text-5xl font-bold text-orange-400" id="final-streak">0</p>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="resetGame()">Tekrar Dene</button>
+        </div>
+
+        <!-- Main Game UI -->
+        <div class="game-card" id="game-ui" style="opacity: 0.3; pointer-events: none;">
+            <div class="game-header">
+                <div class="score-container">
+                    <span class="text-xs font-bold text-gray-400 tracking-widest">PUAN</span>
+                    <span id="score" class="text-3xl font-bold text-white">0</span>
+                </div>
+                
+                <div id="combo-badge" class="combo-badge">
+                    SERİ x<span id="streak-count">0</span> 🔥
+                </div>
+
+                <div class="relative">
+                    <div class="timer-badge">
+                        <i class="fas fa-stopwatch text-orange-400"></i> 
+                        <span id="timer" class="text-2xl font-bold text-white">60</span>
+                    </div>
+                    <div id="time-bonus-indicator" class="time-bonus hidden">+2sn</div>
+                </div>
+            </div>
+
+            <!-- Word Display -->
+            <div class="word-container">
+                <div class="word-display" id="word-target">Hazır...</div>
+                <button class="speaker-btn" onclick="speakWord(currentWord)" title="Tekrar Oku (CTRL)">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-wrapper">
+                <input type="text" id="word-input" class="type-input" placeholder="Yaz..." autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="controls-row">
+                <div class="toggle-group">
+                    <div class="icon-toggle active" id="sound-toggle" onclick="toggleSound(this)" title="Tuş Sesleri">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="icon-toggle active" id="speech-toggle" onclick="toggleSpeech(this)" title="Otomatik Okuma">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                </div>
+
+                <button onclick="skipWord()" class="skip-btn">
+                    Pas Geç (ESC)
+                </button>
+            </div>
+        </div>
+
+        <!-- Background Elements -->
+        <div class="leaves">
+            <div class="set" id="leaf-container"></div>
+        </div>
+        <div class="confetti-container" id="confetti-container"></div>
+        <div id="particles-container"></div>
+
+    </section>
+
+    <script>
+        // --- Game Data ---
+        const levels = {
+            easy: [
+                "Ali", "Top", "Gül", "Yaz", "Kış", "Bal", "Süt", "Nar", "Ot", "Su",
+                "Ev", "Yol", "Can", "Göz", "El", "Baş", "Diş", "Kaş", "Kuş", "Taş",
+                "Kedi", "Fare", "Mavi", "Sarı", "Yeşil", "Kırmızı", "Mor", "Hızlı"
+            ],
+            medium: [
+                "Bahar", "Kalem", "Masa", "Kitap", "Güneş", "Bulut", "Deniz", "Orman",
+                "Çiçek", "Müzik", "Şarkı", "Resim", "Sanat", "Tarih", "Bilim", "Dünya",
+                "Yıldız", "Sabah", "Akşam", "Gece", "Okul", "Sınıf", "Ders", "Sınav",
+                "Yağmur", "Rüzgar", "Yaprak", "Toprak", "Kardeş", "Arkadaş", "Mutlu"
+            ],
+            hard: [
+                "Bilgisayar", "Televizyon", "Cumhuriyet", "Kütüphane", "Üniversite",
+                "Matematik", "Mühendislik", "Astronomi", "Laboratuvar", "Mikroskop",
+                "Karanfil", "Gökkuşağı", "Mandalina", "Portakal", "Helikopter",
+                "Dinozor", "Gezegen", "Samanyolu", "Teleskop", "Ansiklopedi",
+                "Kırmızı Elma", "Mavi Deniz", "Sarı Güneş", "Uzun Yol", "Hızlı Tren",
+                "Güzel Günler", "Sonbahar Rüzgarı", "Düşen Yapraklar", "Sessiz Gece"
+            ]
+        };
+        
+        // --- State ---
+        let currentWord = "";
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let gameTimer;
+        let timeLeft = 60;
+        let isGameActive = false;
+        let gameLevel = 'easy';
+        
+        // Settings
+        let sfxEnabled = true;
+        let autoSpeechEnabled = true;
+
+        // --- Init ---
+        const leafContainer = document.getElementById('leaf-container');
+        const leafEmojis = ['🍂', '🍁', '🍃', '🌰', '🍄'];
+        for (let i = 0; i < 12; i++) {
+            const div = document.createElement('div');
+            div.innerText = leafEmojis[Math.floor(Math.random() * leafEmojis.length)];
+            div.style.fontSize = (Math.random() * 1.5 + 1.5) + 'em'; 
+            leafContainer.appendChild(div);
+        }
+
+        const inputEl = document.getElementById('word-input');
+        inputEl.addEventListener('input', checkInput);
+        
+        // Keydown handlers
+        document.addEventListener('keydown', (e) => {
+            if (!isGameActive) return;
+            
+            if (e.key === 'Escape') {
+                skipWord();
+            } else if (e.key === 'Control') {
+                speakWord(currentWord);
+            } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                // Play typing sound for regular chars
+                if(sfxEnabled) playClickSound();
+                spawnKeyParticle();
+            }
+        });
+
+        // --- Core Functions ---
+
+        function startGame() {
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('game-over-overlay').classList.add('hidden');
+            
+            const gameUi = document.getElementById('game-ui');
+            gameUi.style.opacity = '1';
+            gameUi.style.pointerEvents = 'all';
+            gameUi.style.transform = 'translateY(0) scale(1)';
+            
+            score = 0;
+            correctCount = 0;
+            streak = 0;
+            maxStreak = 0;
+            timeLeft = 60;
+            isGameActive = true;
+            gameLevel = 'easy';
+            
+            updateScore(0);
+            updateStreak();
+            updateTimerDisplay();
+            
+            inputEl.value = "";
+            inputEl.focus();
+            
+            nextWord();
+            
+            clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        function endGame() {
+            isGameActive = false;
+            clearInterval(gameTimer);
+            
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-streak').innerText = maxStreak;
+            
+            document.getElementById('game-over-overlay').classList.remove('hidden');
+            const gameUi = document.getElementById('game-ui');
+            gameUi.style.opacity = '0.3';
+            gameUi.style.pointerEvents = 'none';
+            gameUi.style.transform = 'translateY(20px) scale(0.95)';
+            inputEl.blur();
+        }
+
+        function determineLevel() {
+            if (correctCount < 5) return 'easy';
+            if (correctCount < 15) return 'medium';
+            return 'hard';
+        }
+
+        function nextWord() {
+            if(!isGameActive) return;
+            
+            gameLevel = determineLevel();
+            const pool = levels[gameLevel];
+            let newWord = pool[Math.floor(Math.random() * pool.length)];
+            
+            // Basic retry to avoid immediate repeat
+            let attempts = 0;
+            while(newWord === currentWord && attempts < 5) {
+                 newWord = pool[Math.floor(Math.random() * pool.length)];
+                 attempts++;
+            }
+            currentWord = newWord;
+
+            const wordDisplay = document.getElementById('word-target');
+            
+            // Animation reset
+            wordDisplay.style.transform = 'scale(0.9)';
+            wordDisplay.style.opacity = '0';
+            
+            setTimeout(() => {
+                // Render spans
+                wordDisplay.innerHTML = currentWord.split('').map(char => 
+                    char === ' ' ? '<span class="mx-2"></span>' : `<span class="unmatched-char transition-colors duration-200">${char}</span>`
+                ).join('');
+                
+                wordDisplay.style.transform = 'scale(1)';
+                wordDisplay.style.opacity = '1';
+                
+                if(autoSpeechEnabled) speakWord(currentWord);
+            }, 100);
+            
+            inputEl.value = "";
+        }
+
+        // --- Logic ---
+
+        function checkInput() {
+            if(!isGameActive) return;
+
+            const typed = inputEl.value;
+            const target = currentWord;
+            const wordDisplay = document.getElementById('word-target');
+            const spans = wordDisplay.querySelectorAll('span.unmatched-char, span.matched-char, span.incorrect-char');
+
+            // Skip space spans in our selection by filtering purely for text content or structure
+            // Actually, my span generation for spaces uses class 'mx-2' without the color classes.
+            // So querySelectorAll above only grabs visible chars.
+            // We need to handle spaces in 'typed' vs 'target'.
+
+            let allMatch = true;
+            let visualIndex = 0; // Index for spans (skipping spaces in logic if needed, but usually typed matches target 1:1)
+
+            // Normalize for comparison
+            const typedNorm = typed.toLocaleLowerCase('tr');
+            const targetNorm = target.toLocaleLowerCase('tr');
+
+            for (let i = 0; i < target.length; i++) {
+                // If target char is space, we expect space in typed, but there is no span to color usually
+                if (target[i] === ' ') {
+                    if (i < typed.length && typed[i] !== ' ') {
+                        allMatch = false; // Typed non-space where space should be
+                    }
+                    continue; 
+                }
+
+                const span = spans[visualIndex];
+                if (!span) break;
+
+                if (i < typed.length) {
+                    if (typedNorm[i] === targetNorm[i]) {
+                        span.className = 'matched-char transition-colors duration-200';
+                    } else {
+                        span.className = 'incorrect-char transition-colors duration-200';
+                        allMatch = false;
+                    }
+                } else {
+                    span.className = 'unmatched-char transition-colors duration-200';
+                    allMatch = false;
+                }
+                visualIndex++;
+            }
+            
+            if (typed.length > target.length) {
+                allMatch = false;
+                shakeUI();
+            }
+
+            if (allMatch && typed.length === target.length) {
+                successAction();
+            }
+        }
+
+        function successAction() {
+            streak++;
+            updateStreak();
+            
+            // Score Calc
+            let points = 10;
+            if (streak >= 5) points += 5;
+            if (streak >= 10) points += 10;
+            if (gameLevel === 'medium') points += 5;
+            if (gameLevel === 'hard') points += 10;
+            
+            updateScore(points);
+            correctCount++;
+            
+            // TIME BONUS
+            const bonus = 2;
+            timeLeft = Math.min(timeLeft + bonus, 60); // Cap at 60s
+            showTimeBonus();
+            updateTimerDisplay();
+
+            triggerConfetti(streak > 5 ? 20 : 8);
+            if(sfxEnabled) playDing();
+            
+            // Visual feedback on input
+            inputEl.style.borderColor = '#2ecc71';
+            inputEl.style.boxShadow = '0 0 30px rgba(46, 204, 113, 0.4)';
+            
+            setTimeout(() => {
+                inputEl.style.borderColor = 'rgba(255,255,255,0.1)';
+                inputEl.style.boxShadow = 'inset 0 2px 10px rgba(0,0,0,0.2)';
+                nextWord();
+            }, 150);
+        }
+
+        function skipWord() {
+            if(!isGameActive) return;
+            
+            streak = 0;
+            updateStreak();
+            updateScore(-5);
+            shakeUI();
+            nextWord();
+            inputEl.focus();
+        }
+
+        // --- Audio & Effects ---
+
+        function toggleSound(el) {
+            sfxEnabled = !sfxEnabled;
+            el.classList.toggle('active');
+            el.innerHTML = sfxEnabled ? '<i class="fas fa-music"></i>' : '<i class="fas fa-volume-mute"></i>';
+        }
+
+        function toggleSpeech(el) {
+            autoSpeechEnabled = !autoSpeechEnabled;
+            el.classList.toggle('active');
+            el.innerHTML = autoSpeechEnabled ? '<i class="fas fa-comment-dots"></i>' : '<i class="fas fa-comment-slash"></i>';
+        }
+
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'tr-TR';
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function playClickSound() {
+            // Very short noise burst / click
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.frequency.setValueAtTime(400, ctx.currentTime);
+            osc.type = 'triangle';
+            
+            // Envelope for short click
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+        }
+
+        function playDing() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = 600 + (Math.min(streak, 10) * 50); 
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        }
+
+        function showTimeBonus() {
+            const el = document.getElementById('time-bonus-indicator');
+            el.classList.remove('hidden');
+            // Retrigger animation
+            el.style.animation = 'none';
+            el.offsetHeight; /* reflow */
+            el.style.animation = 'floatUp 1s ease-out forwards';
+        }
+
+        function spawnKeyParticle() {
+            const container = document.getElementById('particles-container');
+            const p = document.createElement('div');
+            p.innerText = ['✨', '⚡', '🔸'][Math.floor(Math.random()*3)];
+            p.className = 'key-particle';
+            
+            // Random position near center-bottom
+            const x = 50 + (Math.random() * 20 - 10);
+            const y = 60 + (Math.random() * 10 - 5);
+            
+            p.style.left = x + '%';
+            p.style.top = y + '%';
+            
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 600);
+        }
+
+        // --- Helpers ---
+
+        function updateScore(points) {
+            score += points;
+            document.getElementById('score').innerText = score;
+        }
+
+        function updateStreak() {
+            document.getElementById('streak-count').innerText = streak;
+            const badge = document.getElementById('combo-badge');
+            if (streak > 1) {
+                badge.classList.add('combo-active');
+            } else {
+                badge.classList.remove('combo-active');
+            }
+            if(streak > maxStreak) maxStreak = streak;
+        }
+        
+        function updateTimerDisplay() {
+            const el = document.getElementById('timer');
+            el.innerText = timeLeft;
+            const badge = el.parentElement;
+            
+            if (timeLeft <= 10) {
+                badge.style.background = 'rgba(231, 76, 60, 0.8)';
+                badge.style.animation = 'shake 0.5s infinite';
+            } else {
+                badge.style.background = 'rgba(231, 76, 60, 0.2)';
+                badge.style.animation = 'none';
+            }
+        }
+
+        function shakeUI() {
+            const card = document.querySelector('.game-card');
+            card.classList.remove('error-shake');
+            void card.offsetWidth; 
+            card.classList.add('error-shake');
+            
+            // Also color input red momentarily
+            inputEl.style.borderColor = '#e74c3c';
+            setTimeout(() => inputEl.style.borderColor = 'rgba(255,255,255,0.1)', 300);
+        }
+
+        function triggerConfetti(amount = 15) {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#e74c3c', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'];
+            
+            for (let i = 0; i < amount; i++) {
+                const conf = document.createElement('div');
+                conf.classList.add('confetti');
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 1 + 0.5) + 's';
+                conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+                container.appendChild(conf);
+                setTimeout(() => conf.remove(), 2000);
+            }
+        }
+
+    </script>
+</body>
+</html>
