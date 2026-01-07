@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Müzik Öğretmeni: Final</title>
+<style>
+    @import url('https://fonts.googleapis.com/css?family=Raleway:400,600,800&display=swap');
+
+    body {
+        margin: 0;
+        overflow: hidden;
+        background-image: radial-gradient(#1a2a44, #000);
+        color: #fff;
+        font-family: 'Raleway', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
+
+    #game-container {
+        text-align: center;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        padding: 1.5rem;
+        border-radius: 25px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.15);
+        max-width: 95%;
+        width: 950px;
+        position: relative;
+        overflow: hidden; /* Progress bar için */
+    }
+
+    h1 {
+        margin: 0 0 15px 0;
+        font-weight: 800;
+        color: #FFBDD8;
+        text-shadow: 0 2px 10px rgba(255, 189, 216, 0.3);
+        font-size: 2rem;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 3px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #93DFB8, #00e5ff);
+        width: 0%;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px rgba(147, 223, 184, 0.5);
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .select-wrapper {
+        position: relative;
+    }
+
+    select {
+        padding: 12px 25px;
+        border-radius: 30px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.3);
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.3s;
+        appearance: none;
+        min-width: 150px;
+        text-align: center;
+    }
+    select:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.3);
+    }
+    select option {
+        background: #2b3a55;
+        color: #fff;
+    }
+
+    .btn-control {
+        padding: 12px 25px;
+        font-size: 0.95rem;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    #demoBtn { background: #B5D8EB; color: #1a2a44; }
+    #demoBtn:hover { background: #dff0f7; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(181, 216, 235, 0.3); }
+    
+    #resetBtn { background: #FFC8BA; color: #1a2a44; }
+    #resetBtn:hover { background: #ffe4de; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255, 200, 186, 0.3); }
+
+    /* Score & Info */
+    .info-panel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(0,0,0,0.2);
+        padding: 10px 20px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+    }
+
+    #score-board {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #E3AAD6;
+    }
+
+    .piano-wrapper {
+        background: rgba(0,0,0,0.3);
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .piano {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        /* Responsive sizing */
+        height: 200px; 
+    }
+
+    .key {
+        flex: 1;
+        max-width: 60px;
+        min-width: 30px;
+        background: linear-gradient(to bottom, #fff 0%, #f0f0f0 85%, #d0d0d0 100%);
+        border-radius: 0 0 8px 8px;
+        margin: 0 2px;
+        position: relative;
+        cursor: pointer;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        padding-bottom: 15px;
+        transition: transform 0.1s, background 0.2s;
+        box-shadow: 0 5px 5px rgba(0,0,0,0.3), inset 0 -5px 0 rgba(0,0,0,0.1);
+        z-index: 1;
+    }
+
+    .key:active, .key.active-press {
+        transform: translateY(4px);
+        background: #e0e0e0;
+        box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Black Keys */
+    .key.black-key {
+        background: linear-gradient(to bottom, #444 0%, #222 100%);
+        color: white;
+        height: 60%;
+        width: 60%; /* Relative to white key */
+        max-width: 40px;
+        margin-left: -3%; /* Pull back */
+        margin-right: -3%; /* Pull back */
+        z-index: 2;
+        border-radius: 0 0 5px 5px;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.5);
+        padding-bottom: 10px;
+        /* Absolute positioning approach for black keys in flex container is tricky, 
+           so we use negative margins in a flex row */
+        position: relative;
+        top: 0;
+    }
+    
+    /* Responsive adjustments for black keys using flex behavior hack */
+    .key.black-key-spacer {
+        flex: 0.6;
+        background: transparent;
+        box-shadow: none;
+        pointer-events: none;
+        visibility: hidden;
+        margin: 0;
+    }
+
+    .key span {
+        font-weight: 800;
+        font-size: 1.1rem;
+        pointer-events: none;
+    }
+    .key .solfege {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #888;
+        margin-top: 2px;
+    }
+    .key.black-key .solfege { color: #aaa; }
+
+    /* Highlights */
+    .highlight {
+        background: #FFD700 !important;
+        box-shadow: 0 0 25px #FFD700, 0 4px 0 #c5a600;
+        transform: scaleY(1.02);
+        z-index: 5;
+        border-bottom: 5px solid #b89c00;
+    }
+    
+    .demo-active {
+        background: #00e5ff !important;
+        box-shadow: 0 0 25px #00e5ff; 
+        transform: translateY(4px);
+    }
+
+    /* Message Area */
+    .message-container {
+        margin-top: 20px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .message {
+        font-weight: bold;
+        color: #FFC8BA;
+        font-size: 1.2rem;
+        background: rgba(0,0,0,0.3);
+        padding: 8px 20px;
+        border-radius: 20px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s;
+    }
+    .message.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Start Overlay */
+    #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        transition: opacity 0.5s;
+    }
+
+    .big-btn {
+        padding: 20px 60px;
+        font-size: 2rem;
+        background: linear-gradient(45deg, #93DFB8, #4CA1AF);
+        color: #fff;
+        border: none;
+        border-radius: 60px;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 10px 30px rgba(76, 161, 175, 0.5);
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    .big-btn:hover { 
+        transform: scale(1.05); 
+        box-shadow: 0 15px 40px rgba(76, 161, 175, 0.7);
+    }
+
+    /* Win Animation */
+    @keyframes winPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    .winner-mode {
+        animation: winPulse 0.5s ease-in-out;
+    }
+    
+    @media (max-width: 768px) {
+        #game-container { padding: 1rem; width: 100%; border-radius: 0; height: 100vh; justify-content: center; display: flex; flex-direction: column;}
+        .piano { height: 180px; }
+        .key span { font-size: 0.9rem; }
+        .key .solfege { font-size: 0.6rem; }
+        h1 { font-size: 1.5rem; }
+        .controls-bar { flex-direction: column; gap: 10px; }
+        select, .btn-control { width: 100%; justify-content: center; }
+    }
+</style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="overlay">
+        <h1 style="font-size: 3rem; margin-bottom: 10px; color: #fff;">🎹 Müzik Öğretmeni</h1>
+        <p style="margin-bottom: 40px; font-size: 1.2rem; color: #ccc;">Şarkıları çal, eğlen ve öğren!</p>
+        <button id="startBtn" class="big-btn">BAŞLA</button>
+    </div>
+
+    <div id="game-container">
+        <h1>🎵 Müzik Atölyesi</h1>
+        
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div class="controls-bar">
+            <div class="select-wrapper">
+                <select id="songSelect">
+                    <option value="happy_birthday">🎂 Mutlu Yıllar</option>
+                    <option value="twinkle">✨ Daha Dün Annemizin</option>
+                    <option value="ali_baba">🚜 Ali Baba'nın Çiftliği</option>
+                    <option value="kucuk_kurbaga">🐸 Küçük Kurbağa</option>
+                    <option value="kirmizi_balik">🐠 Kırmızı Balık</option>
+                    <option value="ari_viz">🐝 Arı Vız Vız</option>
+                    <option value="postaci">📮 Bak Postacı Geliyor</option>
+                    <option value="ceddin_deden">🥁 Ceddin Deden</option>
+                </select>
+            </div>
+
+            <div class="select-wrapper">
+                <select id="instrumentSelect">
+                    <option value="piano">🎹 Piyano</option>
+                    <option value="organ">⛪ Org</option>
+                    <option value="flute">🎼 Flüt</option>
+                    <option value="8bit">👾 8-Bit</option>
+                    <option value="synth">🎸 Synth</option>
+                </select>
+            </div>
+
+            <button id="demoBtn" class="btn-control">▶️ İzle & Dinle</button>
+            <button id="resetBtn" class="btn-control">🔄 Baştan Al</button>
+        </div>
+        
+        <div class="info-panel">
+            <div id="score-board">Sıradaki: <span id="next-note-display" style="color: #FFD700;">-</span></div>
+            <div style="font-size: 0.9rem; color: #ccc;">Sarı tuşları takip et!</div>
+        </div>
+
+        <div class="piano-wrapper">
+            <div class="piano" id="piano"></div>
+        </div>
+
+        <div class="message-container">
+            <div class="message show" id="message">Hazır mısın?</div>
+        </div>
+    </div>
+
+<script>
+/**
+ * VERİ YAPILARI
+ */
+const NOTE_DATA = {
+    'C4': { f: 261.63, name: 'C', sol: 'Do' },
+    'D4': { f: 293.66, name: 'D', sol: 'Re' },
+    'E4': { f: 329.63, name: 'E', sol: 'Mi' },
+    'F4': { f: 349.23, name: 'F', sol: 'Fa' },
+    'Gb4': { f: 369.99, name: 'Gb', sol: 'Fa#' },
+    'G4': { f: 392.00, name: 'G', sol: 'Sol' },
+    'Ab4': { f: 415.30, name: 'Ab', sol: 'La♭' },
+    'A4': { f: 440.00, name: 'A', sol: 'La' },
+    'Bb4': { f: 466.16, name: 'Bb', sol: 'Si♭' },
+    'B4': { f: 493.88, name: 'B', sol: 'Si' },
+    'C5': { f: 523.25, name: 'C5', sol: 'Do' },
+    'D5': { f: 587.33, name: 'D5', sol: 'Re' },
+    'E5': { f: 659.25, name: 'E5', sol: 'Mi' }
+};
+
+const SONGS = {
+    'happy_birthday': {
+        name: "Mutlu Yıllar",
+        notes: ['C4','C4','D4','C4','F4','E4', 'C4','C4','D4','C4','G4','F4', 'C4','C4','C5','A4','F4','E4','D4', 'Bb4','Bb4','A4','F4','G4','F4'],
+        lyrics: ["Mut","lu","Yıl","lar","Sa","na", "Mut","lu","Yıl","lar","Sa","na", "Mut","lu","Yıl","lar","Doğ","dun","Dos","tum", "Mut","lu","Yıl","lar","Sa","na"]
+    },
+    'twinkle': {
+        name: "Daha Dün Annemizin",
+        notes: ['C4','C4','G4','G4','A4','A4','G4', 'F4','F4','E4','E4','D4','D4','C4', 'G4','G4','F4','F4','E4','E4','D4', 'G4','G4','F4','F4','E4','E4','D4', 'C4','C4','G4','G4','A4','A4','G4', 'F4','F4','E4','E4','D4','D4','C4'],
+        lyrics: ["Da","ha","dün","an","ne","mi","zin", "Kol","la","rın","da","ya","şar","ken", "Çi","çek","li","bah","çe","mi","zin", "Yol","la","rın","da","ko","şar","ken", "Şim","di","o","kul","lu","ol","duk", "Sı","nıf","la","rı","dol","dur","duk"]
+    },
+    'ali_baba': {
+        name: "Ali Baba'nın Çiftliği",
+        notes: ['C4','F4','F4','F4','G4','G4','G4','G4','F4','A4','A4','G4','G4','F4', 'C4','F4','F4','F4', 'Bb4','Bb4','A4', 'G4','G4','C5','C5','C4'],
+        lyrics: ["A","li","Ba","ba","nın","bir","çift","li","ği","var","çift","li","ğin","de", "Ku","zu","la","rı", "Mee","mee","di", "ye","ba","ğı","rır","."]
+    },
+    'kucuk_kurbaga': {
+        name: "Küçük Kurbağa",
+        notes: ['G4','E4','G4','E4','G4','E4', 'A4','F4','A4','F4','A4','F4', 'G4','E4','G4','E4','G4','E4', 'A4','F4','A4','F4','A4','F4', 'F4','F4','E4','E4','D4','D4','C4'],
+        lyrics: ["Kü","çük","kur","ba","ğa","kü","çük","kur","ba","ğa", "Ku","la","ğın","ne","re","de", "Ku","la","ğım","yok","ku","la","ğım","yok", "Yü","ze","rim","de","re","de","."]
+    },
+    'kirmizi_balik': {
+        name: "Kırmızı Balık",
+        notes: ['C4','C4','D4','C4','E4','D4','C4', 'C4','C4','D4','C4','E4','D4','C4', 'F4','F4','F4','E4','E4','E4','D4','D4','D4','C4'],
+        lyrics: ["Kır","mı","zı","ba","lık","göl","de", "Kıv","rı","la","kıv","rı","la","yü","zi","yor", "Ba","lık","çı","ha","san","ge","li","yor"]
+    },
+    'ari_viz': {
+        name: "Arı Vız Vız",
+        notes: ['G4','F4','E4','D4','C4', 'G4','F4','E4','D4','C4', 'D4','D4','D4','E4','F4', 'E4','E4','E4','F4','G4'],
+        lyrics: ["Yaz","gel","di","çi","çek","ler", "Aç","tı","a","rı","lar", "He","pi","ni","zi","ça","lı","şır","lar","."]
+    },
+    'postaci': {
+        name: "Bak Postacı Geliyor",
+        notes: ['G4','A4','G4','E4', 'G4','A4','G4','E4', 'F4','G4','F4','D4', 'F4','G4','F4','D4'],
+        lyrics: ["Bak","Pos","ta","cı", "Ge","li","yor",".", "Se","lam","ve","ri", "yor",".",".","."]
+    },
+    'ceddin_deden': {
+        name: "Ceddin Deden (Mehter)",
+        notes: ['A4','B4','C5','B4','C5', 'D5','C5','B4','A4', 'B4','C5','B4','A4','G4', 'A4','B4','A4'],
+        lyrics: ["Ced","din","de","den","nes", "lin","ba","ba","n", "Hep","kah","ra","man", "Türk","mil","le","ti"]
+    }
+};
+
+// Global Değişkenler
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let currentSongId = 'happy_birthday';
+let currentIndex = 0;
+let isGameActive = false;
+let isDemoPlaying = false;
+let demoTimeoutIds = [];
+let currentInstrument = 'piano';
+
+// UI Elements
+const pianoContainer = document.getElementById('piano');
+const messageEl = document.getElementById('message');
+const nextNoteDisplay = document.getElementById('next-note-display');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const demoBtn = document.getElementById('demoBtn');
+const songSelect = document.getElementById('songSelect');
+const instrumentSelect = document.getElementById('instrumentSelect');
+const overlay = document.getElementById('overlay');
+const progressBar = document.getElementById('progressBar');
+
+// ---------------------------------------------------------
+// PİYANO OLUŞTURMA
+// ---------------------------------------------------------
+
+const PIANO_KEYS = ['C4', 'D4', 'E4', 'F4', 'Gb4', 'G4', 'Ab4', 'A4', 'Bb4', 'B4', 'C5', 'D5', 'E5'];
+
+function initPiano() {
+    pianoContainer.innerHTML = '';
+    PIANO_KEYS.forEach(noteKey => {
+        const data = NOTE_DATA[noteKey];
+        const keyEl = document.createElement('div');
+        keyEl.className = 'key';
+        keyEl.dataset.note = noteKey;
+        if(noteKey.includes('b')) keyEl.classList.add('black-key'); 
+        
+        keyEl.innerHTML = `
+            <span>${data.name}</span>
+            <span class="solfege">${data.sol}</span>
+        `;
+
+        // Touch ve Mouse eventleri
+        const pressHandler = (e) => {
+            e.preventDefault();
+            userPlayNote(noteKey);
+        };
+
+        keyEl.addEventListener('mousedown', pressHandler);
+        keyEl.addEventListener('touchstart', pressHandler);
+        
+        pianoContainer.appendChild(keyEl);
+    });
+}
+
+// ---------------------------------------------------------
+// SES MOTORU
+// ---------------------------------------------------------
+
+function playTone(freq, duration = 1.0, type = null) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+    const instr = type || currentInstrument;
+
+    // Enstrüman Ayarları
+    switch (instr) {
+        case 'organ':
+            osc.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05);
+            gainNode.gain.setValueAtTime(0.15, now + duration - 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+            break;
+            
+        case 'flute':
+            osc.type = 'sine';
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+            break;
+            
+        case '8bit':
+            osc.type = 'square';
+            gainNode.gain.setValueAtTime(0.08, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+            break;
+
+        case 'synth':
+            osc.type = 'sawtooth';
+            // Filter
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(200, now);
+            filter.frequency.linearRampToValueAtTime(2000, now + 0.1);
+            osc.connect(filter);
+            filter.connect(gainNode);
+            // Gain
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.2, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            gainNode.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            osc.start();
+            osc.stop(now + duration);
+            pulseParticles(true); // Synth daha güçlü efekt
+            return;
+            
+        case 'piano':
+        default:
+            osc.type = 'triangle';
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            break;
+    }
+
+    if(instr !== 'synth') {
+        osc.frequency.value = freq;
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(now + duration);
+    }
+    
+    pulseParticles();
+}
+
+function playWinSound() {
+    // Zafer Arpeji
+    const now = audioCtx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C Major Arpeggio
+    notes.forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.4, 'synth'), i * 150);
+    });
+}
+
+// ---------------------------------------------------------
+// OYUN MANTIĞI
+// ---------------------------------------------------------
+
+function userPlayNote(noteKey) {
+    if (!isGameActive || isDemoPlaying) return;
+    
+    playTone(NOTE_DATA[noteKey].f);
+    animateKey(noteKey, 'active-press');
+
+    const song = SONGS[currentSongId];
+    const expectedNote = song.notes[currentIndex];
+
+    if (noteKey === expectedNote) {
+        // Doğru Nota
+        currentIndex++;
+        updateProgress();
+        
+        showMessage("Süper! 👍", "#93DFB8");
+        
+        if (currentIndex >= song.notes.length) {
+            gameWin();
+        } else {
+            highlightNextKey();
+        }
+    } else {
+        // Yanlış Nota
+        showMessage("Hayır, sarı tuş! 👇", "#FF6B6B");
+        shakeHintKey(expectedNote);
+    }
+}
+
+function updateProgress() {
+    const song = SONGS[currentSongId];
+    const percent = (currentIndex / song.notes.length) * 100;
+    progressBar.style.width = `${percent}%`;
+}
+
+function animateKey(noteKey, className) {
+    const keyEl = document.querySelector(`.key[data-note="${noteKey}"]`);
+    if(keyEl) {
+        keyEl.classList.add(className);
+        setTimeout(() => keyEl.classList.remove(className), 150);
+    }
+}
+
+function shakeHintKey(noteKey) {
+    const key = document.querySelector(`.key[data-note="${noteKey}"]`);
+    if(key) {
+        key.classList.remove('highlight');
+        void key.offsetWidth; // Trigger reflow
+        key.classList.add('highlight');
+    }
+}
+
+function highlightNextKey() {
+    document.querySelectorAll('.key').forEach(k => k.classList.remove('highlight'));
+    
+    const song = SONGS[currentSongId];
+    if (currentIndex >= song.notes.length) return;
+
+    const nextNote = song.notes[currentIndex];
+    const keyEl = document.querySelector(`.key[data-note="${nextNote}"]`);
+    
+    if(keyEl) {
+        keyEl.classList.add('highlight');
+        const noteInfo = NOTE_DATA[nextNote];
+        nextNoteDisplay.textContent = `${noteInfo.sol} (${noteInfo.name})`;
+        
+        if(song.lyrics[currentIndex]) {
+            nextNoteDisplay.textContent += ` - "${song.lyrics[currentIndex]}"`;
+        }
+    }
+}
+
+function showMessage(text, color) {
+    messageEl.textContent = text;
+    messageEl.style.color = color;
+    messageEl.classList.remove('show');
+    void messageEl.offsetWidth;
+    messageEl.classList.add('show');
+}
+
+// ---------------------------------------------------------
+// OYUN DURUMLARI
+// ---------------------------------------------------------
+
+function startGame() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.style.display = 'none', 500);
+    resetGame();
+}
+
+function resetGame() {
+    stopDemo();
+    initPiano();
+    currentIndex = 0;
+    isGameActive = true;
+    currentSongId = songSelect.value;
+    currentInstrument = instrumentSelect.value;
+    progressBar.style.width = '0%';
+    document.getElementById('game-container').classList.remove('winner-mode');
+    
+    showMessage("Başlamak için sarı tuşa bas!", "#FFC8BA");
+    highlightNextKey();
+}
+
+function gameWin() {
+    isGameActive = false;
+    document.querySelectorAll('.key').forEach(k => k.classList.remove('highlight'));
+    nextNoteDisplay.textContent = "Şarkı Bitti!";
+    showMessage("TEBRİKLER! HARİKASIN! 🎉", "#FFD700");
+    progressBar.style.width = '100%';
+    
+    // Zafer Efektleri
+    playWinSound();
+    fireConfetti();
+    document.getElementById('game-container').classList.add('winner-mode');
+}
+
+// ---------------------------------------------------------
+// DEMO
+// ---------------------------------------------------------
+
+function stopDemo() {
+    isDemoPlaying = false;
+    demoTimeoutIds.forEach(id => clearTimeout(id));
+    demoTimeoutIds = [];
+    document.querySelectorAll('.key').forEach(k => k.classList.remove('demo-active'));
+}
+
+function playDemo() {
+    if (isDemoPlaying) {
+        stopDemo();
+        resetGame();
+        return;
+    }
+    
+    currentIndex = 0;
+    progressBar.style.width = '0%';
+    document.querySelectorAll('.key').forEach(k => k.classList.remove('highlight'));
+    isGameActive = false; 
+    isDemoPlaying = true;
+    showMessage("Dinle ve İzle... 👂", "#B5D8EB");
+    
+    const song = SONGS[currentSongId];
+    let timeOffset = 0;
+    const noteDuration = 500;
+
+    song.notes.forEach((note, index) => {
+        const tid = setTimeout(() => {
+            if (!isDemoPlaying) return;
+            
+            playTone(NOTE_DATA[note].f, 0.4);
+            
+            const keyEl = document.querySelector(`.key[data-note="${note}"]`);
+            if(keyEl) {
+                keyEl.classList.add('demo-active');
+                setTimeout(() => keyEl.classList.remove('demo-active'), 300);
+            }
+            
+            // Progress demo
+            const percent = ((index+1) / song.notes.length) * 100;
+            progressBar.style.width = `${percent}%`;
+
+            if(song.lyrics[index]) {
+                nextNoteDisplay.textContent = song.lyrics[index];
+            }
+
+            if (index === song.notes.length - 1) {
+                setTimeout(() => {
+                    isDemoPlaying = false;
+                    resetGame();
+                }, 1000);
+            }
+
+        }, timeOffset);
+        
+        demoTimeoutIds.push(tid);
+        timeOffset += noteDuration;
+    });
+}
+
+
+// Event Listeners
+startBtn.addEventListener('click', startGame);
+resetBtn.addEventListener('click', resetGame);
+demoBtn.addEventListener('click', playDemo);
+songSelect.addEventListener('change', () => { stopDemo(); resetGame(); });
+instrumentSelect.addEventListener('change', () => { currentInstrument = instrumentSelect.value; });
+
+
+// ---------------------------------------------------------
+// GÖRSEL EFEKTLER (PARTICLE & CONFETTI)
+// ---------------------------------------------------------
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let cw, ch;
+let particles = [];
+let confetti = [];
+let pulseAmount = 0;
+
+function resize() {
+    cw = canvas.width = window.innerWidth;
+    ch = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+window.onload = () => { resize(); initParticles(); };
+
+// --- Background Particles ---
+class Particle {
+    constructor(){ this.reset(); }
+    reset() {
+        this.x = Math.random() * cw;
+        this.y = Math.random() * ch;
+        this.size = Math.random() * 3;
+        this.speed = Math.random() * 0.5;
+        this.opacity = Math.random() * 0.5 + 0.1;
+    }
+    update() {
+        this.y -= this.speed + (pulseAmount * 2);
+        if(this.y < 0) this.reset();
+    }
+    draw() {
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size + (pulseAmount * 5), 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// --- Victory Confetti ---
+class Confetti {
+    constructor() {
+        this.x = cw / 2;
+        this.y = ch / 2;
+        this.vx = (Math.random() - 0.5) * 20;
+        this.vy = (Math.random() - 1) * 20;
+        this.gravity = 0.5;
+        this.color = `hsl(${Math.random()*360}, 100%, 50%)`;
+        this.size = Math.random() * 10 + 5;
+        this.rotation = Math.random() * 360;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.rotation += 5;
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation * Math.PI / 180);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+        ctx.restore();
+    }
+}
+
+function initParticles() {
+    particles = [];
+    for(let i=0; i<50; i++) particles.push(new Particle());
+    requestAnimationFrame(loop);
+}
+
+function pulseParticles(strong = false) {
+    pulseAmount = strong ? 1.5 : 0.5;
+}
+
+function fireConfetti() {
+    for(let i=0; i<100; i++) confetti.push(new Confetti());
+}
+
+function loop() {
+    ctx.clearRect(0, 0, cw, ch);
+    
+    // Draw Particles
+    if(pulseAmount > 0) pulseAmount *= 0.9;
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw Confetti
+    if(confetti.length > 0) {
+        confetti.forEach((c, index) => {
+            c.update();
+            c.draw();
+            if(c.y > ch) confetti.splice(index, 1);
+        });
+    }
+
+    requestAnimationFrame(loop);
+}
+
+initPiano();
+
+</script>
+</body>
+</html>
