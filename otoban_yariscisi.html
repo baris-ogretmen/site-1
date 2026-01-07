@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Otoban Yarışçısı 5.0: Efsane Sürüm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Russo+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+            font-family: 'Press Start 2P', cursive;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        canvas {
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* UI Katmanları */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            font-size: 10px;
+            z-index: 20;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 2px solid #fbbf24;
+        }
+
+        .stat-box { display: flex; align-items: center; gap: 8px; }
+
+        /* Minimap */
+        .minimap-container {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 180px;
+            width: 16px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 2px;
+            z-index: 10;
+        }
+
+        .minimap-fill {
+            background: linear-gradient(to top, #ef4444, #fbbf24);
+            width: 100%;
+            height: 0%;
+            border-radius: 4px;
+            transition: height 0.1s;
+        }
+
+        .minimap-icon {
+            position: absolute;
+            left: -25px;
+            color: #fff;
+            font-size: 16px;
+            transition: bottom 0.1s;
+        }
+
+        /* Menü Ekranları */
+        .screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            border: 4px solid #fbbf24;
+            pointer-events: auto;
+            min-width: 320px;
+            max-width: 90%;
+            z-index: 50;
+            box-shadow: 0 0 60px rgba(251, 191, 36, 0.3);
+        }
+
+        .hidden { display: none !important; }
+
+        h1 { 
+            color: #fbbf24; 
+            text-shadow: 4px 4px 0 #92400e; 
+            margin-bottom: 20px; 
+            font-size: 20px; 
+            line-height: 1.5;
+        }
+
+        h2 { font-size: 12px; color: #60a5fa; margin-bottom: 10px; margin-top: 15px; text-transform: uppercase; }
+        
+        .selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .select-btn {
+            background: #334155;
+            border: 2px solid #475569;
+            color: white;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .main-btn {
+            background: linear-gradient(to bottom, #f59e0b, #b45309);
+            border: none;
+            padding: 15px 30px;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 8px;
+            border-bottom: 5px solid #78350f;
+            width: 100%;
+        }
+        .main-btn:active { transform: translateY(4px); border-bottom: 0; }
+
+        #mute-btn {
+            pointer-events: auto;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+        }
+
+        #notification-area {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .notify-text {
+            font-family: 'Russo One', sans-serif;
+            font-size: 40px;
+            color: #fff;
+            text-shadow: 0 0 20px #f59e0b;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .touch-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 5; }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+
+        /* Yeni Özellik Bilgisi */
+        .feature-info {
+            font-size: 8px; color: #a3e635; margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="left-zone" class="touch-zone"></div>
+        <div id="right-zone" class="touch-zone"></div>
+
+        <!-- UI -->
+        <div class="ui-layer">
+            <div class="hud-top">
+                <div class="stat-box"><i class="fas fa-coins text-yellow-400"></i> <span id="gold-display">0</span></div>
+                <div class="stat-box">LVL <span id="level-display" class="text-blue-400">1</span></div> <!-- Düzeltme: Level göstergesi eklendi -->
+                <div class="stat-box"><i class="fas fa-bolt text-blue-400" id="boost-icon" style="opacity:0.3"></i></div>
+                <div class="stat-box"><i class="fas fa-heart text-red-500"></i> <span id="health-display">1</span></div>
+                <button id="mute-btn" onclick="toggleMute()"><i class="fas fa-volume-up"></i></button>
+            </div>
+
+            <div class="minimap-container" id="minimap">
+                <div class="minimap-icon" id="minimap-icon">🏁</div>
+                <div class="minimap-fill" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div id="notification-area">
+            <div id="level-notify" class="notify-text">LEVEL 2<br><span style="color:#fbbf24;">TURBO MODU!</span></div>
+        </div>
+
+        <!-- Ana Menü -->
+        <div id="menu-screen" class="screen">
+            <h1>OTOBAN<br>YARIŞÇISI<br><span style="font-size: 10px; color: #fbbf24;">EFSANE SÜRÜM</span></h1>
+            
+            <p class="feature-info">HER 50 ALTIN = +1 CAN ❤️</p>
+            <p class="feature-info" style="color:#60a5fa;">⚡ YILDIRIMLARI TOPLA, HIZLAN!</p>
+
+            <h2>ARAÇ SEÇ</h2>
+            <div class="selector">
+                <button class="select-btn" onclick="changeVehicle(-1)"><i class="fas fa-chevron-left"></i></button>
+                <div style="width:140px; font-size:10px; color:#fbbf24;" id="vehicle-name">YARIŞ MOTORU</div>
+                <button class="select-btn" onclick="changeVehicle(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="vehicle-stats" style="font-size: 8px; color: #94a3b8;">Hız: Çok Yüksek | Can: 1</div>
+
+            <h2>HARİTA SEÇ</h2>
+            <div class="selector">
+                <button class="select-btn" onclick="changeMap(-1)"><i class="fas fa-chevron-left"></i></button>
+                <div style="width:120px; font-size:10px; color:#fbbf24;" id="map-name">OTOBAN</div>
+                <button class="select-btn" onclick="changeMap(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <button class="main-btn" onclick="startGame()">GAZA BAS!</button>
+        </div>
+
+        <!-- Game Over -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 style="color: #ef4444;">PERT OLDUN!</h1>
+            <p style="margin-bottom:10px;">TOPLANAN: <span id="final-gold" style="color: #fbbf24;">0</span> <i class="fas fa-coins"></i></p>
+            <p style="font-size:10px; color:#ccc;">LEVEL <span id="final-level">1</span></p>
+            <button class="main-btn" onclick="resetToMenu()">MENÜYE DÖN</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const goldEl = document.getElementById('gold-display');
+        const levelEl = document.getElementById('level-display'); // Düzeltme: JS referansı eklendi
+        const healthEl = document.getElementById('health-display');
+        const boostIcon = document.getElementById('boost-icon');
+        const muteBtn = document.getElementById('mute-btn');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const progressBar = document.getElementById('progress-bar');
+        const minimapIcon = document.getElementById('minimap-icon');
+        const levelNotify = document.getElementById('level-notify');
+
+        // --- SES SİSTEMİ ---
+        const AudioSys = {
+            ctx: null,
+            muted: false,
+            engineOsc: null,
+            engineGain: null,
+
+            init: function() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            },
+
+            toggleMute: function() {
+                this.muted = !this.muted;
+                muteBtn.innerHTML = this.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+                if(this.muted) this.stopEngine();
+                else if(state.running) this.startEngine();
+            },
+
+            startEngine: function() {
+                if(this.muted || !this.ctx || this.engineOsc) return;
+                this.engineOsc = this.ctx.createOscillator();
+                this.engineGain = this.ctx.createGain();
+                this.engineOsc.type = 'sawtooth';
+                this.engineOsc.frequency.value = 100;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+                this.engineOsc.connect(filter);
+                filter.connect(this.engineGain);
+                this.engineGain.connect(this.ctx.destination);
+                this.engineGain.gain.value = 0.05;
+                this.engineOsc.start();
+            },
+
+            updateEngine: function(speed) {
+                if(this.muted || !this.engineOsc) return;
+                const pitch = 80 + (speed * 12);
+                this.engineOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.1);
+            },
+
+            stopEngine: function() {
+                if(this.engineOsc) {
+                    this.engineOsc.stop();
+                    this.engineOsc.disconnect();
+                    this.engineOsc = null;
+                }
+            },
+
+            playCoin: function() {
+                if(this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(2000, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            },
+
+            playOneUp: function() {
+                if(this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                // Mario benzeri 1-up sesi (E -> G -> E -> C -> D -> G)
+                osc.frequency.setValueAtTime(659, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(783, this.ctx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(1046, this.ctx.currentTime + 0.2);
+                
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            },
+            
+            playBoost: function() {
+                 if(this.muted || !this.ctx) return;
+                 const osc = this.ctx.createOscillator();
+                 const gain = this.ctx.createGain();
+                 osc.type = 'sawtooth';
+                 osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                 osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.5);
+                 gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                 gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5);
+                 osc.connect(gain);
+                 gain.connect(this.ctx.destination);
+                 osc.start();
+                 osc.stop(this.ctx.currentTime + 0.5);
+            },
+
+            playCrash: function() {
+                if(this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        };
+
+        function toggleMute() { AudioSys.toggleMute(); }
+
+        // --- VERİ YAPILARI ---
+        const VEHICLES = [
+            { id: 'bike', name: 'YARIŞ MOTORU', color: '#fbbf24', width: 26, height: 75, speedStat: 'Çok Yüksek', health: 1, type: 'bike' },
+            { id: 'car', name: 'SPOR ARABA', color: '#ef4444', width: 48, height: 85, speedStat: 'Normal', health: 2, type: 'car' },
+            { id: 'truck', name: 'ZIRHLI TIR', color: '#3b82f6', width: 70, height: 150, speedStat: 'Yavaş', health: 4, type: 'truck' }
+        ];
+
+        const MAPS = [
+            { id: 0, name: 'OTOBAN', grass: '#15803d', road: '#334155', scenery: 'tree' },
+            { id: 1, name: 'ÇÖL', grass: '#b45309', road: '#57534e', scenery: 'cactus' },
+            { id: 2, name: 'KUTUP', grass: '#e2e8f0', road: '#1e293b', scenery: 'ice' }
+        ];
+
+        let state = {
+            running: false,
+            gold: 0,
+            level: 1,
+            distance: 0,
+            levelDistance: 2500,
+            speed: 0,
+            baseSpeed: 0,
+            shake: 0,
+            selectedVehicle: 0,
+            selectedMap: 0,
+            time: 0,
+            goldToLifeCounter: 0 // 50'ye kadar sayar
+        };
+
+        let player = { x: 0, y: 0, lane: 1, health: 1, tilt: 0, invulnerable: 0, boostTimer: 0 };
+        let obstacles = [];
+        let coins = [];
+        let boosts = [];
+        let scenery = [];
+        let roadLines = [];
+        let particles = [];
+        let floatingTexts = [];
+        
+        const laneCount = 3;
+        const roadWidth = 360;
+
+        function changeVehicle(dir) {
+            state.selectedVehicle += dir;
+            if(state.selectedVehicle < 0) state.selectedVehicle = VEHICLES.length - 1;
+            if(state.selectedVehicle >= VEHICLES.length) state.selectedVehicle = 0;
+            updateMenuUI();
+        }
+
+        function changeMap(dir) {
+            state.selectedMap += dir;
+            if(state.selectedMap < 0) state.selectedMap = MAPS.length - 1;
+            if(state.selectedMap >= MAPS.length) state.selectedMap = 0;
+            document.getElementById('map-name').innerText = MAPS[state.selectedMap].name;
+        }
+
+        function updateMenuUI() {
+            const v = VEHICLES[state.selectedVehicle];
+            document.getElementById('vehicle-name').innerText = v.name;
+            document.getElementById('vehicle-stats').innerText = `Hız: ${v.speedStat} | Can: ${v.health}`;
+        }
+
+        function resize() {
+            const aspectRatio = 9 / 16;
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            if (w / h > aspectRatio) w = h * aspectRatio;
+            canvas.width = 450;
+            canvas.height = 800;
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function getLaneCenter(laneIndex) {
+            const roadStartX = (canvas.width - roadWidth) / 2;
+            const laneStep = roadWidth / laneCount;
+            return roadStartX + (laneStep / 2) + (laneIndex * laneStep);
+        }
+
+        function drawVehicle(x, y, vObj, isPlayer) {
+            ctx.save();
+            ctx.translate(x + vObj.width/2, y + vObj.height/2);
+            if(isPlayer) ctx.rotate(player.tilt * 0.08); 
+            ctx.translate(-(x + vObj.width/2), -(y + vObj.height/2));
+
+            // Boost Efekti
+            if(isPlayer && player.boostTimer > 0) {
+                 ctx.shadowBlur = 20;
+                 ctx.shadowColor = '#00ffff';
+            }
+
+            // Hasar Yanıp Sönme
+            if(isPlayer && player.invulnerable > 0 && Math.floor(state.time / 4) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            // Gölge
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(x + 5, y + 5, vObj.width, vObj.height);
+
+            if (vObj.id === 'bike') {
+                const cx = x + vObj.width/2;
+                ctx.fillStyle = '#111';
+                ctx.fillRect(cx - 6, y, 12, 15);
+                ctx.fillRect(cx - 6, y + vObj.height - 18, 12, 18);
+                ctx.fillStyle = '#555';
+                ctx.fillRect(cx - 2, y + 10, 4, vObj.height - 20);
+                ctx.fillStyle = vObj.color;
+                ctx.beginPath();
+                ctx.moveTo(cx, y + 12);
+                ctx.lineTo(cx - 10, y + 30);
+                ctx.lineTo(cx - 8, y + 55);
+                ctx.lineTo(cx + 8, y + 55);
+                ctx.lineTo(cx + 10, y + 30);
+                ctx.fill();
+                ctx.fillStyle = isPlayer ? '#fff' : '#333';
+                ctx.beginPath(); ctx.arc(cx, y + 42, 7, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.fillRect(cx - 3, y + 37, 6, 3);
+                ctx.fillStyle = '#111'; ctx.fillRect(cx - 14, y + 25, 28, 3);
+            } else if (vObj.id === 'truck') {
+                ctx.fillStyle = '#475569'; ctx.fillRect(x, y + 45, vObj.width, vObj.height - 45);
+                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(x + 5, y + 50, vObj.width - 10, vObj.height - 55);
+                ctx.fillStyle = vObj.color; ctx.fillRect(x + 5, y, vObj.width - 10, 40);
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(x + 8, y + 8, vObj.width - 16, 12);
+            } else {
+                ctx.fillStyle = vObj.color; ctx.beginPath(); ctx.roundRect(x, y, vObj.width, vObj.height, 8); ctx.fill();
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(x + 4, y + 15, vObj.width - 8, 12);
+                ctx.fillRect(x + 6, y + vObj.height - 20, vObj.width - 12, 8);
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.fillRect(x + vObj.width/2 - 4, y, 8, vObj.height);
+            }
+            ctx.restore();
+        }
+
+        function drawCoin(c) {
+            const yOffset = Math.sin(state.time * 0.1) * 3;
+            const cx = c.x + 15;
+            const cy = c.y + 15 + yOffset;
+            ctx.save(); ctx.translate(cx, cy);
+            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2);
+            ctx.fillStyle = '#f59e0b'; ctx.fill();
+            ctx.strokeStyle = '#fffbeb'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
+            ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = '#fffbeb'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 1);
+            if(Math.floor(state.time / 10) % 2 === 0) {
+                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-5, -5, 2, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawBoost(b) {
+            const yOffset = Math.sin(state.time * 0.2) * 4;
+            const cx = b.x + 15;
+            const cy = b.y + 15 + yOffset;
+            ctx.save(); ctx.translate(cx, cy);
+            ctx.shadowBlur = 10; ctx.shadowColor = '#60a5fa';
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(0, -15); ctx.lineTo(10, 0); ctx.lineTo(2, 0); ctx.lineTo(5, 15); ctx.lineTo(-10, -2); ctx.lineTo(-2, -2); ctx.fill();
+            ctx.restore();
+        }
+
+        function addFloatingText(x, y, text, color) {
+            floatingTexts.push({ x, y, text, color, life: 1.0, dy: -1 });
+        }
+
+        function spawnEntities() {
+            let spawnChance = 0.015 + (state.level * 0.005);
+            
+            // Engeller
+            if (Math.random() < spawnChance) {
+                const lane = Math.floor(Math.random() * laneCount);
+                const typeRand = Math.random();
+                let obsType = VEHICLES[1];
+                if(typeRand < 0.25) obsType = VEHICLES[2];
+                else if(typeRand < 0.45) obsType = VEHICLES[0];
+
+                const centerX = getLaneCenter(lane);
+                const enemyColor = ['#ef4444', '#3b82f6', '#10b981', '#6366f1'][Math.floor(Math.random()*4)];
+                let safe = true;
+                obstacles.forEach(o => { if(Math.abs(o.y - (-200)) < 200) safe = false; });
+                if(safe) {
+                    obstacles.push({
+                        ...obsType,
+                        x: centerX - obsType.width/2,
+                        y: -200,
+                        color: enemyColor,
+                        speedOffset: (Math.random() * 2) - 1 + (state.level * 0.5),
+                        isRival: state.level > 1
+                    });
+                }
+            }
+
+            // Altınlar (%1.5 şans)
+            if (Math.random() < 0.015) {
+                const lane = Math.floor(Math.random() * laneCount);
+                const centerX = getLaneCenter(lane);
+                let safe = true;
+                obstacles.forEach(o => { if(Math.abs(o.y - (-200)) < 100 && Math.abs(o.x - (centerX-15)) < 50) safe = false; });
+                if(safe) coins.push({ x: centerX - 15, y: -200, width: 30, height: 30 });
+            }
+
+            // Boost (%0.3 şans - Nadir)
+            if (Math.random() < 0.003) {
+                 const lane = Math.floor(Math.random() * laneCount);
+                 const centerX = getLaneCenter(lane);
+                 let safe = true;
+                 obstacles.forEach(o => { if(Math.abs(o.y - (-200)) < 100) safe = false; });
+                 if(safe) boosts.push({ x: centerX - 15, y: -200, width: 30, height: 30 });
+            }
+        }
+
+        function update() {
+            if (!state.running) return;
+
+            state.time++;
+            let currentSpeed = state.speed;
+            
+            // Boost Mantığı
+            if(player.boostTimer > 0) {
+                player.boostTimer--;
+                currentSpeed = state.baseSpeed * 2.0; // Hızı 2 katına çıkar
+                boostIcon.style.opacity = '1';
+                // Boost bittiğinde
+                if(player.boostTimer === 0) {
+                     boostIcon.style.opacity = '0.3';
+                     player.invulnerable = 30; // Çıkışta kısa koruma
+                }
+            } else {
+                 currentSpeed = state.baseSpeed + (state.level * 1.5);
+            }
+            
+            state.speed = currentSpeed;
+            state.distance += state.speed * 0.1;
+            AudioSys.updateEngine(state.speed);
+            
+            let progress = (state.distance / state.levelDistance) * 100;
+            if(progress > 100) progress = 100;
+            progressBar.style.height = `${progress}%`;
+            minimapIcon.style.bottom = `${progress}%`;
+
+            if (state.level === 1 && state.distance >= state.levelDistance) {
+                state.level = 2;
+                state.distance = 0;
+                state.baseSpeed += 3;
+                levelNotify.style.opacity = '1';
+                setTimeout(() => levelNotify.style.opacity = '0', 3000);
+            }
+
+            const v = VEHICLES[state.selectedVehicle];
+            const targetX = getLaneCenter(player.lane) - v.width / 2;
+            const diff = targetX - player.x;
+            player.x += diff * 0.15;
+            player.tilt = -diff * 0.1;
+
+            if(player.invulnerable > 0) player.invulnerable--;
+
+            roadLines.forEach(l => {
+                l.y += state.speed;
+                if(l.y > canvas.height) l.y = -80;
+            });
+
+            spawnEntities();
+
+            // Engeller
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.y += state.speed + obs.speedOffset;
+                if(obs.isRival && Math.random() < 0.005) obs.x += (Math.random() - 0.5) * 20;
+
+                if (
+                    player.invulnerable <= 0 && player.boostTimer <= 0 && // Boost varken ölümsüz
+                    player.x < obs.x + obs.width &&
+                    player.x + v.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + v.height > obs.y
+                ) {
+                    player.health--;
+                    healthEl.innerText = player.health;
+                    AudioSys.playCrash();
+                    state.shake = 20;
+                    for(let k=0; k<10; k++) {
+                        particles.push({
+                            x: player.x + v.width/2, y: player.y + v.height/2,
+                            vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                            life: 1, color: '#ef4444', size: Math.random()*5
+                        });
+                    }
+                    obstacles.splice(i, 1);
+                    if(player.health <= 0) gameOver();
+                    else player.invulnerable = 90;
+                    continue;
+                }
+                
+                // Boost Çarpışması (Yok etme)
+                if (player.boostTimer > 0 &&
+                    player.x < obs.x + obs.width &&
+                    player.x + v.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + v.height > obs.y) 
+                {
+                     // Engeli Parçala
+                     obstacles.splice(i, 1);
+                     state.shake = 5;
+                     addFloatingText(obs.x, obs.y, "SMASH!", "#fff");
+                     continue;
+                }
+
+                if (obs.y > canvas.height) obstacles.splice(i, 1);
+            }
+
+            // Altınlar
+            for (let i = coins.length - 1; i >= 0; i--) {
+                let c = coins[i];
+                c.y += state.speed;
+                if (player.x < c.x + c.width && player.x + v.width > c.x && player.y < c.y + c.height && player.y + v.height > c.y) {
+                    state.gold += 10;
+                    state.goldToLifeCounter += 10;
+                    goldEl.innerText = state.gold;
+                    AudioSys.playCoin();
+                    
+                    // Can Kazanma Kontrolü
+                    if (state.goldToLifeCounter >= 50) {
+                        state.goldToLifeCounter -= 50;
+                        if(player.health < 5) { // Max 5 can
+                            player.health++;
+                            healthEl.innerText = player.health;
+                            AudioSys.playOneUp();
+                            addFloatingText(player.x + v.width/2, player.y, "+1 ❤️", "#ef4444");
+                        } else {
+                            addFloatingText(player.x + v.width/2, player.y, "MAX HP", "#ef4444");
+                        }
+                    } else {
+                        addFloatingText(player.x + v.width/2, player.y, "+10", "#fbbf24");
+                    }
+
+                    for(let k=0; k<5; k++) particles.push({ x: c.x+15, y: c.y+15, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, life:0.5, color:'#fbbf24', size:2 });
+                    coins.splice(i, 1);
+                    continue;
+                }
+                if (c.y > canvas.height) coins.splice(i, 1);
+            }
+
+            // Boostlar
+            for (let i = boosts.length - 1; i >= 0; i--) {
+                 let b = boosts[i];
+                 b.y += state.speed;
+                 if (player.x < b.x + b.width && player.x + v.width > b.x && player.y < b.y + b.height && player.y + v.height > b.y) {
+                      player.boostTimer = 180; // 3 Saniye (60fps)
+                      AudioSys.playBoost();
+                      addFloatingText(player.x, player.y, "TURBO!", "#00ffff");
+                      boosts.splice(i, 1);
+                      continue;
+                 }
+                 if(b.y > canvas.height) boosts.splice(i, 1);
+            }
+
+            if (Math.random() < 0.05) {
+                const side = Math.random() < 0.5 ? -1 : 1;
+                const roadCenter = canvas.width / 2;
+                const xPos = side === -1 ? roadCenter - (roadWidth/2) - 40 - Math.random()*80 : roadCenter + (roadWidth/2) + 20 + Math.random()*80;
+                scenery.push({ x: xPos, y: -50, type: MAPS[state.selectedMap].scenery });
+            }
+            scenery.forEach((s, i) => { s.y += state.speed; if(s.y > canvas.height) scenery.splice(i, 1); });
+
+            // Yazılar
+            for(let i=floatingTexts.length-1; i>=0; i--) {
+                let ft = floatingTexts[i];
+                ft.y += ft.dy;
+                ft.life -= 0.02;
+                if(ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            for(let i=particles.length-1; i>=0; i--){
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            const mapData = MAPS[state.selectedMap];
+            ctx.fillStyle = mapData.grass; ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            ctx.save();
+            if(state.shake > 0) {
+                ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
+                state.shake *= 0.9;
+                if(state.shake < 0.5) state.shake = 0;
+            }
+
+            // Boost Hız Efekti (Çizgiler)
+            if(player.boostTimer > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                for(let i=0; i<10; i++) {
+                     ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 2, 50);
+                }
+            }
+
+            const roadX = (canvas.width - roadWidth) / 2;
+            ctx.fillStyle = mapData.road; ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+            ctx.fillStyle = '#fff'; ctx.fillRect(roadX-10, 0, 10, canvas.height); ctx.fillRect(roadX+roadWidth, 0, 10, canvas.height);
+            ctx.fillStyle = '#ef4444';
+            for(let i=0; i<canvas.height; i+=60) {
+                let off = (state.time * state.speed) % 60;
+                ctx.fillRect(roadX-10, i + off - 60, 10, 30);
+                ctx.fillRect(roadX+roadWidth, i + off - 60, 10, 30);
+            }
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            roadLines.forEach(l => { for(let i=1; i<laneCount; i++) ctx.fillRect(roadX + (i * roadWidth/laneCount) - 4, l.y, 8, 40); });
+
+            scenery.forEach(s => {
+                if(s.type === 'tree') { ctx.fillStyle = '#14532d'; ctx.beginPath(); ctx.moveTo(s.x, s.y+40); ctx.lineTo(s.x+15, s.y); ctx.lineTo(s.x+30, s.y+40); ctx.fill(); }
+                else if(s.type === 'cactus') { ctx.fillStyle = '#15803d'; ctx.fillRect(s.x+10, s.y, 10, 30); ctx.fillRect(s.x, s.y+10, 30, 8); }
+                else if(s.type === 'ice') { ctx.fillStyle = '#bae6fd'; ctx.beginPath(); ctx.moveTo(s.x, s.y+30); ctx.lineTo(s.x+15, s.y); ctx.lineTo(s.x+30, s.y+30); ctx.fill(); }
+            });
+
+            coins.forEach(c => drawCoin(c));
+            boosts.forEach(b => drawBoost(b));
+            obstacles.forEach(o => drawVehicle(o.x, o.y, o, false));
+
+            const pVeh = VEHICLES[state.selectedVehicle];
+            if(state.running || Math.floor(state.time/10)%2===0) drawVehicle(player.x, player.y, pVeh, true);
+
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+            });
+
+            // Uçan Yazılar
+            floatingTexts.forEach(ft => {
+                ctx.save();
+                ctx.globalAlpha = ft.life;
+                ctx.fillStyle = ft.color;
+                ctx.font = 'bold 20px "Press Start 2P"';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        function loop() { if(state.running) { update(); draw(); requestAnimationFrame(loop); } }
+
+        function startGame() {
+            AudioSys.init(); AudioSys.startEngine();
+            const v = VEHICLES[state.selectedVehicle];
+            player.lane = 1; player.health = v.health; player.invulnerable = 0; player.boostTimer = 0;
+            player.y = canvas.height - 220; player.x = getLaneCenter(1) - v.width/2;
+            state.running = true; state.gold = 0; state.score = 0; state.level = 1; state.distance = 0; state.goldToLifeCounter = 0;
+            state.baseSpeed = v.id === 'bike' ? 12 : (v.id === 'truck' ? 7 : 9); state.speed = state.baseSpeed;
+            obstacles = []; coins = []; boosts = []; scenery = []; floatingTexts = [];
+            roadLines = []; for(let i=0; i<12; i++) roadLines.push({ y: i * 80 });
+            goldEl.innerText = '0'; levelEl.innerText = '1'; healthEl.innerText = player.health;
+            boostIcon.style.opacity = '0.3';
+            menuScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
+            loop();
+        }
+
+        function gameOver() {
+            state.running = false; AudioSys.stopEngine(); draw();
+            document.getElementById('final-gold').innerText = state.gold;
+            document.getElementById('final-level').innerText = state.level;
+            setTimeout(() => { gameOverScreen.classList.remove('hidden'); }, 1000);
+        }
+
+        function resetToMenu() {
+            gameOverScreen.classList.add('hidden'); menuScreen.classList.remove('hidden');
+            ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        }
+
+        function moveLeft() { if(player.lane > 0) player.lane--; }
+        function moveRight() { if(player.lane < laneCount - 1) player.lane++; }
+
+        window.addEventListener('keydown', e => {
+            if(!state.running) return;
+            if(e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
+            if(e.key === 'ArrowRight' || e.key === 'd') moveRight();
+        });
+        document.getElementById('left-zone').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.running) moveLeft(); });
+        document.getElementById('right-zone').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.running) moveRight(); });
+        ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width, canvas.height);
+    </script>
+</body>
+</html>
