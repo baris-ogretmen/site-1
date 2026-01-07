@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v12.0 (Vitrin Özel) | Barış İlkan</title>
+    <title>Yönetici Paneli v8.3 (7-8 Sınıf Eklendi) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -14,68 +14,88 @@
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --ana: #6366f1; --koyu: #1e293b; --acik: #f1f5f9; }
-        * { box-sizing: border-box; }
+        :root { --ana: #6366f1; --koyu: #1e293b; --acik: #f1f5f9; --yesil: #10b981; --kirmizi: #ef4444; --sari: #f59e0b; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--acik); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* GİRİŞ */
-        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
-
-        /* MOBİL MENÜ BUTONU */
-        #mobile-toggle-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: var(--ana); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
-        /* SIDEBAR */
-        .sidebar { width: 260px; background: var(--koyu); color: white; display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; z-index: 1000; transition: transform 0.3s ease; }
+        /* GİRİŞ EKRANI */
+        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-box { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        
+        /* SIDEBAR (YAN MENÜ) */
+        .sidebar { width: 260px; background: var(--koyu); color: white; display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; transition: transform 0.3s ease; z-index: 1000; }
         .sidebar h2 { margin: 0 0 20px 0; font-size: 1.4rem; color: #fbbf24; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
-        .menu-btn { background: none; border: none; color: #cbd5e1; text-align: left; padding: 15px; font-size: 1rem; cursor: pointer; transition: 0.2s; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; width: 100%; font-weight: 600; }
-        .menu-btn:hover, .menu-btn.active { background: var(--ana); color: white; transform: translateX(5px); }
-
-        /* İÇERİK ALANI */
-        .main-content { flex: 1; padding: 20px; overflow-y: auto; background: #f8fafc; position: relative; padding-top: 20px; }
+        .menu-btn { background: none; border: none; color: #cbd5e1; text-align: left; padding: 15px; font-size: 1rem; cursor: pointer; transition: 0.2s; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; width: 100%; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+        .menu-btn:hover, .menu-btn.active { background: var(--ana); color: white; transform: translateX(5px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); }
+        
+        /* SAĞ İÇERİK */
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; background: #f8fafc; position: relative; }
         .panel-section { display: none; animation: fadeIn 0.3s; }
         .panel-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KART & FORM */
+        /* MOBİL MENÜ BUTONU */
+        #mobile-menu-toggle { display: none; position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--ana); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+
+        /* KARTLAR VE FORMLAR */
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #e2e8f0; }
         h3 { color: var(--koyu); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.2rem; }
-        .inp { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; margin-bottom: 15px; font-family: inherit; }
+        
+        .inp { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; box-sizing: border-box; transition: 0.3s; margin-bottom: 15px; font-family: inherit; -webkit-appearance: none; } 
+        .inp:focus { border-color: var(--ana); outline: none; }
+        
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 1rem; margin-bottom: 5px; }
+        .btn-success { background: var(--yesil); } .btn-primary { background: var(--ana); } .btn-danger { background: var(--kirmizi); } .btn-warning { background: var(--sari); color: black; }
         .btn:active { transform: scale(0.98); }
-        
-        /* BUTON RENKLERİ */
-        .btn-primary { background: var(--ana); }
-        .btn-success { background: #10b981; }
-        .btn-danger { background: #ef4444; }
-        .btn-warning { background: #f59e0b; color: #000; }
-        .btn-info { background: #0ea5e9; }
-        .btn-dark { background: #334155; }
 
-        /* İKON SEÇİCİ */
-        .icon-selector-area { border: 2px solid #e2e8f0; padding: 10px; border-radius: 10px; background: #f8fafc; max-height: 250px; overflow-y: auto; }
-        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; margin-top: 10px; }
-        .icon-opt { background: white; border: 1px solid #ddd; border-radius: 10px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: 0.2s; }
-        .icon-opt:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .icon-opt.selected { border: 3px solid var(--ana); background: #e0e7ff; transform: scale(1.1); }
+        /* İSTATİSTİK GRID */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 12px; border-left: 5px solid var(--ana); box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .stat-num { font-size: 1.5rem; font-weight: 800; color: var(--koyu); margin-top: 5px; }
 
-        /* LİSTE GÖRÜNÜMÜ */
-        .list-item { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--ana); box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
-        .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
-        .btn-mini { padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; border: none; flex: 1; color: white; font-weight: bold; min-width: 80px; }
+        /* KATEGORİ VE İKON SEÇİCİ */
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; }
+        @media (min-width: 768px) { .category-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } }
         
-        /* RESPONSIVE */
+        .cat-item input { display: none; }
+        .checkmark { display: flex; align-items: center; justify-content: center; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; font-size: 0.9rem; font-weight: bold; height: 100%; box-sizing: border-box; text-align: center; }
+        .cat-item input:checked ~ .checkmark { background: var(--ana); color: white; border-color: var(--ana); }
+
+        .icon-selector-area { border: 2px solid #e2e8f0; padding: 10px; border-radius: 10px; background: #f8fafc; max-height: 200px; overflow-y: auto; }
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 8px; margin-top: 10px; }
+        .icon-opt { background: white; border: 1px solid #ddd; border-radius: 8px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; }
+        .icon-opt.selected { background: var(--ana); color: white; border-color: var(--ana); }
+
+        /* MAKRO BUTONLAR */
+        .macro-btns { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .macro-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-size: 0.9rem; font-weight: bold; color: #475569; text-align: center; }
+        .macro-btn:hover, .macro-btn:active { background: #f1f5f9; color: var(--ana); border-color: var(--ana); }
+
+        /* LİSTELER */
+        .list-item { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 768px) { .list-item { flex-direction: row; justify-content: space-between; align-items: center; } }
+        
+        .badge { background: #e0e7ff; color: var(--ana); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-right: 5px; display: inline-block; }
+        .btn-mini { padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; border: none; margin-left: 5px; flex: 1; }
+        .action-btns { display: flex; gap: 5px; width: 100%; }
+        @media (min-width: 768px) { .action-btns { width: auto; } }
+
+        .btn-haftanin { background: #fef3c7; color: #b45309; }
+        .btn-daire { background: #fee2e2; color: #b91c1c; }
+        .btn-del { background: #cbd5e1; color: #333; }
+        .btn-del:active { background: var(--kirmizi); color: white; }
+
+        /* RESPONSIVE AYARLAR (MOBİL) */
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -270px; top: 0; bottom: 0; transition: 0.3s; box-shadow: 5px 0 20px rgba(0,0,0,0.5); }
+            .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; transition: 0.3s; }
             .sidebar.show { left: 0; }
-            #mobile-toggle-btn { display: block; }
-            .main-content { padding-top: 60px; }
-            .category-grid { grid-template-columns: repeat(2, 1fr); }
+            #mobile-menu-toggle { display: block; }
+            .main-content { padding: 60px 15px 15px 15px; } 
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-card:last-child { grid-column: span 2; }
+            
             div[style*="display:grid"] { grid-template-columns: 1fr !important; }
-        }
-        @media (min-width: 769px) {
-            .list-item { flex-direction: row; justify-content: space-between; align-items: center; }
-            .action-btns { width: auto; }
+            div[style*="display:flex; gap:20px;"] { flex-direction: column; gap: 10px !important; }
         }
     </style>
 </head>
@@ -83,108 +103,109 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="color:#6366f1;">Yönetici Girişi</h2>
+            <h2 style="color:#6366f1;">Yönetici Paneli</h2>
             <input type="email" id="email" class="inp" placeholder="E-posta">
             <input type="password" id="password" class="inp" placeholder="Şifre">
             <button onclick="girisYap()" class="btn btn-primary">Giriş Yap</button>
         </div>
     </div>
 
-    <button id="mobile-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <button id="mobile-menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <div id="mobile-overlay" onclick="toggleSidebar()"></div>
 
-    <div style="display:flex; width:100%; height:100%;">
+    <div style="display:flex; width:100%; height:100%;" id="panel-container">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v12.0 (Vitrin Özel)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v8.3 (Mobil)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet & Durum</button>
-            <button class="menu-btn" onclick="showSection('vitrin-yonetim')"><i class="fas fa-star"></i> Vitrin Yönetimi</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Sihirbazı</button>
-            <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
-            <button class="menu-btn" onclick="showSection('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" style="display:none; background:#ef4444; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:auto;">0</span></button>
+            <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi <span class="badge" style="background:#fef3c7; color:#b45309; margin-left:auto;">YENİ</span></button>
+            <button class="menu-btn" onclick="showSection('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" class="badge" style="background:#ef4444; color:white; display:none;">0</span></button>
             <button class="menu-btn" onclick="showSection('duyuru-tavsiye')"><i class="fas fa-bullhorn"></i> Duyuru & Tavsiye</button>
             <button class="menu-btn" onclick="showSection('ayarlar')"><i class="fas fa-cog"></i> Genel Ayarlar</button>
             <div style="margin-top:auto;">
-                <button onclick="if(confirm('Çıkış yapılsın mı?')) auth.signOut()" class="menu-btn" style="color:#ef4444;"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</button>
+                <button onclick="auth.signOut()" class="menu-btn" style="color:#ef4444;"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</button>
             </div>
         </div>
 
-        <div class="main-content" onclick="if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('show')">
+        <div class="main-content">
 
             <div id="ozet" class="panel-section active">
-                <h3>📊 Durum Özeti</h3>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:20px;">
-                    <div class="card" style="text-align:center; padding:15px; margin:0; border-left:5px solid var(--ana);">Bugün<div id="stat-today" style="font-size:1.5rem; font-weight:800; color:#1e293b;">0</div></div>
-                    <div class="card" style="text-align:center; padding:15px; margin:0; border-left:5px solid var(--ana);">Toplam<div id="stat-total" style="font-size:1.5rem; font-weight:800; color:#1e293b;">0</div></div>
-                    <div class="card" style="text-align:center; padding:15px; margin:0; border-left:5px solid var(--ana);">Mesaj<div id="stat-msg" style="font-size:1.5rem; font-weight:800; color:#1e293b;">0</div></div>
+                <h3>📊 Site İstatistikleri</h3>
+                <div class="stats-grid">
+                    <div class="stat-card"><div>Bugün</div><div class="stat-num" id="stat-today">0</div></div>
+                    <div class="stat-card"><div>Toplam</div><div class="stat-num" id="stat-total">0</div></div>
+                    <div class="stat-card"><div>Mesaj</div><div class="stat-num" id="stat-msg">0</div></div>
                 </div>
-                <div class="card">
-                    <h3>⚡ Hızlı Yönetim</h3>
-                    <input type="text" id="search-content" class="inp" placeholder="Oyun, Video veya Yazı ara..." onkeyup="icerikFiltrele()">
+                
+                <div class="card" style="margin-top:20px;">
+                    <h3>⚡ Hızlı İçerik Yönetimi</h3>
+                    <input type="text" id="search-content" class="inp" placeholder="İçerik ara..." onkeyup="icerikFiltrele()">
                     <div id="tum-icerik-listesi">Yükleniyor...</div>
-                </div>
-            </div>
-
-            <div id="vitrin-yonetim" class="panel-section">
-                <div class="card">
-                    <h3>🏆 Ana Sayfa Vitrinindeki İçerikler</h3>
-                    <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Burada sadece ana sayfada (sliderta veya vitrinde) görünen içerikler listelenir. "Vitrinden Kaldır" dersen silinmez, sadece ana sayfadan kalkar.</p>
-                    <div id="vitrin-listesi">Yükleniyor...</div>
                 </div>
             </div>
 
             <div id="sihirbaz" class="panel-section">
                 <div class="card">
-                    <h3>🪄 Yeni İçerik Ekle</h3>
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; background:#f1f5f9; padding:10px; border-radius:10px; margin-bottom:15px;">
-                        <label style="cursor:pointer; padding:5px 10px; background:white; border-radius:5px; font-weight:600;"><input type="radio" name="tur" value="projeler" checked onchange="formuGuncelle()"> 🎮 Oyun</label>
-                        <label style="cursor:pointer; padding:5px 10px; background:white; border-radius:5px; font-weight:600;"><input type="radio" name="tur" value="videolar" onchange="formuGuncelle()"> 🎥 Video</label>
-                        <label style="cursor:pointer; padding:5px 10px; background:white; border-radius:5px; font-weight:600;"><input type="radio" name="tur" value="kaynaklar" onchange="formuGuncelle()"> 📚 PDF</label>
-                        <label style="cursor:pointer; padding:5px 10px; background:white; border-radius:5px; font-weight:600;"><input type="radio" name="tur" value="yazilar" onchange="formuGuncelle()"> 📝 Yazı</label>
+                    <h3>🪄 İçerik Ekle</h3>
+                    
+                    <div style="background:#f1f5f9; padding:15px; border-radius:10px; margin-bottom:20px; display:flex; gap:20px;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:5px;"><input type="radio" name="tur" value="projeler" checked onchange="formuGuncelle()"> 🎮 Oyun</label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:5px;"><input type="radio" name="tur" value="kaynaklar" onchange="formuGuncelle()"> 📚 PDF</label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:5px;"><input type="radio" name="tur" value="yazilar" onchange="formuGuncelle()"> 📝 Yazı</label>
                     </div>
 
-                    <label>Başlık</label><input type="text" id="p-baslik" class="inp" placeholder="Örn: Zeka Küpü">
-                    
-                    <label id="lbl-link">Dosya Adı / Video Linki</label>
-                    <input type="text" id="p-link" class="inp" placeholder="Örn: oyun.html veya youtube.com/...">
+                    <label>Başlık</label>
+                    <input type="text" id="p-baslik" class="inp" placeholder="Örn: Çarpım Tablosu">
+
+                    <label id="lbl-link">Dosya Adı / Link</label>
+                    <input type="text" id="p-link" class="inp" placeholder="Örn: carpim.html">
 
                     <div id="area-yazi" style="display:none;">
-                        <label>Yazı İçeriği</label><textarea id="p-icerik" class="inp" rows="10"></textarea>
+                        <label>Yazı İçeriği</label>
+                        <textarea id="p-icerik" class="inp" rows="10" placeholder="İçerik..."></textarea>
                     </div>
 
                     <div id="area-detay">
-                        <label>Renkli İkon Seç</label>
+                        <label>İkon Seç</label>
                         <div class="icon-selector-area">
-                            <input type="text" id="icon-search" class="inp" placeholder="İkon ara..." onkeyup="filterIcons()" style="margin-bottom:10px; padding:8px;">
+                            <input type="text" id="icon-search" class="inp" placeholder="İkon ara..." onkeyup="filterIcons()" style="margin-bottom:5px; padding:8px;">
                             <div class="icon-grid" id="icon-grid-container"></div>
                             <input type="hidden" id="p-selected-icon" value="fa-gamepad">
                         </div>
-                        <div style="margin:10px 0;">Seçilen: <i id="preview-icon" class="fas fa-gamepad" style="font-size:2rem; color:var(--ana);"></i></div>
+                        <div style="margin:10px 0;">Seçilen: <i id="preview-icon" class="fas fa-gamepad"></i></div>
 
-                        <label>Kategori / Sınıf</label>
-                        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:10px; margin-bottom:15px;">
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Anaokulu"> 🧸 Anaokulu</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Özel Eğitim"> 🧩 Özel Eğitim</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="1. Sınıf"> 1. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="2. Sınıf"> 2. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="3. Sınıf"> 3. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="4. Sınıf"> 4. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="5. Sınıf"> 5. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Akıl Zeka"> 🧠 Akıl Zeka</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Satranç"> ♟️ Satranç</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Robotik"> 🤖 Robotik</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Kodlama"> 💻 Kodlama</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Tasarım"> 🎨 Tasarım</label>
+                        <label>Hedef Kitle</label>
+                        <div class="macro-btns">
+                            <button class="macro-btn" onclick="grupSec('ilk')">🎒 İlkokul</button>
+                            <button class="macro-btn" onclick="grupSec('orta')">📚 Orta</button>
+                            <button class="macro-btn" onclick="grupSec('hepsi')">🌟 Hepsi</button>
+                            <button class="macro-btn" onclick="grupSec('temizle')" style="color:red;">Sil</button>
+                        </div>
+                        <div class="category-grid">
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Anaokulu"><span class="checkmark">🧸 Anaokulu</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Özel Eğitim"><span class="checkmark">🧩 Özel Eğitim</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Dil Konuşma"><span class="checkmark">🗣️ Dil</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="1. Sınıf"><span class="checkmark">1. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="2. Sınıf"><span class="checkmark">2. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="3. Sınıf"><span class="checkmark">3. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="4. Sınıf"><span class="checkmark">4. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="5. Sınıf"><span class="checkmark">5. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="6. Sınıf"><span class="checkmark">6. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="7. Sınıf"><span class="checkmark">7. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="8. Sınıf (LGS)"><span class="checkmark">🎯 8. Sınıf</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Robotik"><span class="checkmark">🤖 Robotik</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Akıl Zeka"><span class="checkmark">🧠 Akıl Zeka</span></label>
+                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Satranç"><span class="checkmark">♟️ Satranç</span></label>
                         </div>
                         
                         <div style="background:#fffbeb; padding:15px; border:1px solid #fcd34d; border-radius:10px; margin-top:10px;">
-                            <label style="color:#b45309; font-weight:bold; display:flex; align-items:center; gap:10px;">
-                                <input type="checkbox" id="is-vitrin" checked style="transform:scale(1.5);">
-                                ⭐ Ana Sayfa Vitrinine Ekle
-                            </label>
+                            <input type="checkbox" id="is-vitrin" checked style="transform: scale(1.5); margin-right: 10px;"> 
+                            <label for="is-vitrin" style="display:inline; color:#b45309; font-weight:bold;">⭐ Ana Sayfada Göster</label>
                         </div>
                     </div>
 
-                    <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:20px;">✅ KAYDET VE YAYINLA</button>
+                    <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:20px; font-size:1.1rem;">✅ KAYDET</button>
                 </div>
             </div>
 
@@ -193,8 +214,8 @@
                     <h3>📚 Kitap Ekle</h3>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                         <div>
-                            <label>Başlık</label><input type="text" id="k-baslik" class="inp" placeholder="Ben Ali">
-                            <label>Alt Başlık</label><input type="text" id="k-alt" class="inp" placeholder="Okulda İlk Gün">
+                            <label>Kitap Adı</label><input type="text" id="k-baslik" class="inp" placeholder="Ben Ali 2">
+                            <label>Alt Başlık</label><input type="text" id="k-alt" class="inp" placeholder="Gül Kokulu Ev">
                             <label>Link</label><input type="text" id="k-link" class="inp" placeholder="kitap.html">
                         </div>
                         <div>
@@ -204,28 +225,42 @@
                                 <option value="linear-gradient(135deg, #f59e0b, #b45309)">Turuncu</option>
                                 <option value="linear-gradient(135deg, #ef4444, #991b1b)">Kırmızı</option>
                                 <option value="linear-gradient(135deg, #10b981, #047857)">Yeşil</option>
+                                <option value="linear-gradient(135deg, #ec4899, #be185d)">Pembe</option>
                             </select>
                             <label>Sıra No</label><input type="number" id="k-sira" class="inp" value="1">
                         </div>
                     </div>
-                    <button onclick="kitapKaydet()" class="btn btn-primary">KİTABI EKLE</button>
+                    <button onclick="kitapKaydet()" class="btn btn-primary">EKLE</button>
                 </div>
-                <div class="card"><h3>📖 Kitap Listesi</h3><div id="kitap-listesi"></div></div>
+                
+                <div class="card">
+                    <h3>📖 Kitaplar</h3>
+                    <div id="kitap-listesi">Yükleniyor...</div>
+                </div>
             </div>
 
             <div id="mesajlar" class="panel-section">
-                <div class="card"><h3>📩 Gelen Kutusu</h3><div id="mesaj-listesi"></div></div>
-                <div class="card"><h3>📦 Arşiv</h3><div id="arsiv-listesi"></div></div>
+                <div class="card">
+                    <h3>📩 Gelenler</h3>
+                    <div id="mesaj-listesi">Yükleniyor...</div>
+                </div>
+                <div class="card">
+                    <h3>📦 Arşiv</h3>
+                    <div id="arsiv-listesi"></div>
+                </div>
             </div>
 
             <div id="duyuru-tavsiye" class="panel-section">
                 <div class="card">
-                    <h3>📢 Duyuru</h3><input type="text" id="d-metin" class="inp" placeholder="Mesajınız...">
-                    <button onclick="duyuruEkle()" class="btn btn-primary">Yayınla</button>
+                    <h3>📢 Duyuru</h3>
+                    <input type="text" id="d-metin" class="inp" placeholder="Duyuru metni...">
+                    <button onclick="duyuruEkle()" class="btn btn-primary">Ekle</button>
                     <div id="list-duyurular" style="margin-top:15px;"></div>
                 </div>
                 <div class="card">
-                    <h3>⭐ Tavsiye</h3><input type="text" id="t-baslik" class="inp" placeholder="Başlık">
+                    <h3>⭐ Tavsiye</h3>
+                    <input type="text" id="t-baslik" class="inp" placeholder="Başlık">
+                    <input type="text" id="t-aciklama" class="inp" placeholder="Açıklama">
                     <input type="text" id="t-link" class="inp" placeholder="Link">
                     <button onclick="tavsiyeEkle()" class="btn btn-success">Ekle</button>
                     <div id="list-tavsiyeler" style="margin-top:15px;"></div>
@@ -233,33 +268,40 @@
             </div>
 
             <div id="ayarlar" class="panel-section">
-                <div class="card" style="border:2px solid #fcd34d;">
-                    <h3>🔴 Akıllı Acil Buton</h3>
+                <div class="card" style="border-color:#fcd34d;">
+                    <h3>🔴 Acil Buton Ayarları</h3>
                     <label style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
                         <input type="checkbox" id="set-active" style="transform:scale(1.5);"> 
-                        <b>Butonu Aktif Et</b>
+                        <b>Buton Aktif</b>
                     </label>
+                    <label>Animasyon</label>
+                    <select id="set-anim" class="inp">
+                        <option value="none">Hareketsiz</option>
+                        <option value="pulse">💓 Kalp Atışı</option>
+                        <option value="rainbow">🌈 Gökkuşağı</option>
+                        <option value="spin">🌀 Dönme</option>
+                        <option value="tada">🎉 Tadaa!</option>
+                    </select>
+                    <label>Şekil</label>
+                    <select id="set-shape" class="inp">
+                        <option value="50%">Yuvarlak</option>
+                        <option value="10px">Kare</option>
+                        <option value="50% 0 50% 50%">Yaprak</option>
+                    </select>
                     <label>Aksiyon</label>
                     <select id="set-action" class="inp" onchange="toggleMediaInput()">
-                        <option value="link">Linke Git (Oyun/Sayfa)</option>
-                        <option value="alert">Mesaj Göster</option>
-                        <option value="youtube">Video Aç</option>
+                        <option value="alert">💬 Mesaj</option>
+                        <option value="link">🔗 Link</option>
+                        <option value="youtube">📺 YouTube</option>
+                        <option value="image">📸 Resim</option>
                     </select>
-                    <div style="background:#fffbeb; padding:15px; border-radius:10px; margin-bottom:15px;">
-                        <label>Hedef Link / Dosya Adı</label>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <input type="text" id="set-media" class="inp" placeholder="Örn: oyun.html" style="margin:0; flex:1;">
-                            <button onclick="enYeniOyunuGetir()" class="btn btn-info" style="width:auto; margin:0;"><i class="fas fa-magic"></i> En Yeniyi Getir</button>
-                        </div>
+                    <div id="media-input-area" style="display:none; background:#f8fafc; padding:10px; border-radius:10px; margin-bottom:10px;">
+                        <label>Medya Linki</label>
+                        <input type="text" id="set-media" class="inp">
                     </div>
-                    <label>Metin</label><input type="text" id="set-text" class="inp" placeholder="Örn: YENİ">
-                    <button onclick="daireKaydet()" class="btn btn-warning">GÜNCELLE</button>
-                </div>
-
-                <div class="card">
-                    <h3>💾 Veri Yedekleme</h3>
-                    <p style="color:#666;">Tüm içerik listesini JSON formatında indir.</p>
-                    <button onclick="yedekAl()" class="btn btn-dark"><i class="fas fa-download"></i> Tüm Verileri Yedekle</button>
+                    <label>Metin</label><input type="text" id="set-text" class="inp">
+                    <label>Mesaj</label><input type="text" id="set-msg" class="inp">
+                    <button onclick="daireKaydet()" class="btn btn-warning">Güncelle</button>
                 </div>
 
                 <div class="card">
@@ -278,7 +320,15 @@
         const db = firebase.firestore();
         let tumIceriklerCache = [];
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+        // Mobil Menü İşlevleri
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            sidebar.classList.toggle('show');
+            overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
+        }
+
+        // --- GİRİŞ ---
         function girisYap() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
@@ -293,46 +343,29 @@
             }
         });
 
+        // --- TAB GEÇİŞLERİ ---
         function showSection(id) {
             document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if(window.innerWidth <= 768) toggleSidebar();
+            
+            // Tıklanan butonu aktif yap (mobil/masaüstü ayrımı olmadan)
+            const btns = document.querySelectorAll(`button[onclick="showSection('${id}')"]`);
+            btns.forEach(btn => btn.classList.add('active'));
+
             if(id === 'kitap-ekle') kitaplariGetir();
-            if(id === 'vitrin-yonetim') vitrinGetir();
+            
+            // Mobilde menüyü kapat
+            if(window.innerWidth <= 768) toggleSidebar();
         }
 
-        // --- İKON SİSTEMİ (RENKLİ & GENİŞ) ---
-        const iconList = [
-            {c:"fa-graduation-cap", k:"#3b82f6"}, {c:"fa-school", k:"#ef4444"}, {c:"fa-book", k:"#10b981"}, 
-            {c:"fa-book-open", k:"#f59e0b"}, {c:"fa-pencil-alt", k:"#6366f1"}, {c:"fa-chalkboard-teacher", k:"#8b5cf6"},
-            {c:"fa-brain", k:"#ec4899"}, {c:"fa-chess", k:"#1e293b"}, {c:"fa-chess-knight", k:"#475569"}, 
-            {c:"fa-gamepad", k:"#8b5cf6"}, {c:"fa-puzzle-piece", k:"#f97316"}, {c:"fa-dice", k:"#dc2626"},
-            {c:"fa-robot", k:"#64748b"}, {c:"fa-rocket", k:"#ef4444"}, {c:"fa-calculator", k:"#3b82f6"}, 
-            {c:"fa-flask", k:"#10b981"}, {c:"fa-atom", k:"#6366f1"}, {c:"fa-microscope", k:"#06b6d4"}, 
-            {c:"fa-dna", k:"#ec4899"}, {c:"fa-globe", k:"#3b82f6"}, {c:"fa-palette", k:"#f59e0b"}, 
-            {c:"fa-music", k:"#ef4444"}, {c:"fa-camera", k:"#64748b"}, {c:"fa-video", k:"#ef4444"}, 
-            {c:"fa-microphone", k:"#1e293b"}, {c:"fa-star", k:"#eab308"}, {c:"fa-trophy", k:"#eab308"}, 
-            {c:"fa-medal", k:"#94a3b8"}, {c:"fa-crown", k:"#eab308"}, {c:"fa-heart", k:"#ef4444"}, 
-            {c:"fa-lightbulb", k:"#f59e0b"}, {c:"fa-bell", k:"#eab308"}, {c:"fa-bullhorn", k:"#3b82f6"}, 
-            {c:"fa-check", k:"#10b981"}, {c:"fa-paw", k:"#78350f"}, {c:"fa-car", k:"#ef4444"}, 
-            {c:"fa-plane", k:"#3b82f6"}, {c:"fa-bicycle", k:"#10b981"}, {c:"fa-futbol", k:"#000"}
-        ];
-
+        // --- SİHİRBAZ ---
+        const iconList = ["fa-gamepad", "fa-rocket", "fa-brain", "fa-book", "fa-robot", "fa-chess", "fa-star", "fa-palette", "fa-music", "fa-chart-pie", "fa-pencil-alt", "fa-calculator", "fa-flask", "fa-atom", "fa-globe", "fa-puzzle-piece", "fa-shapes", "fa-user-graduate", "fa-video", "fa-camera", "fa-microphone", "fa-headphones", "fa-bell", "fa-bullhorn", "fa-comment", "fa-envelope"];
         function loadIcons() {
             const grid = document.getElementById('icon-grid-container'); grid.innerHTML = "";
             iconList.forEach(i => {
-                const d = document.createElement('div'); 
-                d.className = 'icon-opt'; 
-                d.innerHTML = `<i class="fas ${i.c}" style="color:${i.k}"></i>`;
-                d.onclick = () => { 
-                    document.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected')); 
-                    d.classList.add('selected'); 
-                    document.getElementById('p-selected-icon').value = i.c; 
-                    const preview = document.getElementById('preview-icon');
-                    preview.className = `fas ${i.c}`;
-                    preview.style.color = i.k;
-                };
+                const d = document.createElement('div'); d.className = 'icon-opt'; d.innerHTML = `<i class="fas ${i}"></i>`;
+                d.onclick = () => { document.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); document.getElementById('p-selected-icon').value=i; document.getElementById('preview-icon').className=`fas ${i}`; };
                 grid.appendChild(d);
             });
         }
@@ -345,17 +378,28 @@
 
         function formuGuncelle() {
             const tur = document.querySelector('input[name="tur"]:checked').value;
-            const linkLabel = document.getElementById('lbl-link');
             if(tur === 'yazilar') {
                 document.getElementById('area-detay').style.display = 'none';
-                linkLabel.style.display = 'none'; document.getElementById('p-link').style.display = 'none';
+                document.getElementById('lbl-link').style.display = 'none'; document.getElementById('p-link').style.display = 'none';
                 document.getElementById('area-yazi').style.display = 'block';
             } else {
                 document.getElementById('area-detay').style.display = 'block';
-                linkLabel.innerText = tur === 'videolar' ? "Video Linki (YouTube / MP4)" : "Dosya Adı / Link";
-                linkLabel.style.display = 'block'; document.getElementById('p-link').style.display = 'block';
+                document.getElementById('lbl-link').style.display = 'block'; document.getElementById('p-link').style.display = 'block';
                 document.getElementById('area-yazi').style.display = 'none';
             }
+        }
+
+        function grupSec(tip) {
+            const checks = document.querySelectorAll('.cat-check');
+            checks.forEach(c => c.checked = false);
+            if(tip === 'ilk') checks.forEach(c => { if(['1. Sınıf','2. Sınıf','3. Sınıf','4. Sınıf'].includes(c.value)) c.checked = true; });
+            else if(tip === 'orta') checks.forEach(c => { if(['5. Sınıf','6. Sınıf','7. Sınıf','8. Sınıf (LGS)'].includes(c.value)) c.checked = true; });
+            else if(tip === 'hepsi') checks.forEach(c => c.checked = true);
+        }
+
+        function toggleMediaInput() {
+            const val = document.getElementById('set-action').value;
+            document.getElementById('media-input-area').style.display = (val === 'youtube' || val === 'image') ? 'block' : 'none';
         }
 
         async function icerikKaydet() {
@@ -365,85 +409,52 @@
             const icerik = document.getElementById('p-icerik').value;
             const icon = document.getElementById('p-selected-icon').value;
             const vitrin = document.getElementById('is-vitrin').checked;
+            
             const cats = []; document.querySelectorAll('.cat-check:checked').forEach(c => cats.push(c.value));
 
-            if(!baslik) return alert("Başlık gerekli!");
-            const batch = db.batch();
-            const tarih = firebase.firestore.FieldValue.serverTimestamp();
+            if(!baslik) return alert("Başlık giriniz!");
 
-            if(tur === 'yazilar') batch.set(db.collection('yazilar').doc(), { baslik, icerik, tarih });
-            else cats.forEach(k => batch.set(db.collection(tur).doc(), { baslik, link, kategori: k, icon, vitrin, tarih }));
-            
+            const batch = db.batch();
+            if(tur === 'yazilar') {
+                batch.set(db.collection('yazilar').doc(), { baslik, icerik, tarih: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                cats.forEach(k => {
+                    batch.set(db.collection(tur).doc(), { baslik, link, kategori: k, icon, vitrin, tarih: firebase.firestore.FieldValue.serverTimestamp() });
+                });
+            }
             await batch.commit();
-            alert("Kaydedildi!"); document.getElementById('p-baslik').value=""; document.getElementById('p-link').value=""; verileriYukle();
+            alert("Kaydedildi!");
+            verileriYukle();
         }
 
+        // --- KİTAP YÖNETİMİ ---
         function kitapKaydet() {
             const baslik = document.getElementById('k-baslik').value;
             const alt = document.getElementById('k-alt').value;
             const link = document.getElementById('k-link').value;
             const renk = document.getElementById('k-renk').value;
             const sira = document.getElementById('k-sira').value;
-            if(!baslik || !link) return alert("Başlık/Link eksik!");
-            db.collection("kitaplar").add({ baslik, altBaslik: alt, link, renk, sira: parseInt(sira), kapakMetni: baslik.replace(" ","\n"), etiket: "Oku", tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>{alert("Kitap eklendi!"); kitaplariGetir();});
+
+            if(!baslik || !link) return alert("Başlık ve link zorunlu!");
+
+            db.collection("kitaplar").add({
+                baslik, altBaslik: alt, link, renk, sira: parseInt(sira),
+                kapakMetni: baslik.replace(" ", "\n"), etiket: "Oku", tarih: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => { alert("Kitap Eklendi!"); kitaplariGetir(); });
         }
 
         function kitaplariGetir() {
-            db.collection("kitaplar").orderBy("sira", "desc").get().then(s => {
-                let h=""; s.forEach(d => { const k=d.data(); h+=`<div class="list-item"><span><b>${k.baslik}</b> (${k.sira})</span><button class="btn-mini btn-danger" onclick="sil('kitaplar','${d.id}')">Sil</button></div>`; });
-                document.getElementById('kitap-listesi').innerHTML=h;
+            db.collection("kitaplar").orderBy("sira", "desc").get().then(snap => {
+                let h = "";
+                snap.forEach(d => {
+                    const k = d.data();
+                    h += `<div class="list-item"><span><b>${k.baslik}</b> (${k.sira})</span> <button class="btn-mini btn-del" onclick="sil('kitaplar','${d.id}')">Sil</button></div>`;
+                });
+                document.getElementById('kitap-listesi').innerHTML = h;
             });
         }
 
-        // --- YENİ: VİTRİN YÖNETİMİ ---
-        function vitrinGetir() {
-            const vitrinListesi = document.getElementById('vitrin-listesi');
-            vitrinListesi.innerHTML = "Yükleniyor...";
-            let html = "";
-            
-            tumIceriklerCache.forEach(i => {
-                if(i.vitrin) {
-                    html += `<div class="list-item">
-                        <div style="flex:1;"><b>${i.baslik}</b> <small>(${i.type})</small></div>
-                        <button class="btn-mini btn-warning" onclick="vitrindenCikar('${i.col}', '${i.id}')">Vitrinden Kaldır</button>
-                    </div>`;
-                }
-            });
-            vitrinListesi.innerHTML = html || "Vitrinde içerik yok.";
-        }
-
-        function vitrindenCikar(col, id) {
-            db.collection(col).doc(id).update({ vitrin: false }).then(() => {
-                alert("Vitrinden kaldırıldı!");
-                verileriYukle(); // Listeyi yenile
-                setTimeout(vitrinGetir, 1000); // UI güncelle
-            });
-        }
-
-        function enYeniOyunuGetir() {
-            db.collection("projeler").orderBy("tarih", "desc").limit(1).get().then(snap => {
-                if(!snap.empty) {
-                    const oyun = snap.docs[0].data();
-                    document.getElementById('set-media').value = oyun.link;
-                    document.getElementById('set-msg').value = oyun.baslik;
-                    document.getElementById('set-text').value = "YENİ";
-                    alert("En yeni oyun bulundu: " + oyun.baslik);
-                } else alert("Oyun bulunamadı.");
-            });
-        }
-
-        function daireKaydet() { 
-            db.collection("site_ayarlari").doc("ozel_duyuru").set({ 
-                aktif: document.getElementById('set-active').checked, 
-                daireMetni: document.getElementById('set-text').value, 
-                mesaj: document.getElementById('set-msg').value,
-                sekil: document.getElementById('set-shape').value,
-                action: document.getElementById('set-action').value,
-                medya: document.getElementById('set-media').value
-            }, {merge:true}).then(()=>alert("Buton güncellendi!")); 
-        }
-        function robotKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('api-key').value, prompt: document.getElementById('robot-prompt').value }, {merge:true}).then(()=>alert("Robot ayarlandı!")); }
-
+        // --- VERİ YÖNETİMİ ---
         function istatistikGetir() {
             const bugun = new Date().toISOString().split('T')[0];
             db.collection("istatistik").doc(bugun).onSnapshot(d => document.getElementById('stat-today').innerText = d.exists ? d.data().ziyaret : 0);
@@ -452,25 +463,46 @@
 
         function verileriYukle() {
             tumIceriklerCache = [];
-            Promise.all([db.collection("projeler").get(), db.collection("videolar").get(), db.collection("yazilar").get(), db.collection("kaynaklar").get()]).then(([p,v,y,k]) => {
-                p.forEach(d => tumIceriklerCache.push({id:d.id, col:'projeler', type:'OYUN', ...d.data()}));
-                v.forEach(d => tumIceriklerCache.push({id:d.id, col:'videolar', type:'VİDEO', ...d.data()}));
-                y.forEach(d => tumIceriklerCache.push({id:d.id, col:'yazilar', type:'YAZI', ...d.data()}));
-                k.forEach(d => tumIceriklerCache.push({id:d.id, col:'kaynaklar', type:'PDF', ...d.data()}));
-                tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
+            Promise.all([
+                db.collection("projeler").get(),
+                db.collection("yazilar").get(),
+                db.collection("kaynaklar").get()
+            ]).then(([projeler, yazilar, kaynaklar]) => {
+                projeler.forEach(d => tumIceriklerCache.push({id:d.id, col:'projeler', ...d.data()}));
+                yazilar.forEach(d => tumIceriklerCache.push({id:d.id, col:'yazilar', ...d.data()}));
+                kaynaklar.forEach(d => tumIceriklerCache.push({id:d.id, col:'kaynaklar', ...d.data()}));
                 listele();
             });
+            
             db.collection("iletisim_talepleri").orderBy("tarih","desc").onSnapshot(s => {
-                let h=""; const sz=s.size; 
-                document.getElementById('msg-badge').innerText=sz; document.getElementById('msg-badge').style.display=sz>0?'inline':'none'; document.getElementById('stat-msg').innerText=sz;
-                s.forEach(d => h+=`<div class="list-item"><div><b>${d.data().ad_soyad}</b><br>${d.data().konu}</div><div class="action-btns"><button class="btn-mini btn-info" onclick="arsiveAt('${d.id}','${d.data().ad_soyad}','${d.data().konu}')">Arşiv</button><button class="btn-mini btn-danger" onclick="sil('iletisim_talepleri','${d.id}')">Sil</button></div></div>`);
-                document.getElementById('mesaj-listesi').innerHTML=h||"Mesaj yok.";
+                let h=""; 
+                const size = s.size;
+                document.getElementById('msg-badge').innerText = size; 
+                document.getElementById('msg-badge').style.display = size > 0 ? 'inline-block' : 'none';
+                document.getElementById('stat-msg').innerText = size;
+                
+                s.forEach(d => h+=`<div class="list-item">
+                    <div><b>${d.data().ad_soyad}</b><br><small>${d.data().konu}</small></div>
+                    <div class="action-btns">
+                        <button class="btn-mini" onclick="arsiveAt('${d.id}','${d.data().ad_soyad}','${d.data().konu}')">Arşivle</button>
+                        <button class="btn-mini btn-del" onclick="sil('iletisim_talepleri','${d.id}')">Sil</button>
+                    </div>
+                </div>`);
+                document.getElementById('mesaj-listesi').innerHTML = h || "Mesaj yok.";
             });
-            db.collection("duyurular").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item"><span>${d.data().metin}</span> <button class="btn-mini btn-danger" onclick="sil('duyurular','${d.id}')">Sil</button></div>`); document.getElementById('list-duyurular').innerHTML=h; });
-            db.collection("tavsiyeler").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item"><span>${d.data().baslik}</span> <button class="btn-mini btn-danger" onclick="sil('tavsiyeler','${d.id}')">Sil</button></div>`); document.getElementById('list-tavsiyeler').innerHTML=h; });
+
+            db.collection("duyurular").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item"><span>${d.data().metin}</span> <button class="btn-mini btn-del" onclick="sil('duyurular','${d.id}')">Sil</button></div>`); document.getElementById('list-duyurular').innerHTML=h; });
+            db.collection("tavsiyeler").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item"><span>${d.data().baslik}</span> <button class="btn-mini btn-del" onclick="sil('tavsiyeler','${d.id}')">Sil</button></div>`); document.getElementById('list-tavsiyeler').innerHTML=h; });
+            
             db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => { if(d.exists) { const v=d.data(); 
-                document.getElementById('set-active').checked=v.aktif; document.getElementById('set-text').value=v.daireMetni||""; document.getElementById('set-msg').value=v.mesaj||""; 
-                document.getElementById('set-shape').value=v.sekil||"50%"; document.getElementById('set-action').value=v.action||"link"; document.getElementById('set-media').value=v.medya||"";
+                document.getElementById('set-active').checked=v.aktif; 
+                document.getElementById('set-text').value=v.daireMetni || ""; 
+                document.getElementById('set-msg').value=v.mesaj || ""; 
+                document.getElementById('set-anim').value=v.anim || "none"; 
+                document.getElementById('set-shape').value=v.sekil || "50%"; 
+                document.getElementById('set-action').value=v.action || "alert"; 
+                document.getElementById('set-media').value=v.medya || ""; 
+                toggleMediaInput();
             }});
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; }});
         }
@@ -479,11 +511,11 @@
             let h = "";
             tumIceriklerCache.forEach(i => {
                 h += `<div class="list-item">
-                    <div style="flex:1;"><span style="background:#e0e7ff; color:#6366f1; padding:2px 6px; border-radius:4px; font-size:0.7rem;">${i.type}</span> <b>${i.baslik}</b><br><small>${i.kategori || '-'}</small></div>
+                    <div style="flex:1;">[${i.col === 'yazilar' ? 'YAZI' : 'OYUN'}] <b>${i.baslik}</b> <br><small>${i.kategori || '-'}</small></div> 
                     <div class="action-btns">
-                        <button class="btn-mini btn-warning" onclick="haftaninOyunu('${i.baslik}','${i.link}')">Vitrin</button>
-                        <button class="btn-mini btn-danger" style="background:#ef4444;" onclick="daireYap('${i.baslik}','${i.link}')">⭕ Buton</button>
-                        <button class="btn-mini btn-danger" onclick="sil('${i.col}','${i.id}')">Sil</button>
+                        <button class="btn-mini btn-haftanin" onclick="haftaninOyunu('${i.baslik}','${i.link}')">Vitrin</button>
+                        <button class="btn-mini btn-daire" onclick="daireYap('${i.baslik}','${i.link}')">Buton</button>
+                        <button class="btn-mini btn-del" onclick="sil('${i.col}','${i.id}')">Sil</button>
                     </div>
                 </div>`;
             });
@@ -492,34 +524,37 @@
 
         function icerikFiltrele() {
             const val = document.getElementById('search-content').value.toLowerCase();
-            document.querySelectorAll('#tum-icerik-listesi .list-item').forEach(i => i.style.display = i.innerText.toLowerCase().includes(val) ? 'flex' : 'none');
+            const items = document.querySelectorAll('#tum-icerik-listesi .list-item');
+            items.forEach(i => i.style.display = i.innerText.toLowerCase().includes(val) ? 'flex' : 'none');
         }
 
         function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }); }
         function tavsiyeEkle() { db.collection("tavsiyeler").add({ baslik: document.getElementById('t-baslik').value, aciklama: document.getElementById('t-aciklama').value, link: document.getElementById('t-link').value, icon: "fa-star", tarih: firebase.firestore.FieldValue.serverTimestamp() }); }
+        
+        function daireKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ 
+            aktif: document.getElementById('set-active').checked, 
+            daireMetni: document.getElementById('set-text').value, 
+            mesaj: document.getElementById('set-msg').value,
+            anim: document.getElementById('set-anim').value,
+            sekil: document.getElementById('set-shape').value,
+            action: document.getElementById('set-action').value,
+            medya: document.getElementById('set-media').value
+        }, {merge:true}).then(()=>alert("Ayarlar Güncellendi!")); }
+        
+        function robotKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('api-key').value, prompt: document.getElementById('robot-prompt').value }, {merge:true}).then(()=>alert("Robot Ayarlandı!")); }
+
         function haftaninOyunu(baslik, link) { db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik, url: link }).then(()=>alert("Vitrine Koyuldu!")); }
-        function daireYap(baslik, link) { 
-            document.getElementById('set-text').value="YENİ"; document.getElementById('set-msg').value=baslik; 
-            document.getElementById('set-action').value="link"; document.getElementById('set-media').value=link; 
-            daireKaydet(); 
-        }
+        function daireYap(baslik, link) { document.getElementById('set-text').value="YENİ"; document.getElementById('set-msg').value=baslik; document.getElementById('set-action').value="link"; document.getElementById('set-media').value=link; daireKaydet(); }
+
         function sil(col, id) { 
             if(confirm("DİKKAT! Bu içeriği kalıcı olarak silmek istediğine emin misin?")) {
-                db.collection(col).doc(id).delete().then(() => { alert("Silindi."); verileriYukle(); });
+                db.collection(col).doc(id).delete().then(() => {
+                    alert("Silindi.");
+                    verileriYukle();
+                });
             }
         }
         function arsiveAt(id, ad, konu) { db.collection("arsiv_mesajlar").add({ ad_soyad: ad, konu, arsiv_tarihi: firebase.firestore.FieldValue.serverTimestamp() }).then(() => db.collection("iletisim_talepleri").doc(id).delete()); }
-        function toggleMediaInput() { /* Video inputu zaten açık */ }
-        
-        function yedekAl() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tumIceriklerCache));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "site_yedek_" + new Date().toISOString().slice(0,10) + ".json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        }
     </script>
 </body>
 </html>
