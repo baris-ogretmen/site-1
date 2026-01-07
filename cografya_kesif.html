@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coğrafya Yapbozu: Keşfet ve Bul</title>
+    
+    <!-- Boxicons & Font -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* Daha canlı, oyun hamuru tarzı renkler */
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* Konfeti Efekti */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            z-index: 999;
+            animation: confetti-fall 2.5s linear forwards;
+        }
+
+        /* --- ANA KONTEYNER --- */
+        .game-container {
+            position: relative;
+            width: 1100px;
+            height: 700px;
+            background: #fff;
+            border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 8px solid #fff;
+        }
+
+        /* --- BAŞLANGIÇ EKRANI --- */
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .start-screen.hidden {
+            transform: translateY(-100%);
+        }
+
+        .start-screen h1 {
+            font-size: 72px;
+            color: #fff;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .start-screen p {
+            font-size: 22px;
+            color: rgba(255,255,255,0.9);
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .start-btn {
+            background: #ffae00; /* Turuncu buton */
+            color: #fff;
+            border: none;
+            padding: 20px 60px;
+            font-size: 28px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-weight: 900;
+            box-shadow: 0 10px 0px #d69200, 0 20px 20px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 4px 0px #d69200;
+        }
+
+        /* --- OYUN ÜST PANEL --- */
+        .game-header {
+            height: 80px;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            border-bottom: 2px solid #f0f0f0;
+            z-index: 10;
+        }
+
+        .level-badge {
+            background: #e0f2fe;
+            color: #0284c7;
+            padding: 8px 20px;
+            border-radius: 15px;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .score-box {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 8px 25px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #map-container {
+            flex-grow: 1;
+            position: relative;
+            background: #b9e6ff; /* Daha tatlı bir deniz mavisi */
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- ÖĞRENME KARTI --- */
+        .learning-card {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 400px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            z-index: 50;
+            transform: translateX(-150%);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 4px solid #fff;
+        }
+
+        .learning-card.active {
+            transform: translateX(0);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .flag-icon {
+            font-size: 48px;
+            line-height: 1;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+
+        .learning-card h3 {
+            font-size: 32px;
+            color: #333;
+            line-height: 1.1;
+        }
+
+        .learning-card .capital {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+            background: #f3f4f6;
+            padding: 8px 15px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .learning-card .capital span {
+            color: #2563eb;
+            font-weight: 800;
+        }
+
+        .learning-card .instruction {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            border-left: 4px solid #2563eb;
+            padding-left: 15px;
+        }
+
+        .action-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 18px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .action-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        /* --- OYUN KONTROLLERİ (İPUCU BUTONU) --- */
+        .quiz-controls {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 40;
+            transform: translateY(150%);
+            transition: transform 0.4s ease;
+        }
+
+        .quiz-controls.show {
+            transform: translateY(0);
+        }
+
+        .hint-btn {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+
+        .hint-btn:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+
+        .hint-popup {
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 15px 15px 0 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            font-size: 16px;
+            color: #4b5563;
+            max-width: 300px;
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: 0.3s;
+            pointer-events: none;
+        }
+        
+        .hint-popup.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- BİLDİRİM BAR --- */
+        .status-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            padding: 12px 35px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            font-size: 20px;
+            font-weight: 800;
+            z-index: 50;
+            color: #333;
+            display: none;
+            white-space: nowrap;
+        }
+        
+        .status-bar.show { display: block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .status-bar.correct { color: #fff; background: #10b981; }
+        .status-bar.wrong { color: #fff; background: #ef4444; }
+
+        @keyframes popIn {
+            0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .game-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+            .learning-card {
+                width: 90%;
+                left: 5%;
+                bottom: 20px;
+            }
+            .start-screen h1 { font-size: 40px; }
+            .start-btn { padding: 15px 40px; font-size: 20px; }
+            .quiz-controls { right: 20px; bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- Giriş Ekranı (İsimsiz) -->
+        <div class="start-screen" id="startScreen">
+            <h1>🌍 Coğrafya Yapbozu</h1>
+            <p>Ülkeleri önce keşfet, sonra haritada yerlerini bul ve puanları topla!</p>
+            <button class="start-btn" onclick="startGame()">MACERAYA BAŞLA</button>
+        </div>
+
+        <!-- Oyun Arayüzü -->
+        <div class="game-header">
+            <div class="level-badge">
+                <i class='bx bx-map-pin'></i>
+                <span id="levelDisplay">Seviye 1</span>
+            </div>
+            <div class="score-box">
+                <i class='bx bxs-star'></i>
+                <span id="score">0</span>
+            </div>
+        </div>
+
+        <div id="map-container">
+            <div id="map"></div>
+            <div class="status-bar" id="statusBar">Haritadan ülkeyi bul!</div>
+            
+            <!-- Quiz Modunda Görünen İpucu Butonu -->
+            <div class="quiz-controls" id="quizControls">
+                <div class="hint-popup" id="hintPopup">
+                    Burada ipucu görünecek...
+                </div>
+                <button class="hint-btn" onclick="showHint()">
+                    <i class='bx bxs-bulb'></i> İpucu Al (-10 Puan)
+                </button>
+            </div>
+        </div>
+
+        <!-- Öğrenme Kartı -->
+        <div class="learning-card" id="learningCard">
+            <div class="card-header">
+                <span class="flag-icon" id="cardFlag">🏁</span>
+                <h3 id="cardCountry">Ülke Adı</h3>
+            </div>
+            <p class="capital">Başkent: <span id="cardCapital">Şehir</span></p>
+            <p class="instruction">Haritada işaretlenen yeri dikkatlice incele. Hazır hissettiğinde butona bas ve bulmaya çalış!</p>
+            <button class="action-btn" onclick="startQuizMode()">ÖĞRENDİM, SOR GELSİN!</button>
+        </div>
+
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // Oyun Değişkenleri
+        let map;
+        let geoJsonLayer;
+        let currentLevel = 0;
+        let score = 0;
+        let gameMode = 'idle'; // 'learn' veya 'quiz'
+        let currentTarget = null;
+        let worldData = null;
+
+        // Öğrenilecek Ülkeler Listesi (Bayraklar ve İpuçları ile zenginleştirildi)
+        const levels = [
+            { id: "TUR", name: "Türkiye", capital: "Ankara", flag: "🇹🇷", hint: "Asya ile Avrupa'yı birbirine bağlayan köprü." },
+            { id: "DEU", name: "Almanya", capital: "Berlin", flag: "🇩🇪", hint: "Avrupa'nın kalbinde, otomotiv devi." },
+            { id: "FRA", name: "Fransa", capital: "Paris", flag: "🇫🇷", hint: "Eyfel Kulesi'nin ev sahibi." },
+            { id: "ITA", name: "İtalya", capital: "Roma", flag: "🇮🇹", hint: "Haritada bir çizme şeklindedir." },
+            { id: "USA", name: "ABD", capital: "Washington DC", flag: "🇺🇸", hint: "Özgürlük Anıtı bu ülkededir." },
+            { id: "GBR", name: "İngiltere (BK)", capital: "Londra", flag: "🇬🇧", hint: "Avrupa'nın kuzeybatısında bir ada ülkesi." },
+            { id: "ESP", name: "İspanya", capital: "Madrid", flag: "🇪🇸", hint: "Portekiz'in komşusu, boğa güreşleri ile bilinir." },
+            { id: "RUS", name: "Rusya", capital: "Moskova", flag: "🇷🇺", hint: "Yüzölçümü bakımından dünyanın en büyük ülkesi." },
+            { id: "CHN", name: "Çin", capital: "Pekin", flag: "🇨🇳", hint: "Çin Seddi'nin bulunduğu Asya ülkesi." },
+            { id: "BRA", name: "Brezilya", capital: "Brasilia", flag: "🇧🇷", hint: "Amazon ormanlarının çoğu burada." },
+            { id: "EGY", name: "Mısır", capital: "Kahire", flag: "🇪🇬", hint: "Nil nehri ve piramitler burada." },
+            { id: "JPN", name: "Japonya", capital: "Tokyo", flag: "🇯🇵", hint: "Doğuda, adalardan oluşan bir teknoloji devi." },
+            { id: "AUS", name: "Avustralya", capital: "Kanberra", flag: "🇦🇺", hint: "Hem bir kıta hem bir ülke, kanguruların vatanı." },
+            { id: "IND", name: "Hindistan", capital: "Yeni Delhi", flag: "🇮🇳", hint: "Tac Mahal'in bulunduğu Asya ülkesi." },
+            { id: "AZ", name: "Azerbaycan", capital: "Bakü", flag: "🇦🇿", hint: "Kardeş ülke, Hazar Denizi kıyısında." }
+        ];
+
+        // Harita Stilleri
+        const defaultStyle = {
+            fillColor: "#f8f9fa",
+            weight: 1,
+            opacity: 1,
+            color: '#cbd5e1',
+            dashArray: '',
+            fillOpacity: 0.8
+        };
+
+        const highlightStyle = {
+            fillColor: '#FFD700',
+            weight: 2,
+            color: '#FFD700',
+            fillOpacity: 0.8
+        };
+
+        const correctStyle = {
+            fillColor: '#10b981', // Yeşil (Doğru)
+            weight: 1,
+            opacity: 1,
+            color: '#fff',
+            fillOpacity: 1
+        };
+
+        const wrongStyle = {
+            fillColor: '#ef4444', // Kırmızı (Yanlış)
+            weight: 1,
+            fillOpacity: 0.8
+        };
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            initMap();
+        }
+
+        function initMap() {
+            // Haritayı oluştur
+            map = L.map('map', {
+                center: [30, 0],
+                zoom: 2,
+                zoomControl: false,
+                doubleClickZoom: false,
+                attributionControl: false,
+                minZoom: 2,
+                maxZoom: 6
+            });
+
+            // Arkaplan (Sadece deniz için renkli bir katman)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+                maxZoom: 6
+            }).addTo(map);
+
+            // GeoJSON Verisini Yükle
+            fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+                .then(res => res.json())
+                .then(data => {
+                    worldData = data;
+                    // Katmanı ekle
+                    geoJsonLayer = L.geoJSON(data, {
+                        style: defaultStyle,
+                        onEachFeature: onEachFeature
+                    }).addTo(map);
+
+                    // Oyunu Başlat
+                    setTimeout(startTurn, 500);
+                });
+        }
+
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: (e) => {
+                    if(gameMode === 'quiz') {
+                        const layer = e.target;
+                        if(layer.options.fillColor !== correctStyle.fillColor) {
+                            layer.setStyle({
+                                weight: 2,
+                                color: '#6366f1',
+                                fillOpacity: 0.9
+                            });
+                        }
+                    }
+                },
+                mouseout: (e) => {
+                    if(gameMode === 'quiz') {
+                        const layer = e.target;
+                        if(layer.options.fillColor !== correctStyle.fillColor) {
+                            geoJsonLayer.resetStyle(layer);
+                        }
+                    }
+                },
+                click: (e) => {
+                    if (gameMode === 'quiz') {
+                        checkAnswer(feature, layer);
+                    }
+                }
+            });
+        }
+
+        function startTurn() {
+            if(currentLevel >= levels.length) {
+                // Oyun Bitti
+                const finalMsg = `Muhteşem! Tüm ülkeleri tamamladın. Toplam Puan: ${score}`;
+                showFeedback(true, finalMsg);
+                document.getElementById('learningCard').classList.remove('active');
+                return;
+            }
+
+            currentTarget = levels[currentLevel];
+            gameMode = 'learn';
+            document.getElementById('levelDisplay').innerText = `Seviye ${currentLevel + 1}`;
+
+            // Kart Bilgilerini Güncelle
+            document.getElementById('cardFlag').innerText = currentTarget.flag;
+            document.getElementById('cardCountry').innerText = currentTarget.name;
+            document.getElementById('cardCapital').innerText = currentTarget.capital;
+            document.getElementById('learningCard').classList.add('active');
+            document.getElementById('quizControls').classList.remove('show');
+            document.getElementById('hintPopup').classList.remove('visible');
+            document.getElementById('statusBar').classList.remove('show');
+
+            // Haritada Göster (Öğrenme Aşaması)
+            highlightCountry(currentTarget.id);
+        }
+
+        function highlightCountry(code) {
+            geoJsonLayer.eachLayer(function (layer) {
+                if (layer.feature.id === code) {
+                    layer.setStyle({
+                        fillColor: '#f43f5e', // Öğrenme Rengi (Dikkat çekici pembe/kırmızı)
+                        fillOpacity: 1,
+                        color: '#fff',
+                        weight: 2
+                    });
+                    map.fitBounds(layer.getBounds(), { padding: [100, 100], maxZoom: 4 });
+                } else if(layer.options.fillColor !== correctStyle.fillColor) {
+                    geoJsonLayer.resetStyle(layer);
+                }
+            });
+        }
+
+        function startQuizMode() {
+            gameMode = 'quiz';
+            document.getElementById('learningCard').classList.remove('active');
+            document.getElementById('quizControls').classList.add('show');
+            
+            // Haritayı Uzaklaştır
+            map.flyTo([30, 0], 2, { duration: 1.5 });
+
+            // İpucu rengini kaldır (Eski haline döndür)
+            geoJsonLayer.eachLayer(function (layer) {
+                if(layer.options.fillColor !== correctStyle.fillColor) {
+                    geoJsonLayer.resetStyle(layer);
+                }
+            });
+
+            // Status Bar Göster
+            showFeedback(false, `Haritada Bul: ${currentTarget.name}`);
+            const sb = document.getElementById('statusBar');
+            sb.classList.remove('correct', 'wrong');
+            sb.style.color = '#333';
+            sb.style.background = '#fff';
+        }
+
+        function showHint() {
+            // İpucu kullanma bedeli
+            if(score > 0) score = Math.max(0, score - 10);
+            document.getElementById('score').innerText = score;
+
+            const hintBox = document.getElementById('hintPopup');
+            hintBox.innerText = `💡 İpucu: ${currentTarget.hint}`;
+            hintBox.classList.add('visible');
+        }
+
+        function checkAnswer(feature, layer) {
+            const clickedId = feature.id; // GeoJSON ID'si
+            
+            if (clickedId === currentTarget.id) {
+                // DOĞRU CEVAP
+                score += 50;
+                document.getElementById('score').innerText = score;
+                
+                layer.setStyle(correctStyle);
+                layer.bringToFront();
+
+                showFeedback(true, `Harika! ${currentTarget.name} doğru.`);
+                createConfetti();
+
+                // Sonraki seviye
+                currentLevel++;
+                setTimeout(() => {
+                    startTurn();
+                }, 2000);
+
+            } else {
+                // YANLIŞ CEVAP
+                score = Math.max(0, score - 10);
+                document.getElementById('score').innerText = score;
+                
+                // Tıklanan ülkenin adını bul (GeoJSON'dan name özelliğini almaya çalışalım)
+                // world.geo.json dosyasında "name" özelliği var.
+                const clickedName = feature.properties.name || "Burası";
+                
+                showFeedback(false, `Yanlış! Orası ${clickedName}. Biz ${currentTarget.name}'yi arıyoruz.`);
+                
+                const originalColor = layer.options.fillColor;
+                layer.setStyle(wrongStyle);
+                setTimeout(() => {
+                    if(originalColor !== correctStyle.fillColor) {
+                         geoJsonLayer.resetStyle(layer);
+                    }
+                }, 800);
+            }
+        }
+
+        function showFeedback(isCorrect, msg) {
+            const sb = document.getElementById('statusBar');
+            sb.innerText = msg;
+            sb.className = isCorrect ? "status-bar show correct" : "status-bar show wrong";
+            
+            if(!isCorrect) {
+                // Hata durumunda animasyonu yenilemek için
+                sb.classList.remove('show');
+                void sb.offsetWidth; // trigger reflow
+                sb.classList.add('show');
+            }
+        }
+
+        function createConfetti() {
+            for(let i=0; i<40; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = ['#ff9a9e', '#a18cd1', '#fbc2eb', '#4ade80', '#fbbf24'][Math.floor(Math.random()*5)];
+                confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+    </script>
+</body>
+</html>
