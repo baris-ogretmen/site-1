@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panda Eğitim Akademisi</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #FFC107;
+            --bg-gradient: radial-gradient(circle, #E0F7FA 0%, #80DEEA 100%);
+            --panda-grey: #4d4449;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            font-family: 'Varela Round', sans-serif;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- BAŞLANGIÇ EKRANI --- */
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+            transition: opacity 0.5s;
+            overflow-y: auto;
+        }
+
+        .menu-title {
+            color: #00BCD4;
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(30px, 5vw, 40px);
+            margin-bottom: 5px;
+            text-align: center;
+            text-shadow: 2px 2px 0px #E0F7FA;
+        }
+
+        /* Grid Düzeni Güncellendi - Daha fazla kategori için */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* Mobilde 2 sütun */
+            gap: 15px;
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+            justify-items: center;
+        }
+
+        .cat-btn {
+            background: #fff;
+            border: none;
+            color: #555;
+            padding: 10px;
+            width: 100%;
+            max-width: 160px;
+            aspect-ratio: 1; /* Kare oran */
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .cat-btn:active { transform: translateY(5px); box-shadow: none; }
+        
+        .cat-btn i { font-size: 36px; margin-bottom: 5px; }
+
+        /* Kategori Renkleri */
+        .cat-btn.math { border-bottom: 5px solid #FFC107; } .cat-btn.math i { color: #FFC107; }
+        .cat-btn.lang { border-bottom: 5px solid #EF5350; } .cat-btn.lang i { color: #EF5350; }
+        .cat-btn.attention { border-bottom: 5px solid #66BB6A; } .cat-btn.attention i { color: #66BB6A; }
+        .cat-btn.logic { border-bottom: 5px solid #AB47BC; } .cat-btn.logic i { color: #AB47BC; }
+        .cat-btn.color { border-bottom: 5px solid #29B6F6; } .cat-btn.color i { color: #29B6F6; }
+        .cat-btn.emotion { border-bottom: 5px solid #FF9800; } .cat-btn.emotion i { color: #FF9800; }
+        .cat-btn.memory { border-bottom: 5px solid #8D6E63; } .cat-btn.memory i { color: #8D6E63; }
+
+        /* --- OYUN ALANI --- */
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* --- PANDA --- */
+        .panda-container {
+            position: relative;
+            width: 160px;
+            height: 140px;
+            margin-top: 10px;
+            flex-shrink: 0;
+            transition: transform 0.3s;
+        }
+
+        .face { height: 100px; width: 115px; background: white; border-radius: 120px 120px 90px 90px; position: absolute; left: 22px; top: 25px; z-index: 5; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .earl, .earr { background: var(--panda-grey); height: 35px; width: 40px; border-radius: 43px 43px 0 0; position: absolute; z-index: 1; }
+        .earl { transform: rotate(-38deg); top: 25px; left: 12px; }
+        .earr { transform: rotate(38deg); top: 25px; left: 108px; }
+        .eyel, .eyer { background: var(--panda-grey); height: 28px; width: 26px; border-radius: 32px; position: absolute; top: 60px; overflow: hidden; z-index: 6; }
+        .eyel { left: 45px; transform: rotate(-20deg); }
+        .eyer { left: 90px; transform: rotate(20deg); }
+        .eyeball1, .eyeball2 { height: 10px; width: 10px; background: white; border-radius: 50%; position: absolute; top: 8px; left: 8px; transition: all 0.1s; }
+        .nose { height: 12px; width: 20px; background: var(--panda-grey); border-radius: 50%; position: absolute; top: 90px; left: 70px; z-index: 6;}
+        .mouth-container { position: absolute; top: 105px; left: 62px; width: 36px; text-align: center; z-index: 6;}
+        .mouth { display: inline-block; width: 8px; height: 4px; border: 2px solid var(--panda-grey); border-top: 0; border-radius: 0 0 10px 10px; margin: 0 1px; }
+        .blshl, .blshr { background: #ff9999; height: 14px; width: 18px; border-radius: 50%; position: absolute; top: 95px; opacity: 0.6; z-index: 6;}
+        .blshl { left: 35px; } .blshr { right: 35px; }
+        .handl, .handr { background: var(--panda-grey); height: 40px; width: 30px; border-radius: 10px 10px 30px 30px; position: absolute; z-index: 10; transition: all 0.5s; top: 120px; }
+        .handl { left: 45px; } .handr { left: 85px; }
+        .pawl, .pawr { background: var(--panda-grey); height: 35px; width: 45px; border-radius: 40px 40px 20px 20px; position: absolute; top: 140px; z-index: 2; }
+        .pawl { left: 30px; } .pawr { left: 90px; }
+
+        /* Aksesuarlar */
+        .accessory { position: absolute; z-index: 20; display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .acc-bowtie { font-size: 30px; color: #E91E63; top: 120px; left: 65px; transform: rotate(-10deg); }
+        .acc-glasses { width: 70px; height: 22px; border: 3px solid #333; border-radius: 8px; top: 62px; left: 45px; background: rgba(255,255,255,0.3); }
+        .acc-glasses::before { content:''; position:absolute; left:30px; top:8px; width:8px; height:3px; background:#333; }
+        .acc-hat { font-size: 50px; color: #3F51B5; top: -20px; left: 45px; transform: rotate(-10deg); text-shadow: 2px 2px 0px rgba(0,0,0,0.2); }
+        .acc-bamboo { font-size: 40px; color: #4CAF50; top: 115px; right: -15px; transform: rotate(20deg); }
+        .acc-balloon { font-size: 50px; color: #FF5252; top: -30px; right: -20px; animation: float 3s ease-in-out infinite !important; }
+
+        .panda.shy .handl { transform: rotate(-150deg) translate(20px, -60px); height: 80px; }
+        .panda.shy .handr { transform: rotate(150deg) translate(-20px, -60px); height: 80px; }
+        .panda.happy .handl { transform: rotate(-60deg) translate(-30px, -40px); }
+        .panda.happy .handr { transform: rotate(60deg) translate(30px, -40px); }
+        .panda.happy .face { transform: translateY(-8px); transition: 0.3s; }
+
+        /* --- OYUN PANELİ --- */
+        .game-panel {
+            background: white;
+            width: 95%;
+            flex-grow: 1;
+            margin: 10px 0 20px 0;
+            border-radius: 25px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border: 5px solid #E0F7FA;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
+            max-height: 500px;
+        }
+
+        .header-bar { width: 100%; display: flex; justify-content: space-between; font-weight: bold; color: #0097A7; font-size: 18px; }
+        .progress-track { width: 100%; height: 10px; background: #eee; border-radius: 10px; margin: 10px 0; }
+        .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #26C6DA, #00BCD4); border-radius: 10px; transition: width 0.5s; }
+
+        .question-area {
+            text-align: center;
+            width: 100%;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .q-text { font-family: 'Fredoka', sans-serif; font-size: clamp(22px, 5vw, 32px); color: #37474F; margin-bottom: 10px; }
+        .q-main-display { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        
+        .memory-icon { font-size: 80px; color: #009688; animation: popIn 0.5s; }
+
+        .options-grid {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .game-btn {
+            background: #E1F5FE;
+            border: none;
+            border-radius: 15px;
+            min-width: 80px;
+            min-height: 80px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 28px;
+            color: #0277BD;
+            box-shadow: 0 5px 0 #81D4FA;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .game-btn:active { transform: translateY(5px); box-shadow: none; }
+        .game-btn.correct { background: #66BB6A; color: white; box-shadow: 0 5px 0 #388E3C; pointer-events: none; }
+        .game-btn.wrong { background: #EF5350; color: white; box-shadow: 0 5px 0 #D32F2F; animation: shake 0.4s; }
+        .game-btn img, .game-btn i { font-size: 36px; }
+
+        .reward-msg {
+            position: absolute; top: -50px; background: #FFEB3B; padding: 5px 20px; border-radius: 20px;
+            font-weight: bold; color: #5D4037; animation: slideUp 1.5s forwards; white-space: nowrap; z-index: 30;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 16px;
+        }
+
+        .pattern-item { font-size: 36px; padding: 8px; background: #f5f5f5; border-radius: 10px; margin: 0 3px; box-shadow: 0 2px 0 #ddd;}
+        .pattern-placeholder { width: 36px; height: 36px; background: #ddd; border-radius: 10px; border: 2px dashed #999; margin: 0 3px; display: inline-block; vertical-align: middle; }
+
+        /* Responsive Desktop */
+        @media (min-width: 768px) {
+            .category-grid { grid-template-columns: repeat(4, 1fr); max-width: 800px; gap: 20px; }
+            .game-wrapper { flex-direction: row; justify-content: center; gap: 60px; }
+            .panda-container { transform: scale(1.6); margin: 0; }
+            .game-panel { width: 550px; height: auto; min-height: 450px; }
+            .q-text { font-size: 36px; }
+        }
+
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes slideUp { 0% { opacity:0; transform:translateY(10px); } 20% { opacity:1; transform:translateY(0); } 80% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-30px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        
+        .confetti { position: absolute; width: 10px; height: 10px; z-index: 1000; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+    </style>
+</head>
+<body>
+
+<!-- Menü -->
+<div id="start-screen">
+    <div style="font-size:50px; margin-bottom:5px;">🐼</div>
+    <div class="menu-title">Panda Akademi</div>
+    <div style="color:#78909C; margin-bottom:20px;">Hangi oyunu oynamak istersin?</div>
+    
+    <div class="category-grid">
+        <button class="cat-btn math" onclick="startGame('math')">
+            <i class="fas fa-calculator"></i>
+            <div>Matematik</div>
+        </button>
+        <button class="cat-btn lang" onclick="startGame('lang')">
+            <i class="fas fa-shapes"></i>
+            <div>Nesneler</div>
+        </button>
+        <button class="cat-btn color" onclick="startGame('color')">
+            <i class="fas fa-palette"></i>
+            <div>Renkler</div>
+        </button>
+        <button class="cat-btn emotion" onclick="startGame('emotion')">
+            <i class="fas fa-smile"></i>
+            <div>Duygular</div>
+        </button>
+        <button class="cat-btn attention" onclick="startGame('attention')">
+            <i class="fas fa-eye"></i>
+            <div>Dikkat</div>
+        </button>
+        <button class="cat-btn memory" onclick="startGame('memory')">
+            <i class="fas fa-brain"></i>
+            <div>Hafıza</div>
+        </button>
+        <button class="cat-btn logic" onclick="startGame('logic')">
+            <i class="fas fa-puzzle-piece"></i>
+            <div>Mantık</div>
+        </button>
+    </div>
+</div>
+
+<div class="game-wrapper">
+    <!-- Panda -->
+    <div class="panda-container panda thinking" id="panda">
+        <div id="reward-popup" style="display:none;"></div>
+        <i class="fas fa-bow-tie accessory acc-bowtie" id="acc-1"></i>
+        <div class="accessory acc-glasses" id="acc-2"></div>
+        <i class="fas fa-hat-cowboy accessory acc-hat" id="acc-3"></i>
+        <i class="fas fa-leaf accessory acc-bamboo" id="acc-4"></i>
+        <i class="fas fa-balloon accessory acc-balloon" id="acc-5"></i>
+        
+        <div class="earl"></div><div class="earr"></div>
+        <div class="pawl"></div><div class="pawr"></div>
+        <div class="handl"></div><div class="handr"></div>
+        <div class="face">
+            <div class="blshl"></div><div class="blshr"></div>
+            <div class="eyel"><div class="eyeball1"></div></div>
+            <div class="eyer"><div class="eyeball2"></div></div>
+            <div class="nose"></div>
+            <div class="mouth-container"><div class="mouth"></div><div class="mouth"></div></div>
+        </div>
+    </div>
+
+    <!-- Oyun Paneli -->
+    <div class="game-panel">
+        <div class="header-bar">
+            <span id="game-title">Oyun</span>
+            <span>⭐ <span id="score">0</span></span>
+        </div>
+        
+        <div class="progress-track">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="question-area">
+            <div class="q-text" id="q-text">Hazır mısın?</div>
+            <div class="q-main-display" id="q-visuals"></div>
+        </div>
+
+        <div class="options-grid" id="options"></div>
+        <div id="feedback" style="height:25px; font-weight:bold; color:#FF9800; margin-top:10px;"></div>
+        
+        <button onclick="backToMenu()" style="margin-top:20px; border:none; background:none; color:#999; cursor:pointer;">
+            <i class="fas fa-home"></i> Menüye Dön
+        </button>
+    </div>
+</div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    
+    // --- GENİŞLETİLMİŞ VERİ TABANI ---
+    const vocabulary = [
+        // Hayvanlar
+        { name: "Kedi", icon: "fa-cat", color: "#795548", type: "animal" },
+        { name: "Köpek", icon: "fa-dog", color: "#FF9800", type: "animal" },
+        { name: "Balık", icon: "fa-fish", color: "#00BCD4", type: "animal" },
+        { name: "Kuş", icon: "fa-dove", color: "#9E9E9E", type: "animal" },
+        { name: "Kurbağa", icon: "fa-frog", color: "#4CAF50", type: "animal" },
+        { name: "Örümcek", icon: "fa-spider", color: "#333", type: "animal" },
+        { name: "At", icon: "fa-horse", color: "#8D6E63", type: "animal" },
+        { name: "Ejderha", icon: "fa-dragon", color: "#E91E63", type: "animal" },
+        // Eşyalar & Taşıtlar
+        { name: "Araba", icon: "fa-car", color: "#2196F3", type: "vehicle" },
+        { name: "Bisiklet", icon: "fa-bicycle", color: "#4CAF50", type: "vehicle" },
+        { name: "Otobüs", icon: "fa-bus", color: "#FFC107", type: "vehicle" },
+        { name: "Uçak", icon: "fa-plane", color: "#03A9F4", type: "vehicle" },
+        { name: "Gemi", icon: "fa-ship", color: "#3F51B5", type: "vehicle" },
+        { name: "Roket", icon: "fa-rocket", color: "#F44336", type: "vehicle" },
+        { name: "Ev", icon: "fa-home", color: "#795548", type: "object" },
+        { name: "Hediye", icon: "fa-gift", color: "#E91E63", type: "object" },
+        { name: "Zil", icon: "fa-bell", color: "#FFD700", type: "object" },
+        { name: "Kitap", icon: "fa-book", color: "#3F51B5", type: "object" },
+        // Yiyecekler
+        { name: "Elma", icon: "fa-apple-alt", color: "#FF5252", type: "food" },
+        { name: "Dondurma", icon: "fa-ice-cream", color: "#E91E63", type: "food" },
+        { name: "Pizza", icon: "fa-pizza-slice", color: "#FF9800", type: "food" },
+        { name: "Havuç", icon: "fa-carrot", color: "#FF5722", type: "food" },
+        { name: "Limon", icon: "fa-lemon", color: "#FFEB3B", type: "food" },
+        { name: "Pasta", icon: "fa-birthday-cake", color: "#E91E63", type: "food" },
+        // Doğa
+        { name: "Güneş", icon: "fa-sun", color: "#FFC107", type: "nature" },
+        { name: "Ay", icon: "fa-moon", color: "#9E9E9E", type: "nature" },
+        { name: "Ağaç", icon: "fa-tree", color: "#4CAF50", type: "nature" },
+        { name: "Yaprak", icon: "fa-leaf", color: "#8BC34A", type: "nature" },
+        { name: "Ateş", icon: "fa-fire", color: "#FF5722", type: "nature" },
+        { name: "Kar", icon: "fa-snowflake", color: "#00BCD4", type: "nature" },
+        { name: "Bulut", icon: "fa-cloud", color: "#B0BEC5", type: "nature" },
+        { name: "Şemsiye", icon: "fa-umbrella", color: "#9C27B0", type: "nature" }
+    ];
+
+    const colorsData = [
+        { name: "Kırmızı", hex: "#FF5252" },
+        { name: "Mavi", hex: "#2196F3" },
+        { name: "Yeşil", hex: "#4CAF50" },
+        { name: "Sarı", hex: "#FFEB3B" },
+        { name: "Mor", hex: "#9C27B0" },
+        { name: "Turuncu", hex: "#FF9800" },
+        { name: "Siyah", hex: "#333333" },
+        { name: "Pembe", hex: "#E91E63" }
+    ];
+
+    const emotionsData = [
+        { name: "Mutlu", icon: "fa-smile", color: "#FFC107" },
+        { name: "Üzgün", icon: "fa-frown", color: "#2196F3" },
+        { name: "Kızgın", icon: "fa-angry", color: "#F44336" },
+        { name: "Şaşkın", icon: "fa-surprise", color: "#FF9800" },
+        { name: "Yorgun", icon: "fa-tired", color: "#9E9E9E" },
+        { name: "Gülmekten Kırılan", icon: "fa-grin-squint-tears", color: "#00BCD4" }
+    ];
+
+    let gameState = {
+        mode: 'math',
+        score: 0,
+        qIndex: 0,
+        totalQ: 10,
+        answer: null,
+        isOver: false,
+        unlockedItems: 0,
+        isProcessing: false // Çift tıklama engelleme
+    };
+
+    function startGame(mode) {
+        gameState.mode = mode;
+        audioCtx = new AudioContext();
+        $("#start-screen").fadeOut();
+        
+        let titles = {
+            'math': "Matematik", 'lang': "Nesneler", 'color': "Renkler",
+            'emotion': "Duygular", 'attention': "Dikkat", 'memory': "Hafıza", 'logic': "Mantık"
+        };
+        $("#game-title").text(titles[mode]);
+        resetGame();
+    }
+
+    function backToMenu() {
+        $("#start-screen").fadeIn();
+    }
+
+    function resetGame() {
+        gameState.score = 0;
+        gameState.qIndex = 0;
+        gameState.isOver = false;
+        gameState.unlockedItems = 0;
+        gameState.isProcessing = false;
+        $("#score").text("0");
+        $(".accessory").hide();
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        if (gameState.qIndex >= gameState.totalQ) {
+            endGame();
+            return;
+        }
+
+        gameState.qIndex++;
+        $("#progress").css("width", `${((gameState.qIndex-1)/gameState.totalQ)*100}%`);
+        $("#feedback").text("");
+        setPanda("thinking");
+        $("#q-visuals").html("");
+        $("#options").html("").show();
+        gameState.isProcessing = false;
+
+        // Modül Seçimi
+        switch(gameState.mode) {
+            case 'math': generateMath(); break;
+            case 'lang': generateLang(); break;
+            case 'color': generateColor(); break;
+            case 'emotion': generateEmotion(); break;
+            case 'attention': generateAttention(); break;
+            case 'memory': generateMemory(); break;
+            case 'logic': generateLogic(); break;
+        }
+    }
+
+    // --- 1. MATEMATİK ---
+    function generateMath() {
+        let n1 = Math.floor(Math.random() * 6);
+        let n2 = Math.floor(Math.random() * 5) + 1;
+        let isAdd = Math.random() > 0.4;
+        let op = isAdd ? "+" : "-";
+        
+        if (!isAdd) { let s = n1+n2; n1=s; }
+        gameState.answer = isAdd ? n1+n2 : n1-n2;
+
+        $("#q-text").text(`${n1} ${op} ${n2} = ?`);
+        
+        let visHtml = "";
+        for(let i=0; i<n1; i++) visHtml += `<i class="fas fa-circle" style="color:#FFC107; font-size:24px; margin:2px;"></i>`;
+        if(n2>0) visHtml += `<span style="margin:0 10px; font-weight:bold;">${op}</span>`;
+        for(let i=0; i<n2; i++) visHtml += `<i class="fas fa-circle" style="color:${isAdd?'#FFC107':'#ddd'}; font-size:24px; margin:2px;"></i>`;
+        $("#q-visuals").html(visHtml);
+
+        let opts = new Set([gameState.answer]);
+        while(opts.size < 3) {
+            let w = Math.max(0, gameState.answer + Math.floor(Math.random()*5)-2);
+            opts.add(w);
+        }
+        renderOptions(Array.from(opts), 'text');
+    }
+
+    // --- 2. NESNELER (DİL) ---
+    function generateLang() {
+        let pool = [...vocabulary];
+        let choices = [];
+        // Rastgele 3 farklı nesne seç
+        while(choices.length < 3) {
+            let item = pool[Math.floor(Math.random()*pool.length)];
+            if(!choices.find(c => c.name === item.name)) choices.push(item);
+        }
+        let target = choices[0];
+        gameState.answer = target.name;
+        choices.sort(() => 0.5 - Math.random()); // Karıştır
+
+        $("#q-text").text(`Hangisi "${target.name}"?`);
+        renderOptions(choices, 'icon_obj');
+    }
+
+    // --- 3. RENKLER (YENİ) ---
+    function generateColor() {
+        let pool = [...colorsData];
+        let choices = [];
+        while(choices.length < 3) {
+            let item = pool[Math.floor(Math.random()*pool.length)];
+            if(!choices.find(c => c.name === item.name)) choices.push(item);
+        }
+        let target = choices[0];
+        gameState.answer = target.name;
+        choices.sort(() => 0.5 - Math.random());
+
+        $("#q-text").text(`Hangisi ${target.name}?`);
+        
+        let html = "";
+        choices.forEach(c => {
+            let isCorrect = c.name === gameState.answer;
+            html += `<button class="game-btn" onclick="checkAnswer(${isCorrect}, this)" style="background:${c.hex}; border:4px solid white; box-shadow:0 5px 10px rgba(0,0,0,0.2)"></button>`;
+        });
+        $("#options").html(html);
+    }
+
+    // --- 4. DUYGULAR (YENİ) ---
+    function generateEmotion() {
+        let pool = [...emotionsData];
+        let choices = [];
+        while(choices.length < 3) {
+            let item = pool[Math.floor(Math.random()*pool.length)];
+            if(!choices.find(c => c.name === item.name)) choices.push(item);
+        }
+        let target = choices[0];
+        gameState.answer = target.name;
+        choices.sort(() => 0.5 - Math.random());
+
+        $("#q-text").text(`Hangisi ${target.name}?`);
+        renderOptions(choices, 'icon_obj');
+    }
+
+    // --- 5. DİKKAT ---
+    function generateAttention() {
+        let pool = [...vocabulary];
+        let base = pool[Math.floor(Math.random()*pool.length)];
+        let diff = pool.filter(x => x.name !== base.name)[Math.floor(Math.random()*(pool.length-1))];
+        
+        gameState.answer = diff.name;
+        $("#q-text").text("Farklı olan hangisi?");
+        
+        let choices = [base, base, diff];
+        choices.sort(() => 0.5 - Math.random());
+
+        let html = "";
+        choices.forEach((item, idx) => {
+            let isCorrect = item.name === diff.name;
+            html += `<button class="game-btn" onclick="checkAnswer(${isCorrect}, this)">
+                <i class="fas ${item.icon}" style="color:${item.color}"></i>
+            </button>`;
+        });
+        $("#options").html(html);
+    }
+
+    // --- 6. HAFIZA (YENİ) ---
+    function generateMemory() {
+        $("#q-text").text("İyi bak...");
+        $("#options").hide(); // Seçenekleri gizle
+        
+        let item = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+        gameState.answer = item.name;
+        
+        // Göster
+        $("#q-visuals").html(`<i class="fas ${item.icon} memory-icon" style="color:${item.color}"></i>`);
+        
+        // 2 Saniye sonra gizle ve sor
+        setTimeout(() => {
+            $("#q-visuals").html(`<i class="fas fa-question memory-icon" style="color:#ccc"></i>`);
+            $("#q-text").text("Az önce hangisi vardı?");
+            
+            // Seçenekleri oluştur (Doğru + 2 Yanlış)
+            let wrongPool = vocabulary.filter(v => v.name !== item.name);
+            let w1 = wrongPool[Math.floor(Math.random() * wrongPool.length)];
+            let w2 = wrongPool.filter(v => v.name !== w1.name)[Math.floor(Math.random() * (wrongPool.length-1))];
+            
+            let choices = [item, w1, w2].sort(() => 0.5 - Math.random());
+            renderOptions(choices, 'icon_obj');
+            $("#options").fadeIn();
+            
+        }, 2000);
+    }
+
+    // --- 7. MANTIK (ÖRÜNTÜ) ---
+    function generateLogic() {
+        let shapes = ["circle", "square", "star", "heart"];
+        let colors = ["#E91E63", "#2196F3", "#4CAF50", "#FFC107"];
+        
+        let s1 = shapes[Math.floor(Math.random()*shapes.length)];
+        let s2 = shapes.filter(s=>s!==s1)[Math.floor(Math.random()*(shapes.length-1))];
+        let c1 = colors[Math.floor(Math.random()*colors.length)];
+        let c2 = colors.filter(c=>c!==c1)[Math.floor(Math.random()*(colors.length-1))];
+
+        let pattern = [{s:s1,c:c1}, {s:s2,c:c2}, {s:s1,c:c1}];
+        gameState.answer = `${s2}-${c2}`;
+
+        $("#q-text").text("Sırada ne gelmeli?");
+        
+        let html = "";
+        pattern.forEach(p => html += `<i class="fas fa-${p.s} pattern-item" style="color:${p.c}"></i>`);
+        html += `<div class="pattern-placeholder">?</div>`;
+        $("#q-visuals").html(html);
+
+        let correct = {s:s2, c:c2, val:gameState.answer};
+        let w1 = {s:s1, c:c1, val:`${s1}-${c1}`};
+        let w2 = {s:s2, c:c1, val:`${s2}-${c1}`};
+        
+        let opts = [correct, w1, w2].sort(() => 0.5 - Math.random());
+        
+        let optHtml = "";
+        opts.forEach(o => {
+            let isOk = o.val === gameState.answer;
+            optHtml += `<button class="game-btn" onclick="checkAnswer(${isOk}, this)">
+                <i class="fas fa-${o.s}" style="color:${o.c}"></i>
+            </button>`;
+        });
+        $("#options").html(optHtml);
+    }
+
+    // --- ORTAK FONKSİYONLAR ---
+
+    function renderOptions(list, type) {
+        let html = "";
+        list.forEach(item => {
+            if(type === 'text') {
+                let isCorrect = item === gameState.answer;
+                html += `<button class="game-btn" onclick="checkAnswer(${isCorrect}, this)">${item}</button>`;
+            } else if (type === 'icon_obj') {
+                let isCorrect = item.name === gameState.answer;
+                html += `<button class="game-btn" onclick="checkAnswer(${isCorrect}, this)">
+                    <i class="fas ${item.icon}" style="color:${item.color}"></i>
+                </button>`;
+            }
+        });
+        $("#options").html(html);
+    }
+
+    function checkAnswer(isCorrect, btn) {
+        if (gameState.isOver || gameState.isProcessing) return;
+        gameState.isProcessing = true;
+        
+        $(".game-btn").prop("disabled", true); // Tıklamayı kilitle
+
+        if (isCorrect) {
+            $(btn).addClass("correct");
+            playTone(600, 'sine', 0.1); playTone(800, 'sine', 0.1);
+            setPanda("happy");
+            createConfetti(btn);
+            $("#feedback").text("Harikasın! 🌟");
+            gameState.score += 10;
+            $("#score").text(gameState.score);
+            checkUnlock();
+            setTimeout(nextQuestion, 1500);
+        } else {
+            $(btn).addClass("wrong");
+            playTone(150, 'sawtooth', 0.3);
+            setPanda("shy");
+            $("#feedback").text("Tekrar dene...");
+            setTimeout(() => {
+                $(btn).removeClass("wrong");
+                $(".game-btn").prop("disabled", false);
+                gameState.isProcessing = false;
+                setPanda("thinking");
+            }, 1000);
+        }
+    }
+
+    function checkUnlock() {
+        let rewards = [
+            { id: '#acc-1', name: "Papyon!" },
+            { id: '#acc-2', name: "Gözlük!" },
+            { id: '#acc-3', name: "Şapka!" },
+            { id: '#acc-4', name: "Bambu!" },
+            { id: '#acc-5', name: "Balon!" }
+        ];
+        // Her 2 soruda (20 puanda) bir ödül
+        let level = Math.floor(gameState.score / 20); 
+        if (level > gameState.unlockedItems && level <= rewards.length) {
+            gameState.unlockedItems = level;
+            let item = rewards[level-1];
+            setTimeout(() => {
+                $(item.id).show();
+                let popup = `<div class="reward-msg">✨ ${item.name} Kazandın!</div>`;
+                $("#panda").append(popup);
+                setTimeout(() => $(".reward-msg").remove(), 2000);
+                playTone(1000, 'square', 0.2);
+            }, 500);
+        }
+    }
+
+    function setPanda(state) {
+        $("#panda").removeClass("thinking shy happy").addClass(state);
+    }
+
+    function playTone(freq, type, duration) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function createConfetti(target) {
+        let rect = target.getBoundingClientRect();
+        let centerX = rect.left + rect.width / 2;
+        let centerY = rect.top;
+        for(let i=0; i<20; i++) {
+            let c = document.createElement("div");
+            c.className = "confetti";
+            c.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 50%)`;
+            c.style.left = centerX + "px";
+            c.style.top = centerY + "px";
+            let destX = (Math.random() - 0.5) * 200;
+            c.style.transition = "all 1s ease-out";
+            document.body.appendChild(c);
+            requestAnimationFrame(() => {
+                c.style.transform = `translate(${destX}px, 200px) rotate(${Math.random()*360}deg)`;
+                c.style.opacity = 0;
+            });
+            setTimeout(() => c.remove(), 1000);
+        }
+    }
+
+    function endGame() {
+        gameState.isOver = true;
+        $("#progress").css("width", "100%");
+        setPanda("happy");
+        $("#q-text").text("Oyun Bitti! Tebrikler! 🎉");
+        $("#q-visuals").html("");
+        $("#options").html(`
+            <button class="game-btn" style="width:auto; font-size:20px; padding:0 30px;" onclick="backToMenu()">
+                Başka Oyun Seç
+            </button>
+        `);
+        playTone(500, 'square', 0.1); playTone(600, 'square', 0.1); playTone(800, 'square', 0.4);
+    }
+
+    // Göz Takibi
+    $(document).on('mousemove touchmove', e => {
+        let pageX = e.type === 'touchmove' ? e.touches[0].pageX : e.pageX;
+        let pageY = e.type === 'touchmove' ? e.touches[0].pageY : e.pageY;
+        let pOffset = $("#panda").offset();
+        let cX = pOffset.left + 80; 
+        let cY = pOffset.top + 60;
+        let angle = Math.atan2(pageY - cY, pageX - cX);
+        let dist = Math.min(8, Math.hypot(pageX - cX, pageY - cY) / 15);
+        $(".eyeball1, .eyeball2").css({ transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)` });
+    });
+</script>
+</body>
+</html>
