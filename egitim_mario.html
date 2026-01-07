@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Süper Eğitim Mario - v3</title>
+    <style>
+        :root {
+            --sky-color: #6b8cff;
+            --tile-line-height: 50px;
+            --tile-size: 25px;
+        }
+
+        * {
+            box-sizing: border-box;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #202020;
+            font-family: 'Verdana', sans-serif; /* Daha okunaklı font */
+        }
+
+        #game_container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 40 / 22; 
+            max-height: 70vh; /* Kontrollere yer kalsın */
+            display: flex;
+            justify-content: center;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background: #000;
+        }
+
+        #game_console {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: var(--sky-color);
+            overflow: hidden;
+        }
+
+        /* Bulutlar */
+        #game_console::before {
+            content: '';
+            position: absolute;
+            top: 15%; left: 5%;
+            width: 120px; height: 40px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50px;
+            box-shadow: 
+                300px 60px 0 rgba(255,255,255,0.7),
+                600px -30px 0 rgba(255,255,255,0.7),
+                850px 90px 0 rgba(255,255,255,0.7);
+            z-index: 0;
+            animation: cloudMove 60s linear infinite;
+        }
+        @keyframes cloudMove { from { transform: translateX(0); } to { transform: translateX(100px); } }
+
+        #ui_layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        #lives_board, #time_board, #score_board, #level_board {
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.2;
+            color: #fff;
+            position: absolute;
+            z-index: 1000;
+            text-shadow: 2px 2px 0 #000;
+            font-family: 'Arial', sans-serif;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            margin: 5px;
+        }
+
+        #lives_board { top: 5px; left: 5px; color: #ff6b6b; }
+        #time_board { top: 5px; right: 5px; text-align: right; }
+        #score_board { top: 5px; left: 50%; transform: translateX(-50%); color: #ffd700; border: 2px solid #ffd700; background: rgba(0,0,0,0.5); }
+        #level_board { top: 45px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #ddd; background: transparent; }
+
+        #game_alert {
+            position: absolute;
+            top: 30%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            color: gold;
+            padding: 20px 40px;
+            border: 4px solid white;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2000;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .tile { position: absolute; box-sizing: border-box; }
+
+        .ground {
+            background-color: #b13e12;
+            background-image: 
+                linear-gradient(335deg, rgba(0,0,0,0.3) 23px, transparent 23px),
+                linear-gradient(155deg, rgba(0,0,0,0.3) 23px, transparent 23px);
+            background-size: 58px 58px;
+            border: 1px solid rgba(0,0,0,0.5);
+            box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2);
+            z-index: 2;
+        }
+
+        .innerwall {
+            background: #b0b0b0;
+            border: 2px solid #5c5c5c;
+            box-shadow: inset 2px 2px 0 #fff;
+            background-image: radial-gradient(circle at 12px 12px, #5c5c5c 2px, transparent 3px);
+        }
+
+        .quiz-block {
+            background: #f8b800;
+            border: 2px solid #a05800;
+            box-shadow: inset 4px 4px 0 #ffe0a8, inset -4px -4px 0 #a05800;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            color: #a05800 !important;
+            font-size: 24px !important;
+            font-weight: 900;
+            z-index: 5;
+            transition: transform 0.1s;
+            animation: glow 1s infinite alternate;
+        }
+        .quiz-block::after { content: '?'; }
+        @keyframes glow { from { filter: brightness(1); } to { filter: brightness(1.2); } }
+
+        .bump-anim { animation: bump 0.2s ease-out forwards !important; }
+        @keyframes bump { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+
+        .quiz-block.solved {
+            background: #b8860b !important;
+            color: #555 !important;
+            animation: none !important;
+            border-color: #555 !important;
+            box-shadow: none !important;
+        }
+        .quiz-block.solved::after { content: ''; }
+
+        .lava {
+            background: #d82800;
+            border-top: 4px solid #ffcc00;
+            animation: lava-flow 2s infinite linear;
+        }
+
+        .portal1, .portal2 {
+            background: linear-gradient(90deg, #008000 10%, #00cc00 40%, #008000 80%);
+            border: 2px solid #004000;
+        }
+
+        .nextlevel {
+            background: #000;
+            border-radius: 50% 50% 0 0;
+            border: 4px solid #b13e12;
+            border-bottom: none;
+            position: relative;
+        }
+        .nextlevel::after {
+            content: '🚩';
+            position: absolute; top: -25px; left: 2px; font-size: 25px;
+        }
+
+        #player2 {
+            width: 25px; height: 25px;
+            position: absolute;
+            z-index: 9999;
+            pointer-events: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Cpath fill='%23d82800' d='M3 0h5v1H2v1h9V1H8V0H3z'/%3E%3Cpath fill='%23d82800' d='M2 1h1v1H2zM8 1h1v1H8z'/%3E%3Cpath fill='%23fc9838' d='M2 2h7v1H1v2h1v1h2v-1h3v1h1v1h2V3h-1V2H2z'/%3E%3Cpath fill='%23000' d='M8 3h1v1H8z'/%3E%3Cpath fill='%23000' d='M8 2h1v1H8z'/%3E%3Cpath fill='%23d82800' d='M3 5h1v1H3zM5 5h1v1H5zM7 5h1v1H7z'/%3E%3Cpath fill='%23d82800' d='M2 6h2v3H3v1h1v1H1v-1h1V9H0V8h1V6h1z'/%3E%3Cpath fill='%23d82800' d='M7 6h3v2h1v1h-1v1h-1v1h-1v-1h1V9h-1V6z'/%3E%3Cpath fill='%230000fc' d='M4 6h3v3H4z'/%3E%3Cpath fill='%230000fc' d='M3 9h1v2H3zM7 9h1v2H7z'/%3E%3Cpath fill='%23fc9838' d='M0 10h1v1H0zM10 10h1v1h-1z'/%3E%3Cpath fill='%23000' d='M1 11h2v1H1zM8 11h2v1H8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: contain;
+            transform-origin: bottom center; /* Eğilme için alt merkezden küçülsün */
+            transition: transform 0.1s;
+        }
+
+        .goleft { transform: scaleX(-1); } 
+        .goright { transform: scaleX(1); } 
+        /* Eğilme Stili: Y ekseninde küçült */
+        .duck { transform: scaleY(0.6) !important; }
+        .duck.goleft { transform: scaleX(-1) scaleY(0.6) !important; }
+
+        .floating-coin {
+            position: absolute;
+            width: 25px; height: 25px;
+            background: gold;
+            border-radius: 50%;
+            border: 2px solid #b8860b;
+            z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #b8860b; font-size: 14px;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+        .floating-coin::after { content: '100'; }
+        
+        .floating-1up {
+            position: absolute;
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 20px;
+            z-index: 9999;
+            text-shadow: 2px 2px 0 #000;
+            animation: floatUp 1s ease-out forwards;
+        }
+        .floating-1up::after { content: '1UP!'; }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-40px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1); }
+        }
+
+        #quiz_modal {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; max-width: 450px;
+            background: #fff;
+            border: 6px solid #4CAF50;
+            border-radius: 12px;
+            padding: 25px;
+            z-index: 99999;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            font-family: 'Verdana', sans-serif;
+        }
+        #quiz_question { font-size: 22px; margin-bottom: 20px; font-weight: bold; color: #333; }
+        .quiz-btn {
+            display: block; width: 100%; padding: 15px; margin: 10px 0;
+            background: #2196F3; color: white; border: none; font-size: 18px;
+            cursor: pointer; border-radius: 8px; box-shadow: 0 5px 0 #0d47a1;
+            transition: all 0.1s;
+        }
+        .quiz-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        #controls {
+            width: 100%;
+            height: 160px;
+            background: #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+            border-top: 4px solid #555;
+        }
+
+        .d-pad-container {
+            position: relative;
+            width: 120px; height: 120px;
+        }
+        
+        .btn {
+            position: absolute;
+            width: 50px; height: 50px;
+            background: #444;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #111;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #fff;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn:active, .btn.active { transform: translateY(4px); box-shadow: 0 0 0 #111; background: #666; }
+
+        #btn_left { top: 35px; left: 0; }
+        #btn_right { top: 35px; right: 0; }
+        #btn_down { bottom: 0; left: 35px; } /* Eğilme butonu */
+
+        .action-btn {
+            width: 90px; height: 90px;
+            background: #e74c3c;
+            border-radius: 50%;
+            box-shadow: 0 8px 0 #922b21;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: bold; color: white;
+        }
+        .action-btn:active, .action-btn.active { transform: translateY(8px); box-shadow: 0 0 0 #922b21; background: #ff6b6b; }
+
+    </style>
+</head>
+<body>
+
+<div id="game_container">
+    <div id="game_console">
+        <div id="ui_layer">
+            <div id="score_board">PUAN: <span id="score_val">0</span></div>
+            <div id="level_board">BÖLÜM: <span id="level_val">1</span></div>
+            <div id="lives_board">CAN: <span id="lives_val">3</span></div>
+            <div id="time_board">SÜRE: <span id="time_val">0</span></div>
+        </div>
+
+        <div id="game_alert"></div>
+
+        <div id="quiz_modal">
+            <div id="quiz_question"></div>
+            <div id="quiz_options"></div>
+        </div>
+    </div>
+</div>
+
+<div id="controls">
+    <div class="d-pad-container">
+        <div class="btn" id="btn_left">⬅️</div>
+        <div class="btn" id="btn_down">⬇️</div>
+        <div class="btn" id="btn_right">➡️</div>
+    </div>
+    <div class="action-btn" id="btn_jump">ZIPLA</div>
+</div>
+
+<script>
+    // --- SES MOTORU ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+        if (!audioCtx) initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        
+        if (type === 'jump') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'coin') {
+            osc.type = 'sine'; osc.frequency.setValueAtTime(900, now); osc.frequency.setValueAtTime(1400, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'bump') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(80, now); osc.frequency.linearRampToValueAtTime(40, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'die') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(50, now + 0.6); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.6); osc.start(now); osc.stop(now + 0.6);
+        } else if (type === '1up') {
+            osc.type = 'square'; 
+            osc.frequency.setValueAtTime(600, now); 
+            osc.frequency.setValueAtTime(800, now + 0.1); 
+            osc.frequency.setValueAtTime(1000, now + 0.2); 
+            osc.frequency.setValueAtTime(1200, now + 0.3); 
+            gain.gain.setValueAtTime(0.1, now); 
+            gain.gain.linearRampToValueAtTime(0, now + 0.5); 
+            osc.start(now); osc.stop(now + 0.5);
+        }
+    }
+
+    // --- OYUN DEĞİŞKENLERİ ---
+    const gc = document.querySelector('#game_console');
+    const container = document.querySelector('#game_container');
+    
+    let tile_size = 25, cols = 40, rows = 22;
+    let accel = 0, friction = 0.8, max_speed = 0, gravity_force = 0, jump_force = 0;
+    let x_velocity = 0, y_velocity = 0;
+    
+    let score = 0, lives = 3, time = 0;
+    let nextLifeScore = 500; // İlk can kazanma eşiği
+    let player = null, playerX = 0, playerY = 0;
+    let isGrounded = false, isDead = false, isQuizActive = false, isDucking = false;
+    let keys = {}, levelIndex = 0, gameLoopId, activeQuizTile = null;
+    
+    let jumpCount = 0;
+    const MAX_JUMPS = 3; 
+    let jumpKeyReleased = true;
+
+    // --- SORU HAVUZU (Müfredat) ---
+    // Ana soru listesi
+    const masterQuestions = [
+        { q: "8 x 7 = ?", opts: ["54", "56", "58", "60"], a: 1 },
+        { q: "100 / 4 = ?", opts: ["20", "25", "30", "15"], a: 1 },
+        { q: "Bir düzine kaçtır?", opts: ["10", "12", "20", "15"], a: 1 },
+        { q: "En küçük asal sayı?", opts: ["1", "2", "3", "0"], a: 1 },
+        { q: "'Siyah'ın zıt anlamlısı?", opts: ["Kara", "Beyaz", "Kırmızı", "Mavi"], a: 1 },
+        { q: "'Mektep' eş anlamlısı?", opts: ["Okul", "Sınıf", "Öğrenci", "Kitap"], a: 0 },
+        { q: "Güneş sistemindeki en büyük gezegen?", opts: ["Dünya", "Mars", "Jüpiter", "Satürn"], a: 2 },
+        { q: "Bitkiler ne ile solunum yapar?", opts: ["Akciğer", "Deri", "Yaprak", "Kök"], a: 2 },
+        { q: "Türkiye'nin başkenti?", opts: ["İstanbul", "Ankara", "İzmir", "Antalya"], a: 1 },
+        { q: "'Red' hangi renktir?", opts: ["Mavi", "Sarı", "Kırmızı", "Yeşil"], a: 2 },
+        { q: "Su donarsa ne olur?", opts: ["Buhar", "Sıvı", "Buz", "Ateş"], a: 2 },
+        { q: "Cumhuriyet ne zaman ilan edildi?", opts: ["1920", "1919", "1923", "1881"], a: 2 },
+        { q: "3 basamaklı en küçük sayı?", opts: ["100", "999", "101", "001"], a: 0 },
+        { q: "Kalp hangi sistemin organıdır?", opts: ["Sindirim", "Dolaşım", "Solunum", "İskelet"], a: 1 },
+        { q: "'School' kelimesinin anlamı?", opts: ["Ev", "Park", "Okul", "Bahçe"], a: 2 }
+    ];
+
+    // Oyunda kullanılacak güncel havuz
+    let currentQuestions = [...masterQuestions];
+
+    const rawMaps = [
+        // Level 1
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "...........???..........................",
+            "........................................",
+            "....................???.................",
+            "........................................",
+            ".......=.........=.......=..............",
+            ".......=.........=.......=..............",
+            ".......=.........=.......=..............",
+            ".......=.........=.......=..............",
+            ".......=.........=.......=..............",
+            "#######=########=#######=#############^#"
+        ],
+        // Level 2
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "..............................???.......",
+            "......................???...======......",
+            "..........................========......",
+            "..............???.....============......",
+            "..................================......",
+            "..........========================......",
+            "......============================......",
+            "......============================......",
+            "......============================......",
+            "...?==============================......",
+            "##################################~~~~^#",
+            "########################################"
+        ],
+        // Level 3
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "..........?..........?..........?.......",
+            "........====.......====.......====......",
+            "........................................",
+            "........................................",
+            ".....====.....====.......====.....====..",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "...====...........................====..",
+            "#######~~~~###~~~~###~~~~###~~~~#######^"
+        ],
+        // Level 4
+        [
+            "########################################",
+            "#......................................#",
+            "#......................................#",
+            "#......................................#",
+            "#..=====...?...?................=====..#",
+            "#......................................#",
+            "#..........................?...........#",
+            "#.........=====..........=====.........#",
+            "#......................................#",
+            "#......................................#",
+            "#######..........................#######",
+            "#######..........................#######",
+            "#######..........................#######",
+            "#######.......?..............?...#######",
+            "#######.=====..............====.########",
+            "#######.........................########",
+            "#######..........?..............########",
+            "#######........=====............########",
+            "#######.........................########",
+            "#######.........................########",
+            "######################################^#",
+            "########################################"
+        ],
+        // Level 5
+        [
+            ".......................................^",
+            ".....................................===",
+            "...................................==...",
+            ".................................==.....",
+            "...............................==.......",
+            ".............................==.........",
+            "...........................==...........",
+            ".................====....==.............",
+            ".......................==...............",
+            ".....................==.................",
+            "...................==...................",
+            "........====.....==.....................",
+            "..........?....==.......................",
+            ".............==.........................",
+            "...........==...........................",
+            "....====.==.............................",
+            ".......==...............................",
+            ".....==.................................",
+            "...==.....?.............................",
+            ".==.....................................",
+            "#.......................................",
+            "########################################"
+        ],
+        // Level 6
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            ".....====.....................====......",
+            ".....=..=.....................=..=......",
+            ".....=..=..........?..........=..=......",
+            ".....=..=.....................=..=......",
+            ".....=..=........====.........=..=......",
+            ".....=..=.....................=..=......",
+            ".....=..=..........?..........=..=......",
+            ".....=..=.....................=..=......",
+            ".....=..=.....................=..=......",
+            ".....=..=.....................=..=......",
+            ".....=..=.....................=..=......",
+            "#####=..=#####################=..=####^#"
+        ],
+        // Level 7
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "...............====.....................",
+            "........................................",
+            "................?.......................",
+            ".......====...........====..............",
+            "........................................",
+            "........................................",
+            ".........?..............................",
+            "........................................",
+            "........................................",
+            "..===.......===.......===.......===.....",
+            "##~~~#######~~~#######~~~#######~~~###^#"
+        ],
+        // Level 8
+        [
+            "########################################",
+            "#......................................#",
+            "#.===.===.===.===.===.===.===.===.===..#",
+            "#......................................#",
+            "#.===.===.===.===.===.===.===.===.===..#",
+            "#......................................#",
+            "#.===.===.===.===.===.===.===.===.===..#",
+            "#......................................#",
+            "#.===.===.===.===.===.===.===.===.===..#",
+            "#...?...?...?...?...?...?...?...?...?..#",
+            "#.===================================..#",
+            "#......................................#",
+            "#......................................#",
+            "#......................................#",
+            "#......................................#",
+            "#.===================================..#",
+            "#......................................#",
+            "#......................................#",
+            "#......................................#",
+            "#......................................#",
+            "######################################^#",
+            "########################################"
+        ],
+        // Level 9
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "......====......====......====..........",
+            "........................................",
+            "........................................",
+            "........?.........?.........?...........",
+            "..====......====......====......====....",
+            "........................................",
+            "........................................",
+            "........................................",
+            "......====......====......====..........",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "........................................",
+            "==....................................^=",
+            "##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##"
+        ],
+        // Level 10
+        [
+            "........................................",
+            "........................................",
+            "........................................",
+            "...................^....................",
+            "..................===...................",
+            ".................==.==..................",
+            "................==...==.................",
+            "...............==.....==................",
+            "..............==.......==...............",
+            ".............==.........==..............",
+            "............==...........==.............",
+            "...........==.............==............",
+            "..........==...............==...........",
+            ".........==.................==..........",
+            "........==...................==.........",
+            ".......==.....................==........",
+            "......==...???...........???...==.......",
+            ".....==.........................==......",
+            "....==...........................==.....",
+            "...==.............................==....",
+            ".###...............................###..",
+            "########################################"
+        ]
+    ];
+
+    const levels = rawMaps.map(layout => {
+        let map = [];
+        let start = [2, 18]; 
+        
+        for(let r=0; r<rows; r++) {
+            let line = layout[r] || "........................................";
+            for(let c=0; c<cols; c++) {
+                let char = line[c];
+                if(char === '.') map.push(0);
+                else if(char === '#') map.push(1);
+                else if(char === '~') map.push(2);
+                else if(char === '=') map.push(8);
+                else if(char === '^') map.push(9);
+                else if(char === '?') map.push(10);
+                else map.push(0);
+            }
+        }
+        return { map: map, start: start };
+    });
+
+    function init() {
+        window.addEventListener('resize', resizeGame);
+        resizeGame();
+        
+        window.addEventListener('keydown', e => {
+            if(e.keyCode === 38) { // Yukarı
+                if(jumpKeyReleased) {
+                    tryJump();
+                    jumpKeyReleased = false; 
+                }
+            } else if(e.keyCode === 40) { // Aşağı (Eğilme)
+                keys[40] = true;
+                isDucking = true;
+            } else {
+                keys[e.keyCode] = true;
+            }
+        });
+        
+        window.addEventListener('keyup', e => {
+            if(e.keyCode === 38) {
+                jumpKeyReleased = true; 
+            } else if(e.keyCode === 40) { // Eğilme bırakıldı
+                keys[40] = false;
+                isDucking = false;
+            } else {
+                keys[e.keyCode] = false;
+            }
+        });
+
+        bindTouch('btn_left', 37);
+        bindTouch('btn_right', 39);
+        bindTouchJump('btn_jump'); 
+        
+        // Dokunmatik Eğilme
+        let btnDown = document.getElementById('btn_down');
+        btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); isDucking = true; btnDown.classList.add('active'); });
+        btnDown.addEventListener('touchend', (e) => { e.preventDefault(); isDucking = false; btnDown.classList.remove('active'); });
+        btnDown.addEventListener('mousedown', (e) => { isDucking = true; btnDown.classList.add('active'); });
+        btnDown.addEventListener('mouseup', (e) => { isDucking = false; btnDown.classList.remove('active'); });
+
+        document.body.addEventListener('touchstart', initAudio, {once:true});
+        document.body.addEventListener('click', initAudio, {once:true});
+
+        loadLevel(0);
+        gameLoopId = setInterval(gameLoop, 1000/60);
+        
+        setInterval(() => { if(!isQuizActive && !isDead) { time++; updateUI(); } }, 1000);
+        
+        showAlert("1. BÖLÜM - BAŞLA!", 2000);
+    }
+
+    function tryJump() {
+        if(isQuizActive || isDead) return;
+        
+        if (isGrounded || jumpCount < MAX_JUMPS) {
+            y_velocity = jump_force;
+            isGrounded = false;
+            jumpCount++;
+            playSound('jump');
+        }
+    }
+
+    function bindTouch(id, code) {
+        let btn = document.getElementById(id);
+        const press = (e) => { e.preventDefault(); keys[code] = true; btn.classList.add('active'); };
+        const release = (e) => { e.preventDefault(); keys[code] = false; btn.classList.remove('active'); };
+        btn.addEventListener('touchstart', press);
+        btn.addEventListener('touchend', release);
+        btn.addEventListener('mousedown', press);
+        btn.addEventListener('mouseup', release);
+        btn.addEventListener('mouseleave', release);
+    }
+
+    function bindTouchJump(id) {
+        let btn = document.getElementById(id);
+        const press = (e) => { 
+            e.preventDefault(); 
+            btn.classList.add('active'); 
+            tryJump(); 
+        };
+        const release = (e) => { 
+            e.preventDefault(); 
+            btn.classList.remove('active'); 
+        };
+        btn.addEventListener('touchstart', press);
+        btn.addEventListener('touchend', release);
+        btn.addEventListener('mousedown', press);
+        btn.addEventListener('mouseup', release);
+    }
+
+    function resizeGame() {
+        let w = container.clientWidth;
+        tile_size = w / cols;
+        gc.style.height = (tile_size * rows) + 'px';
+        
+        accel = tile_size * 0.05;
+        max_speed = tile_size * 0.3;
+        gravity_force = tile_size * 0.035;
+        jump_force = -(tile_size * 0.65);
+
+        let tiles = document.querySelectorAll('.tile');
+        tiles.forEach(t => {
+            let cx = parseInt(t.dataset.x);
+            let cy = parseInt(t.dataset.y);
+            t.style.width = tile_size + 'px';
+            t.style.height = tile_size + 'px';
+            t.style.left = (cx * tile_size) + 'px';
+            t.style.top = (cy * tile_size) + 'px';
+        });
+
+        if(player) {
+            player.style.width = tile_size + 'px';
+            player.style.height = tile_size + 'px';
+        }
+    }
+
+    function loadLevel(idx) {
+        levelIndex = idx;
+        let nodes = document.querySelectorAll('.tile, #player2');
+        nodes.forEach(n => n.remove());
+
+        let map = levels[idx].map;
+        for(let i=0; i<map.length; i++) {
+            if(map[i] === 0) continue;
+            
+            let t = document.createElement('div');
+            let x = i % cols;
+            let y = Math.floor(i / cols);
+            
+            t.dataset.x = x;
+            t.dataset.y = y;
+            t.style.left = (x * tile_size) + 'px';
+            t.style.top = (y * tile_size) + 'px';
+            t.style.width = tile_size + 'px';
+            t.style.height = tile_size + 'px';
+            t.className = 'tile';
+
+            if(map[i] === 1) t.classList.add('ground');
+            else if(map[i] === 2) t.classList.add('lava');
+            else if(map[i] === 8) t.classList.add('innerwall');
+            else if(map[i] === 9) t.classList.add('nextlevel');
+            else if(map[i] === 10) t.classList.add('quiz-block');
+
+            gc.appendChild(t);
+        }
+
+        player = document.createElement('div');
+        player.id = 'player2';
+        player.style.width = tile_size + 'px';
+        player.style.height = tile_size + 'px';
+        gc.appendChild(player);
+
+        let start = levels[idx].start;
+        playerX = start[0] * tile_size;
+        playerY = start[1] * tile_size;
+        y_velocity = 0;
+        x_velocity = 0;
+        jumpCount = 0;
+        updatePlayerPos();
+        updateUI();
+    }
+
+    function gameLoop() {
+        if(isQuizActive) return;
+
+        // Eğilme Durumu
+        if(isDucking) {
+            player.classList.add('duck');
+            // Eğilince sürtünme artar, max hız düşer
+            x_velocity *= 0.5;
+        } else {
+            player.classList.remove('duck');
+        }
+
+        if(keys[37]) {
+            x_velocity -= accel;
+            player.classList.add('goleft');
+            player.classList.remove('goright');
+        } 
+        else if(keys[39]) {
+            x_velocity += accel;
+            player.classList.add('goright');
+            player.classList.remove('goleft');
+        } 
+        else {
+            x_velocity *= friction;
+        }
+
+        let current_max = isDucking ? max_speed * 0.5 : max_speed;
+
+        if (x_velocity > current_max) x_velocity = current_max;
+        if (x_velocity < -current_max) x_velocity = -current_max;
+        if (Math.abs(x_velocity) < 0.5) x_velocity = 0;
+
+        y_velocity += gravity_force; 
+        if(y_velocity > tile_size * 0.8) y_velocity = tile_size * 0.8;
+
+        playerX += x_velocity;
+        checkCollision(true); 
+
+        playerY += y_velocity;
+        isGrounded = false; 
+        
+        if(y_velocity < 0) checkHeadCollision();
+        
+        checkCollision(false); 
+
+        if (isGrounded) jumpCount = 0;
+
+        if(playerX < 0) { playerX = 0; x_velocity = 0; }
+        if(playerX > (cols-1)*tile_size) playerX = (cols-1)*tile_size;
+        if(playerY > (rows)*tile_size) die();
+
+        updatePlayerPos();
+    }
+
+    function checkHeadCollision() {
+        let checkY = playerY - 5; 
+        let checkPoints = [playerX + 5, playerX + tile_size / 2, playerX + tile_size - 5];
+        let gcRect = gc.getBoundingClientRect();
+
+        for(let px of checkPoints) {
+            let el = document.elementFromPoint(gcRect.left + px, gcRect.top + checkY);
+            if(el && el.classList.contains('quiz-block')) {
+                if(!el.classList.contains('solved')) {
+                    el.classList.add('bump-anim');
+                    setTimeout(() => el.classList.remove('bump-anim'), 200);
+                    playSound('bump');
+                    y_velocity = gravity_force * 2; 
+                    playerY = parseInt(el.style.top) + tile_size;
+                    openQuiz(el);
+                    return; 
+                } else {
+                    playSound('bump');
+                    y_velocity = 0;
+                    playerY = parseInt(el.style.top) + tile_size;
+                }
+            }
+        }
+    }
+
+    function checkCollision(isX) {
+        // Eğilince hitbox yüksekliği azalır
+        let hbH = isDucking ? tile_size * 0.5 : tile_size * 0.9;
+        let hbYOffset = isDucking ? tile_size * 0.5 : tile_size * 0.1;
+
+        let hbX = playerX + 4;
+        let hbY = playerY + hbYOffset;
+        let hbW = tile_size - 8;
+
+        let points = [
+            {x: hbX, y: hbY}, {x: hbX + hbW, y: hbY}, 
+            {x: hbX, y: hbY + hbH}, {x: hbX + hbW, y: hbY + hbH},
+            {x: hbX + hbW/2, y: hbY + hbH} 
+        ];
+
+        let gcRect = gc.getBoundingClientRect();
+
+        for(let p of points) {
+            let el = document.elementFromPoint(gcRect.left + p.x, gcRect.top + p.y);
+            if(el && el.classList.contains('tile')) {
+                if(el.classList.contains('lava')) { die(); return; }
+                if(el.classList.contains('nextlevel')) { nextLevel(); return; }
+                if(el.classList.contains('ground') || el.classList.contains('innerwall') || el.classList.contains('quiz-block')) {
+                    resolveCollision(el, isX);
+                }
+            }
+        }
+    }
+
+    function resolveCollision(tile, isX) {
+        let tX = parseInt(tile.style.left);
+        let tY = parseInt(tile.style.top);
+        if (isX) {
+            if (x_velocity > 0) playerX = tX - tile_size;
+            else if (x_velocity < 0) playerX = tX + tile_size;
+            x_velocity = 0;
+        } else {
+            if (y_velocity > 0) { 
+                playerY = tY - tile_size;
+                isGrounded = true;
+                y_velocity = 0;
+                playerY = Math.floor(playerY); 
+            } else if (y_velocity < 0) { 
+                playerY = tY + tile_size;
+                y_velocity = 0;
+                if(!tile.classList.contains('quiz-block')) playSound('bump');
+            }
+        }
+    }
+
+    function updatePlayerPos() {
+        player.style.left = playerX + 'px';
+        player.style.top = playerY + 'px';
+    }
+
+    function spawnCoin(block) {
+        let rect = block.getBoundingClientRect();
+        let gcRect = gc.getBoundingClientRect();
+        let coin = document.createElement('div');
+        coin.className = 'floating-coin';
+        coin.style.left = (rect.left - gcRect.left) + 'px';
+        coin.style.top = (rect.top - gcRect.top) + 'px';
+        gc.appendChild(coin);
+        setTimeout(() => coin.remove(), 800);
+    }
+
+    function spawn1Up(block) {
+        let rect = block.getBoundingClientRect();
+        let gcRect = gc.getBoundingClientRect();
+        let up = document.createElement('div');
+        up.className = 'floating-1up';
+        up.style.left = (rect.left - gcRect.left) + 'px';
+        up.style.top = (rect.top - gcRect.top) + 'px';
+        gc.appendChild(up);
+        setTimeout(() => up.remove(), 1000);
+    }
+
+    function die() {
+        if(isDead) return;
+        isDead = true;
+        playSound('die');
+        lives--;
+        updateUI();
+        
+        y_velocity = -10;
+        let deathInterval = setInterval(() => {
+            playerY += y_velocity;
+            y_velocity += 1;
+            player.style.top = playerY + 'px';
+            if(playerY > rows * tile_size + 100) {
+                clearInterval(deathInterval);
+                resetLevel();
+            }
+        }, 20);
+    }
+
+    function resetLevel() {
+        isDead = false;
+        if(lives > 0) {
+            let start = levels[levelIndex].start;
+            playerX = start[0] * tile_size;
+            playerY = start[1] * tile_size;
+            y_velocity = 0;
+            x_velocity = 0;
+            updatePlayerPos();
+        } else {
+            alert("OYUN BİTTİ! Puanın: " + score);
+            lives = 3; score = 0; time = 0; levelIndex = 0;
+            loadLevel(0);
+        }
+    }
+
+    function nextLevel() {
+        if(levelIndex < levels.length - 1) {
+            levelIndex++;
+            showAlert(levelIndex + 1 + ". BÖLÜM", 2000);
+            loadLevel(levelIndex);
+        } else {
+            alert("TEBRİKLER! TÜM BÖLÜMLERİ BİTİRDİNİZ! Puan: " + score);
+            levelIndex = 0;
+            score = 0; lives = 3; time = 0;
+            loadLevel(0);
+        }
+    }
+
+    function updateUI() {
+        let scoreEl = document.getElementById('score_val');
+        let livesEl = document.getElementById('lives_val');
+        let levelEl = document.getElementById('level_val');
+        let timeEl = document.getElementById('time_val');
+
+        if(scoreEl) scoreEl.innerText = score;
+        if(livesEl) livesEl.innerText = lives;
+        if(levelEl) levelEl.innerText = levelIndex + 1;
+        if(timeEl) timeEl.innerText = time;
+    }
+
+    function showAlert(msg, duration) {
+        let el = document.getElementById('game_alert');
+        el.innerText = msg;
+        el.style.opacity = 1;
+        setTimeout(() => el.style.opacity = 0, duration);
+    }
+
+    // --- QUIZ SISTEMI ---
+    function openQuiz(tileEl) {
+        if(isQuizActive) return;
+        isQuizActive = true;
+        activeQuizTile = tileEl;
+        
+        // Soru havuzu boşsa yeniden doldur
+        if (currentQuestions.length === 0) {
+            currentQuestions = [...masterQuestions];
+        }
+
+        // Havuzdan rastgele çek ve sil (Tekrarı önle)
+        let randIndex = Math.floor(Math.random() * currentQuestions.length);
+        let q = currentQuestions[randIndex];
+        currentQuestions.splice(randIndex, 1);
+        
+        document.getElementById('quiz_question').innerText = q.q;
+        let optsDiv = document.getElementById('quiz_options');
+        optsDiv.innerHTML = "";
+        
+        q.opts.forEach((opt, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'quiz-btn';
+            btn.innerText = opt;
+            btn.onclick = () => answerQuiz(idx === q.a);
+            optsDiv.appendChild(btn);
+        });
+
+        document.getElementById('quiz_modal').style.display = 'block';
+    }
+
+    function answerQuiz(correct) {
+        document.getElementById('quiz_modal').style.display = 'none';
+        isQuizActive = false;
+        
+        if(correct) {
+            playSound('coin');
+            spawnCoin(activeQuizTile);
+            score += 100;
+            
+            // Can Kazanma Kontrolü
+            if(score >= nextLifeScore) {
+                lives++;
+                nextLifeScore += 500;
+                playSound('1up');
+                spawn1Up(activeQuizTile);
+                showAlert("EKSTRA CAN!", 1500);
+            }
+
+            updateUI();
+            activeQuizTile.classList.add('solved');
+            activeQuizTile = null;
+        } else {
+            playSound('bump');
+            showAlert("YANLIŞ! -1 CAN", 1500);
+            activeQuizTile = null; 
+            lives--; 
+            updateUI();
+            if(lives <= 0) die();
+        }
+    }
+
+    window.onload = init;
+
+</script>
+</body>
+</html>
