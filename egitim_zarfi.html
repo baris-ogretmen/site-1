@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akıllı Eğitim Zarfı Ultimate Pro</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg-gradient);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* --- UI Components --- */
+        #game-container {
+            width: 95%;
+            max-width: 900px;
+            margin-top: 15px;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 50px;
+        }
+
+        .panel {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Başlık ve Seçimler */
+        .select-group { margin-bottom: 15px; text-align: left; }
+        .select-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; margin-left: 5px; }
+        .custom-select {
+            width: 100%; padding: 12px; font-size: 1.1rem;
+            border: 2px solid #ddd; border-radius: 12px;
+            background: white; outline: none; -webkit-appearance: none;
+        }
+        
+        .action-btn {
+            background: var(--accent-color); color: white; border: none;
+            padding: 15px 40px; font-size: 1.4rem; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+            transition: transform 0.2s; width: 100%; max-width: 350px; font-weight: bold;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn:disabled { background: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* --- OYUN EKRANI --- */
+        
+        /* Üst Bilgi Barı */
+        .game-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f1f2f6; padding: 10px 15px; border-radius: 15px;
+            margin-bottom: 15px; font-weight: bold; font-size: 1.1rem;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .stats-group { display: flex; align-items: center; gap: 15px; }
+        
+        /* Canlar */
+        .lives-container { color: var(--danger-color); font-size: 1.3rem; }
+        .heart { display: inline-block; transition: transform 0.2s; }
+        .heart.lost { color: #ccc; transform: scale(0.8); }
+
+        /* Puan */
+        .score-box { background: white; padding: 5px 15px; border-radius: 20px; color: var(--accent-color); border: 1px solid #eee; }
+
+        /* Zaman Çubuğu */
+        .timer-container {
+            width: 100%; height: 8px; background: #dfe6e9;
+            border-radius: 10px; overflow: hidden; margin-bottom: 20px; position: relative;
+        }
+        .timer-bar {
+            height: 100%; background: linear-gradient(90deg, #00b894, #00cec9);
+            width: 100%; transition: width 1s linear, background-color 0.3s;
+        }
+        .timer-bar.warning { background: #f1c40f; }
+        .timer-bar.danger { background: #e74c3c; animation: flashRed 0.5s infinite; }
+
+        @keyframes flashRed { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Soru Alanı */
+        #question-text {
+            font-size: 1.8rem; color: var(--primary-color);
+            margin: 10px 0 20px; min-height: 50px; font-weight: 700;
+        }
+
+        .options-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        
+        .option-card {
+            background: white; border: 3px solid #eee; padding: 15px;
+            border-radius: 15px; font-size: 1.3rem; cursor: pointer;
+            transition: all 0.2s; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 70px; position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .option-card:hover { border-color: var(--info-color); transform: translateY(-2px); }
+        .option-card.correct { background: var(--success-color); color: white; border-color: var(--success-color); }
+        .option-card.wrong { background: var(--danger-color); color: white; border-color: var(--danger-color); animation: shake 0.4s; }
+        .option-card.disabled { opacity: 0.3; pointer-events: none; background: #ddd; border-color: #ccc; }
+
+        /* Joker Alanı */
+        .tools-area {
+            margin-top: 20px; display: flex; justify-content: center; gap: 15px;
+        }
+        .joker-btn {
+            background: #6c5ce7; color: white; border: none;
+            padding: 10px 20px; border-radius: 30px; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+            transition: 0.2s;
+        }
+        .joker-btn:hover { background: #5649c0; transform: scale(1.05); }
+        .joker-btn:disabled { background: #b2bec3; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7; }
+        
+        /* Combo Göstergesi */
+        .combo-badge {
+            position: absolute; top: -15px; right: -15px;
+            background: #e17055; color: white; padding: 8px 12px;
+            border-radius: 50%; font-weight: bold; font-size: 1rem;
+            transform: scale(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2); z-index: 5;
+        }
+        .combo-badge.active { transform: scale(1) rotate(10deg); }
+
+        /* --- ZARF (ÖDÜL) --- */
+        #reward-area {
+            position: relative; height: 350px;
+            display: flex; justify-content: center; margin-top: 40px;
+            perspective: 1000px;
+        }
+        /* ... Zarf CSS'leri önceki ile aynı, sadece boyut ayarları korundu ... */
+        .frame {
+            width: 300px; height: 200px; position: relative;
+            background: #435d77; border-radius: 0 0 20px 20px;
+            cursor: pointer; transition: transform 0.5s;
+        }
+        @media (min-width: 600px) { .frame { width: 500px; height: 300px; border-radius: 0 0 40px 40px; } }
+        
+        /* Zarf Parçaları */
+        .left { border-left: 150px solid #081d3d; border-top: 100px solid transparent; border-bottom: 100px solid transparent; position: absolute; top: 0; z-index: 310; }
+        .right { border-right: 150px solid #081d3d; border-top: 100px solid transparent; border-bottom: 100px solid transparent; position: absolute; top: 0; right: 0; z-index: 310; }
+        @media (min-width: 600px) {
+            .left { border-left-width: 250px; border-top-width: 140px; border-bottom-width: 140px; }
+            .right { border-right-width: 250px; border-top-width: 140px; border-bottom-width: 140px; }
+        }
+        .frame::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 0;
+            border-left: 150px solid transparent; border-right: 150px solid transparent; border-bottom: 100px solid #072247;
+            z-index: 315; pointer-events: none;
+        }
+        @media (min-width: 600px) { .frame::after { border-left-width: 250px; border-right-width: 250px; border-bottom-width: 150px; } }
+        .top {
+            width: 0; height: 0; border-right: 150px solid transparent; border-top: 100px solid #193e6e; border-left: 150px solid transparent;
+            position: absolute; top: 0; z-index: 500; transform-origin: top; transition: transform 1s, z-index 1s;
+        }
+        @media (min-width: 600px) { .top { border-right-width: 250px; border-top-width: 150px; border-left-width: 250px; } }
+
+        .message {
+            position: absolute; width: 90%; height: 90%; background: #fff url('https://www.transparenttextures.com/patterns/cream-paper.png');
+            left: 5%; top: 5%; box-shadow: 0 0 5px 2px #333; z-index: 200;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 5px; padding: 10px; box-sizing: border-box;
+        }
+        .top.open { transform: rotateX(180deg); z-index: 100; }
+        .message.pull { transform: translateY(-200px); z-index: 400; }
+        @media (min-width: 600px) { .message.pull { transform: translateY(-300px); } }
+
+        #lock-btn {
+            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); z-index: 600;
+            background: rgba(255,255,255,0.2); border: 2px solid white; color: white;
+            padding: 10px 20px; border-radius: 50px; font-size: 1.2rem; backdrop-filter: blur(5px);
+        }
+        #lock-btn.unlocked { background: var(--success-color); cursor: pointer; animation: bounce 2s infinite; }
+
+        /* --- MODALLAR --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none;
+            justify-content: center; align-items: center; z-index: 2000;
+            color: white; text-align: center;
+        }
+        .modal-content { animation: zoomIn 0.4s; }
+        .big-text { font-size: 3rem; margin: 10px 0; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        
+        /* Animasyonlar */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translate(-50%, -50%);} 40% {transform: translate(-50%, -60%);} 60% {transform: translate(-50%, -55%);} }
+        @keyframes zoomIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div style="margin-top: 15px; text-align: center; color: white;">
+        <i class="fas fa-graduation-cap" style="font-size: 2.5rem; margin-bottom: 5px;"></i>
+        <h1 style="margin: 0; font-size: 1.8rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Akıllı Eğitim Zarfı</h1>
+    </div>
+
+    <div id="game-container">
+        
+        <!-- 1. KURULUM PANELİ -->
+        <div id="setup-panel" class="panel">
+            <h2><i class="fas fa-gamepad"></i> Oyuna Başla</h2>
+            
+            <div class="select-group">
+                <label><i class="fas fa-user-graduate"></i> Sınıf Seviyesi:</label>
+                <select id="class-select" class="custom-select" onchange="updateSubjects()">
+                    <option value="" disabled selected>Sınıf Seçiniz...</option>
+                    <option value="anaokulu">🧸 Anaokulu</option>
+                    <option value="1">1. Sınıf</option>
+                    <option value="2">2. Sınıf</option>
+                    <option value="3">3. Sınıf</option>
+                    <option value="4">4. Sınıf</option>
+                    <option value="5">5. Sınıf</option>
+                    <option value="6">6. Sınıf</option>
+                    <option value="7">7. Sınıf</option>
+                    <option value="8">8. Sınıf (LGS)</option>
+                </select>
+            </div>
+
+            <div class="select-group">
+                <label><i class="fas fa-book"></i> Ders:</label>
+                <select id="subject-select" class="custom-select" disabled>
+                    <option value="">Önce sınıf seçmelisin</option>
+                </select>
+            </div>
+
+            <button id="start-btn" class="action-btn" onclick="startGame()" disabled>
+                BAŞLA <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- 2. OYUN PANELİ -->
+        <div id="quiz-panel" class="panel hidden">
+            <!-- Combo Rozeti -->
+            <div id="combo-badge" class="combo-badge">Combo x2!</div>
+
+            <!-- Üst Bilgi: Level, Can, Puan -->
+            <div class="game-header">
+                <div class="level-badge" id="level-indicator" style="background:var(--primary-color); color:white; padding:5px 10px; border-radius:10px;">
+                    Seviye 1/5
+                </div>
+                
+                <div class="stats-group">
+                    <div class="lives-container" id="lives-display">
+                        <i class="fas fa-heart heart"></i>
+                        <i class="fas fa-heart heart"></i>
+                        <i class="fas fa-heart heart"></i>
+                    </div>
+                    <div class="score-box">
+                        <i class="fas fa-star"></i> <span id="score-display">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zamanlayıcı -->
+            <div class="timer-container">
+                <div class="timer-bar" id="timer-bar"></div>
+            </div>
+
+            <div id="question-text">Soru Yükleniyor...</div>
+
+            <div class="options-grid" id="options-area">
+                <!-- Şıklar buraya -->
+            </div>
+
+            <!-- Jokerler -->
+            <div class="tools-area">
+                <button id="joker-btn" class="joker-btn" onclick="useJoker()">
+                    <i class="fas fa-magic"></i> %50 Joker (<span id="joker-count">3</span>)
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. ÖDÜL PANELİ -->
+        <div id="reward-panel" class="hidden">
+            <div style="text-align: center; color: white;">
+                <h2 style="font-size:2.5rem; margin-bottom:0;">MUHTEŞEM!</h2>
+                <p>Zarfın içindeki ödülü hak ettin.</p>
+            </div>
+
+            <div id="reward-area">
+                <div class="frame" onclick="openEnvelope()">
+                    <div class="top"></div>
+                    <div class="message">
+                        <i class="fas fa-trophy" style="font-size: 3rem; color: gold; margin-bottom:5px;"></i>
+                        <h2 style="font-family:'Brush Script MT', cursive; font-size: 2.2rem; color: #2c3e50; margin:0;">Başarı Belgesi</h2>
+                        <p style="font-size: 0.9rem; margin: 5px 0;">Bu üstün başarıyı gösteren:</p>
+                        <h3 style="color: #2980b9; margin: 5px 0;">OYUN USTASI</h3>
+                        <p style="font-size: 0.8rem;">Tüm seviyeleri rekor puanla tamamladı!</p>
+                        <div id="final-score" style="margin-top:5px; font-weight:bold; font-size:1.2rem; color: #e67e22;"></div>
+                    </div>
+                    <div class="left"></div><div class="right"></div>
+                    <div id="lock-btn"><i class="fas fa-lock"></i> Kilitli</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="action-btn" onclick="location.reload()" style="font-size: 1rem; padding: 10px 30px;">
+                    <i class="fas fa-redo"></i> Yeni Oyun
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modallar -->
+    <div id="level-up-modal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-level-up-alt" style="font-size: 4rem; color: #f1c40f;"></i>
+            <h1 class="big-text">SEVİYE <span id="next-level-num">2</span></h1>
+            <p>Harika gidiyorsun! Sorular zorlaşıyor...</p>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-heart-broken" style="font-size: 4rem; color: #e74c3c;"></i>
+            <h1 class="big-text">OYUN BİTTİ</h1>
+            <p>Canların tükendi.</p>
+            <button class="action-btn" onclick="restartGame()" style="margin-top:20px;">
+                <i class="fas fa-sync-alt"></i> Tekrar Dene
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* --- AYARLAR --- */
+        const TOTAL_LEVELS = 5;
+        const QUESTIONS_PER_LEVEL = 2;
+        const TIME_PER_QUESTION = 20; // Saniye (Varsayılan)
+        const MAX_LIVES = 3;
+        const MAX_JOKERS = 3;
+
+        /* --- OYUN DURUMU --- */
+        let gameState = {
+            class: '', subject: '',
+            currentLevel: 1,
+            questionsAnsweredInLevel: 0,
+            score: 0,
+            lives: MAX_LIVES,
+            jokers: MAX_JOKERS,
+            streak: 0,
+            questionHistory: [],
+            timerInterval: null,
+            timeRemaining: 0,
+            isProcessing: false // Cevap verilirken tıklamayı engelle
+        };
+
+        /* --- SORU HAVUZU (SÖZEL) --- */
+        const verbalQuestions = {
+            'anaokulu': {
+                'dikkat': [
+                    {q: "Hangi renk kırmızıdır? 🍓", a: "Çilek", w:["Muz", "Salatalık", "Patlıcan"]},
+                    {q: "Hangi hayvan uçar? 🦅", a: "Kartal", w:["Kedi", "Köpek", "Fil"]},
+                    {q: "Geceleri hangisini görürüz? 🌙", a: "Ay", w:["Güneş", "Bulut", "Gökkuşağı"]},
+                    {q: "Kaç tane elma var? 🍎🍎", a: "2", w:["1", "3", "5"]},
+                    {q: "Hangisi meyvedir? 🍇", a: "Üzüm", w:["Brokoli", "Pırasa", "Ispanak"]},
+                    {q: "Hangisi suda yüzer? 🐟", a: "Balık", w:["Kuş", "Tavşan", "Zürafa"]},
+                    {q: "Araba ne renk? 🚗", a: "Kırmızı", w:["Mavi", "Sarı", "Yeşil"]},
+                    {q: "Hangisi miyav der? 🐱", a: "Kedi", w:["Köpek", "İnek", "Koyun"]}
+                ]
+            },
+            'ilk': {
+                'fen': [
+                    {q: "Dünya'nın uydusu hangisidir?", a: "Ay", w:["Güneş", "Mars", "Yıldız"]},
+                    {q: "Bitkiler ne ile beslenir?", a: "Su ve Güneş", w:["Kola", "Hamburger", "Çikolata"]},
+                    {q: "Duyu organımız hangisidir?", a: "Burun", w:["Kalp", "Mide", "Böbrek"]},
+                    {q: "Hangisi canlıdır?", a: "Ağaç", w:["Taş", "Masa", "Su"]},
+                    {q: "Suyu dondurursak ne olur?", a: "Buz", w:["Buhar", "Yağmur", "Bulut"]},
+                    {q: "Hangisi doğal ışık kaynağıdır?", a: "Güneş", w:["Ampul", "Mum", "El Feneri"]},
+                    {q: "Hangisi omurgalı hayvandır?", a: "Kedi", w:["Solucan", "Sinek", "Ahtapot"]},
+                    {q: "Mıknatıs neyi çeker?", a: "Demir", w:["Tahta", "Plastik", "Cam"]}
+                ],
+                'hayat': [
+                    {q: "Acil servis numarası kaçtır?", a: "112", w:["155", "110", "121"]},
+                    {q: "Trafikte kırmızı ışık ne anlama gelir?", a: "Dur", w:["Geç", "Hazırlan", "Koş"]},
+                    {q: "Türkiye'nin başkenti neresidir?", a: "Ankara", w:["İstanbul", "İzmir", "Bursa"]},
+                    {q: "Cumhuriyet ne zaman ilan edildi?", a: "1923", w:["1919", "1920", "1881"]},
+                    {q: "İstiklal Marşı şairimiz kimdir?", a: "Mehmet Akif Ersoy", w:["Atatürk", "Ömer Seyfettin", "Ali Kuşçu"]},
+                    {q: "Yönümüzü neyle buluruz?", a: "Pusula", w:["Saat", "Termometre", "Cetvel"]}
+                ]
+            },
+            'orta': {
+                'fen': [
+                    {q: "Kuvvetin birimi nedir?", a: "Newton", w:["Kilogram", "Metre", "Joule"]},
+                    {q: "Hücrenin yönetim merkezi neresidir?", a: "Çekirdek", w:["Sitoplazma", "Zar", "Koful"]},
+                    {q: "Ay'ın evreleri kaç günde tamamlanır?", a: "29", w:["1", "7", "365"]},
+                    {q: "Ses boşlukta yayılır mı?", a: "Hayır", w:["Evet", "Bazen", "Çok hızlı"]},
+                    {q: "Hangisi asittir?", a: "Limon", w:["Sabun", "Deterjan", "Diş Macunu"]},
+                    {q: "DNA'nın yapı birimi nedir?", a: "Nükleotid", w:["Gen", "Kromozom", "Protein"]},
+                    {q: "Periyodik cetvelde 1. element?", a: "Hidrojen", w:["Helyum", "Oksijen", "Karbon"]},
+                    {q: "Işık en hızlı nerede yayılır?", a: "Boşluk", w:["Su", "Cam", "Elmas"]}
+                ],
+                'sosyal': [
+                    {q: "İstanbul kaç yılında fethedildi?", a: "1453", w:["1071", "1923", "1299"]},
+                    {q: "Yazıyı kim buldu?", a: "Sümerler", w:["Hititler", "Mısırlılar", "Romalılar"]},
+                    {q: "Coğrafi keşifleri başlatan gemici?", a: "Kristof Kolomb", w:["Piri Reis", "Barbaros", "Macellan"]},
+                    {q: "Türkiye'nin en yüksek dağı?", a: "Ağrı Dağı", w:["Erciyes", "Uludağ", "Palandöken"]},
+                    {q: "Yasama yetkisi kime aittir?", a: "TBMM", w:["Cumhurbaşkanı", "Mahkemeler", "Bakanlar"]},
+                    {q: "İlk Türk devletlerinde hükümdar unvanı?", a: "Kağan", w:["Sultan", "Padişah", "Kral"]}
+                ]
+            }
+        };
+
+        /* --- BAŞLANGIÇ --- */
+        function updateSubjects() {
+            const cls = document.getElementById('class-select').value;
+            const subSelect = document.getElementById('subject-select');
+            subSelect.innerHTML = '<option value="" disabled selected>Ders Seçin...</option>';
+            subSelect.disabled = false;
+
+            let subjects = [];
+            if(cls === 'anaokulu') {
+                subjects = [{val: 'mat', name: '🔢 Sayılar'}, {val: 'dikkat', name: '👀 Dikkat ve Renkler'}];
+            } else if (parseInt(cls) <= 4) {
+                subjects = [{val: 'mat', name: '🧮 Matematik'}, {val: 'fen', name: '🔬 Fen Bilimleri'}, {val: 'hayat', name: '🌍 Hayat/Sosyal'}];
+            } else {
+                subjects = [{val: 'mat', name: '📐 Matematik'}, {val: 'fen', name: '🧬 Fen Bilimleri'}, {val: 'sosyal', name: '🏛️ Sosyal/İnkılap'}];
+            }
+
+            subjects.forEach(s => {
+                let opt = document.createElement('option');
+                opt.value = s.val;
+                opt.innerHTML = s.name;
+                subSelect.appendChild(opt);
+            });
+            subSelect.onchange = () => { document.getElementById('start-btn').disabled = false; };
+        }
+
+        function startGame() {
+            gameState.class = document.getElementById('class-select').value;
+            gameState.subject = document.getElementById('subject-select').value;
+            gameState.currentLevel = 1;
+            gameState.questionsAnsweredInLevel = 0;
+            gameState.score = 0;
+            gameState.lives = MAX_LIVES;
+            gameState.jokers = MAX_JOKERS;
+            gameState.streak = 0;
+            gameState.questionHistory = [];
+
+            // UI Reset
+            document.getElementById('setup-panel').classList.add('hidden');
+            document.getElementById('quiz-panel').classList.remove('hidden');
+            document.getElementById('game-over-modal').style.display = 'none';
+            document.getElementById('joker-count').innerText = gameState.jokers;
+            document.getElementById('joker-btn').disabled = false;
+            
+            updateLivesUI();
+            updateScoreUI();
+            updateLevelDisplay();
+            loadNextQuestion();
+        }
+
+        function restartGame() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            document.getElementById('quiz-panel').classList.add('hidden');
+            document.getElementById('setup-panel').classList.remove('hidden');
+        }
+
+        /* --- OYUN DÖNGÜSÜ --- */
+        function loadNextQuestion() {
+            gameState.isProcessing = false;
+            
+            // Level Kontrol
+            if (gameState.questionsAnsweredInLevel >= QUESTIONS_PER_LEVEL) {
+                levelUp();
+                return;
+            }
+
+            // Soru Üretimi
+            let qObj = null;
+            if(gameState.subject === 'mat') qObj = generateMathQuestion(gameState.class, gameState.currentLevel);
+            else qObj = getUniqueVerbalQuestion();
+
+            displayQuestion(qObj);
+            
+            // Süreyi Başlat
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            let duration = TIME_PER_QUESTION;
+            // Zorluk arttıkça süre biraz azalabilir (Opsiyonel)
+            // if(gameState.currentLevel > 3) duration = 15;
+
+            gameState.timeRemaining = duration;
+            const bar = document.getElementById('timer-bar');
+            bar.style.width = '100%';
+            bar.className = 'timer-bar'; // Reset classes
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeRemaining -= 0.1;
+                let pct = (gameState.timeRemaining / duration) * 100;
+                bar.style.width = pct + '%';
+
+                if(pct < 50) bar.classList.add('warning');
+                if(pct < 25) bar.classList.add('danger');
+
+                if(gameState.timeRemaining <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    handleTimeUp();
+                }
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(gameState.timerInterval);
+        }
+
+        function handleTimeUp() {
+            if(gameState.isProcessing) return;
+            gameState.isProcessing = true;
+            
+            // Yanlış cevap gibi işlem yap
+            loseLife();
+            
+            // Doğru cevabı gösterip geç
+            const correctOpt = document.querySelector('.option-card[data-correct="true"]');
+            if(correctOpt) correctOpt.classList.add('correct');
+            
+            setTimeout(() => {
+                if(gameState.lives > 0) loadNextQuestion();
+            }, 2000);
+        }
+
+        /* --- SORU MANTIĞI --- */
+        function displayQuestion(qObj) {
+            document.getElementById('question-text').innerHTML = qObj.q;
+            const container = document.getElementById('options-area');
+            container.innerHTML = '';
+
+            let options = [...qObj.w, qObj.a];
+            options.sort(() => Math.random() - 0.5);
+
+            options.forEach(opt => {
+                let div = document.createElement('div');
+                div.className = 'option-card';
+                div.innerHTML = opt;
+                // Doğru cevap mı işaretlemek için data attribute
+                if(opt === qObj.a) div.setAttribute('data-correct', 'true');
+                
+                div.onclick = () => checkAnswer(div, opt, qObj.a);
+                container.appendChild(div);
+            });
+        }
+
+        function checkAnswer(btn, selected, correct) {
+            if(gameState.isProcessing) return;
+            stopTimer();
+            gameState.isProcessing = true;
+
+            if(selected === correct) {
+                // DOĞRU
+                btn.classList.add('correct');
+                playAudio('correct');
+                
+                // Puan Hesapla: (Kalan Süre + Level Puanı) * Combo
+                gameState.streak++;
+                let timeBonus = Math.floor(gameState.timeRemaining * 5); // Kalan saniye başına 5 puan
+                let levelPoints = 50 * gameState.currentLevel;
+                let streakMultiplier = gameState.streak > 1 ? gameState.streak : 1;
+                
+                let points = (levelPoints + timeBonus) * streakMultiplier;
+                gameState.score += points;
+
+                // Combo Animasyonu
+                if(gameState.streak > 1) showCombo(gameState.streak);
+
+            } else {
+                // YANLIŞ
+                btn.classList.add('wrong');
+                playAudio('wrong');
+                loseLife();
+                gameState.streak = 0; // Combo sıfırla
+                
+                // Doğruyu Göster
+                document.querySelector('.option-card[data-correct="true"]').classList.add('correct');
+            }
+
+            updateScoreUI();
+            gameState.questionsAnsweredInLevel++;
+
+            setTimeout(() => {
+                if(gameState.lives > 0) loadNextQuestion();
+            }, 1500);
+        }
+
+        /* --- CAN VE JOKER --- */
+        function loseLife() {
+            gameState.lives--;
+            updateLivesUI();
+            // Ekran titret
+            document.body.style.animation = 'shake 0.3s';
+            setTimeout(() => document.body.style.animation = '', 300);
+
+            if(gameState.lives <= 0) {
+                setTimeout(gameOver, 1000);
+            }
+        }
+
+        function useJoker() {
+            if(gameState.jokers <= 0 || gameState.isProcessing) return;
+            
+            // Yanlış şıkları bul
+            let wrongOptions = Array.from(document.querySelectorAll('.option-card:not([data-correct="true"])'));
+            if(wrongOptions.length < 2) return; // Zaten az şık varsa çalışma
+
+            // Rastgele 2 tanesini sil (yarı yarıya)
+            // 4 şık varsa 2 siler.
+            let toRemove = 2; 
+            if(wrongOptions.length <= 2) toRemove = 1;
+
+            for(let i=0; i<toRemove; i++) {
+                let randIdx = Math.floor(Math.random() * wrongOptions.length);
+                let opt = wrongOptions[randIdx];
+                opt.classList.add('disabled');
+                opt.innerHTML = '<i class="fas fa-times"></i>';
+                wrongOptions.splice(randIdx, 1);
+            }
+
+            gameState.jokers--;
+            document.getElementById('joker-count').innerText = gameState.jokers;
+            if(gameState.jokers === 0) document.getElementById('joker-btn').disabled = true;
+            
+            playAudio('joker');
+        }
+
+        /* --- UI GÜNCELLEMELERİ --- */
+        function updateLivesUI() {
+            const container = document.getElementById('lives-display');
+            container.innerHTML = '';
+            for(let i=0; i<MAX_LIVES; i++) {
+                let heart = document.createElement('i');
+                heart.className = i < gameState.lives ? 'fas fa-heart heart' : 'fas fa-heart heart lost';
+                container.appendChild(heart);
+            }
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-display').innerText = gameState.score;
+        }
+
+        function updateLevelDisplay() {
+            document.getElementById('level-indicator').innerText = `Seviye ${gameState.currentLevel}/${TOTAL_LEVELS}`;
+        }
+
+        function showCombo(amount) {
+            const badge = document.getElementById('combo-badge');
+            badge.innerText = `Combo x${amount}!`;
+            badge.classList.add('active');
+            setTimeout(() => badge.classList.remove('active'), 1500);
+        }
+
+        function levelUp() {
+            if(gameState.currentLevel >= TOTAL_LEVELS) {
+                gameWin();
+                return;
+            }
+
+            gameState.currentLevel++;
+            gameState.questionsAnsweredInLevel = 0;
+
+            const modal = document.getElementById('level-up-modal');
+            document.getElementById('next-level-num').innerText = gameState.currentLevel;
+            modal.style.display = 'flex';
+            playAudio('levelup');
+            fireConfetti(0.5);
+
+            setTimeout(() => {
+                modal.style.display = 'none';
+                updateLevelDisplay();
+                loadNextQuestion();
+            }, 2000);
+        }
+
+        function gameOver() {
+            document.getElementById('game-over-modal').style.display = 'flex';
+            playAudio('wrong');
+        }
+
+        function gameWin() {
+            document.getElementById('quiz-panel').classList.add('hidden');
+            document.getElementById('reward-panel').classList.remove('hidden');
+            document.getElementById('final-score').innerText = `Toplam Puan: ${gameState.score}`;
+            
+            const lockBtn = document.getElementById('lock-btn');
+            lockBtn.classList.add('unlocked');
+            lockBtn.innerHTML = '<i class="fas fa-unlock"></i> TIKLA VE AÇ';
+            
+            fireConfetti(1);
+            playAudio('win');
+        }
+
+        /* --- ZARF --- */
+        let envelopeOpened = false;
+        function openEnvelope() {
+            if(envelopeOpened || !document.getElementById('lock-btn').classList.contains('unlocked')) return;
+            envelopeOpened = true;
+            document.getElementById('lock-btn').style.display = 'none';
+            document.querySelector('.top').classList.add('open');
+            setTimeout(() => {
+                document.querySelector('.message').classList.add('pull');
+                fireConfetti(1.5);
+            }, 500);
+        }
+
+        /* --- SORU ÜRETİMİ (MATEMATİK) --- */
+        function generateMathQuestion(cls, lvl) {
+            let n1, n2, ans, txt, wrongs = [];
+            let isAnaokulu = cls === 'anaokulu';
+            let grade = parseInt(cls) || 0;
+            let maxNum = 10 + (grade * 5) + (lvl * 5);
+            
+            if(isAnaokulu) {
+                n1 = Math.floor(Math.random() * (3 + lvl)) + 1;
+                let emoji = ['🍎','🚗','🐱','🎈','⭐'][Math.floor(Math.random()*5)];
+                txt = `Kaç tane ${emoji} var? <br> ${emoji.repeat(n1)}`;
+                ans = n1;
+            } else if(grade <= 4) {
+                n1 = Math.floor(Math.random() * maxNum) + 1;
+                n2 = Math.floor(Math.random() * maxNum) + 1;
+                if(lvl <= 2) { txt = `${n1} + ${n2} = ?`; ans = n1 + n2; }
+                else if(lvl <= 4) { if(n1 < n2) [n1, n2] = [n2, n1]; txt = `${n1} - ${n2} = ?`; ans = n1 - n2; }
+                else { n1 = Math.floor(Math.random()*5)+2; n2 = Math.floor(Math.random()*5)+2; txt = `${n1} x ${n2} = ?`; ans = n1*n2; }
+            } else {
+                if(lvl === 1) { n1 = Math.floor(Math.random()*50); n2 = Math.floor(Math.random()*50); txt = `${n1} + ${n2} = ?`; ans = n1 + n2; }
+                else if (lvl === 2) { n1 = Math.floor(Math.random()*12)+2; n2 = Math.floor(Math.random()*12)+2; txt = `${n1} . ${n2} = ?`; ans = n1 * n2; }
+                else if (lvl === 3) { n2 = Math.floor(Math.random()*9)+2; ans = Math.floor(Math.random()*10)+2; n1 = n2 * ans; txt = `${n1} ÷ ${n2} = ?`; }
+                else if (lvl === 4 && grade >= 6) { n1 = Math.floor(Math.random()*5)+2; n2 = 2; txt = `${n1}² = ?`; ans = Math.pow(n1, n2); }
+                else if (lvl === 5 && grade >= 8) { ans = Math.floor(Math.random()*10)+2; n1 = ans*ans; txt = `√${n1} = ?`; }
+                else { n1 = Math.floor(Math.random()*50); n2 = Math.floor(Math.random()*20); txt = `${n1} - ${n2} = ?`; ans = n1-n2; }
+            }
+
+            while(wrongs.length < 3) {
+                let w = ans + Math.floor(Math.random() * 10) - 5;
+                if(w !== ans && w >= 0 && !wrongs.includes(w)) wrongs.push(w);
+            }
+            return { q: txt, a: ans.toString(), w: wrongs.map(x=>x.toString()) };
+        }
+
+        function getUniqueVerbalQuestion() {
+            let poolKey = parseInt(gameState.class) <= 4 ? 'ilk' : 'orta';
+            if(gameState.class === 'anaokulu') poolKey = 'anaokulu';
+            let subKey = gameState.subject;
+            if(subKey === 'hayat' && !verbalQuestions[poolKey]['hayat']) subKey = 'fen';
+            let pool = verbalQuestions[poolKey][subKey] || verbalQuestions['ilk']['fen'];
+            
+            let available = pool.filter(item => !gameState.questionHistory.includes(item.q));
+            if(available.length === 0) {
+                gameState.questionHistory = []; // Reset if exhausted
+                available = pool;
+            }
+            let selected = available[Math.floor(Math.random() * available.length)];
+            gameState.questionHistory.push(selected.q);
+            return selected;
+        }
+
+        /* --- EFEKTLER --- */
+        function fireConfetti(ratio) {
+            var count = 200 * ratio;
+            var defaults = { origin: { y: 0.7 } };
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, { particleCount: Math.floor(count * particleRatio) }));
+            }
+            fire(0.25, { spread: 26, startVelocity: 55 }); fire(0.2, { spread: 60 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+
+        function playAudio(type) {
+            let src = '';
+            if(type === 'correct') src = 'https://actions.google.com/sounds/v1/cartoon/pop.ogg';
+            else if(type === 'wrong') src = 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg';
+            else if(type === 'levelup') src = 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg';
+            else if(type === 'win') src = 'https://actions.google.com/sounds/v1/crowds/battle_crowd_celebrate_stutter.ogg';
+            else if(type === 'joker') src = 'https://actions.google.com/sounds/v1/cartoon/whoosh_fast.ogg';
+            try { new Audio(src).play().catch(e => {}); } catch(e) {}
+        }
+    </script>
+</body>
+</html>
