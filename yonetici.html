@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v13.2 (Tamir Edildi) | Barış İlkan</title>
+    <title>Yönetici Paneli v13.4 (Tam Kontrol) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -77,13 +77,13 @@
 
         /* CANLI BUTON ÖNİZLEME */
         #preview-box { width: 100%; height: 150px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-bottom: 20px; border: 2px dashed #cbd5e1; }
-        .demo-btn { width: 80px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; text-decoration: none; border: none; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .demo-btn { width: 90px; height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; text-decoration: none; border: none; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); text-align: center; }
         
         .shape-circle { border-radius: 50%; }
         .shape-square { border-radius: 10px; }
         .shape-leaf { border-radius: 50% 0 50% 50%; }
-        .shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 90px; height: 90px; }
-        .shape-hex { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); width: 90px; height: 80px; border-radius: 0; }
+        .shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 100px; height: 100px; }
+        .shape-hex { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); width: 100px; height: 90px; border-radius: 0; }
         .shape-diamond { transform: rotate(45deg); border-radius: 10px; }
         .shape-diamond span, .shape-diamond i { transform: rotate(-45deg); }
 
@@ -129,7 +129,7 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v13.2 (Tamir)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v13.4 (Tam Kontrol)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet & Durum</button>
             <button class="menu-btn" onclick="showSection('vitrin-yonetim')"><i class="fas fa-star"></i> Vitrin Yönetimi</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Sihirbazı</button>
@@ -331,6 +331,8 @@
                                 <option value="fa-bell">🔔 Zil</option>
                                 <option value="fa-fire">🔥 Ateş</option>
                                 <option value="fa-check">✔ Tık</option>
+                                <option value="fa-gamepad">🎮 Oyun</option>
+                                <option value="fa-book">📚 Kitap</option>
                             </select>
                         </div>
                     </div>
@@ -348,6 +350,7 @@
                             <input type="text" id="set-media" class="inp" placeholder="Örn: oyun.html" style="margin:0; flex:1;">
                             <button onclick="enYeniOyunuGetir()" class="btn btn-info" style="width:auto; margin:0;"><i class="fas fa-magic"></i> En Yeniyi Getir</button>
                         </div>
+                        <small style="display:block; margin-top:5px; color:#b45309;">En Yeniyi Getir: Tüm Oyun, PDF ve Videoları tarar. Beğenmezsen elle değiştir.</small>
                     </div>
                     <label>Metin (Kısa Tutun)</label><input type="text" id="set-text" class="inp" placeholder="Örn: YENİ" onkeyup="updateButtonPreview()">
                     
@@ -518,11 +521,11 @@
             const icon = document.getElementById('demo-icon');
             const text = document.getElementById('demo-text');
             
-            const color = document.getElementById('set-color').value;
-            const shape = document.getElementById('set-shape').value;
-            const anim = document.getElementById('set-anim').value;
-            const iconVal = document.getElementById('set-icon').value;
-            const textVal = document.getElementById('set-text').value;
+            const color = document.getElementById('set-color').value || "linear-gradient(135deg, #ef4444, #b91c1c)";
+            const shape = document.getElementById('set-shape').value || "shape-circle";
+            const anim = document.getElementById('set-anim').value || "none";
+            const iconVal = document.getElementById('set-icon').value || "fa-play";
+            const textVal = document.getElementById('set-text').value || "YENİ";
 
             btn.style.background = color;
             btn.className = `demo-btn ${shape} ${anim}`;
@@ -531,20 +534,56 @@
         }
 
         function enYeniOyunuGetir() {
-            db.collection("projeler").orderBy("tarih", "desc").limit(1).get().then(snap => {
-                if(!snap.empty) {
-                    const oyun = snap.docs[0].data();
-                    document.getElementById('set-media').value = oyun.link;
-                    document.getElementById('set-msg').value = oyun.baslik;
+            // Promise.all ile tüm koleksiyonları tara ve en yeniyi bul
+            Promise.all([
+                db.collection("projeler").orderBy("tarih", "desc").limit(1).get(),
+                db.collection("videolar").orderBy("tarih", "desc").limit(1).get(),
+                db.collection("kaynaklar").orderBy("tarih", "desc").limit(1).get()
+            ]).then(([p, v, k]) => {
+                let latest = null;
+                // Her birinden en yeniyi al ve karşılaştır
+                [p, v, k].forEach(snap => {
+                    if (!snap.empty) {
+                        const item = snap.docs[0].data();
+                        if (!latest || (item.tarih && item.tarih.seconds > latest.tarih.seconds)) {
+                            latest = item;
+                        }
+                    }
+                });
+
+                if(latest) {
+                    document.getElementById('set-media').value = latest.link;
+                    document.getElementById('set-msg').value = latest.baslik;
                     document.getElementById('set-text').value = "YENİ";
+                    document.getElementById('set-action').value = "link"; // Otomatik link aksiyonu
+                    // Basit bir ikon tahmini
+                    if(latest.link.includes('youtube')) document.getElementById('set-icon').value = "fa-play";
+                    else if(latest.link.endsWith('.pdf')) document.getElementById('set-icon').value = "fa-book";
+                    else document.getElementById('set-icon').value = "fa-gamepad";
+                    
                     updateButtonPreview();
-                    alert("En yeni oyun bulundu: " + oyun.baslik);
-                } else alert("Oyun bulunamadı.");
+                    alert("En yeni içerik bulundu: " + latest.baslik);
+                } else alert("Hiç içerik bulunamadı.");
             });
         }
 
+        function daireYap(baslik, link, type) {
+            // Listeden butona atarken otomatik ikon seçimi ve anında kayıt
+            document.getElementById('set-text').value = "YENİ";
+            document.getElementById('set-msg').value = baslik;
+            document.getElementById('set-media').value = link;
+            document.getElementById('set-action').value = "link";
+            
+            if(type === 'OYUN') document.getElementById('set-icon').value = "fa-gamepad";
+            else if(type === 'PDF') document.getElementById('set-icon').value = "fa-book";
+            else if(type === 'VİDEO') document.getElementById('set-icon').value = "fa-play";
+            
+            updateButtonPreview();
+            daireKaydet(); // Anında kaydet
+        }
+
         function daireKaydet() { 
-            db.collection("site_ayarlari").doc("ozel_duyuru").set({ 
+            const data = {
                 aktif: document.getElementById('set-active').checked, 
                 daireMetni: document.getElementById('set-text').value, 
                 mesaj: document.getElementById('set-msg').value,
@@ -554,8 +593,13 @@
                 renk: document.getElementById('set-color').value,
                 action: document.getElementById('set-action').value,
                 medya: document.getElementById('set-media').value
-            }, {merge:true}).then(()=>alert("Buton güncellendi!")); 
+            };
+
+            db.collection("site_ayarlari").doc("ozel_duyuru").set(data, {merge:true})
+            .then(() => alert("✅ Buton Başarıyla Güncellendi!"))
+            .catch((error) => alert("Hata oluştu: " + error.message)); 
         }
+        
         function robotKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('api-key').value, prompt: document.getElementById('robot-prompt').value }, {merge:true}).then(()=>alert("Robot ayarlandı!")); }
 
         function istatistikGetir() {
@@ -588,12 +632,15 @@
             db.collection("tavsiyeler").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="notice-item"><span class="notice-text">⭐ ${d.data().baslik}</span> <button class="btn-mini btn-danger" style="flex:0; min-width:auto;" onclick="sil('tavsiyeler','${d.id}')"><i class="fas fa-trash"></i></button></div>`); document.getElementById('list-tavsiyeler').innerHTML=h; });
             
             db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => { if(d.exists) { const v=d.data(); 
-                document.getElementById('set-active').checked=v.aktif; document.getElementById('set-text').value=v.daireMetni||""; document.getElementById('set-msg').value=v.mesaj||""; 
+                document.getElementById('set-active').checked=v.aktif; 
+                document.getElementById('set-text').value=v.daireMetni||""; 
+                document.getElementById('set-msg').value=v.mesaj||""; 
                 document.getElementById('set-shape').value=v.sekil||"shape-circle"; 
                 document.getElementById('set-anim').value=v.anim||"none";
                 document.getElementById('set-icon').value=v.ikon||"fa-play";
                 document.getElementById('set-color').value=v.renk||"linear-gradient(135deg, #ef4444, #b91c1c)";
-                document.getElementById('set-action').value=v.action||"link"; document.getElementById('set-media').value=v.medya||"";
+                document.getElementById('set-action').value=v.action||"link"; 
+                document.getElementById('set-media').value=v.medya||"";
                 updateButtonPreview();
             }});
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; }});
@@ -606,7 +653,7 @@
                     <div style="flex:1;"><span style="background:#e0e7ff; color:#6366f1; padding:2px 6px; border-radius:4px; font-size:0.7rem;">${i.type}</span> <b>${i.baslik}</b><br><small>${i.kategori || '-'}</small></div>
                     <div class="action-btns">
                         <button class="btn-mini btn-warning" onclick="haftaninOyunu('${i.baslik}','${i.link}')">Vitrin</button>
-                        <button class="btn-mini btn-danger" style="background:#ef4444;" onclick="daireYap('${i.baslik}','${i.link}')">⭕ Buton</button>
+                        <button class="btn-mini btn-danger" style="background:#ef4444;" onclick="daireYap('${i.baslik}','${i.link}','${i.type}')">⭕ Buton</button>
                         <button class="btn-mini btn-danger" onclick="sil('${i.col}','${i.id}')">Sil</button>
                     </div>
                 </div>`;
@@ -622,11 +669,7 @@
         function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }); }
         function tavsiyeEkle() { db.collection("tavsiyeler").add({ baslik: document.getElementById('t-baslik').value, aciklama: document.getElementById('t-aciklama').value, link: document.getElementById('t-link').value, icon: "fa-star", tarih: firebase.firestore.FieldValue.serverTimestamp() }); }
         function haftaninOyunu(baslik, link) { db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik, url: link }).then(()=>alert("Vitrine Koyuldu!")); }
-        function daireYap(baslik, link) { 
-            document.getElementById('set-text').value="YENİ"; document.getElementById('set-msg').value=baslik; 
-            document.getElementById('set-action').value="link"; document.getElementById('set-media').value=link; 
-            updateButtonPreview(); daireKaydet(); 
-        }
+        
         function sil(col, id) { 
             if(confirm("DİKKAT! Bu içeriği kalıcı olarak silmek istediğine emin misin?")) {
                 db.collection(col).doc(id).delete().then(() => { alert("Silindi."); verileriYukle(); });
