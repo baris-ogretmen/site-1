@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v19.0 (ULTIMATE) | Barış İlkan</title>
+    <title>Yönetici Paneli v19.1 (Final Fix) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -22,7 +22,7 @@
         #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
 
-        /* MOBİL BUTON */
+        /* MOBİL MENÜ */
         #mobile-toggle-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: var(--ana); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; }
 
         /* SIDEBAR */
@@ -51,13 +51,13 @@
         .btn-info { background: #0ea5e9; }
         .btn-dark { background: #334155; }
 
-        /* RENKLİ İSTATİSTİK (Kesin Çözüm) */
+        /* İSTATİSTİK */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { text-align:center; padding:20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); color:white; display:flex; flex-direction:column; justify-content:center; }
-        .stat-blue { background: linear-gradient(135deg, #2193b0, #6dd5ed) !important; }
-        .stat-red { background: linear-gradient(135deg, #ee0979, #ff6a00) !important; }
-        .stat-purple { background: linear-gradient(135deg, #834d9b, #d04ed6) !important; }
-        .stat-val { font-size: 2.5rem; font-weight: 800; margin-top: 10px; text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .stat-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .stat-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .stat-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .stat-val { font-size: 2.5rem; font-weight: 800; margin-top: 10px; }
 
         /* İKON SEÇİCİ */
         .icon-selector-area { border: 2px solid #e2e8f0; padding: 10px; border-radius: 10px; background: #f8fafc; max-height: 250px; overflow-y: auto; }
@@ -114,7 +114,7 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v19.0 (ULTIMATE)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v19.1 (Final Fix)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
             <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
@@ -240,7 +240,7 @@
 
             <div id="ayarlar" class="panel-section">
                 <div class="card" style="border:2px solid #fcd34d;">
-                    <h3>🔴 Acil Buton (Sürpriz) Ayarları</h3>
+                    <h3>🔴 Acil Buton Ayarları</h3>
                     
                     <div id="preview-box">
                         <button id="demo-btn" class="demo-btn">
@@ -267,7 +267,7 @@
                     <label>Hedef Link / Dosya / Video</label>
                     <div style="display:flex; gap:10px;">
                         <input type="text" id="set-media" class="inp" placeholder="Link...">
-                        <button onclick="enYeniGetir()" class="btn btn-info" style="width:auto; white-space:nowrap;">En Yeni (Her Şey)</button>
+                        <button onclick="enYeniGetir()" class="btn btn-info" style="width:auto; white-space:nowrap;">En Yeni (OYUN/VİDEO)</button>
                     </div>
 
                     <label>Metin</label>
@@ -462,18 +462,20 @@
             document.getElementById('tum-icerik-listesi').innerHTML = h;
         }
 
-        // --- ACİL BUTON (HER TÜRÜ GETİR) ---
+        // --- ACİL BUTON (KİTAPLARI HARİÇ TUTARAK EN YENİYİ GETİR) ---
         function enYeniGetir() {
-            // ARTIK KİTAP, YAZI, OYUN FARK ETMEZ, EN SON EKLENENİ GETİRİR
-            if(tumIceriklerCache.length > 0) {
-                const enYeni = tumIceriklerCache[0]; // Zaten tarihe göre sıralı en üstteki
-                document.getElementById('set-media').value = enYeni.link;
-                document.getElementById('set-msg').value = enYeni.baslik;
-                document.getElementById('set-text').value = "YENİ";
-                alert("En yeni İÇERİK bulundu: " + enYeni.baslik);
-            } else {
-                alert("Henüz hiç içerik yok.");
-            }
+            // Sadece Oyun (projeler) koleksiyonunu tara
+            db.collection("projeler").orderBy("tarih", "desc").limit(1).get().then(snap => {
+                if(!snap.empty) {
+                    const oyun = snap.docs[0].data();
+                    document.getElementById('set-media').value = oyun.link;
+                    document.getElementById('set-msg').value = oyun.baslik;
+                    document.getElementById('set-text').value = "YENİ";
+                    alert("En yeni OYUN bulundu: " + oyun.baslik);
+                } else {
+                    alert("Henüz hiç oyun yüklenmemiş.");
+                }
+            });
         }
 
         function daireYap(baslik, link) {
