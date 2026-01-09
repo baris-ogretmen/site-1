@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v37.0 (Donma Önleyici) | Barış İlkan</title>
+    <title>Yönetici Paneli v38.0 (Anti-Blokaj) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -132,7 +132,7 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v37.0 (Anti-Freeze)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v38.0 (Anti-Blokaj)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
             <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
@@ -158,7 +158,7 @@
                     <h3>⚡ Hızlı İçerik Yönetimi</h3>
                     <input type="text" id="search-content" class="inp" placeholder="İçerik ara (Tüm Site)..." onkeyup="icerikFiltrele()">
                     <div id="tum-icerik-listesi">
-                        <div style="padding:20px; text-align:center; color:#666;">Yükleniyor...</div>
+                        <div style="text-align:center; padding:15px; color:#666;">Veriler Yükleniyor...</div>
                     </div>
                 </div>
             </div>
@@ -443,37 +443,35 @@
             });
         }
 
-        // --- VERİ YÜKLEME (ANTI-FREEZE) ---
+        // --- VERİ YÜKLEME (ANTI-BLOKAJ) ---
         function verileriYukle() {
             tumIceriklerCache = [];
-            // Önce listeye "Veriler Çekiliyor..." yazalım ki boş durmasın
-            document.getElementById('tum-icerik-listesi').innerHTML = '<div style="text-align:center; padding:10px;">Veriler Çekiliyor...</div>';
+            // "Yükleniyor" yazısını temizle
+            const listContainer = document.getElementById('tum-icerik-listesi');
+            listContainer.innerHTML = '<div style="text-align:center; padding:15px; color:#666;">Veriler çekiliyor...</div>';
 
-            Promise.all([
-                db.collection("projeler").get(),
-                db.collection("videolar").get(),
-                db.collection("kaynaklar").get(),
-                db.collection("yazilar").get(),
-                db.collection("kitaplar").get()
-            ]).then(([p, v, k, y, kit]) => {
-                p.forEach(d => tumIceriklerCache.push({id:d.id, col:'projeler', type:'OYUN', ...d.data()}));
-                v.forEach(d => tumIceriklerCache.push({id:d.id, col:'videolar', type:'VİDEO', ...d.data()}));
-                k.forEach(d => tumIceriklerCache.push({id:d.id, col:'kaynaklar', type:'PDF', ...d.data()}));
-                y.forEach(d => tumIceriklerCache.push({id:d.id, col:'yazilar', type:'YAZI', ...d.data()}));
-                kit.forEach(d => tumIceriklerCache.push({id:d.id, col:'kitaplar', type:'KİTAP', link: d.data().link, baslik: d.data().baslik, ...d.data()}));
-                
-                tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
-                
-                if (tumIceriklerCache.length === 0) {
-                    document.getElementById('tum-icerik-listesi').innerHTML = '<div style="text-align:center; padding:10px; color:#666;">Henüz hiç içerik eklenmemiş.</div>';
-                } else {
-                    listele();
-                }
-            }).catch(err => {
-                console.error("Veri çekme hatası:", err);
-                document.getElementById('tum-icerik-listesi').innerHTML = '<div style="color:red; text-align:center;">Veri çekilemedi. İnternet bağlantınızı kontrol edin.</div>';
+            const loadCollection = (colName, type) => {
+                db.collection(colName).get().then(snap => {
+                    snap.forEach(d => {
+                        tumIceriklerCache.push({ id: d.id, col: colName, type: type, ...d.data() });
+                    });
+                    renderList(); // Her veri geldiğinde listeyi güncelle
+                }).catch(err => console.log(colName + " boş veya hata: ", err));
+            };
+
+            loadCollection("projeler", "OYUN");
+            loadCollection("videolar", "VİDEO");
+            loadCollection("kaynaklar", "PDF");
+            loadCollection("yazilar", "YAZI");
+            // Kitapları ayrıca çekip listeye ekleyelim
+            db.collection("kitaplar").get().then(snap => {
+                snap.forEach(d => {
+                    tumIceriklerCache.push({ id: d.id, col: "kitaplar", type: "KİTAP", link: d.data().link, baslik: d.data().baslik, ...d.data() });
+                });
+                renderList();
             });
 
+            // Kitap Yönetimi Listesi
             db.collection("kitaplar").orderBy("sira", "desc").get().then(snap => {
                 let h = "";
                 snap.forEach(d => {
@@ -483,6 +481,7 @@
                 document.getElementById('kitap-listesi').innerHTML = h;
             });
 
+            // Ayarlar
             db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => {
                 if(d.exists) {
                     const v = d.data();
@@ -501,7 +500,10 @@
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; }});
         }
 
-        function listele() {
+        function renderList() {
+            // Tarihe göre sırala
+            tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
+            
             let h = "";
             tumIceriklerCache.forEach(i => {
                 // LİNK DÜZELTME (OTOMATİK MAVİ LİNK)
@@ -527,7 +529,10 @@
                     </div>
                 </div>`;
             });
-            document.getElementById('tum-icerik-listesi').innerHTML = h;
+            
+            const container = document.getElementById('tum-icerik-listesi');
+            if (h) container.innerHTML = h;
+            else container.innerHTML = '<div style="text-align:center; padding:15px; color:#666;">İçerik bulunamadı.</div>';
         }
 
         // --- ACİL BUTON ---
@@ -574,7 +579,7 @@
                 action: "link", 
                 ikon: "fa-play"
             }) 
-            .then(() => showToast("✅ Ayarlar Kaydedildi!"))
+            .then(() => showToast("✅ Ayarlar KESİN OLARAK Kaydedildi!"))
             .catch(e => alert("Hata: " + e.message));
         }
 
@@ -605,7 +610,6 @@
                     if(m.telefon || m.tel) {
                         const tel = (m.telefon || m.tel).replace(/[^0-9]/g, '');
                         const finalTel = tel.startsWith('5') ? '90' + tel : tel;
-                        // OTOMATİK MESAJ METNİ
                         const autoMsg = `Merhaba, ben Barış Öğretmen. "${m.konu || 'mesajınız'}" hakkında gönderdiğiniz talep üzerine yazıyorum. Size nasıl yardımcı olabilirim?`;
                         cevapBtn = `<a href="https://wa.me/${finalTel}?text=${encodeURIComponent(autoMsg)}" target="_blank" class="btn-mini bg-wa" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; color:white;">📞 WA</a>`;
                     } else if(m.email || m.eposta || m.mail) {
