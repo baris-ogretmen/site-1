@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Kapsamlı Nöro-Eğitim Simülasyonu</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+
+        /* Yükleme Ekranı */
+        #loader {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.8s ease-out;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 60px; height: 60px;
+            border: 3px solid transparent;
+            border-top-color: #00ffff;
+            border-right-color: #ff0055;
+            border-bottom-color: #ffff00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Arayüz Katmanı */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            text-shadow: 0 0 15px #00ffff;
+            pointer-events: none;
+            margin-top: 10px;
+        }
+        
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: 3px; color: #00ffff; font-weight: 300; }
+        .subtitle { font-size: 1rem; color: #888; letter-spacing: 1px; margin-top: 5px; }
+
+        /* Kontrol Paneli (Alt Kısım - Sekmeli Yapı) */
+        #controls-wrapper {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 900px;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Sekme Başlıkları */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .tab-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #888;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn.active {
+            background: #00ffff;
+            color: #000;
+            border-color: #00ffff;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Buton Grupları */
+        .control-panel {
+            background: rgba(10, 20, 30, 0.9);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 20px;
+            display: none; /* JS ile açılacak */
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            animation: fadeIn 0.5s;
+        }
+
+        .control-panel.visible { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            color: #ccc;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            flex: 1 1 auto;
+            text-align: center;
+            min-width: 120px;
+            max-width: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover { background: rgba(0, 255, 255, 0.1); border-color: #00ffff; color: #fff; transform: translateY(-2px); }
+        .btn.active { background: #00ffff; color: #000; border-color: #00ffff; font-weight: bold; box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); }
+        
+        /* Kategori Renkleri */
+        .btn-anatomy { border-left: 3px solid #00aaff; }
+        .btn-problem { border-left: 3px solid #ff0055; }
+        .btn-problem:hover { border-color: #ff0055; }
+        .btn-problem.active { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
+
+        .dot-indicator {
+            width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+            display: inline-block;
+        }
+
+        /* Bilgi Paneli (Sol Üst) */
+        #info-panel {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 340px;
+            background: rgba(5, 10, 20, 0.85);
+            border-left: 4px solid #00ffff;
+            padding: 25px;
+            border-radius: 0 12px 12px 0;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        #info-panel.hidden { transform: translateX(-150%); }
+
+        h2 { margin-top: 0; color: #fff; font-size: 1.4rem; margin-bottom: 5px; font-weight: 600; }
+        .info-sub { font-size: 0.85rem; color: #00ffff; text-transform: uppercase; margin-bottom: 15px; display: block; letter-spacing: 1px; font-weight: bold; }
+        p { line-height: 1.6; font-size: 1rem; color: #d0d0d0; }
+
+        .highlight { color: #fff; font-weight: bold; border-bottom: 1px dashed #00ffff; }
+
+        /* Mobil Uyum */
+        @media (max-width: 600px) {
+            #info-panel { width: auto; right: 10px; left: 10px; top: 80px; font-size: 0.9rem; max-height: 35vh; }
+            #controls-wrapper { bottom: 10px; width: 98%; }
+            .btn { padding: 10px; font-size: 0.8rem; min-width: 90px; }
+            h1 { font-size: 1.4rem; }
+            .tab-btn { padding: 8px 15px; font-size: 0.8rem; }
+        }
+    </style>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <div style="color: #00ffff; letter-spacing: 2px;">BEYİN HARİTALANIYOR...</div>
+    </div>
+
+    <div id="ui-layer">
+        <header>
+            <h1>NÖRO-EĞİTİM LABORATUVARI</h1>
+            <div class="subtitle">Anatomiden Özel Eğitime Yolculuk</div>
+        </header>
+
+        <div id="info-panel">
+            <h2 id="info-title">Hoş Geldiniz</h2>
+            <span id="info-sub" class="info-sub">Simülasyon Başlatıldı</span>
+            <p id="info-desc">
+                Bu simülasyon, beynin normal işleyişini ve özel eğitim gerektiren durumlardaki nörolojik farklılıkları görselleştirmek için tasarlanmıştır.
+                <br><br>
+                Aşağıdaki paneli kullanarak önce <b>Anatomi</b> sekmesinden beyni tanıyın, ardından <b>Özel Durumlar</b> sekmesinden farklılıkları inceleyin.
+            </p>
+        </div>
+
+        <div id="controls-wrapper">
+            <!-- Sekmeler -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('anatomy')">1. BEYNİ TANI (ANATOMİ)</button>
+                <button class="tab-btn" onclick="switchTab('problems')">2. ÖZEL DURUMLAR (NEDENLER)</button>
+            </div>
+
+            <!-- Panel 1: Anatomi -->
+            <div id="panel-anatomy" class="control-panel visible">
+                <button class="btn btn-anatomy active" onclick="setMode('normal')">
+                    <span class="dot-indicator" style="color: #fff;"></span> Tüm Beyin (Normal)
+                </button>
+                <button class="btn btn-anatomy" onclick="setMode('frontal')">
+                    <span class="dot-indicator" style="color: #0088ff;"></span> Ön Lop (Yönetici)
+                </button>
+                <button class="btn btn-anatomy" onclick="setMode('parietal')">
+                    <span class="dot-indicator" style="color: #ffaa00;"></span> Yan Lop (Duyu)
+                </button>
+                <button class="btn btn-anatomy" onclick="setMode('occipital')">
+                    <span class="dot-indicator" style="color: #ff0055;"></span> Arka Lop (Görme)
+                </button>
+                <button class="btn btn-anatomy" onclick="setMode('temporal')">
+                    <span class="dot-indicator" style="color: #00ff44;"></span> Şakak Lobu (Hafıza)
+                </button>
+            </div>
+
+            <!-- Panel 2: Özel Durumlar -->
+            <div id="panel-problems" class="control-panel">
+                <button class="btn btn-problem" onclick="setMode('intellectual')">Zihinsel Yetersizlik</button>
+                <button class="btn btn-problem" onclick="setMode('speech')">Konuşma Güçlüğü</button>
+                <button class="btn btn-problem" onclick="setMode('dyslexia')">Disleksi (Okuma)</button>
+                <button class="btn btn-problem" onclick="setMode('adhd')">DEHB (Dikkat)</button>
+                <button class="btn btn-problem" onclick="setMode('autism')">Otizm (Duyu)</button>
+                <button class="btn btn-problem" onclick="setMode('metabolic')">Metabolik Sorun</button>
+                <button class="btn btn-problem" onclick="setMode('cp')">Serebral Palsi (Motor)</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from "three";
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+        // --- SAHNE ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 14);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.0;
+        controls.target.set(0, 2, 0);
+
+        // --- IŞIKLAR ---
+        scene.add(new THREE.AmbientLight(0x404040, 2));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+        const spotLight = new THREE.SpotLight(0x00ffff, 3);
+        spotLight.position.set(-5, 5, 2);
+        scene.add(spotLight);
+
+        // --- SİMÜLASYON PARAMETRELERİ ---
+        // Mode ID'leri:
+        // 0: Normal, 1-4: Anatomi (Frontal, Parietal, Occipital, Temporal)
+        // 10: Zihinsel, 11: Konuşma, 12: Disleksi, 13: DEHB, 14: Otizm, 15: Metabolik, 16: CP
+        const simulationParams = {
+            mode: 0, 
+            speed: 1.0
+        };
+
+        // --- MATERYALLER ---
+
+        // 1. Beyin Yüzeyi (Şeffaf Kabuk)
+        const brainMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                mode: { value: 0 }
+            },
+            vertexShader: `
+                varying vec3 vNormal;
+                varying vec3 vViewDir;
+                varying vec3 vPos;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    vPos = position;
+                    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+                    vViewDir = normalize(-mvPos.xyz);
+                    gl_Position = projectionMatrix * mvPos;
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                uniform float mode;
+                varying vec3 vNormal;
+                varying vec3 vViewDir;
+                varying vec3 vPos;
+
+                void main() {
+                    float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.0);
+                    vec3 color = vec3(0.1, 0.3, 0.8); // Varsayılan Mavi
+                    float alpha = 0.1 + fresnel * 0.4;
+
+                    // --- ANATOMİ RENKLERİ ---
+                    if (mode == 1.0) { // Frontal (Ön)
+                        if (vPos.z > 0.5 && vPos.y > 2.0) { color = vec3(0.0, 0.5, 1.0); alpha = 0.3; }
+                        else alpha = 0.05;
+                    }
+                    if (mode == 2.0) { // Parietal (Yan/Üst)
+                        if (vPos.y > 3.5) { color = vec3(1.0, 0.7, 0.0); alpha = 0.3; }
+                        else alpha = 0.05;
+                    }
+                    if (mode == 3.0) { // Occipital (Arka)
+                        if (vPos.z < -1.5) { color = vec3(1.0, 0.0, 0.3); alpha = 0.3; }
+                        else alpha = 0.05;
+                    }
+                    if (mode == 4.0) { // Temporal (Şakak)
+                        if (abs(vPos.x) > 1.2 && vPos.y < 3.0) { color = vec3(0.0, 1.0, 0.3); alpha = 0.3; }
+                        else alpha = 0.05;
+                    }
+
+                    // --- SORUN RENKLERİ ---
+                    if (mode == 13.0) color = mix(color, vec3(1.0, 0.5, 0.0), 0.4); // DEHB Turuncu
+                    if (mode == 14.0) color = mix(color, vec3(0.8, 0.0, 1.0), 0.4); // Otizm Mor
+                    if (mode == 15.0) color = vec3(0.2, 0.8, 0.2); // Metabolik Yeşil
+
+                    gl_FragColor = vec4(color * fresnel * 2.0 + color * 0.2, alpha);
+                }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        // 2. Nöronlar (Parçacıklar)
+        const particleCount = 12000;
+        const geom = new THREE.BufferGeometry();
+        const pos = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const randoms = new Float32Array(particleCount);
+
+        for(let i=0; i<particleCount; i++) {
+            const r = 3.2 * Math.cbrt(Math.random()); 
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            pos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) + 2.5; 
+            pos[i*3+2] = r * Math.cos(phi) * 0.9 - 0.5;
+
+            sizes[i] = Math.random();
+            randoms[i] = Math.random();
+        }
+        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        geom.setAttribute('rnd', new THREE.BufferAttribute(randoms, 1));
+
+        const neuronMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                globalSpeed: { value: 1.0 },
+                mode: { value: 0 },
+            },
+            vertexShader: `
+                uniform float time;
+                uniform float globalSpeed;
+                uniform float mode;
+                attribute float size;
+                attribute float rnd;
+                varying float vAlpha;
+                varying vec3 vColor;
+                
+                void main() {
+                    vec3 p = position;
+                    float localSpeed = globalSpeed;
+                    float chaos = 0.0;
+                    vec3 col = vec3(0.0, 0.6, 1.0); // Varsayılan Mavi
+                    float activityLevel = 1.0;
+
+                    // --- MOD MANTIĞI ---
+
+                    // 1. ANATOMİ MODLARI (Sadece ilgili bölgeyi yak)
+                    if (mode >= 1.0 && mode <= 4.0) {
+                        activityLevel = 0.1; // Diğer yerleri sönükleştir
+                        col = vec3(0.2); // Gri yap
+                        
+                        // Frontal (1)
+                        if (mode == 1.0 && p.z > 0.5 && p.y > 2.0) { 
+                            activityLevel = 1.0; col = vec3(0.0, 0.6, 1.0); 
+                        }
+                        // Parietal (2)
+                        if (mode == 2.0 && p.y > 3.5) { 
+                            activityLevel = 1.0; col = vec3(1.0, 0.7, 0.0); 
+                        }
+                        // Occipital (3)
+                        if (mode == 3.0 && p.z < -1.5) { 
+                            activityLevel = 1.0; col = vec3(1.0, 0.0, 0.4); 
+                        }
+                        // Temporal (4)
+                        if (mode == 4.0 && abs(p.x) > 1.2 && p.y < 3.0) { 
+                            activityLevel = 1.0; col = vec3(0.0, 1.0, 0.4); 
+                        }
+                    }
+
+                    // 2. ÖZEL DURUM MODLARI
+                    
+                    // Zihinsel Yetersizlik (10)
+                    if (mode == 10.0) {
+                        localSpeed = 0.3; // Yavaş
+                        if(rnd > 0.5) activityLevel = 0.0; // Seyrek nöron
+                        col = vec3(0.6); 
+                    }
+
+                    // Konuşma (11) - Sol Ön
+                    if (mode == 11.0) {
+                        if (p.x > 0.5 && p.y > 1.5 && p.z > 0.5) {
+                            localSpeed = 0.05; // Durmuş
+                            col = vec3(1.0, 0.0, 0.0); // Kırmızı hata
+                        }
+                    }
+
+                    // Disleksi (12) - Sol Arka
+                    if (mode == 12.0) {
+                        if (p.x > 0.5 && p.y > 1.5 && p.z < 0.5 && p.z > -1.0) {
+                            localSpeed = 0.2; 
+                            col = vec3(1.0, 0.5, 0.0);
+                            chaos = 0.02;
+                        }
+                    }
+
+                    // DEHB (13) - Ön yavaş, arka hızlı
+                    if (mode == 13.0) {
+                        if (p.z > 1.0 && p.y > 2.0) {
+                            localSpeed = 0.1; col = vec3(0.2); // Fren yok
+                        } else {
+                            localSpeed = 2.5; col = vec3(1.0, 0.8, 0.0); // Hiperaktif
+                            chaos = 0.04;
+                        }
+                    }
+
+                    // Otizm (14) - Duyusal alanlar aşırı
+                    if (mode == 14.0) {
+                        if (p.y > 3.0) { // Parietal
+                            localSpeed = 4.0; 
+                            col = vec3(1.0, 0.0, 1.0); // Mor patlama
+                            chaos = 0.06;
+                        }
+                    }
+
+                    // Metabolik (15)
+                    if (mode == 15.0) {
+                        chaos = 0.15;
+                        col = vec3(0.2, 1.0, 0.2); // Toksik
+                    }
+
+                     // Serebral Palsi (16) - Motor Korteks (Tepe şerit)
+                    if (mode == 16.0) {
+                        if (p.y > 3.5 && p.z > -0.5 && p.z < 0.5) {
+                            localSpeed = 0.0; // Hasarlı motor
+                            col = vec3(0.1); // Siyah/Ölü
+                            if (rnd > 0.8) { col = vec3(1.0, 0.0, 0.0); localSpeed=5.0; } // Spastik ateşleme
+                        }
+                    }
+
+                    // Hareket
+                    p.x += sin(time * 5.0 + rnd * 100.0) * chaos;
+                    p.y += cos(time * 5.0 + rnd * 100.0) * chaos;
+                    
+                    vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+                    gl_PointSize = size * (90.0 / -mvPosition.z) * activityLevel;
+                    gl_Position = projectionMatrix * mvPosition;
+                    
+                    float flashFreq = (1.0 + rnd * 2.0) * localSpeed;
+                    vAlpha = (0.4 + 0.6 * sin(time * flashFreq * 3.0 + rnd * 10.0)) * activityLevel;
+                    vColor = col;
+                }
+            `,
+            fragmentShader: `
+                varying float vAlpha;
+                varying vec3 vColor;
+                void main() {
+                    if (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;
+                    gl_FragColor = vec4(vColor, vAlpha);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particleSystem = new THREE.Points(geom, neuronMaterial);
+        scene.add(particleSystem);
+
+        // --- MODEL YÜKLEME ---
+        const loader = new GLTFLoader();
+        loader.load('https://threejs.org/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb', (gltf) => {
+            const mesh = gltf.scene.children[0];
+            mesh.material = brainMaterial;
+            mesh.scale.setScalar(1.8);
+            scene.add(mesh);
+            
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(()=>document.getElementById('loader').remove(), 800);
+        });
+
+        // --- UI KONTROLÜ ---
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.control-panel').forEach(p => p.classList.remove('visible'));
+            document.getElementById('panel-' + tabName).classList.add('visible');
+        };
+
+        const infoData = {
+            'normal': { t: "Normal Beyin Aktivitesi", s: "Dengeli ve Senkronize", d: "Beyin bölgeleri birbiriyle uyum içinde çalışır. Nöronlar arası iletişim hızlı ve düzenlidir. Tüm loplar görevini yapar." },
+            'frontal': { t: "Ön Lop (Frontal Lobe)", s: "CEO / Yönetici Merkez", d: "Karar verme, planlama, dikkat, kişilik ve dürtü kontrolü burada yapılır. Burası 'insanı insan yapan' en gelişmiş bölgedir." },
+            'parietal': { t: "Yan Lop (Parietal Lobe)", s: "Duyu ve Navigasyon", d: "Dokunma, acı, sıcaklık hissi ve vücudun nerede olduğunu anlama (mekansal farkındalık) merkezidir." },
+            'occipital': { t: "Arka Lop (Occipital Lobe)", s: "Görme Merkezi", d: "Gözden gelen sinyaller burada görüntüye dönüşür. Renk, şekil ve hareketi burada algılarız." },
+            'temporal': { t: "Şakak Lobu (Temporal Lobe)", s: "Hafıza ve Dil", d: "Duyulanları anlama, yüzleri tanıma ve anıları depolama (Hipokampus) burada gerçekleşir." },
+            
+            'intellectual': { t: "Zihinsel Yetersizlik", s: "Seyrek Bağlantılar", d: "Nöronlar arasındaki <span class='highlight'>bağlantı (sinaps) sayısı azdır</span>. Bilgi aktarımı yavaştır, bu da öğrenme ve kavramayı zorlaştırır." },
+            'speech': { t: "Konuşma Güçlüğü", s: "Broca Alanı Hatası", d: "Düşünceler var ama kelimeler çıkmıyor. Sol ön taraftaki konuşma üretim merkezi (Kırmızı alan) komutları ağza iletemiyor (Apraksi/Afazi)." },
+            'dyslexia': { t: "Disleksi (Öğrenme)", s: "Hatalı İşlemleme", d: "Okuma sırasında harfler sese dönüşmüyor. Beynin sol-arka 'okuma otobanı' (Turuncu alan) çalışmıyor, beyin zorlu patika yolları kullanıyor." },
+            'adhd': { t: "DEHB (Dikkat Eksikliği)", s: "Fren Tutmuyor", d: "Ön Lop (Gri alan) yeterince aktif değil. Burası beynin 'freni'dir. Fren çalışmayınca, arka taraftaki motor ve duyu merkezleri (Sarı alanlar) kontrolden çıkar." },
+            'autism': { t: "Otizm (OSB)", s: "Duyusal Kaos", d: "Duyu merkezi (Parietal - Mor alan) filtreleme yapamıyor. Işık, ses veya dokunuş beyinde bir <span class='highlight'>havai fişek gösterisi</span> gibi patlıyor. Bu aşırı yüklenme (meltdown) yaratır." },
+            'metabolic': { t: "Metabolik Sorun", s: "Toksik Etki", d: "Vücut kimyasındaki bozukluklar (örn. Fenilketonüri) beyne zarar verir. Nöronlar düzensiz ve kaotik çalışır (Yeşil titreşim)." },
+            'cp': { t: "Serebral Palsi (CP)", s: "Motor Hasarı", d: "Beynin tepesindeki 'Motor Korteks' hasar görmüştür. Kaslara giden sinyaller ya hiç gitmez (Felç) ya da yanlış gider (Spastisite - Kırmızı patlamalar)." }
+        };
+
+        window.setMode = function(key) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const info = infoData[key];
+            if(info) {
+                document.getElementById('info-title').innerText = info.t;
+                document.getElementById('info-sub').innerText = info.s;
+                document.getElementById('info-desc').innerHTML = info.d;
+            }
+
+            let modeId = 0;
+            if(key === 'normal') modeId = 0;
+            if(key === 'frontal') modeId = 1;
+            if(key === 'parietal') modeId = 2;
+            if(key === 'occipital') modeId = 3;
+            if(key === 'temporal') modeId = 4;
+            
+            if(key === 'intellectual') modeId = 10;
+            if(key === 'speech') modeId = 11;
+            if(key === 'dyslexia') modeId = 12;
+            if(key === 'adhd') modeId = 13;
+            if(key === 'autism') modeId = 14;
+            if(key === 'metabolic') modeId = 15;
+            if(key === 'cp') modeId = 16;
+            
+            simulationParams.mode = modeId;
+        };
+
+        // --- RENDER ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            neuronMaterial.uniforms.time.value = time;
+            neuronMaterial.uniforms.mode.value = simulationParams.mode;
+            
+            brainMaterial.uniforms.time.value = time;
+            brainMaterial.uniforms.mode.value = simulationParams.mode;
+
+            particleSystem.rotation.y = time * 0.05;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
