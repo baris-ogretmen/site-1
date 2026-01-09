@@ -70,7 +70,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: 95%;
-            max-width: 900px;
+            max-width: 950px;
             pointer-events: auto;
             display: flex;
             flex-direction: column;
@@ -83,6 +83,7 @@
             justify-content: center;
             gap: 10px;
             margin-bottom: 5px;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -92,11 +93,14 @@
             padding: 10px 20px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.3s;
             text-transform: uppercase;
             letter-spacing: 1px;
+            white-space: nowrap;
         }
+
+        .tab-btn:hover { border-color: #fff; color: #fff; }
 
         .tab-btn.active {
             background: #00ffff;
@@ -152,6 +156,10 @@
         .btn-problem:hover { border-color: #ff0055; }
         .btn-problem.active { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
 
+        .btn-strategy { border-left: 3px solid #00ff44; }
+        .btn-strategy:hover { border-color: #00ff44; }
+        .btn-strategy.active { background: #00ff44; color: black; border-color: #00ff44; box-shadow: 0 0 20px rgba(0, 255, 68, 0.4); }
+
         .dot-indicator {
             width: 8px; height: 8px; border-radius: 50%; background: currentColor;
             display: inline-block;
@@ -187,9 +195,10 @@
         @media (max-width: 600px) {
             #info-panel { width: auto; right: 10px; left: 10px; top: 80px; font-size: 0.9rem; max-height: 35vh; }
             #controls-wrapper { bottom: 10px; width: 98%; }
-            .btn { padding: 10px; font-size: 0.8rem; min-width: 90px; }
+            .btn { padding: 10px; font-size: 0.75rem; min-width: 80px; }
             h1 { font-size: 1.4rem; }
-            .tab-btn { padding: 8px 15px; font-size: 0.8rem; }
+            .tab-btn { padding: 8px 10px; font-size: 0.75rem; }
+            .tabs { gap: 5px; }
         }
     </style>
     
@@ -212,24 +221,28 @@
     <div id="ui-layer">
         <header>
             <h1>NÖRO-EĞİTİM LABORATUVARI</h1>
-            <div class="subtitle">Anatomiden Özel Eğitime Yolculuk</div>
+            <div class="subtitle">Anatomiden Müdahaleye Yolculuk</div>
         </header>
 
         <div id="info-panel">
             <h2 id="info-title">Hoş Geldiniz</h2>
             <span id="info-sub" class="info-sub">Simülasyon Başlatıldı</span>
             <p id="info-desc">
-                Bu simülasyon, beynin normal işleyişini ve özel eğitim gerektiren durumlardaki nörolojik farklılıkları görselleştirmek için tasarlanmıştır.
+                Bu simülasyon, beynin normal işleyişini, özel durumlardaki farklılıkları ve <b>doğru müdahale yöntemlerinin</b> beyni nasıl etkilediğini gösterir.
                 <br><br>
-                Aşağıdaki paneli kullanarak önce <b>Anatomi</b> sekmesinden beyni tanıyın, ardından <b>Özel Durumlar</b> sekmesinden farklılıkları inceleyin.
+                Aşağıdaki paneli kullanarak:
+                <br>1. <b>Anatomi</b> ile beyni tanıyın.
+                <br>2. <b>Özel Durumlar</b> ile sorunların nedenini görün.
+                <br>3. <b>Müdahale</b> ile beynin nasıl iyileştiğini keşfedin.
             </p>
         </div>
 
         <div id="controls-wrapper">
             <!-- Sekmeler -->
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('anatomy')">1. BEYNİ TANI (ANATOMİ)</button>
-                <button class="tab-btn" onclick="switchTab('problems')">2. ÖZEL DURUMLAR (NEDENLER)</button>
+                <button class="tab-btn active" onclick="switchTab('anatomy')">1. BEYNİ TANI</button>
+                <button class="tab-btn" onclick="switchTab('problems')">2. NEDENLER (ÖZEL DURUM)</button>
+                <button class="tab-btn" onclick="switchTab('strategies')">3. NASIL ÇALIŞILMALI?</button>
             </div>
 
             <!-- Panel 1: Anatomi -->
@@ -259,7 +272,15 @@
                 <button class="btn btn-problem" onclick="setMode('adhd')">DEHB (Dikkat)</button>
                 <button class="btn btn-problem" onclick="setMode('autism')">Otizm (Duyu)</button>
                 <button class="btn btn-problem" onclick="setMode('metabolic')">Metabolik Sorun</button>
-                <button class="btn btn-problem" onclick="setMode('cp')">Serebral Palsi (Motor)</button>
+            </div>
+
+            <!-- Panel 3: Müdahale ve Stratejiler -->
+            <div id="panel-strategies" class="control-panel">
+                <button class="btn btn-strategy" onclick="setMode('strategy_visual')">Görsel Destek</button>
+                <button class="btn btn-strategy" onclick="setMode('strategy_chunking')">Küçük Adımlar</button>
+                <button class="btn btn-strategy" onclick="setMode('strategy_sensory')">Duyu Bütünleme</button>
+                <button class="btn btn-strategy" onclick="setMode('strategy_movement')">Hareketle Öğrenme</button>
+                <button class="btn btn-strategy" onclick="setMode('strategy_repetition')">Sık Tekrar</button>
             </div>
         </div>
     </div>
@@ -300,8 +321,9 @@
 
         // --- SİMÜLASYON PARAMETRELERİ ---
         // Mode ID'leri:
-        // 0: Normal, 1-4: Anatomi (Frontal, Parietal, Occipital, Temporal)
-        // 10: Zihinsel, 11: Konuşma, 12: Disleksi, 13: DEHB, 14: Otizm, 15: Metabolik, 16: CP
+        // 0: Normal, 1-4: Anatomi
+        // 10-16: Problemler
+        // 20-24: Stratejiler
         const simulationParams = {
             mode: 0, 
             speed: 1.0
@@ -340,27 +362,29 @@
                     float alpha = 0.1 + fresnel * 0.4;
 
                     // --- ANATOMİ RENKLERİ ---
-                    if (mode == 1.0) { // Frontal (Ön)
-                        if (vPos.z > 0.5 && vPos.y > 2.0) { color = vec3(0.0, 0.5, 1.0); alpha = 0.3; }
-                        else alpha = 0.05;
+                    if (mode == 1.0) { // Frontal
+                        if (vPos.z > 0.5 && vPos.y > 2.0) { color = vec3(0.0, 0.5, 1.0); alpha = 0.3; } else alpha = 0.05;
                     }
-                    if (mode == 2.0) { // Parietal (Yan/Üst)
-                        if (vPos.y > 3.5) { color = vec3(1.0, 0.7, 0.0); alpha = 0.3; }
-                        else alpha = 0.05;
+                    if (mode == 2.0) { // Parietal
+                        if (vPos.y > 3.5) { color = vec3(1.0, 0.7, 0.0); alpha = 0.3; } else alpha = 0.05;
                     }
-                    if (mode == 3.0) { // Occipital (Arka)
-                        if (vPos.z < -1.5) { color = vec3(1.0, 0.0, 0.3); alpha = 0.3; }
-                        else alpha = 0.05;
+                    if (mode == 3.0) { // Occipital
+                        if (vPos.z < -1.5) { color = vec3(1.0, 0.0, 0.3); alpha = 0.3; } else alpha = 0.05;
                     }
-                    if (mode == 4.0) { // Temporal (Şakak)
-                        if (abs(vPos.x) > 1.2 && vPos.y < 3.0) { color = vec3(0.0, 1.0, 0.3); alpha = 0.3; }
-                        else alpha = 0.05;
+                    if (mode == 4.0) { // Temporal
+                        if (abs(vPos.x) > 1.2 && vPos.y < 3.0) { color = vec3(0.0, 1.0, 0.3); alpha = 0.3; } else alpha = 0.05;
                     }
 
                     // --- SORUN RENKLERİ ---
                     if (mode == 13.0) color = mix(color, vec3(1.0, 0.5, 0.0), 0.4); // DEHB Turuncu
                     if (mode == 14.0) color = mix(color, vec3(0.8, 0.0, 1.0), 0.4); // Otizm Mor
                     if (mode == 15.0) color = vec3(0.2, 0.8, 0.2); // Metabolik Yeşil
+
+                    // --- STRATEJİ RENKLERİ (İyileşme) ---
+                    if (mode >= 20.0) {
+                        // Strateji modlarında genel olarak daha parlak ve temiz bir görünüm
+                        color = mix(color, vec3(0.5, 1.0, 1.0), 0.2); 
+                    }
 
                     gl_FragColor = vec4(color * fresnel * 2.0 + color * 0.2, alpha);
                 }
@@ -416,88 +440,71 @@
                     vec3 col = vec3(0.0, 0.6, 1.0); // Varsayılan Mavi
                     float activityLevel = 1.0;
 
-                    // --- MOD MANTIĞI ---
-
-                    // 1. ANATOMİ MODLARI (Sadece ilgili bölgeyi yak)
+                    // --- 1. ANATOMİ MODLARI ---
                     if (mode >= 1.0 && mode <= 4.0) {
-                        activityLevel = 0.1; // Diğer yerleri sönükleştir
-                        col = vec3(0.2); // Gri yap
-                        
-                        // Frontal (1)
-                        if (mode == 1.0 && p.z > 0.5 && p.y > 2.0) { 
-                            activityLevel = 1.0; col = vec3(0.0, 0.6, 1.0); 
-                        }
-                        // Parietal (2)
-                        if (mode == 2.0 && p.y > 3.5) { 
-                            activityLevel = 1.0; col = vec3(1.0, 0.7, 0.0); 
-                        }
-                        // Occipital (3)
-                        if (mode == 3.0 && p.z < -1.5) { 
-                            activityLevel = 1.0; col = vec3(1.0, 0.0, 0.4); 
-                        }
-                        // Temporal (4)
-                        if (mode == 4.0 && abs(p.x) > 1.2 && p.y < 3.0) { 
-                            activityLevel = 1.0; col = vec3(0.0, 1.0, 0.4); 
-                        }
+                        activityLevel = 0.1; col = vec3(0.2);
+                        if (mode == 1.0 && p.z > 0.5 && p.y > 2.0) { activityLevel = 1.0; col = vec3(0.0, 0.6, 1.0); }
+                        if (mode == 2.0 && p.y > 3.5) { activityLevel = 1.0; col = vec3(1.0, 0.7, 0.0); }
+                        if (mode == 3.0 && p.z < -1.5) { activityLevel = 1.0; col = vec3(1.0, 0.0, 0.4); }
+                        if (mode == 4.0 && abs(p.x) > 1.2 && p.y < 3.0) { activityLevel = 1.0; col = vec3(0.0, 1.0, 0.4); }
                     }
 
-                    // 2. ÖZEL DURUM MODLARI
+                    // --- 2. ÖZEL DURUM MODLARI ---
+                    if (mode == 10.0) { localSpeed = 0.3; if(rnd > 0.5) activityLevel = 0.0; col = vec3(0.6); } // Zihinsel
+                    if (mode == 11.0) { if (p.x > 0.5 && p.y > 1.5 && p.z > 0.5) { localSpeed = 0.05; col = vec3(1.0, 0.0, 0.0); } } // Konuşma
+                    if (mode == 12.0) { if (p.x > 0.5 && p.y > 1.5 && p.z < 0.5 && p.z > -1.0) { localSpeed = 0.2; col = vec3(1.0, 0.5, 0.0); chaos = 0.02; } } // Disleksi
+                    if (mode == 13.0) { if (p.z > 1.0 && p.y > 2.0) { localSpeed = 0.1; col = vec3(0.2); } else { localSpeed = 2.5; col = vec3(1.0, 0.8, 0.0); chaos = 0.04; } } // DEHB
+                    if (mode == 14.0) { if (p.y > 3.0) { localSpeed = 4.0; col = vec3(1.0, 0.0, 1.0); chaos = 0.06; } } // Otizm
+                    if (mode == 15.0) { chaos = 0.15; col = vec3(0.2, 1.0, 0.2); } // Metabolik
+
+                    // --- 3. MÜDAHALE (STRATEJİ) MODLARI ---
                     
-                    // Zihinsel Yetersizlik (10)
-                    if (mode == 10.0) {
-                        localSpeed = 0.3; // Yavaş
-                        if(rnd > 0.5) activityLevel = 0.0; // Seyrek nöron
-                        col = vec3(0.6); 
-                    }
-
-                    // Konuşma (11) - Sol Ön
-                    if (mode == 11.0) {
-                        if (p.x > 0.5 && p.y > 1.5 && p.z > 0.5) {
-                            localSpeed = 0.05; // Durmuş
-                            col = vec3(1.0, 0.0, 0.0); // Kırmızı hata
+                    // Görsel Destek (20): Arka lobu (görme) güçlendirip öne bağla
+                    if (mode == 20.0) {
+                        if (p.z < -1.5) { // Occipital çok aktif
+                            localSpeed = 2.0; col = vec3(0.0, 1.0, 1.0); // Turkuaz/Parlak
+                        }
+                        // Öne giden bir akış simüle et
+                        if (p.z > -1.5 && p.z < 1.0 && abs(p.x) < 1.0) {
+                            localSpeed = 1.5; col = vec3(0.5, 0.8, 1.0);
                         }
                     }
 
-                    // Disleksi (12) - Sol Arka
-                    if (mode == 12.0) {
-                        if (p.x > 0.5 && p.y > 1.5 && p.z < 0.5 && p.z > -1.0) {
-                            localSpeed = 0.2; 
-                            col = vec3(1.0, 0.5, 0.0);
-                            chaos = 0.02;
-                        }
-                    }
-
-                    // DEHB (13) - Ön yavaş, arka hızlı
-                    if (mode == 13.0) {
-                        if (p.z > 1.0 && p.y > 2.0) {
-                            localSpeed = 0.1; col = vec3(0.2); // Fren yok
+                    // Parçalara Bölme (21): Ön lobu düzenli ve ritmik yap
+                    if (mode == 21.0) {
+                        if (p.z > 0.5 && p.y > 2.0) {
+                            localSpeed = 0.8; // Yavaş ama emin
+                            col = vec3(0.0, 0.5, 1.0); // Sakin mavi
+                            // Chaos yok, düzenli
                         } else {
-                            localSpeed = 2.5; col = vec3(1.0, 0.8, 0.0); // Hiperaktif
-                            chaos = 0.04;
+                            activityLevel = 0.3; // Odak önde
                         }
                     }
 
-                    // Otizm (14) - Duyusal alanlar aşırı
-                    if (mode == 14.0) {
-                        if (p.y > 3.0) { // Parietal
-                            localSpeed = 4.0; 
-                            col = vec3(1.0, 0.0, 1.0); // Mor patlama
-                            chaos = 0.06;
+                    // Duyu Bütünleme (22): Parietal lobu sakinleştir (Otizm çözümü)
+                    if (mode == 22.0) {
+                        if (p.y > 3.0) {
+                            localSpeed = 1.0; // Normal hız (Kaos yok)
+                            col = vec3(0.0, 1.0, 0.5); // Şifalı yeşil/mavi
+                            chaos = 0.0; // Titreme bitti
                         }
                     }
 
-                    // Metabolik (15)
-                    if (mode == 15.0) {
-                        chaos = 0.15;
-                        col = vec3(0.2, 1.0, 0.2); // Toksik
+                    // Hareketle Öğrenme (23): Tüm beyin aktif, özellikle Ön Lop parlıyor (DEHB çözümü)
+                    if (mode == 23.0) {
+                        localSpeed = 2.0; // Enerjik
+                        col = vec3(1.0, 0.8, 0.2); // Altın sarısı (Dopamin)
+                        if (p.z > 1.0 && p.y > 2.0) { // Frontal
+                            col = vec3(1.0, 1.0, 1.0); // En parlak yer
+                        }
                     }
 
-                     // Serebral Palsi (16) - Motor Korteks (Tepe şerit)
-                    if (mode == 16.0) {
-                        if (p.y > 3.5 && p.z > -0.5 && p.z < 0.5) {
-                            localSpeed = 0.0; // Hasarlı motor
-                            col = vec3(0.1); // Siyah/Ölü
-                            if (rnd > 0.8) { col = vec3(1.0, 0.0, 0.0); localSpeed=5.0; } // Spastik ateşleme
+                    // Sık Tekrar (24): Temporal lobda (Hafıza) yoğunluk ve güçlenme
+                    if (mode == 24.0) {
+                        if (abs(p.x) > 1.2 && p.y < 3.0) { // Temporal
+                            localSpeed = 1.5;
+                            col = vec3(0.0, 1.0, 0.0); // Güçlü Yeşil
+                            activityLevel = 1.5; // Daha yoğun görünüm
                         }
                     }
 
@@ -552,75 +559,22 @@
         };
 
         const infoData = {
-            'normal': { t: "Normal Beyin Aktivitesi", s: "Dengeli ve Senkronize", d: "Beyin bölgeleri birbiriyle uyum içinde çalışır. Nöronlar arası iletişim hızlı ve düzenlidir. Tüm loplar görevini yapar." },
-            'frontal': { t: "Ön Lop (Frontal Lobe)", s: "CEO / Yönetici Merkez", d: "Karar verme, planlama, dikkat, kişilik ve dürtü kontrolü burada yapılır. Burası 'insanı insan yapan' en gelişmiş bölgedir." },
-            'parietal': { t: "Yan Lop (Parietal Lobe)", s: "Duyu ve Navigasyon", d: "Dokunma, acı, sıcaklık hissi ve vücudun nerede olduğunu anlama (mekansal farkındalık) merkezidir." },
-            'occipital': { t: "Arka Lop (Occipital Lobe)", s: "Görme Merkezi", d: "Gözden gelen sinyaller burada görüntüye dönüşür. Renk, şekil ve hareketi burada algılarız." },
-            'temporal': { t: "Şakak Lobu (Temporal Lobe)", s: "Hafıza ve Dil", d: "Duyulanları anlama, yüzleri tanıma ve anıları depolama (Hipokampus) burada gerçekleşir." },
+            'normal': { t: "Normal Beyin Aktivitesi", s: "Dengeli ve Senkronize", d: "Beyin bölgeleri birbiriyle uyum içinde çalışır. Nöronlar arası iletişim hızlı ve düzenlidir." },
+            'frontal': { t: "Ön Lop (Frontal Lobe)", s: "CEO / Yönetici Merkez", d: "Karar verme, planlama, dikkat ve kişilik. 'İnsanı insan yapan' bölge." },
+            'parietal': { t: "Yan Lop (Parietal Lobe)", s: "Duyu ve Navigasyon", d: "Dokunma, acı, sıcaklık hissi ve vücudun konumu." },
+            'occipital': { t: "Arka Lop (Occipital Lobe)", s: "Görme Merkezi", d: "Gözden gelen sinyaller burada görüntüye dönüşür." },
+            'temporal': { t: "Şakak Lobu (Temporal Lobe)", s: "Hafıza ve Dil", d: "Duyulanları anlama, yüzleri tanıma ve anı deposu." },
             
-            'intellectual': { t: "Zihinsel Yetersizlik", s: "Seyrek Bağlantılar", d: "Nöronlar arasındaki <span class='highlight'>bağlantı (sinaps) sayısı azdır</span>. Bilgi aktarımı yavaştır, bu da öğrenme ve kavramayı zorlaştırır." },
-            'speech': { t: "Konuşma Güçlüğü", s: "Broca Alanı Hatası", d: "Düşünceler var ama kelimeler çıkmıyor. Sol ön taraftaki konuşma üretim merkezi (Kırmızı alan) komutları ağza iletemiyor (Apraksi/Afazi)." },
-            'dyslexia': { t: "Disleksi (Öğrenme)", s: "Hatalı İşlemleme", d: "Okuma sırasında harfler sese dönüşmüyor. Beynin sol-arka 'okuma otobanı' (Turuncu alan) çalışmıyor, beyin zorlu patika yolları kullanıyor." },
-            'adhd': { t: "DEHB (Dikkat Eksikliği)", s: "Fren Tutmuyor", d: "Ön Lop (Gri alan) yeterince aktif değil. Burası beynin 'freni'dir. Fren çalışmayınca, arka taraftaki motor ve duyu merkezleri (Sarı alanlar) kontrolden çıkar." },
-            'autism': { t: "Otizm (OSB)", s: "Duyusal Kaos", d: "Duyu merkezi (Parietal - Mor alan) filtreleme yapamıyor. Işık, ses veya dokunuş beyinde bir <span class='highlight'>havai fişek gösterisi</span> gibi patlıyor. Bu aşırı yüklenme (meltdown) yaratır." },
-            'metabolic': { t: "Metabolik Sorun", s: "Toksik Etki", d: "Vücut kimyasındaki bozukluklar (örn. Fenilketonüri) beyne zarar verir. Nöronlar düzensiz ve kaotik çalışır (Yeşil titreşim)." },
-            'cp': { t: "Serebral Palsi (CP)", s: "Motor Hasarı", d: "Beynin tepesindeki 'Motor Korteks' hasar görmüştür. Kaslara giden sinyaller ya hiç gitmez (Felç) ya da yanlış gider (Spastisite - Kırmızı patlamalar)." }
-        };
+            'intellectual': { t: "Zihinsel Yetersizlik", s: "Seyrek Bağlantılar", d: "Sinaps sayısı azdır. Bilgi aktarımı yavaştır, öğrenme güçleşir." },
+            'speech': { t: "Konuşma Güçlüğü", s: "Broca Alanı Hatası", d: "Sol ön taraftaki konuşma merkezi komutları ağza iletemiyor (Kırmızı alan)." },
+            'dyslexia': { t: "Disleksi (Öğrenme)", s: "Hatalı İşlemleme", d: "Harfler sese dönüşmüyor. Sol-arka bölge pasif, beyin alternatif yollar arıyor." },
+            'adhd': { t: "DEHB (Dikkat)", s: "Fren Tutmuyor", d: "Ön Lop (Fren) çalışmıyor. Arka taraftaki motor/duyu merkezleri kontrolden çıkıyor." },
+            'autism': { t: "Otizm (OSB)", s: "Duyusal Kaos", d: "Duyu merkezi filtreleme yapamıyor. Ses ve ışık beyinde patlama etkisi yaratıyor." },
+            'metabolic': { t: "Metabolik Sorun", s: "Toksik Etki", d: "Beyin kimyası bozuk. Nöronlar düzensiz ve kaotik çalışıyor." },
 
-        window.setMode = function(key) {
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            const info = infoData[key];
-            if(info) {
-                document.getElementById('info-title').innerText = info.t;
-                document.getElementById('info-sub').innerText = info.s;
-                document.getElementById('info-desc').innerHTML = info.d;
-            }
-
-            let modeId = 0;
-            if(key === 'normal') modeId = 0;
-            if(key === 'frontal') modeId = 1;
-            if(key === 'parietal') modeId = 2;
-            if(key === 'occipital') modeId = 3;
-            if(key === 'temporal') modeId = 4;
-            
-            if(key === 'intellectual') modeId = 10;
-            if(key === 'speech') modeId = 11;
-            if(key === 'dyslexia') modeId = 12;
-            if(key === 'adhd') modeId = 13;
-            if(key === 'autism') modeId = 14;
-            if(key === 'metabolic') modeId = 15;
-            if(key === 'cp') modeId = 16;
-            
-            simulationParams.mode = modeId;
-        };
-
-        // --- RENDER ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            neuronMaterial.uniforms.time.value = time;
-            neuronMaterial.uniforms.mode.value = simulationParams.mode;
-            
-            brainMaterial.uniforms.time.value = time;
-            brainMaterial.uniforms.mode.value = simulationParams.mode;
-
-            particleSystem.rotation.y = time * 0.05;
-            controls.update();
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-    </script>
-</body>
-</html>
+            // Stratejiler
+            'strategy_visual': { t: "Görsel Destek Kullanımı", s: "Gözler Devreye Giriyor", d: "İşitsel işlemleme zayıfsa (Konuşma/Anlama), resimli kartlar ve şemalar kullanarak <span class='highlight'>görme merkezini (Arka Lop - Turkuaz)</span> aktifleştiririz. Bu, zayıf olan yolu bypass ederek bilginin beyne girmesini sağlar." },
+            'strategy_chunking': { t: "Küçük Adımlara Bölme", s: "Yöneticiyi Rahatlatma", d: "Karmaşık görevler Ön Lobu kilitler. İşi küçük parçalara bölmek, Ön Lobun (Mavi) ritmik ve düzenli çalışmasını sağlar. Beyin 'Hepsini nasıl yapacağım?' paniğinden kurtulur." },
+            'strategy_sensory': { t: "Duyu Bütünleme Terapisi", s: "Fırtınayı Dindirmek", d: "Ağırlıklı battaniye, sallanma veya derin basınç uygulamak, kaotik çalışan Yan Lobu (Parietal) sakinleştirir (Yeşil/Mavi). Beyindeki 'alarm' durumu sona erer." },
+            'strategy_movement': { t: "Hareketle Öğrenme", s: "Doğal Dopamin", d: "Özellikle DEHB'de, hareket etmek beyni uyandırır. Motor korteksten yayılan enerji, uykuda olan Ön Lobu (Sarı/Altın) besler ve dikkat süresini artırır." },
+            'strategy_repetition': { t: "Sık Tekrar ve Pekiştirme", s: "Yolu Genişletmek", d: "Bir bilgiyi tekrar etmek, o nöronlar arasındaki bağı fiziksel olarak kalınlaştırır. Şakak Lobundaki (Yeşil) aktivite yoğunlaşır ve bilgi kalıcı h
