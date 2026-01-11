@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fener Akademi | Özel Eğitim & Anaokulu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            border: 0;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        :root {
+            --bg: #2c3e50;
+            --fg: #ecf0f1;
+            --primary: #f1c40f;
+            --accent: #e74c3c;
+            --success: #2ecc71;
+            --font-main: 'Lexend', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- ANA MENÜ --- */
+        #mainMenu {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+            touch-action: pan-y;
+        }
+
+        .menu-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            min-height: min-content; 
+        }
+
+        .title-area {
+            text-align: center;
+            margin-bottom: 3vh;
+            margin-top: 20px;
+        }
+
+        .main-title {
+            font-size: clamp(2.5rem, 6vw, 5rem); 
+            color: var(--primary);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .sub-title {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            color: #bdc3c7;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            width: 100%;
+            padding-bottom: 40px;
+        }
+
+        .category-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 160px;
+        }
+        
+        .category-card.custom-mode {
+            border-color: var(--primary);
+            background: rgba(241, 196, 15, 0.15);
+        }
+
+        .category-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .cat-icon { font-size: 3.5rem; margin-bottom: 10px; }
+        .cat-name { font-size: 1.2rem; font-weight: bold; color: white; margin-bottom: 5px; }
+        .cat-desc { font-size: 0.9rem; color: #bdc3c7; line-height: 1.3; }
+
+        /* --- MANUEL GİRİŞ MODAL --- */
+        #inputModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-box {
+            background: #34495e;
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 2px solid var(--primary);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5rem;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: none;
+            text-align: center;
+            font-family: var(--font-main);
+        }
+        
+        .modal-btn {
+            background: var(--success);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .close-modal {
+            background: var(--accent);
+            margin-top: 10px;
+        }
+
+        /* --- OYUN ALANI --- */
+        #gameLayer {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 100;
+            cursor: none;
+            display: none;
+        }
+
+        .flashlight-beam {
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.96);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 150;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            transition: width 0.1s, height 0.1s;
+        }
+
+        #contentContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 120;
+        }
+
+        .game-item {
+            position: absolute;
+            font-weight: bold;
+            padding: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #7f8c8d; /* Karanlıkta çok silik gri */
+            transition: transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .game-item:active { transform: scale(0.9); }
+
+        .tracking-object {
+            position: absolute;
+            font-size: clamp(4rem, 10vw, 8rem);
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            transition: all 4s ease-in-out; /* Hız Yavaşlatıldı (4 saniye) */
+            z-index: 130;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            z-index: 160;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 10px 25px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .exit-btn {
+            pointer-events: auto;
+            background: var(--accent);
+            border: 2px solid white;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: 1fr; }
+            .flashlight-beam { width: 180px; height: 180px; }
+            .category-card { min-height: 100px; flex-direction: row; text-align: left; padding: 15px; gap: 20px;}
+            .category-card .cat-icon { margin-bottom: 0; font-size: 2.5rem; }
+            .cat-desc { display: none; }
+        }
+        
+        @media (min-width: 1200px) {
+            .grid-container { grid-template-columns: repeat(2, 1fr); gap: 30px; }
+            .category-card { padding: 40px; }
+            .flashlight-beam { width: 300px; height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MENÜ -->
+    <div id="mainMenu">
+        <div class="menu-content">
+            <div class="title-area">
+                <div class="main-title">🔦 Fener Akademi</div>
+                <div class="sub-title">Dokun, Ara, Keşfet</div>
+            </div>
+
+            <div class="grid-container">
+                <!-- Özel Giriş -->
+                <div class="category-card custom-mode" onclick="openCustomInput()">
+                    <div class="cat-icon">✍️</div>
+                    <div>
+                        <div class="cat-name">Kelime Yaz & Oyna</div>
+                        <div class="cat-desc">Kendi kelimenizi veya isminizi yazın</div>
+                    </div>
+                </div>
+
+                <!-- Özel Eğitim -->
+                <div class="category-card" onclick="startGame('eye_contact')">
+                    <div class="cat-icon">👁️</div>
+                    <div>
+                        <div class="cat-name">Göz Takibi (Yavaş)</div>
+                        <div class="cat-desc">Hareket eden nesneyi izle</div>
+                    </div>
+                </div>
+                
+                <div class="category-card" onclick="startGame('attention')">
+                    <div class="cat-icon">🎯</div>
+                    <div>
+                        <div class="cat-name">Dikkat (Zorlu)</div>
+                        <div class="cat-desc">Kalabalıkta gizlenmiş nesneyi bul</div>
+                    </div>
+                </div>
+
+                <!-- Anaokulu -->
+                <div class="category-card" onclick="startGame('kinder_shapes')">
+                    <div class="cat-icon">🔺</div>
+                    <div>
+                        <div class="cat-name">Şekiller & Renkler</div>
+                        <div class="cat-desc">Karışık şekiller arasından bul</div>
+                    </div>
+                </div>
+
+                <div class="category-card" onclick="startGame('kinder_concepts')">
+                    <div class="cat-icon">🐘</div>
+                    <div>
+                        <div class="cat-name">Kavramlar</div>
+                        <div class="cat-desc">Hayvanlar, Sayılar, Zıtlıklar</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANUEL GİRİŞ MODAL -->
+    <div id="inputModal">
+        <div class="modal-box">
+            <h2 style="color:white; margin-bottom:10px;">Kelime Oluştur</h2>
+            <p style="color:#bdc3c7;">Bulunmasını istediğiniz kelimeyi yazın.</p>
+            <input type="text" id="customWordInput" class="modal-input" placeholder="Örn: Barış, A, Elma" autocomplete="off">
+            <button class="modal-btn" onclick="startCustomGame()">BAŞLA</button>
+            <button class="modal-btn close-modal" onclick="closeCustomInput()">İPTAL</button>
+        </div>
+    </div>
+
+    <!-- OYUN -->
+    <div id="gameLayer">
+        <!-- Bilgi Paneli -->
+        <div id="hud">
+            <div class="panel">
+                <span id="targetIcon" style="font-size:2rem">❓</span>
+                <span id="targetText" style="font-size:1.5rem">...</span>
+            </div>
+            <button class="exit-btn" onclick="exitGame()">✕</button>
+        </div>
+
+        <div id="flashlight" class="flashlight-beam"></div>
+        <div id="contentContainer"></div>
+    </div>
+
+    <script>
+        // --- GENEL ÇELDİRİCİ HAVUZU (Ekranı doldurmak için) ---
+        const genericDistractors = [
+            '🔴','🔵','🟢','🟡','🟣','🔶','🔺','⭐','🌙','☀️','☁️','⚡',
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮',
+            '🍎','🍌','🍇','🍉','🍒','🍓','🍍','🥭','🍑','🍐','🍋','🍊',
+            '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛'
+        ];
+        
+        const letterDistractors = "ABCDEFGHIJKLMNOPRSTUVYZQXW".split('');
+
+        // --- MÜFREDAT ---
+        const curriculum = {
+            // ÖZEL EĞİTİM: GÖZ TAKİBİ (Hızlar 4000ms+ yapıldı)
+            eye_contact: [
+                { type: 'tracking', target: '🔴', text: 'Kırmızı Top', speed: 4000 },
+                { type: 'tracking', target: '⭐', text: 'Yıldız', speed: 4500 },
+                { type: 'tracking', target: '🙂', text: 'Gülen Yüz', speed: 5000 },
+                { type: 'tracking', target: '🦋', text: 'Kelebek', speed: 3500 },
+                { type: 'tracking', target: '🚗', text: 'Araba', speed: 4000 }
+            ],
+            
+            // ÖZEL EĞİTİM: DİKKAT (Bol Çeldiricili)
+            attention: [
+                { type: 'find', target: '🧸', text: 'Ayıcık', distractors: ['🎈','🎁','🎨','🧶'] },
+                { type: 'find', target: '🎈', text: 'Balon', distractors: ['🪁','🧸','🎊','🎐'] },
+                { type: 'find', target: '👓', text: 'Gözlük', distractors: ['✏️','📏','📎','📐'] },
+                { type: 'find', target: '🔑', text: 'Anahtar', distractors: ['📦','🚪','🔒','🧷'] }
+            ],
+
+            // ANAOKULU: ŞEKİLLER & RENKLER
+            kinder_shapes: [
+                { type: 'find', target: '🟦', text: 'Mavi Kare', distractors: ['🔴', '🔺', '⭐', '🟢', '🟨'] },
+                { type: 'find', target: '🔴', text: 'Kırmızı Daire', distractors: ['🟦', '🟩', '🟨', '🟣', '🔶'] },
+                { type: 'find', target: '🔺', text: 'Üçgen', distractors: ['🟣', '⬜', '🔶', '🔷', '🔳'] },
+                { type: 'find', target: '⭐', text: 'Yıldız', distractors: ['🌙', '☀️', '☁️', '⚡', '❄️'] }
+            ],
+
+            // ANAOKULU: KAVRAMLAR
+            kinder_concepts: [
+                { type: 'find', target: '🐶', text: 'Köpek', distractors: ['🐱', '🐭', '🐰', '🦊', '🐻'] },
+                { type: 'find', target: '🍎', text: 'Elma', distractors: ['🍌', '🍇', '🍐', '🍒', '🍓'] },
+                { type: 'find', target: '3', text: '3 Sayısı', distractors: ['1', '2', '5', '8', '0', '4', '6', '9'] },
+                { type: 'find', target: '🚗', text: 'Araba', distractors: ['✈️', '⛵', '🚲', '🛴', '🛵'] }
+            ]
+        };
+
+        let currentList = [];
+        let qIndex = 0;
+        let isGameRunning = false;
+        
+        const mainMenu = document.getElementById('mainMenu');
+        const inputModal = document.getElementById('inputModal');
+        const gameLayer = document.getElementById('gameLayer');
+        const container = document.getElementById('contentContainer');
+        const flashlight = document.getElementById('flashlight');
+        const hudText = document.getElementById('targetText');
+        const hudIcon = document.getElementById('targetIcon');
+
+        // --- MANUEL GİRİŞ İŞLEMLERİ ---
+        function openCustomInput() {
+            inputModal.style.display = 'flex';
+            document.getElementById('customWordInput').focus();
+        }
+
+        function closeCustomInput() {
+            inputModal.style.display = 'none';
+        }
+
+        function startCustomGame() {
+            const val = document.getElementById('customWordInput').value.trim();
+            if (!val) return;
+
+            // Özel oyun listesi oluştur
+            const isSingleChar = val.length === 1;
+            
+            // Çeldiricileri belirle (Harf ise harf havuzu, kelime ise genel havuz)
+            let dists = isSingleChar ? letterDistractors : genericDistractors;
+            
+            // Tek soruluk bir liste oluşturuyoruz ama tekrar oynanabilir
+            currentList = [{
+                type: 'find',
+                target: val.toUpperCase(), // Büyük harf yap
+                text: val.toUpperCase(),
+                distractors: dists
+            }];
+            
+            closeCustomInput();
+            document.getElementById('customWordInput').value = ''; // Temizle
+            
+            qIndex = 0;
+            mainMenu.style.display = 'none';
+            gameLayer.style.display = 'block';
+            isGameRunning = true;
+            
+            document.addEventListener('mousemove', moveFlashlight);
+            document.addEventListener('touchmove', moveFlashlight, {passive: false});
+            
+            loadLevel();
+        }
+
+        // --- STANDART OYUN BAŞLATMA ---
+        function startGame(category) {
+            currentList = [...curriculum[category]];
+            currentList.sort(() => Math.random() - 0.5);
+            qIndex = 0;
+            
+            mainMenu.style.display = 'none';
+            gameLayer.style.display = 'block';
+            isGameRunning = true;
+
+            document.addEventListener('mousemove', moveFlashlight);
+            document.addEventListener('touchmove', moveFlashlight, {passive: false});
+
+            loadLevel();
+        }
+
+        function loadLevel() {
+            if (qIndex >= currentList.length) {
+                speak("Tebrikler, bitti.");
+                setTimeout(exitGame, 2000);
+                return;
+            }
+
+            container.innerHTML = ''; 
+            const q = currentList[qIndex];
+
+            // HUD
+            hudText.innerText = q.text;
+            // Eğer hedef çok uzunsa (kelimeyse) ikonda gösterme, ? koy veya ilk harfi koy
+            // Ama manuel girişte tam kelimeyi göstermek daha iyi olabilir.
+            hudIcon.innerText = q.target.length > 2 ? '📝' : q.target;
+            
+            speak(q.text + " bul"); 
+
+            if (q.type === 'tracking') {
+                createTrackingObject(q);
+            } else {
+                createFindObject(q);
+            }
+        }
+
+        function createTrackingObject(q) {
+            const el = document.createElement('div');
+            el.className = 'tracking-object';
+            el.innerText = q.target;
+            
+            el.style.left = '50%';
+            el.style.top = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+
+            el.onclick = (e) => {
+                e.stopPropagation();
+                successEffect(el);
+            };
+
+            container.appendChild(el);
+
+            function animateMove() {
+                if (!isGameRunning || !document.body.contains(el)) return;
+                
+                const x = 15 + Math.random() * 70;
+                const y = 20 + Math.random() * 60;
+                
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                
+                // Hız müfredattaki 'speed' değerinden gelir (artık daha yavaş)
+                setTimeout(animateMove, q.speed || 4000);
+            }
+            
+            setTimeout(animateMove, 500);
+        }
+
+        function createFindObject(q) {
+            const itemsToPlace = [];
+            // 1. Hedef
+            itemsToPlace.push({ text: q.target, isTarget: true });
+
+            // 2. Çeldiriciler
+            // ÇOK ŞEKİL OLSUN MANTIĞI: Ekranı 15-20 nesne ile dolduruyoruz.
+            const totalItemsNeeded = 18; 
+            const availableDistractors = q.distractors && q.distractors.length > 0 ? q.distractors : genericDistractors;
+
+            while (itemsToPlace.length < totalItemsNeeded) {
+                // Rastgele bir çeldirici seç
+                const randDist = availableDistractors[Math.floor(Math.random() * availableDistractors.length)];
+                // Hedef ile aynı olmasın
+                if (randDist !== q.target) {
+                    itemsToPlace.push({ text: randDist, isTarget: false });
+                }
+            }
+
+            const placedItems = [];
+
+            itemsToPlace.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'game-item';
+                el.innerText = item.text;
+                
+                // Metin uzunluğuna göre fontu ayarla (Kelime sığsın)
+                if (item.text.length > 3) {
+                    el.style.fontSize = 'clamp(1.5rem, 4vw, 3rem)';
+                    el.style.width = 'auto';
+                    el.style.borderRadius = '10px'; // Kelime ise tam yuvarlak olmasın
+                } else {
+                    el.style.fontSize = 'clamp(2.5rem, 6vw, 5rem)';
+                }
+                
+                let safePos = getSafePosition(placedItems);
+                el.style.left = safePos.x + '%';
+                el.style.top = safePos.y + '%';
+                el.style.transform = 'translate(-50%, -50%)';
+
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    if (item.isTarget) {
+                        successEffect(el);
+                    } else {
+                        failEffect(el);
+                    }
+                };
+
+                container.appendChild(el);
+            });
+        }
+
+        function getSafePosition(existingItems) {
+            const maxAttempts = 100;
+            // Ekranda çok nesne olduğu için mesafeyi biraz azalttık
+            const minDistance = 15; 
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const x = 5 + Math.random() * 90;
+                const y = 10 + Math.random() * 80;
+
+                let collision = false;
+                for (const item of existingItems) {
+                    const dx = x - item.x;
+                    const dy = y - item.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance < minDistance) {
+                        collision = true;
+                        break;
+                    }
+                }
+
+                if (!collision) {
+                    existingItems.push({x, y});
+                    return {x, y};
+                }
+            }
+            return {x: 50, y: 50}; 
+        }
+
+        function moveFlashlight(e) {
+            let x, y;
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+                x = e.touches[0].clientX;
+                y = e.touches[0].clientY;
+            } else {
+                x = e.clientX;
+                y = e.clientY;
+            }
+            flashlight.style.left = x + 'px';
+            flashlight.style.top = y + 'px';
+        }
+
+        function successEffect(el) {
+            el.style.color = '#2ecc71';
+            el.style.textShadow = '0 0 40px #2ecc71';
+            el.style.transform = 'translate(-50%, -50%) scale(1.5)';
+            el.style.zIndex = 200;
+
+            playSound('win');
+            speak("Harika!");
+
+            const c = document.createElement('div');
+            c.innerText = '🎉';
+            c.style.position = 'absolute';
+            c.style.left = el.style.left;
+            c.style.top = el.style.top;
+            c.style.fontSize = '8rem';
+            c.style.transform = 'translate(-50%, -50%)';
+            c.style.zIndex = 201;
+            container.appendChild(c);
+
+            setTimeout(() => {
+                // Manuel modda ise tekrar sormak yerine aynı kelimeyi tekrar sakla veya menüye dön
+                // Şimdilik listeye devam et mantığı (qIndex artar)
+                qIndex++;
+                if (currentList.length === 1 && qIndex >= 1) {
+                     // Tek soruluk özel oyun bitti
+                     setTimeout(exitGame, 1500);
+                } else {
+                    loadLevel();
+                }
+            }, 2000);
+        }
+
+        function failEffect(el) {
+            el.style.color = '#e74c3c';
+            el.animate([
+                { transform: 'translate(-50%, -50%) translateX(0)' },
+                { transform: 'translate(-50%, -50%) translateX(-15px)' },
+                { transform: 'translate(-50%, -50%) translateX(15px)' },
+                { transform: 'translate(-50%, -50%) translateX(0)' }
+            ], { duration: 300 });
+            
+            playSound('fail');
+            
+            setTimeout(() => {
+                el.style.color = '#7f8c8d'; // Eski silik rengine dön
+            }, 600);
+        }
+
+        function exitGame() {
+            isGameRunning = false;
+            gameLayer.style.display = 'none';
+            mainMenu.style.display = 'flex';
+            document.removeEventListener('mousemove', moveFlashlight);
+            document.removeEventListener('touchmove', moveFlashlight);
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'tr-TR';
+                u.rate = 0.9;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function playSound(type) {
+            if (navigator.vibrate) {
+                navigator.vibrate(type === 'win' ? [50, 50, 50] : 100);
+            }
+        }
+
+    </script>
+</body>
+</html>
