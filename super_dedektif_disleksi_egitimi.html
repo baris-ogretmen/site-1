@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Süper Dedektif - Disleksi Eğitimi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            border: 0;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation; /* Çift tıklama zoomunu engeller */
+            user-select: none;
+        }
+
+        :root {
+            --bg: #FFF9C4;
+            --fg: #263238;
+            --card-bg: #FFFFFF;
+            --primary: #FF7043;
+            --secondary: #42A5F5;
+            --success: #66BB6A;
+            --error: #EF5350;
+            --shadow: 0 8px 16px rgba(0,0,0,0.1);
+            --radius: 1.5rem;
+            font-size: calc(16px + (22 - 16)*(100vw - 320px)/(1280 - 320));
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Lexend', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        /* --- HUD --- */
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            max-width: 800px;
+            margin: auto;
+            z-index: 100;
+            pointer-events: none; /* Tıklamalar alttaki oyuna geçsin */
+        }
+
+        .badge {
+            background: var(--card-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            pointer-events: auto;
+        }
+
+        /* --- Oyun Konteyner --- */
+        .game-container {
+            width: 95%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .question-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            position: relative;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .category-tag {
+            position: absolute;
+            top: -10px;
+            background: var(--secondary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .question-text {
+            font-size: 1.5rem;
+            font-weight: 500;
+            line-height: 1.4;
+            margin: 1rem 0;
+        }
+
+        .hint-emoji {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .speak-btn {
+            background: #EEEEEE;
+            color: #555;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .speak-btn:active { transform: scale(0.95); background: var(--secondary); color: white; }
+
+        /* --- Etkileşim Alanı Genel --- */
+        #interactionArea {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* MOD: EL FENERİ (Dark Mode) */
+        .flashlight-mode {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            z-index: 50;
+            cursor: none; /* İmleci gizle */
+            overflow: hidden;
+        }
+        
+        .flashlight-beam {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            /* Hile: Çok büyük bir gölge ile etrafı karartıyoruz, ortası boş kalıyor */
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.95);
+            pointer-events: none; /* Tıklamalar içinden geçsin */
+            transform: translate(-50%, -50%);
+            z-index: 60;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: width 0.2s, height 0.2s; /* Mobilde yumuşak geçiş */
+        }
+
+        .hidden-word {
+            position: absolute;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 55; /* Fenerin (gölgenin) altında ama arka planın üstünde */
+            user-select: none;
+        }
+        .hidden-word.target {
+            color: #FFF; /* Hedef kelime */
+        }
+        .hidden-word.distractor {
+            color: #AAA; /* Çeldiriciler biraz daha soluk olabilir */
+        }
+
+        /* MOD: KART EŞLEŞTİRME (Memory) */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .memory-card {
+            background: var(--card-bg);
+            aspect-ratio: 1;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 3px solid #ddd;
+            transition: transform 0.3s;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .memory-card.flipped {
+            background: white;
+            border-color: var(--primary);
+            transform: rotateY(180deg);
+        }
+        .memory-card.matched {
+            border-color: var(--success);
+            background: #E8F5E9;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .card-front, .card-back {
+            position: absolute;
+            backface-visibility: hidden;
+        }
+        .card-back {
+            background: var(--secondary);
+            width: 100%; height: 100%;
+            border-radius: 8px;
+            transform: rotateY(0deg); /* Başlangıçta arkası dönük */
+        }
+        .card-front {
+            transform: rotateY(180deg);
+        }
+
+        /* Diğer Modlar (Eski stiller korundu) */
+        .choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; width: 100%; }
+        .choice-btn { background: white; border: 3px solid #eee; border-radius: 1rem; padding: 1rem; font-size: 1.2rem; cursor: pointer; }
+        .choice-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+        .choice-btn.wrong { background: var(--error); color: white; animation: shake 0.4s; }
+        
+        .input-wrapper input { width: 100%; font-size: 1.5rem; padding: 0.8rem; text-align: center; border: 3px solid #ddd; border-radius: 1rem; outline: none; }
+        
+        .word-bank { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 1rem; }
+        .word-chip { background: white; border: 2px solid var(--primary); padding: 8px 16px; border-radius: 20px; font-weight: bold; }
+        .sentence-slot { min-height: 60px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 1rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; padding: 10px;}
+
+        /* Animasyonlar */
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        
+        /* Başlangıç Ekranı */
+        #startScreen { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .big-btn { background: var(--primary); color: white; padding: 1.2rem 3rem; border-radius: 3rem; font-size: 1.5rem; font-weight: bold; box-shadow: 0 6px 0 #D84315; cursor: pointer; margin-top: 2rem; }
+        .big-btn:active { transform: translateY(6px); box-shadow: none; }
+
+        .message-box { height: 2rem; font-weight: 800; font-size: 1.3rem; margin-top: 1rem; color: var(--primary); }
+
+    </style>
+</head>
+<body>
+
+    <div class="hud" id="hud" style="display:none">
+        <div class="badge">⭐ <span id="score">0</span></div>
+        <div class="badge">Bölüm: <span id="progress">1</span></div>
+    </div>
+
+    <!-- Oyun Alanı -->
+    <div class="game-container" id="gameArea" style="display:none">
+        
+        <!-- Soru Kartı (Bazı modlarda gizlenecek) -->
+        <div class="question-card" id="questionCard">
+            <div id="categoryTag" class="category-tag">Kategori</div>
+            <div id="hintEmoji" class="hint-emoji"></div>
+            <div id="questionText" class="question-text">Soru hazırlanıyor...</div>
+            <button class="speak-btn" id="speakBtn" onclick="speakQuestion()">🔊</button>
+        </div>
+
+        <div id="interactionArea"></div>
+        <div class="message-box" id="messageBox"></div>
+    </div>
+
+    <!-- EL FENERİ KATMANI (Dinamik eklenecek) -->
+    <div id="flashlightLayer" class="flashlight-mode" style="display:none;">
+        <div id="lightBeam" class="flashlight-beam"></div>
+        <div id="darkContent" style="width:100%; height:100%; position:relative;"></div>
+        <!-- El feneri modunda çıkış butonu -->
+        <div style="position:absolute; top:20px; right:20px; z-index:70; color:white; background:rgba(255,255,255,0.2); padding:5px 10px; border-radius:10px;">
+            Hedef: <span id="flashlightTarget" style="font-weight:bold; color:var(--primary)">...</span>
+        </div>
+    </div>
+
+    <div id="startScreen">
+        <div style="font-size:5rem; margin-bottom:1rem;">🔦</div>
+        <h1 style="color:var(--primary); margin-bottom:0.5rem;">Süper Dedektif</h1>
+        <p style="color:#666; max-width:300px;">El fenerini kullan, kelimeleri bul, harfleri eşleştir!</p>
+        <button class="big-btn" onclick="startGame()">MACERA BAŞLASIN</button>
+    </div>
+
+    <script>
+        /**
+         * YENİ MODLAR:
+         * 1. 'flashlight': Karanlık ekranda doğru kelimeyi arama.
+         * 2. 'memory': Kart eşleştirme (b/d, p/q).
+         * 3. 'sequence': Sıralama (Günler, sayılar).
+         */
+        const database = [
+            // --- MOD 1: EL FENERİ (Görsel Dikkat) ---
+            {
+                type: 'flashlight',
+                cat: 'Görsel Dikkat',
+                target: 'baba',
+                distractors: ['dada', 'bada', 'paba', 'daba', 'bapa', 'papa', 'babo'],
+                hint: '👨‍👧',
+                speech: 'Karanlıkta saklanan baba kelimesini bulabilir misin?'
+            },
+            {
+                type: 'flashlight',
+                cat: 'Görsel Dikkat',
+                target: 'elma',
+                distractors: ['alma', 'emla', 'lemani', 'eleme', 'ilma', 'elam'],
+                hint: '🍎',
+                speech: 'Feneri kullanarak elma kelimesini bul.'
+            },
+            {
+                type: 'flashlight',
+                cat: 'Görsel Dikkat',
+                target: '36',
+                distractors: ['63', '39', '68', '35', '83', '93'],
+                hint: '🔢',
+                speech: 'Otuz altı sayısını bul.'
+            },
+
+            // --- MOD 2: HAFIZA OYUNU (b/d Ayrımı) ---
+            {
+                type: 'memory',
+                cat: 'Görsel Hafıza',
+                pairs: [['b', 'b'], ['d', 'd'], ['p', 'p'], ['q', 'q']], 
+                hint: '🧠',
+                speech: 'Kartları eşleştir. Harflere dikkat et!'
+            },
+            {
+                type: 'memory',
+                cat: 'Görsel Hafıza',
+                pairs: [['m', 'm'], ['n', 'n'], ['u', 'u'], ['ü', 'ü']], 
+                hint: '🧠',
+                speech: 'Benzer harfleri eşleştir.'
+            },
+
+            // --- MOD 3: SIRALAMA (Sıralı Bellek) ---
+            {
+                type: 'sequence',
+                cat: 'Sıralama',
+                q: 'Haftanın günlerini sıraya diz.',
+                items: ['Pazartesi', 'Salı', 'Çarşamba'],
+                speech: 'Haftanın ilk üç gününü sırasıyla seç.'
+            },
+
+            // --- ESKİ MODLAR (Karışık) ---
+            {
+                type: 'fix_word',
+                cat: 'Harf Onarımı',
+                hint: '📖',
+                q: 'Doğrusunu yaz:',
+                wrong: 'kipat',
+                correct: 'kitap',
+                speech: 'Kitap kelimesini düzelt.'
+            },
+            {
+                type: 'build_sentence',
+                cat: 'Cümle Kurma',
+                hint: '🏫',
+                q: 'Cümleyi oluştur.',
+                words: ['gitti', 'Ali', 'eve'],
+                correctOrder: ['Ali', 'eve', 'gitti'],
+                speech: 'Ali eve gitti cümlesini kur.'
+            }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let currentQ = null;
+        let memoryState = { flipped: [], matched: 0 };
+        let sequenceState = { currentStep: 0 };
+
+        // DOM Elemanları
+        const hud = document.getElementById('hud');
+        const gameArea = document.getElementById('gameArea');
+        const startScreen = document.getElementById('startScreen');
+        const interactionArea = document.getElementById('interactionArea');
+        const messageBox = document.getElementById('messageBox');
+        const questionCard = document.getElementById('questionCard');
+        const flashlightLayer = document.getElementById('flashlightLayer');
+        const lightBeam = document.getElementById('lightBeam');
+        const darkContent = document.getElementById('darkContent');
+        const flashlightTarget = document.getElementById('flashlightTarget');
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            hud.style.display = 'flex';
+            shuffle(database);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= database.length) {
+                showEndScreen();
+                return;
+            }
+
+            currentQ = database[currentIndex];
+            
+            // UI Temizle
+            interactionArea.innerHTML = '';
+            messageBox.innerText = '';
+            flashlightLayer.style.display = 'none';
+            gameArea.style.display = 'flex'; // Varsayılan görünür
+            questionCard.style.display = 'flex'; // Varsayılan görünür
+            
+            // Bilgileri Güncelle
+            document.getElementById('score').innerText = score;
+            document.getElementById('progress').innerText = `${currentIndex + 1} / ${database.length}`;
+            document.getElementById('categoryTag').innerText = currentQ.cat;
+            document.getElementById('questionText').innerText = currentQ.q || currentQ.speech;
+            document.getElementById('hintEmoji').innerText = currentQ.hint || '🤔';
+
+            // Mod Seçimi
+            if (currentQ.type === 'flashlight') {
+                startFlashlightMode();
+            } else if (currentQ.type === 'memory') {
+                renderMemoryGame();
+            } else if (currentQ.type === 'sequence') {
+                renderSequenceGame();
+            } else if (currentQ.type === 'fix_word') {
+                renderFixWord();
+            } else if (currentQ.type === 'build_sentence') {
+                renderBuildSentence();
+            }
+
+            // Soruyu sesli oku (El feneri modunda gecikmeli okur)
+            if (currentQ.type !== 'flashlight') {
+                // speak(currentQ.speech);
+            }
+        }
+
+        // ==========================================
+        // MOD 1: EL FENERİ (FLASHLIGHT)
+        // ==========================================
+        function startFlashlightMode() {
+            gameArea.style.display = 'none'; // Standart arayüzü gizle
+            flashlightLayer.style.display = 'block';
+            darkContent.innerHTML = ''; // Temizle
+            flashlightTarget.innerText = currentQ.target.toUpperCase();
+            
+            speak(currentQ.speech);
+
+            // Hedef Kelimeyi Ekle
+            const targetEl = createFloatingWord(currentQ.target, true);
+            darkContent.appendChild(targetEl);
+
+            // Çeldiricileri Ekle (Yaklaşık 15-20 tane serpiştir)
+            for(let i=0; i<15; i++) {
+                const wrongWord = currentQ.distractors[Math.floor(Math.random() * currentQ.distractors.length)];
+                const el = createFloatingWord(wrongWord, false);
+                darkContent.appendChild(el);
+            }
+
+            // Mouse/Touch Takibi
+            flashlightLayer.addEventListener('mousemove', moveBeam);
+            flashlightLayer.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // Sayfa kaymasını engelle
+                moveBeam(e.touches[0]);
+            }, {passive: false});
+        }
+
+        function moveBeam(e) {
+            // Feneri imlece ortala
+            lightBeam.style.left = e.clientX + 'px';
+            lightBeam.style.top = e.clientY + 'px';
+        }
+
+        function createFloatingWord(text, isTarget) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            div.className = isTarget ? 'hidden-word target' : 'hidden-word distractor';
+            
+            // Rastgele Konum (Kenarlardan pay bırakarak)
+            const x = Math.floor(Math.random() * 80) + 10; // %10 - %90 arası
+            const y = Math.floor(Math.random() * 80) + 10;
+            
+            div.style.left = x + '%';
+            div.style.top = y + '%';
+            
+            // Rastgele Dönüş (Disleksi zorluğu için hafif açı verilebilir)
+            div.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
+
+            div.onclick = () => {
+                if (isTarget) {
+                    playSound('win');
+                    div.style.color = '#00FF00';
+                    div.style.fontSize = '3rem';
+                    div.style.textShadow = '0 0 20px #00FF00';
+                    setTimeout(handleSuccess, 1000);
+                } else {
+                    playSound('fail');
+                    div.style.color = 'red';
+                    // Yanlışsa hafif salla
+                    div.animate([
+                        { transform: 'translateX(0)' },
+                        { transform: 'translateX(-5px)' },
+                        { transform: 'translateX(5px)' },
+                        { transform: 'translateX(0)' }
+                    ], { duration: 300 });
+                }
+            };
+            return div;
+        }
+
+        // ==========================================
+        // MOD 2: HAFIZA OYUNU (MEMORY)
+        // ==========================================
+        function renderMemoryGame() {
+            memoryState = { flipped: [], matched: 0 };
+            const grid = document.createElement('div');
+            grid.className = 'memory-grid';
+            
+            // Kartları oluştur (Her çiftten 2 tane)
+            let cards = [];
+            currentQ.pairs.forEach(pair => {
+                cards.push({ val: pair[0], id: Math.random() });
+                cards.push({ val: pair[1], id: Math.random() }); // Birebir aynı harf
+            });
+            shuffle(cards);
+
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'memory-card';
+                cardEl.dataset.val = card.val;
+                
+                cardEl.innerHTML = `
+                    <div class="card-back"></div>
+                    <div class="card-front">${card.val}</div>
+                `;
+                
+                cardEl.onclick = () => flipCard(cardEl);
+                grid.appendChild(cardEl);
+            });
+            interactionArea.appendChild(grid);
+        }
+
+        function flipCard(card) {
+            // Zaten açıksa veya 2 kart açıksa işlem yapma
+            if (card.classList.contains('flipped') || memoryState.flipped.length >= 2) return;
+
+            card.classList.add('flipped');
+            memoryState.flipped.push(card);
+
+            if (memoryState.flipped.length === 2) {
+                checkMemoryMatch();
+            }
+        }
+
+        function checkMemoryMatch() {
+            const [c1, c2] = memoryState.flipped;
+            
+            if (c1.dataset.val === c2.dataset.val) {
+                // Eşleşme
+                setTimeout(() => {
+                    c1.classList.add('matched');
+                    c2.classList.add('matched');
+                    playSound('win');
+                    memoryState.matched++;
+                    if (memoryState.matched === currentQ.pairs.length) {
+                        handleSuccess();
+                    }
+                }, 500);
+            } else {
+                // Hata
+                setTimeout(() => {
+                    c1.classList.remove('flipped');
+                    c2.classList.remove('flipped');
+                    playSound('fail');
+                }, 1000);
+            }
+            memoryState.flipped = [];
+        }
+
+        // ==========================================
+        // MOD 3: SIRALAMA (SEQUENCE)
+        // ==========================================
+        function renderSequenceGame() {
+            sequenceState.currentStep = 0;
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.gap = '10px';
+            container.style.justifyContent = 'center';
+
+            let items = [...currentQ.items];
+            shuffle(items);
+
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = item;
+                btn.onclick = () => {
+                    if (item === currentQ.items[sequenceState.currentStep]) {
+                        // Doğru sıra
+                        btn.classList.add('correct');
+                        btn.disabled = true;
+                        sequenceState.currentStep++;
+                        if (sequenceState.currentStep === currentQ.items.length) {
+                            handleSuccess();
+                        }
+                    } else {
+                        // Yanlış sıra
+                        btn.classList.add('wrong');
+                        setTimeout(() => btn.classList.remove('wrong'), 500);
+                        playSound('fail');
+                    }
+                };
+                container.appendChild(btn);
+            });
+            interactionArea.appendChild(container);
+        }
+
+        // ==========================================
+        // YARDIMCI MODLAR (Eski)
+        // ==========================================
+        function renderFixWord() {
+            document.getElementById('questionText').innerHTML = `${currentQ.q} <br><span style="color:var(--error); text-decoration:line-through; font-size:2rem;">${currentQ.wrong}</span>`;
+            
+            const div = document.createElement('div');
+            div.className = 'input-wrapper';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Doğrusunu yaz...';
+            input.autocomplete = 'off';
+            input.onkeydown = (e) => { if(e.key === 'Enter') { 
+                if(input.value.toLowerCase().trim() === currentQ.correct.toLowerCase()) handleSuccess(); 
+                else { input.classList.add('wrong'); setTimeout(()=>input.classList.remove('wrong'),500); }
+            }};
+            div.appendChild(input);
+            interactionArea.appendChild(div);
+            setTimeout(()=>input.focus(), 100);
+        }
+
+        function renderBuildSentence() {
+            const container = document.createElement('div');
+            container.className = 'sentence-builder';
+            // Basitleştirilmiş cümle kurma mantığı...
+            const slot = document.createElement('div');
+            slot.className = 'sentence-slot';
+            slot.innerText = 'Kelimelere tıkla...';
+            
+            const bank = document.createElement('div');
+            bank.className = 'word-bank';
+            let userOrder = [];
+
+            let words = [...currentQ.words];
+            shuffle(words);
+            
+            words.forEach(w => {
+                const btn = document.createElement('button');
+                btn.className = 'word-chip';
+                btn.innerText = w;
+                btn.onclick = () => {
+                    if(userOrder.length === 0) slot.innerText = '';
+                    userOrder.push(w);
+                    slot.innerHTML += `<span class="word-chip" style="background:#E3F2FD; margin:2px;">${w}</span>`;
+                    btn.style.display = 'none';
+                    if(userOrder.length === currentQ.correctOrder.length) {
+                        if(JSON.stringify(userOrder) === JSON.stringify(currentQ.correctOrder)) handleSuccess();
+                        else { 
+                            playSound('fail'); 
+                            messageBox.innerText = 'Sıralama yanlış, tekrar dene!';
+                            setTimeout(loadQuestion, 1500);
+                        }
+                    }
+                };
+                bank.appendChild(btn);
+            });
+            
+            interactionArea.appendChild(slot);
+            interactionArea.appendChild(bank);
+        }
+
+
+        // ==========================================
+        // GENEL YÖNETİM
+        // ==========================================
+
+        function handleSuccess() {
+            score += 10;
+            playSound('win');
+            if(currentQ.type !== 'flashlight') {
+                messageBox.innerText = randomPraise();
+                messageBox.style.color = 'var(--success)';
+            }
+            
+            setTimeout(() => {
+                currentIndex++;
+                loadQuestion();
+            }, 1200);
+        }
+
+        function showEndScreen() {
+            flashlightLayer.style.display = 'none';
+            gameArea.style.display = 'none';
+            hud.style.display = 'none';
+            startScreen.innerHTML = `
+                <div style="font-size:5rem">🏆</div>
+                <h1 style="color:var(--primary)">Harikasın!</h1>
+                <p>Tüm dedektiflik görevlerini tamamladın.</p>
+                <div style="font-size:2rem; font-weight:bold; margin:1rem;">Toplam Puan: ${score}</div>
+                <button class="big-btn" onclick="location.reload()">Tekrar Oyna</button>
+            `;
+            startScreen.style.display = 'flex';
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function randomPraise() {
+            return ["Süpersin!", "Harika!", "Aferin!", "Mükemmel!"][Math.floor(Math.random()*4)];
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window && text) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'tr-TR';
+                u.rate = 0.9;
+                window.speechSynthesis.speak(u);
+            }
+        }
+        function speakQuestion() { speak(currentQ.speech || currentQ.q); }
+
+        function playSound(type) {
+            if(navigator.vibrate) navigator.vibrate(type==='win'?[50,50]:200);
+        }
+
+    </script>
+</body>
+</html>
