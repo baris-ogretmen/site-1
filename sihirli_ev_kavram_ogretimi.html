@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihirli Ev: Tüm Kavramlar</title>
+    <style>
+        :root {
+            --selected-color: #ff0000;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+        }
+
+        /* --- ÜST PANEL --- */
+        #top-ui {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            padding: 0 15px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #feedback-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        #feedback-box {
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid #FFD700;
+            padding: 5px 20px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            transition: transform 0.2s;
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        #task-text { font-size: 1.1rem; color: #333; font-weight: bold; display: block; }
+        #sub-text { font-size: 0.9rem; color: #666; }
+
+        .action-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: 3px solid white;
+            font-size: 24px; cursor: pointer; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .action-btn:active { transform: scale(0.9); }
+
+        #challenge-btn { background: #FF9800; color: white; animation: pulse 2s infinite; }
+        #finish-btn { background: #4CAF50; color: white; font-size: 1.5rem; font-weight: bold; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* --- SAHNE --- */
+        #scene {
+            flex-grow: 1;
+            width: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        .ground {
+            position: absolute; bottom: 0; width: 100%; height: 25%;
+            background: #4CAF50; border-top: 8px solid #388E3C; z-index: 0;
+        }
+
+        #house-svg {
+            width: auto; height: auto;
+            max-width: 98vw; max-height: 60vh;
+            z-index: 10;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            transition: transform 0.5s ease;
+        }
+
+        .clickable { cursor: pointer; transition: filter 0.2s; }
+        @media (hover: hover) {
+            .clickable:hover { filter: brightness(1.2); stroke: white; stroke-width: 2px; }
+        }
+        .clickable:active { transform: scale(0.95); transform-origin: center; transform-box: fill-box; }
+
+        .mode-inside .wall-front, .mode-inside .roof, .mode-inside .outside-obj { opacity: 0.1; pointer-events: none; }
+        .mode-inside .inside-obj { opacity: 1; pointer-events: auto; }
+        .mode-outside .wall-front, .mode-outside .roof, .mode-outside .outside-obj { opacity: 1; pointer-events: auto; }
+        .mode-outside .inside-obj { opacity: 0.3; pointer-events: none; }
+
+        /* --- KONTROLLER --- */
+        #controls {
+            width: 100%; padding: 10px; background: #fff;
+            border-radius: 25px 25px 0 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            z-index: 200; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+        }
+
+        .mode-switch { display: flex; justify-content: center; gap: 15px; }
+        .mode-btn {
+            background: #eee; border: none; padding: 8px 30px; border-radius: 15px;
+            font-size: 1rem; font-weight: bold; color: #555; cursor: pointer;
+            box-shadow: 0 4px 0 #ccc; transition: all 0.2s;
+        }
+        .mode-btn.active { transform: translateY(4px); box-shadow: none; color: white; }
+        #btn-outside.active { background: #2196F3; }
+        #btn-inside.active { background: #E91E63; }
+
+        .palette-container {
+            width: 100%; overflow-x: auto; padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .palette { display: flex; gap: 10px; padding: 0 10px; min-width: max-content; }
+        .color-btn {
+            width: 45px; height: 45px; border-radius: 50%; border: 3px solid #ddd;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .color-btn.selected { transform: scale(1.2); border-color: #333; z-index: 10; border-width: 4px; }
+
+        /* --- KUTLAMA --- */
+        #celebration-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 3000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center;
+        }
+        #celebration-card {
+            background: white; color: #333; padding: 30px; border-radius: 20px;
+            box-shadow: 0 0 50px gold; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+        }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .firework { position: absolute; width: 10px; height: 10px; border-radius: 50%; animation: explode 1s ease-out forwards; }
+        @keyframes explode { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(30); opacity: 0; } }
+    </style>
+</head>
+<body class="mode-outside">
+
+    <!-- ÜST PANEL -->
+    <div id="top-ui">
+        <button id="challenge-btn" class="action-btn" onclick="game.startChallenge()">❓</button>
+        <div id="feedback-wrapper">
+            <div id="feedback-box" onclick="game.repeatSpeech()">
+                <span id="task-text">Merhaba!</span>
+                <span id="sub-text">Boyamaya Başla</span>
+            </div>
+        </div>
+        <button id="finish-btn" class="action-btn" onclick="game.finishGame()">🏁</button>
+    </div>
+
+    <!-- SAHNE -->
+    <div id="scene">
+        <div class="ground"></div>
+        <svg id="house-svg" viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+
+            <!-- ================= İÇ MEKAN ================= -->
+            <g id="interior">
+                <rect x="180" y="150" width="240" height="200" fill="#FFE0B2" />
+                <rect x="180" y="320" width="240" height="30" fill="#8D6E63" />
+
+                <!-- KAVRAM: Kalın/İnce (Kitaplar) -->
+                <rect x="200" y="180" width="80" height="10" fill="#5D4037" />
+                <rect class="clickable inside-obj" data-name="KALIN KİTAP" onclick="game.paint(this)" x="210" y="140" width="25" height="40" fill="#ccc" stroke="#333"/>
+                <rect class="clickable inside-obj" data-name="İNCE KİTAP" onclick="game.paint(this)" x="245" y="140" width="8" height="40" fill="#ccc" stroke="#333"/>
+
+                <!-- KAVRAM: Dolu/Boş (Sepetler - Yerde) -->
+                <!-- Dolu Sepet -->
+                <g class="clickable inside-obj" data-name="DOLU SEPET" onclick="game.paint(this)">
+                    <path d="M190 320 L200 350 L230 350 L240 320 Z" fill="#D7CCC8" stroke="#5D4037" stroke-width="2"/>
+                    <circle cx="205" cy="320" r="8" fill="#FF5252"/> <!-- Elma -->
+                    <circle cx="215" cy="315" r="8" fill="#FF5252"/> <!-- Elma -->
+                    <circle cx="225" cy="320" r="8" fill="#FF5252"/> <!-- Elma -->
+                    <rect x="190" y="310" width="50" height="40" fill="transparent"/>
+                </g>
+                <!-- Boş Sepet -->
+                <g class="clickable inside-obj" data-name="BOŞ SEPET" onclick="game.paint(this)">
+                    <path d="M250 320 L260 350 L290 350 L300 320 Z" fill="#D7CCC8" stroke="#5D4037" stroke-width="2"/>
+                    <rect x="250" y="320" width="50" height="30" fill="transparent"/>
+                </g>
+
+                <!-- KAVRAM: Altında/Üstünde (Masa) -->
+                <rect x="300" y="280" width="100" height="10" fill="#795548"/>
+                <rect x="310" y="290" width="10" height="40" fill="#5D4037"/>
+                <rect x="380" y="290" width="10" height="40" fill="#5D4037"/>
+                
+                <path class="clickable inside-obj" data-name="MASANIN ÜSTÜNDEKİ VAZO" onclick="game.paint(this)" d="M340 280 L330 250 L350 250 L360 280 Z" fill="#ccc"/>
+                <circle class="clickable inside-obj" data-name="MASANIN ALTINDAKİ TOP" onclick="game.paint(this)" cx="350" cy="315" r="12" fill="#ccc"/>
+
+                <g class="clickable inside-obj" data-name="LAMBA" onclick="game.paint(this)" fill="#cccccc">
+                    <path d="M190 280 L210 280 L200 200 Z" />
+                    <rect x="198" y="280" width="4" height="70" fill="#555" pointer-events="none"/>
+                </g>
+            </g>
+
+            <!-- ================= DIŞ MEKAN ================= -->
+            <g id="exterior">
+                <!-- KAVRAM: Az/Çok (Çiçekler - Bahçede) -->
+                <!-- Az Çiçek (Sol) -->
+                <g class="clickable outside-obj" data-name="AZ ÇİÇEK" onclick="game.paint(this)">
+                    <line x1="120" y1="350" x2="120" y2="330" stroke="green" stroke-width="2"/>
+                    <circle cx="120" cy="330" r="5" fill="#fff" stroke="#333"/>
+                    <rect x="110" y="320" width="20" height="30" fill="transparent"/>
+                </g>
+                <!-- Çok Çiçek (Sağ) -->
+                <g class="clickable outside-obj" data-name="ÇOK ÇİÇEK" onclick="game.paint(this)">
+                    <line x1="530" y1="350" x2="530" y2="330" stroke="green" stroke-width="2"/>
+                    <circle cx="530" cy="330" r="5" fill="#fff" stroke="#333"/>
+                    
+                    <line x1="545" y1="350" x2="545" y2="335" stroke="green" stroke-width="2"/>
+                    <circle cx="545" cy="335" r="5" fill="#fff" stroke="#333"/>
+                    
+                    <line x1="515" y1="350" x2="515" y2="335" stroke="green" stroke-width="2"/>
+                    <circle cx="515" cy="335" r="5" fill="#fff" stroke="#333"/>
+
+                    <line x1="538" y1="355" x2="538" y2="340" stroke="green" stroke-width="2"/>
+                    <circle cx="538" cy="340" r="5" fill="#fff" stroke="#333"/>
+                    
+                    <rect x="510" y="325" width="50" height="35" fill="transparent"/>
+                </g>
+
+                <!-- KAVRAM: Uzak/Yakın (Kuşlar) -->
+                <g class="clickable outside-obj" data-name="UZAKTAKİ KUŞ" onclick="game.paint(this)">
+                    <path d="M50 80 Q60 60 70 80 L60 85 Z" fill="#eee"/>
+                    <path d="M50 80 L40 70 M70 80 L80 70" stroke="#333" stroke-width="2"/>
+                    <rect x="40" y="60" width="40" height="30" fill="transparent"/>
+                </g>
+                <g class="clickable outside-obj" data-name="YAKINDAKİ KUŞ" onclick="game.paint(this)">
+                    <path d="M500 350 Q530 300 560 350 L530 370 Z" fill="#eee"/>
+                    <circle cx="545" cy="330" r="3" fill="black"/>
+                    <path d="M560 350 L570 345 L560 355 Z" fill="orange"/>
+                    <rect x="500" y="320" width="70" height="60" fill="transparent"/>
+                </g>
+
+                <!-- KAVRAM: Büyük/Küçük (Ağaçlar) -->
+                <g class="clickable outside-obj" data-name="BÜYÜK AĞAÇ" onclick="game.paint(this)">
+                    <rect x="20" y="200" width="30" height="100" fill="#795548"/>
+                    <circle cx="35" cy="180" r="50" fill="#2E7D32"/>
+                </g>
+                <g class="clickable outside-obj" data-name="KÜÇÜK AĞAÇ" onclick="game.paint(this)">
+                    <rect x="100" y="270" width="15" height="40" fill="#795548"/>
+                    <circle cx="107" cy="250" r="25" fill="#2E7D32"/>
+                </g>
+
+                <!-- KAVRAM: Uzun/Kısa (Çitler) -->
+                <g class="clickable outside-obj" data-name="UZUN ÇİT" onclick="game.paint(this)">
+                    <rect x="450" y="280" width="10" height="80" fill="#ccc" stroke="#555"/>
+                    <rect x="470" y="280" width="10" height="80" fill="#ccc" stroke="#555"/>
+                    <rect x="490" y="280" width="10" height="80" fill="#ccc" stroke="#555"/>
+                    <rect x="450" y="300" width="50" height="5" fill="#ccc"/>
+                    <rect x="450" y="340" width="50" height="5" fill="#ccc"/>
+                </g>
+                <g class="clickable outside-obj" data-name="KISA ÇİT" onclick="game.paint(this)">
+                    <rect x="400" y="320" width="10" height="40" fill="#ccc" stroke="#555"/>
+                    <rect x="420" y="320" width="10" height="40" fill="#ccc" stroke="#555"/>
+                    <rect x="400" y="330" width="30" height="5" fill="#ccc"/>
+                </g>
+
+                <rect class="wall-front clickable" data-name="DUVAR" onclick="game.paint(this)" x="180" y="150" width="240" height="200" fill="#FFCC80" stroke="#E65100" stroke-width="3"/>
+                <path class="roof clickable" data-name="ÇATI" onclick="game.paint(this)" d="M160 150 L300 40 L440 150 Z" fill="#A1887F" stroke="#5D4037" stroke-width="3"/>
+                
+                <g class="clickable outside-obj" data-name="PENCERE" onclick="game.paint(this)">
+                     <rect class="wall-front" x="210" y="200" width="60" height="60" fill="#B3E5FC" stroke="#fff" stroke-width="3" pointer-events="none"/>
+                     <line class="wall-front" x1="240" y1="200" x2="240" y2="260" stroke="#fff" stroke-width="3" pointer-events="none"/>
+                     <line class="wall-front" x1="210" y1="230" x2="270" y2="230" stroke="#fff" stroke-width="3" pointer-events="none"/>
+                     <rect x="210" y="200" width="60" height="60" fill="transparent"/>
+                </g>
+                
+                <g class="clickable outside-obj" data-name="KAPI" onclick="game.paint(this)">
+                    <rect class="wall-front" x="320" y="230" width="70" height="120" fill="#8D6E63" stroke="#5D4037" stroke-width="2" pointer-events="none"/>
+                    <circle class="wall-front" cx="380" cy="290" r="5" fill="gold" pointer-events="none"/>
+                    <rect x="320" y="230" width="70" height="120" fill="transparent"/>
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- KONTROLLER -->
+    <div id="controls">
+        <div class="mode-switch">
+            <button id="btn-outside" class="mode-btn active" onclick="game.setMode('outside')">🏠 DIŞARI</button>
+            <button id="btn-inside" class="mode-btn" onclick="game.setMode('inside')">🛋️ İÇERİ</button>
+        </div>
+        <div class="palette-container">
+            <div class="palette"></div>
+        </div>
+    </div>
+
+    <!-- KUTLAMA EKRANI -->
+    <div id="celebration-overlay" onclick="game.closeCelebration()">
+        <div id="celebration-card">
+            <h1>🎉 TEBRİKLER! 🎉</h1>
+            <p style="font-size: 1.5rem;">Tüm Kavramları Harika Öğrendin!</p>
+            <div style="font-size: 4rem;">🏆</div>
+            <p>Renkler, Şekiller ve Zıtlıklar Uzmanı Oldun.</p>
+            <button class="action-btn" style="width: auto; height: auto; padding: 10px 30px; margin-top: 20px; border-radius: 20px; background: #2196F3; color: white;">Oyuna Dön</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'magic') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523, now); osc.frequency.linearRampToValueAtTime(1046, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                osc.start(now); osc.stop(now + 0.8);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'fanfare') {
+                [523, 659, 783, 1046, 783, 1046].forEach((f, i) => {
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type = 'square'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.1, now + i*0.2); g.gain.linearRampToValueAtTime(0, now + i*0.2 + 0.3);
+                    o.start(now + i*0.2); o.stop(now + i*0.2 + 0.3);
+                });
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'tr-TR'; utterance.rate = 0.9;
+                const voices = window.speechSynthesis.getVoices();
+                const trVoice = voices.find(v => v.lang.includes('tr'));
+                if (trVoice) utterance.voice = trVoice;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- RENKLER (Garantili Liste) ---
+        const colors = [
+            { code: '#F44336', name: 'KIRMIZI' },
+            { code: '#4CAF50', name: 'YEŞİL' },
+            { code: '#2196F3', name: 'MAVİ' },
+            { code: '#FFEB3B', name: 'SARI' },
+            { code: '#E91E63', name: 'PEMBE' }, /* Pembe Eklendi */
+            { code: '#9C27B0', name: 'MOR' },
+            { code: '#FF9800', name: 'TURUNCU' },
+            { code: '#795548', name: 'KAHVERENGİ' },
+            { code: '#000000', name: 'SİYAH' },
+            { code: '#FFFFFF', name: 'BEYAZ' },
+            { code: '#9E9E9E', name: 'GRİ' },
+            { code: '#00BCD4', name: 'TURKUAZ' },
+            { code: '#3F51B5', name: 'LACİVERT' }
+        ];
+
+        let state = {
+            mode: 'outside', selectedColor: colors[0], challenge: null
+        };
+
+        function init() {
+            const paletteEl = document.querySelector('.palette');
+            colors.forEach((c, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = c.code;
+                if(index===0) btn.classList.add('selected');
+                btn.onclick = () => selectColor(c, btn);
+                paletteEl.appendChild(btn);
+            });
+        }
+
+        function selectColor(colorObj, btnElement) {
+            state.selectedColor = colorObj;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            playTone('magic');
+            if (!state.challenge) speak(colorObj.name);
+        }
+
+        window.game = {
+            setMode: (mode) => {
+                state.mode = mode;
+                document.body.className = `mode-${mode}`;
+                document.getElementById('btn-outside').classList.toggle('active', mode === 'outside');
+                document.getElementById('btn-inside').classList.toggle('active', mode === 'inside');
+                const msg = mode === 'inside' ? "İçeri Girdik" : "Dışarı Çıktık";
+                playTone('magic');
+                if(!state.challenge) {
+                    document.getElementById('task-text').textContent = msg;
+                    document.getElementById('sub-text').textContent = "";
+                }
+            },
+
+            paint: (element, e) => {
+                const isInsideObj = element.classList.contains('inside-obj') || element.closest('.inside-obj');
+                const isOutsideObj = element.classList.contains('outside-obj') || element.closest('.outside-obj') || element.getAttribute('data-name') === 'DUVAR' || element.getAttribute('data-name') === 'ÇATI';
+
+                if (state.mode === 'outside' && isInsideObj && !isOutsideObj) return;
+                if (state.mode === 'inside' && isOutsideObj && !isInsideObj) return;
+
+                const objectName = element.getAttribute('data-name');
+                const colorObj = state.selectedColor;
+
+                if (state.challenge) {
+                    if (objectName === state.challenge.obj && colorObj.name === state.challenge.color) {
+                        playTone('win'); createConfetti();
+                        speak(`Harikasın! ${objectName} artık ${colorObj.name}.`);
+                        document.getElementById('task-text').textContent = "HARİKA!";
+                        document.getElementById('sub-text').textContent = "Yeni görev için butona bas";
+                        state.challenge = null;
+                        document.getElementById('challenge-btn').style.animation = "pulse 2s infinite";
+                    } else {
+                        playTone('error');
+                        if (objectName !== state.challenge.obj) {
+                            speak(`Bu ${objectName}. Ben senden ${state.challenge.obj} boyamanı istemiştim.`);
+                        } else {
+                            speak(`Bu ${colorObj.name}. Ben ${state.challenge.color} rengini istemiştim.`);
+                        }
+                    }
+                } else {
+                    playTone('magic');
+                    speak(`${colorObj.name} ${objectName}`);
+                    document.getElementById('task-text').textContent = objectName;
+                    document.getElementById('sub-text').textContent = colorObj.name;
+                    document.getElementById('task-text').style.color = colorObj.code === '#FFFFFF' ? '#333' : colorObj.code;
+                }
+
+                if (element.tagName === 'g') {
+                    const children = element.querySelectorAll('rect:not([fill="transparent"]), circle, path, ellipse, line');
+                    children.forEach(child => {
+                        // Çizgi ve kenar renklerini bozmamak için sadece dolgu (fill) olanları boya
+                        if(child.getAttribute('fill') && child.getAttribute('fill') !== 'transparent' && child.getAttribute('fill') !== 'none') {
+                             child.setAttribute('fill', colorObj.code);
+                        }
+                    });
+                } else {
+                    element.setAttribute('fill', colorObj.code);
+                }
+                
+                const evt = window.event || e;
+                const rect = element.getBoundingClientRect();
+                createParticles(evt ? evt.clientX : rect.left + rect.width/2, evt ? evt.clientY : rect.top + rect.height/2, colorObj.code);
+            },
+
+            startChallenge: () => {
+                document.getElementById('challenge-btn').style.animation = "none";
+                const outsideObjs = ['BÜYÜK AĞAÇ', 'KÜÇÜK AĞAÇ', 'UZUN ÇİT', 'KISA ÇİT', 'UZAKTAKİ KUŞ', 'YAKINDAKİ KUŞ', 'KAPI', 'PENCERE', 'AZ ÇİÇEK', 'ÇOK ÇİÇEK'];
+                const insideObjs = ['KALIN KİTAP', 'İNCE KİTAP', 'MASANIN ÜSTÜNDEKİ VAZO', 'MASANIN ALTINDAKİ TOP', 'LAMBA', 'DOLU SEPET', 'BOŞ SEPET'];
+                
+                const isInside = state.mode === 'inside';
+                const targetList = isInside ? insideObjs : outsideObjs;
+                
+                const targetObj = targetList[Math.floor(Math.random() * targetList.length)];
+                // Renk seçiminde sadece palette var olan renkleri kullan
+                const targetColor = colors[Math.floor(Math.random() * (colors.length - 1))]; 
+                
+                state.challenge = { obj: targetObj, color: targetColor.name };
+                
+                const text = `Lütfen ${targetObj} nesnesini ${targetColor.name} rengine boya.`;
+                speak(text);
+                
+                document.getElementById('task-text').textContent = "GÖREV:";
+                document.getElementById('sub-text').textContent = `${targetColor.name} ${targetObj}`;
+                document.getElementById('sub-text').style.color = targetColor.code === '#FFFFFF' ? '#333' : targetColor.code;
+            },
+
+            repeatSpeech: () => {
+                if (state.challenge) speak(`Lütfen ${state.challenge.obj} nesnesini ${state.challenge.color} rengine boya.`);
+            },
+
+            finishGame: () => {
+                const overlay = document.getElementById('celebration-overlay');
+                overlay.style.display = 'flex';
+                playTone('fanfare');
+                speak("Tebrikler! Oyunu başarıyla bitirdin.");
+                const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f'];
+                setInterval(() => {
+                    const fw = document.createElement('div');
+                    fw.className = 'firework';
+                    fw.style.left = Math.random() * 100 + '%';
+                    fw.style.top = Math.random() * 80 + '%';
+                    fw.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    overlay.appendChild(fw);
+                    setTimeout(() => fw.remove(), 1000);
+                }, 300);
+            },
+            
+            closeCelebration: () => {
+                document.getElementById('celebration-overlay').style.display = 'none';
+            }
+        };
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<8; i++) {
+                const p = document.createElement('div');
+                p.style.position = 'absolute'; p.style.width = '8px'; p.style.height = '8px';
+                p.style.background = color; p.style.left = x + 'px'; p.style.top = y + 'px';
+                p.style.borderRadius = '50%'; p.style.pointerEvents = 'none'; p.style.zIndex = 2000;
+                const angle = Math.random() * Math.PI * 2; const dist = 40;
+                p.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(0)`, opacity: 0 }], { duration: 600, easing: 'ease-out' }).onfinish = () => p.remove();
+                document.body.appendChild(p);
+            }
+        }
+
+        function createConfetti() {
+            for(let i=0; i<30; i++) {
+                const c = document.createElement('div');
+                c.style.position = 'absolute'; c.style.left = Math.random()*100 + 'vw'; c.style.top = '-10px';
+                c.style.width = '10px'; c.style.height = '10px'; c.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
+                c.style.zIndex = 2000;
+                c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 1 }, { transform: 'translateY(100vh) rotate(720deg)', opacity: 0 }], { duration: 2000 + Math.random()*2000 }).onfinish = () => c.remove();
+                document.body.appendChild(c);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
