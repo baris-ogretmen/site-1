@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Boncuk ile Konuşma Akademisi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- GENEL AYARLAR --- */
+        *, *:before, *:after { box-sizing: border-box; position: relative; }
+        
+        html, body {
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            overflow: hidden; font-family: 'Fredoka', sans-serif;
+            background-color: #4F8EDB;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- SAHNE ALANI (ÜST) --- */
+        #stage-area {
+            flex: 1; width: 100%;
+            display: flex; justify-content: center; align-items: center;
+            position: relative; z-index: 1;
+            /* Sahne arka planı için hafif bir degrade */
+            background: radial-gradient(circle at center, #6cb2fa 0%, #4F8EDB 100%);
+        }
+
+        /* Mama (Kemik) - Başlangıçta gizli */
+        #treat {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 4rem;
+            z-index: 20;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #treat.show { transform: translateX(-50%) scale(1); }
+
+        /* Hafıza Oyunu Göstergeleri (Yıldızlar) */
+        #memory-stars {
+            position: absolute; top: 10px; width: 100%;
+            display: flex; justify-content: center; gap: 10px;
+            z-index: 30; opacity: 0; transition: opacity 0.3s;
+        }
+        .star-slot {
+            width: 40px; height: 40px; background: rgba(255,255,255,0.3);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; color: #FFD700; border: 2px solid white;
+        }
+        .star-slot.filled { background: white; transform: scale(1.2); transition: transform 0.2s; }
+
+        /* --- KONTROL PANELİ (ALT) --- */
+        #control-panel {
+            height: 45%; min-height: 300px; width: 100%;
+            background-color: #fff;
+            border-top-left-radius: 30px; border-top-right-radius: 30px;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
+            z-index: 100; padding: 15px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        h1 {
+            margin: 5px 0 15px 0; color: #30508F; font-size: 1.6rem; text-align: center;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        /* --- SEKME MENÜSÜ --- */
+        .category-tabs {
+            display: flex; gap: 8px; margin-bottom: 15px; width: 100%;
+            overflow-x: auto; padding: 5px; justify-content: flex-start;
+            scrollbar-width: none; /* Firefox scrollbar gizle */
+        }
+        .category-tabs::-webkit-scrollbar { display: none; } /* Chrome scrollbar gizle */
+
+        .tab-btn {
+            background: #f0f4ff; color: #555; border: 2px solid #ddd;
+            padding: 10px 16px; border-radius: 50px;
+            font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+            flex-shrink: 0; display: flex; align-items: center; gap: 5px;
+        }
+
+        .tab-btn.active {
+            background: #30508F; color: white; border-color: #30508F;
+            box-shadow: 0 4px 10px rgba(48, 80, 143, 0.3); transform: scale(1.05);
+        }
+
+        /* --- DERS İÇERİĞİ --- */
+        #lesson-content {
+            width: 100%; flex: 1; overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+            padding-bottom: 20px;
+        }
+
+        .instruction-box {
+            background: #fff8e1; border-left: 5px solid #FFD93D;
+            padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;
+            color: #444; font-size: 1.1rem; width: 90%; text-align: center;
+        }
+
+        .action-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px; width: 100%; max-width: 600px;
+        }
+
+        .game-btn {
+            background: white; border: 2px solid #eee; border-bottom: 5px solid #eee;
+            color: #333; padding: 15px 10px; border-radius: 15px;
+            font-size: 1rem; font-family: 'Fredoka', sans-serif; font-weight: bold;
+            cursor: pointer; transition: all 0.1s; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 5px; height: 100px;
+        }
+        
+        .game-btn span { font-size: 1.5rem; } /* Emoji boyutu */
+
+        .game-btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+
+        /* Renkli Butonlar */
+        .btn-green { background: #e8f5e9; border-color: #a5d6a7; border-bottom-color: #81c784; color: #2e7d32; }
+        .btn-blue { background: #e3f2fd; border-color: #90caf9; border-bottom-color: #64b5f6; color: #1565c0; }
+        .btn-orange { background: #fff3e0; border-color: #ffcc80; border-bottom-color: #ffb74d; color: #e65100; }
+        .btn-purple { background: #f3e5f5; border-color: #ce93d8; border-bottom-color: #ba68c8; color: #6a1b9a; }
+        .btn-red { background: #ffebee; border-color: #ef9a9a; border-bottom-color: #e57373; color: #c62828; }
+
+        /* Play Sound Button (Dinle Butonu) */
+        .listen-btn {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #FFD93D; border: 4px solid #FFA000;
+            font-size: 2rem; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; margin-bottom: 15px; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* --- KONUŞMA BALONU --- */
+        #feedback-bubble {
+            position: absolute; top: 5%; right: 5%;
+            background: white; padding: 15px 20px;
+            border-radius: 20px; border-bottom-left-radius: 0;
+            font-size: 1.1rem; font-weight: bold; color: #333;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0; transform: scale(0.5); pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50; max-width: 180px; text-align: center;
+        }
+        #feedback-bubble.show { opacity: 1; transform: scale(1); }
+
+        /* --- HUSKY STİLLERİ (Ölçekli) --- */
+        .husky {
+            animation: squiggly-anim 0.3s infinite;
+            height: 35vh; width: 50vh; /* Responsive boyut */
+            max-width: 80vw; max-height: 400px;
+        }
+
+        /* --- YENİ ANİMASYONLAR --- */
+        
+        /* Uyku Modu */
+        .husky.sleeping .eye { height: 2px; top: 55%; background: #333; border-radius: 0; }
+        .husky.sleeping .head { transform: translateY(15%) rotate(5deg); transition: all 1s; }
+        .husky.sleeping .mouth { display: none; }
+        .husky.sleeping { animation: none; filter: grayscale(0.2); }
+
+        /* Dönme (Spin) */
+        @keyframes spin-anim {
+            0% { transform: scaleX(1); }
+            50% { transform: scaleX(0.1); }
+            100% { transform: scaleX(1); }
+        }
+        .husky.spinning { animation: spin-anim 0.6s ease-in-out infinite; }
+
+        /* Zıplama */
+        @keyframes jump-high {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20%); }
+        }
+        .husky.jumping .body { animation: jump-high 0.5s ease-in-out; }
+        .husky.jumping .ear { animation: left-ear 0.2s infinite; }
+
+        /* Etkileşim */
+        .interactive-part { cursor: pointer; }
+        .receptive-mode .interactive-part:active { filter: brightness(1.3) sepia(0.3); }
+
+        /* Orijinal CSS Yapısı (Aynen korundu) */
+        .husky:before { width: 90%; height: 0.5vmin; background: #30508F; border-radius: 0.5vmin; top: 100%; left: 5%; z-index: 2; content:""; position: absolute;}
+        .husky:after { width: 100%; height: 10%; top: calc(100% + 0.5vmin); z-index: 3; background: #4F8EDB; content:""; position: absolute;}
+        .head { animation: head 12s none infinite; position: absolute; height: 45%; width: 58%; left: 34%; top: 5%; transform-origin: bottom center; transition: all 0.5s; }
+        .head:before { background: #30508F; border-top-left-radius: 50% 40%; border-top-right-radius: 50% 40%; border-bottom-right-radius: 10% 60%; height: 100%; width: 100%; content:""; display:block; position:absolute;}
+        .face { animation: face 12s none infinite; position: absolute; width: 98%; height: 62%; top: 15%; left: 2%; }
+        .face:before { z-index: 1; width: 94%; height: 70%; left: 3%; background-color: white; bottom: 5%; border-top-left-radius: 40% 50%; border-top-right-radius: 40% 50%; border-bottom-left-radius: 30% 50%; border-bottom-right-radius: 30% 40%; content:""; display:block; position:absolute;}
+        .eye { animation: eyes 12s none infinite; position: absolute; width: 30%; height: 40%; background-color: white; right: 45%; border-top-left-radius: 55% 50%; border-top-right-radius: 45% 50%; z-index: 2; transition: all 0.3s; }
+        .eye:before { animation: left-eye 12s none infinite; height: 15%; width: 15%; border-radius: 100%; background: #343C60; top: 45%; left: 45%; transform-origin: center center; content:""; display:block; position:absolute;}
+        .eye+.eye { z-index: 1; right: initial; left: 48%; border-top-right-radius: 55% 50%; border-top-left-radius: 45% 50%; }
+        .nose { animation: nose 12s none infinite; z-index: 2; position: absolute; width: 20%; height: 20%; top: 29%; left: 42%; }
+        .nose:after { background: #30508F; height: 100%; width: 100%; border-top-left-radius: 20% 20%; border-top-right-radius: 30% 20%; border-bottom-right-radius: 55% 80%; border-bottom-left-radius: 50% 80%; content:""; display:block; position:absolute;}
+        .nose:before { height: 100%; width: 200%; background: white; top: 50%; left: -50%; z-index: -1; border-radius: 50%; content:""; display:block; position:absolute;}
+        .ear { animation: left-ear 12s both infinite; position: absolute; top: 3%; left: -10%; width: 48%; height: 30%; border-bottom-left-radius: 100% 90%; border-top-left-radius: 10%; transform-origin: 80% center; overflow: hidden; background: #30508F; }
+        .ear:before { width: 70%; height: 55%; border: 2px solid #30508F; background: #DE6465; top: 20%; left: 15%; transform-origin: top left; transform: skewX(30deg) rotate(-5deg); content:""; display:block; position:absolute;}
+        .ear:after { width: 70%; height: 100%; border-top-left-radius: 100%; background: #30508F; left: 32%; transform-origin: top left; transform: rotate(-5deg); content:""; display:block; position:absolute;}
+        .ear+.ear { animation: right-ear 12s both infinite; background-color: #343C60; left: 15%; top: 5%; z-index: -1; transform-origin: right center; }
+        .ear+.ear:before { border-color: #343C60; }
+        .ear+.ear:after { background: #343C60; }
+        .mouth { z-index: 1; animation: mouth 12s none infinite; position: absolute; width: 48%; height: 55%; bottom: -5%; left: 28%; overflow: hidden; }
+        .mouth:before, .mouth:after { animation: mouth-cover-left 12s none infinite; width: 28%; height: 100%; background: white; top: -50%; left: 0; z-index: 3; transform-origin: right top; content:""; display:block; position:absolute;}
+        .mouth:after { animation: mouth-cover-right 12s none infinite; left: initial; right: 0; transform-origin: left top; }
+        .lips { z-index: 2; height: 35%; width: 100%; }
+        .lips:before, .lips:after { background: white; width: calc(50% + 1.5px); border-color: #9EB6D7; border-width: 3px; border-style: solid; height: 100%; border-bottom-left-radius: 65% 100%; border-bottom-right-radius: 35% 50%; border-top-right-radius: 50%; border-right-color: transparent; border-top-color: transparent; content:""; display:block; position:absolute;}
+        .lips:after { transform: rotateY(180deg); left: initial; right: 0; }
+        .tongue { animation: tongue 12s none infinite; position: absolute; height: 100%; width: 44%; background: #DE6465; left: 25%; bottom: 100%; z-index: 1; border-bottom-left-radius: 50% 20%; border-bottom-right-radius: 50% 20%; }
+        .body { animation: body 12s none infinite; width: 45%; height: 100%; position: absolute; left: 25%; }
+        .torso { position: absolute; height: 55%; width: 100%; bottom: 0; }
+        .torso:before { background: #30508F; height: 100%; width: 50%; transform: translateX(-20%) skewX(-30deg); transform-origin: left bottom; border-radius: 0 30% 0 60%; content:""; display:block; position:absolute;}
+        .torso:after { background: #30508F; height: 100%; width: 60%; top: 0; right: 0; border-radius: 10% 40% 60% 0; content:""; display:block; position:absolute;}
+        .mane { animation: mane 12s none infinite; z-index: 2; position: absolute; width: 31.5%; height: 30%; top: 44%; left: 37%; }
+        .mane:before { background: white; height: 40%; width: 100%; border-top-left-radius: 10% 50%; border-top-right-radius: 20% 100%; border-bottom-left-radius: 10% 50%; content:""; display:block; position:absolute;}
+        .mane:after { background: white; top: 25%; height: 76%; width: 30%; right: 23%; border-top-right-radius: 100% 80%; transform: rotate(47deg); transform-origin: bottom right; content:""; display:block; position:absolute;}
+        .coat { position: absolute; width: 50%; height: 50%; background: white; transform-origin: bottom right; left: 10%; top: 21%; transform: rotate(25deg) skewX(-30deg); }
+        .legs { background-color: #30508F; position: absolute; height: 30%; width: 42%; left: 23%; bottom: 0; border-top-left-radius: 20% 37%; border-bottom-left-radius: 10% 37%; border-top-right-radius: 50%; z-index: 1; }
+        .front-legs { position: absolute; width: 55%; height: 117%; bottom: 0; right: -12%; }
+        .front-legs:before { width: 4%; height: 6%; background: transparent; bottom: 0; left: 47%; box-shadow: -1.3vmin 0 0 #9EB6D7, -2.8vmin 0 0 #9EB6D7, 1.3vmin 0 0 #4F8EDB, 2.8vmin 0 0 #4F8EDB; z-index: 2; content:""; display:block; position:absolute;}
+        .front-legs>.leg { width: 51%; height: 100%; position: absolute; bottom: 0; right: 50%; overflow: hidden; }
+        .front-legs>.leg:before { background: #C8DAF2; height: 100%; width: 100%; transform: skewY(-30deg) skewX(10deg); transform-origin: top right; content:""; display:block; position:absolute;}
+        .front-legs>.leg+.leg { right: 0; transform: rotateY(180deg); }
+        .front-legs>.leg+.leg:before { background: #9EB6D7; }
+        .hind-leg { position: absolute; background: #9EB6D7; width: 35%; height: 25%; border-top-left-radius: 35% 100%; border-top-right-radius: 40% 100%; bottom: 0%; right: 45%; }
+        .hind-leg:before { width: 6%; height: 20%; background: transparent; bottom: 0; left: 70%; box-shadow: -0.8vmin 0 0 #4F8EDB, 0.8vmin 0 0 #4F8EDB; content:""; display:block; position:absolute;}
+        .tail { position: absolute; width: 15%; height: 6%; bottom: 0; right: 72%; background: #343C60; z-index: 0; }
+        .tail>.tail { animation: tail 12s none infinite; height: 100%; width: 4vmin; right: 26%; transform-origin: center right; border-top-left-radius: 50% 50%; border-bottom-left-radius: 50% 50%; transform: rotate(26deg); }
+        .husky>.tail { border-top-left-radius: 10% 50%; border-bottom-left-radius: 10% 50%; }
+        .husky>.tail>.tail { right: 88%; }
+
+        /* Keyframes */
+        @keyframes head { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(-7deg); } 46% { transform: rotate(-14deg); } 60% { transform: rotate(-7deg); } 73% { transform: rotate(0); } 80% { transform: rotate(0); } }
+        @keyframes mouth { 0%, 100% { transform: translateX(0); } 13% { transform: translateX(35%); } 20% { transform: translateX(35%); } 26% { transform: translateX(35%); } 33% { transform: translateX(0) translateY(-5%); } }
+        @keyframes nose { 0%, 100% { transform: translate(0); } 13% { transform: translateX(100%); } 26% { transform: translateX(100%); } 33% { transform: translateX(0) translateY(-15%); } }
+        @keyframes body { 0%, 100% { transform: translate(0); } 6% { transform: translateY(3%); } 13% { transform: translate(0); } 20% { transform: translate(0); } 26% { transform: translateY(2%); } 33% { transform: translateY(0); } }
+        @keyframes mane { 0%, 100% { transform: translate(0); } 6% { transform: translateY(5%); } 13% { transform: translate(0); } 20% { transform: translate(0); } 26% { transform: translateY(3%); } 33% { transform: translateY(0); } }
+        @keyframes face { 0%, 100% { transform: translate(0); } 13% { transform: translateX(15%); } 20% { transform: translateX(15%) translateY(0); } 26% { transform: translateX(15%) translateY(0); } 33% { transform: translateX(0) translateY(-15%); } 40% { transform: translateX(0) translateY(-15%); } 46% { transform: translateX(0) translateY(0); } }
+        @keyframes left-eye { 2% { transform: scaleY(1); } 3% { transform: scaleY(0.3); } 4% { transform: scaleY(1); } 6% { transform: translateX(0); } 9% { transform: scaleY(1) translateX(75%); } 10% { transform: scaleY(0.3) translateX(75%); } 13% { transform: translateX(150%); } 22% { transform: scaleY(1) translateX(150%); } 26% { transform: scaleY(1) translateX(150%); } 33% { transform: translateX(0) translateY(-170%); } 36% { transform: scaleY(1) translateY(-170%); } 39% { transform: scaleY(1) translateY(-170%); } 53% { transform: translateY(0); } 65% { transform: scaleY(1) translateY(0); } 66% { transform: scaleY(0.3) translateY(0); } 70% { transform: scaleY(1) translateY(0); } }
+        @keyframes tongue { 46% { transform: translateY(0); } 53% { transform: translateY(100%) rotate(10deg); } 73% { transform: translateY(100%) rotate(10deg); } 80% { transform: translateY(0); } }
+        @keyframes mouth-cover-left { 40% { transform: rotate(0); } 60% { transform: rotate(90deg); } 73% { transform: rotate(90deg); } 86% { transform: rotate(0); } }
+        @keyframes mouth-cover-right { 40% { transform: rotate(0); } 60% { transform: rotate(-90deg); } 73% { transform: rotate(-90deg); } 86% { transform: rotate(0); } }
+        @keyframes tail { 6% { transform: rotate(0); } 10% { transform: rotate(30deg); } 13% { transform: rotate(0); } 20% { transform: rotate(0); } 26% { transform: rotate(30deg); } 46% { transform: rotate(30deg); } 48% { transform: rotate(0); } 50% { transform: rotate(28deg); } 55% { transform: rotate(28deg); } 60% { transform: rotate(28deg); } 70% { transform: rotate(28deg); } 72% { transform: rotate(0); } }
+        @keyframes left-ear { 0%, 100% { transform: rotate(6deg); } 6% { transform: rotate(6deg); } 13% { transform: rotate(15deg); } 26% { transform: rotate(15deg); } 33% { transform: rotate(30deg); } 40% { transform: rotate(30deg); } 46% { transform: rotate(0deg); } 53% { transform: rotate(0deg); } 60% { transform: rotate(15deg); } 80% { transform: rotate(15deg); } 93% { transform: rotate(6deg); } }
+        @keyframes right-ear { 0%, 100% { transform: rotateZ(-16deg) rotateY(180deg); } 6% { transform: rotateZ(-16deg) rotateY(180deg); } 13% { transform: rotateZ(-19deg) rotateY(180deg); } 26% { transform: rotateZ(-19deg) rotateY(180deg); } 33% { transform: rotateZ(-30deg) rotateY(180deg); } 40% { transform: rotateZ(-19deg) rotateY(180deg); } 46% { transform: rotateZ(-9deg) rotateY(180deg); } 53% { transform: rotateZ(-9deg) rotateY(180deg); } 60% { transform: rotateZ(-19deg) rotateY(180deg); } 80% { transform: rotateZ(-19deg) rotateY(180deg); } 93% { transform: rotateZ(-16deg) rotateY(180deg); } }
+        @keyframes squiggly-anim { 0% { filter: url("#squiggly-0"); } 25% { filter: url("#squiggly-1"); } 50% { filter: url("#squiggly-2"); } 75% { filter: url("#squiggly-3"); } 100% { filter: url("#squiggly-4"); } }
+    </style>
+</head>
+<body>
+
+    <!-- ÜST: SAHNE -->
+    <div id="stage-area">
+        <div id="feedback-bubble">Merhaba! 🐶</div>
+        <!-- Hafıza oyunu için yıldızlar -->
+        <div id="memory-stars">
+            <div class="star-slot" id="star-1">★</div>
+            <div class="star-slot" id="star-2">★</div>
+            <div class="star-slot" id="star-3">★</div>
+        </div>
+        <div id="treat">🍖</div>
+        
+        <!-- BONCUK (HUSKY) -->
+        <div class="husky">
+            <div class="mane"><div class="coat"></div></div>
+            <div class="body">
+                <div class="head">
+                    <div class="ear interactive-part" onclick="handleBodyClick('kulak')"></div>
+                    <div class="ear interactive-part" onclick="handleBodyClick('kulak')"></div>
+                    <div class="face">
+                        <div class="eye interactive-part" onclick="handleBodyClick('göz')"></div>
+                        <div class="eye interactive-part" onclick="handleBodyClick('göz')"></div>
+                        <div class="nose interactive-part" onclick="handleBodyClick('burun')"></div>
+                        <div class="mouth">
+                            <div class="lips"></div>
+                            <div class="tongue interactive-part" onclick="handleBodyClick('dil')"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="torso"></div>
+                <div class="legs">
+                    <div class="front-legs">
+                        <div class="leg interactive-part" onclick="handleBodyClick('bacak')"></div>
+                        <div class="leg interactive-part" onclick="handleBodyClick('bacak')"></div>
+                    </div>
+                    <div class="hind-leg interactive-part" onclick="handleBodyClick('bacak')"></div>
+                </div>
+                <div class="tail">
+                    <div class="tail">
+                        <div class="tail interactive-part" onclick="handleBodyClick('kuyruk')">
+                            <div class="tail"><div class="tail"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALT: KONTROL PANELİ -->
+    <div id="control-panel">
+        <h1>🐾 Boncuk Akademi</h1>
+        
+        <!-- Kategoriler -->
+        <div class="category-tabs">
+            <button class="tab-btn active" onclick="loadLesson('receptive', this)">👂 Vücudu Tanı</button>
+            <button class="tab-btn" onclick="loadLesson('expressive', this)">🗣️ Emir Ver</button>
+            <button class="tab-btn" onclick="loadLesson('sequence', this)">🧠 Hafıza (3'lü)</button>
+            <button class="tab-btn" onclick="loadLesson('auditory', this)">👂 Sesi Tanı</button>
+            <button class="tab-btn" onclick="loadLesson('phonics', this)">👄 Ses Çalış</button>
+        </div>
+
+        <!-- Ders İçeriği -->
+        <div id="lesson-content">
+            <!-- JS ile doldurulacak -->
+        </div>
+    </div>
+
+    <!-- SVG Filtreleri -->
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display:none;">
+        <defs>
+            <filter id="squiggly-0"><feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="0"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="2"/></filter>
+            <filter id="squiggly-1"><feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="1"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="3"/></filter>
+            <filter id="squiggly-2"><feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="2"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="2"/></filter>
+            <filter id="squiggly-3"><feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="3"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="3"/></filter>
+            <filter id="squiggly-4"><feTurbulence baseFrequency="0.02" numOctaves="3" result="noise" seed="4"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="1"/></filter>
+        </defs>
+    </svg>
+
+    <script>
+        // --- SES YÖNETİCİSİ (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } 
+            else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+            else if (type === 'bark') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }
+            else if (type === 'eat') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Önceki konuşmayı durdur
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'tr-TR';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- DEĞİŞKENLER ---
+        let currentMode = 'receptive';
+        let targetPart = null;
+        let sequenceTarget = [];
+        let sequenceStep = 0;
+        let correctSoundItem = '';
+
+        const feedbackBubble = document.getElementById('feedback-bubble');
+        const husky = document.querySelector('.husky');
+        const memoryStars = document.getElementById('memory-stars');
+        const parts = ['burun', 'göz', 'kulak', 'dil', 'kuyruk', 'bacak'];
+
+        // Başlangıç
+        loadLesson('receptive', document.querySelector('.tab-btn'));
+
+        // --- DERS YÖNETİMİ ---
+        function loadLesson(mode, btnElement) {
+            currentMode = mode;
+            const contentDiv = document.getElementById('lesson-content');
+            
+            // UI Güncelleme
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            
+            // Durum Sıfırlama
+            resetHusky();
+            memoryStars.style.opacity = '0'; // Yıldızları gizle
+            document.getElementById('stage-area').className = mode === 'receptive' ? 'receptive-mode' : '';
+
+            // 1. ALICI DİL (Vücudu Tanı)
+            if (mode === 'receptive') {
+                askNewPart();
+            } 
+            // 2. İFADE EDİCİ DİL (Emir Ver)
+            else if (mode === 'expressive') {
+                contentDiv.innerHTML = `
+                    <div class="instruction-box">Boncuk komut bekliyor. Seç birini!</div>
+                    <div class="action-grid">
+                        <button class="game-btn btn-green" onclick="doAction('jump')"><span>🦘</span> Zıpla</button>
+                        <button class="game-btn btn-blue" onclick="doAction('speak')"><span>🗣️</span> Havla</button>
+                        <button class="game-btn btn-orange" onclick="doAction('spin')"><span>🔄</span> Dön</button>
+                        <button class="game-btn btn-purple" onclick="doAction('sleep')"><span>😴</span> Uyu</button>
+                        <button class="game-btn btn-red" onclick="doAction('eat')"><span>🦴</span> Mama</button>
+                    </div>
+                `;
+            }
+            // 3. HAFIZA / SIRALI YÖNERGE (YENİ!)
+            else if (mode === 'sequence') {
+                memoryStars.style.opacity = '1';
+                resetStars();
+                contentDiv.innerHTML = `
+                    <div class="instruction-box">Boncuk 3 şey söyleyecek. Sırayla yap!</div>
+                    <button class="listen-btn" onclick="startSequenceGame()">▶️</button>
+                    <div class="instruction-box" style="background:transparent; border:none; margin:0;">Başlamak için butona bas.</div>
+                    
+                    <!-- Butonlar (Başlangıçta pasif olabilir ama tıklanabilir bırakıyoruz) -->
+                    <div class="action-grid" style="opacity: 0.5; pointer-events: none;" id="sequence-buttons">
+                        <button class="game-btn btn-green" onclick="checkSequence('jump')"><span>🦘</span> Zıpla</button>
+                        <button class="game-btn btn-blue" onclick="checkSequence('speak')"><span>🗣️</span> Havla</button>
+                        <button class="game-btn btn-orange" onclick="checkSequence('spin')"><span>🔄</span> Dön</button>
+                    </div>
+                `;
+            }
+            // 4. İŞİTME / SESİ TANI (YENİ!)
+            else if (mode === 'auditory') {
+                contentDiv.innerHTML = `
+                    <div class="instruction-box">Sesi dinle ve ne olduğunu bul!</div>
+                    <button class="listen-btn" onclick="playMysterySound()">🔊</button>
+                    <div class="action-grid" id="sound-options" style="margin-top:15px; display:none;">
+                        <button class="game-btn btn-blue" onclick="checkSoundAnswer('bark')"><span>🐶</span> Köpek</button>
+                        <button class="game-btn btn-green" onclick="checkSoundAnswer('eat')"><span>🦴</span> Yemek</button>
+                        <button class="game-btn btn-purple" onclick="checkSoundAnswer('sleep')"><span>😴</span> Uyku</button>
+                    </div>
+                `;
+            }
+            // 5. SES ÇALIŞMA (PHONICS)
+            else if (mode === 'phonics') {
+                contentDiv.innerHTML = `
+                    <div class="instruction-box">Tekrar et ve Boncuk'u konuştur!</div>
+                    <div class="action-grid">
+                        <button class="game-btn btn-green" onclick="playPhonic('Aaaaa')"><span>🅰️</span> A-A-A</button>
+                        <button class="game-btn btn-blue" onclick="playPhonic('Ooooo')"><span>🅾️</span> O-O-O</button>
+                        <button class="game-btn btn-orange" onclick="playPhonic('Mama')"><span>🍖</span> Ma-Ma</button>
+                        <button class="game-btn btn-purple" onclick="playPhonic('Baba')"><span>👨</span> Ba-Ba</button>
+                        <button class="game-btn btn-red" onclick="playPhonic('Dede')"><span>👴</span> De-De</button>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 1. ALICI DİL FONKSİYONLARI ---
+        function askNewPart() {
+            if(currentMode !== 'receptive') return;
+            const randomPart = parts[Math.floor(Math.random() * parts.length)];
+            targetPart = randomPart;
+            const contentDiv = document.getElementById('lesson-content');
+            contentDiv.innerHTML = `
+                <div class="instruction-box">Boncuk'un <strong style="color:#30508F;">${targetPart.toUpperCase()}</strong> nerede?</div>
+            `;
+            showBubble("?", 1000);
+        }
+
+        function handleBodyClick(clickedPart) {
+            if (currentMode === 'receptive') {
+                if (clickedPart === targetPart) {
+                    showBubble("Aferin! 🎉", 2000);
+                    playSound('success');
+                    husky.classList.add('jumping');
+                    setTimeout(() => { husky.classList.remove('jumping'); askNewPart(); }, 1500);
+                } else {
+                    showBubble("Hayır! 🤔", 1000);
+                    speak("Hayır, o değil.");
+                    playSound('error');
+                }
+            } else {
+                showBubble("Hihihi! 😂", 1000); // Gıdıklanma
+            }
+        }
+
+        // --- 2. İFADE EDİCİ DİL (AKSİYONLAR) ---
+        function doAction(action) {
+            resetHusky();
+            if(action === 'jump') {
+                husky.classList.add('jumping'); playSound('success'); showBubble("Hoppa!", 1000);
+                setTimeout(() => husky.classList.remove('jumping'), 600);
+            } else if (action === 'speak') {
+                playSound('bark'); showBubble("HAV HAV!", 1000);
+                document.querySelector('.head').style.transform = "rotate(-5deg) translateY(-5px)";
+                setTimeout(() => document.querySelector('.head').style.transform = "", 200);
+            } else if (action === 'spin') {
+                husky.classList.add('spinning'); showBubble("Dönüyorum!", 1500);
+                setTimeout(() => husky.classList.remove('spinning'), 1000);
+            } else if (action === 'sleep') {
+                husky.classList.add('sleeping'); showBubble("Zzz...", 3000);
+            } else if (action === 'eat') {
+                const treat = document.getElementById('treat'); treat.classList.add('show');
+                showBubble("Nam nam!", 2000); playSound('eat');
+                document.querySelector('.head').style.transform = "translateY(20px) rotate(10deg)";
+                setTimeout(() => {
+                    treat.classList.remove('show'); playSound('eat');
+                    document.querySelector('.head').style.transform = ""; playSound('bark');
+                }, 2000);
+            }
+        }
+
+        // --- 3. SIRALI YÖNERGE (HAFIZA) ---
+        function startSequenceGame() {
+            resetStars();
+            // Rastgele 3 aksiyon seç
+            const actions = ['jump', 'speak', 'spin'];
+            const trNames = {'jump': 'Zıpla', 'speak': 'Havla', 'spin': 'Dön'};
+            
+            sequenceTarget = [];
+            for(let i=0; i<3; i++) {
+                sequenceTarget.push(actions[Math.floor(Math.random() * actions.length)]);
+            }
+            sequenceStep = 0;
+
+            // Yönergeleri seslendir
+            let instructionText = "Önce " + trNames[sequenceTarget[0]] + ", Sonra " + trNames[sequenceTarget[1]] + ", En son " + trNames[sequenceTarget[2]];
+            showBubble("Dinle...", 2000);
+            speak(instructionText);
+
+            // Butonları aktif et
+            document.getElementById('sequence-buttons').style.opacity = '1';
+            document.getElementById('sequence-buttons').style.pointerEvents = 'auto';
+        }
+
+        function checkSequence(action) {
+            if (action === sequenceTarget[sequenceStep]) {
+                // Doğru adım
+                doAction(action); // Hareketi yap
+                document.getElementById(`star-${sequenceStep+1}`).classList.add('filled');
+                sequenceStep++;
+
+                if (sequenceStep >= 3) {
+                    setTimeout(() => {
+                        showBubble("Mükemmel! 🌟", 3000);
+                        playSound('success');
+                        speak("Aferin, hepsini yaptın!");
+                    }, 1000);
+                    // Oyunu resetle
+                    document.getElementById('sequence-buttons').style.opacity = '0.5';
+                    document.getElementById('sequence-buttons').style.pointerEvents = 'none';
+                }
+            } else {
+                // Yanlış adım
+                playSound('error');
+                showBubble("Yanlış! Tekrar dinle.", 2000);
+                speak("Yanlış oldu. Baştan başlayalım.");
+                resetStars();
+                sequenceStep = 0;
+            }
+        }
+
+        function resetStars() {
+            document.querySelectorAll('.star-slot').forEach(s => s.classList.remove('filled'));
+        }
+
+        // --- 4. İŞİTME (SESİ TANI) ---
+        function playMysterySound() {
+            const sounds = ['bark', 'eat', 'sleep']; // Uyku sesi efekt gerektirir, şimdilik bark/eat net
+            const chosen = sounds[Math.floor(Math.random() * 2)]; // Şimdilik sadece bark ve eat
+            
+            correctSoundItem = chosen;
+            
+            // Görsel ipucu verme, sadece ses çal
+            if (chosen === 'bark') playSound('bark');
+            if (chosen === 'eat') playSound('eat');
+            
+            showBubble("Bu ses ne?", 1500);
+            document.getElementById('sound-options').style.display = 'grid';
+        }
+
+        function checkSoundAnswer(answer) {
+            if (answer === correctSoundItem) {
+                showBubble("Bildin! ✅", 2000);
+                playSound('success');
+                husky.classList.add('jumping');
+                setTimeout(() => { husky.classList.remove('jumping'); document.getElementById('sound-options').style.display = 'none'; }, 1000);
+            } else {
+                showBubble("Tekrar dinle 👂", 1500);
+                playSound('error');
+            }
+        }
+
+        // --- 5. SES ÇALIŞMA ---
+        function playPhonic(text) {
+            resetHusky();
+            const ears = document.querySelectorAll('.ear');
+            ears.forEach(e => e.style.transform = "rotate(20deg)"); // Kulak kabart
+            showBubble(text + " 🗣️", 2000);
+            speak(text);
+            setTimeout(() => { ears.forEach(e => e.style.transform = ""); }, 2000);
+        }
+
+        // --- YARDIMCILAR ---
+        function resetHusky() {
+            husky.classList.remove('sleeping', 'spinning', 'jumping');
+            husky.style.filter = "";
+            document.querySelector('.head').style.transform = "";
+            document.querySelector('.mouth').style.display = "";
+            document.querySelectorAll('.eye').forEach(e => e.style = "");
+        }
+
+        function showBubble(text, duration) {
+            feedbackBubble.innerText = text;
+            feedbackBubble.classList.add('show');
+            if(duration) {
+                setTimeout(() => { feedbackBubble.classList.remove('show'); }, duration);
+            }
+        }
+    </script>
+</body>
+</html>
