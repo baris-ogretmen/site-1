@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v39.0 (Vitrin Ustası) | Barış İlkan</title>
+    <title>Yönetici Paneli v40.0 (Yazı Editörü) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -45,7 +45,7 @@
         /* KART */
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
         h3 { color: var(--koyu); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.2rem; }
-        .inp, select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; font-family: inherit; background: white; transition: 0.3s; }
+        .inp, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; font-family: inherit; background: white; transition: 0.3s; }
         .inp:focus { border-color: var(--ana); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); outline: none; }
         
         .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 1rem; margin-bottom: 5px; text-align: center; }
@@ -132,9 +132,10 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v39.0 (Vitrin Ustası)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.0 (Yazı Editörü)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
+            <button class="menu-btn" onclick="showSection('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</button>
             <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
             <button class="menu-btn" onclick="showSection('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" style="display:none; background:#ef4444; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:auto;">0</span></button>
             <button class="menu-btn" onclick="showSection('duyuru-tavsiye')"><i class="fas fa-bullhorn"></i> Duyuru & Tavsiye</button>
@@ -178,7 +179,8 @@
                     <input type="text" id="p-link" class="inp" placeholder="Link / Dosya Adı / Video URL">
 
                     <div id="area-yazi" style="display:none;">
-                        <label>Yazı İçeriği</label><textarea id="p-icerik" class="inp" rows="10"></textarea>
+                        <label>Yazı İçeriği (HTML Kodu Buraya Yapıştır)</label>
+                        <textarea id="p-icerik" class="inp" rows="10" placeholder="<div...>...</div>"></textarea>
                     </div>
 
                     <div id="area-detay">
@@ -213,6 +215,16 @@
 
                     <label><input type="checkbox" id="is-vitrin" checked> Vitrine Ekle</label>
                     <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:10px;">KAYDET</button>
+                </div>
+            </div>
+
+            <div id="yazi-yonetimi" class="panel-section">
+                <div class="card">
+                    <h3>✍️ Köşe Yazıları Listesi</h3>
+                    <p style="color:#64748b; font-size:0.9rem;">Burada sadece <b>Yazılar</b> kategorisine eklenen içerikler görünür. Silmek için 'Sil' butonuna bas.</p>
+                    <div id="ozel-yazi-listesi">
+                        Yükleniyor...
+                    </div>
                 </div>
             </div>
 
@@ -366,6 +378,7 @@
             document.getElementById(id).classList.add('active');
             if(window.innerWidth <= 768) toggleSidebar();
             if(id === 'kitap-ekle') kitaplariGetir();
+            if(id === 'yazi-yonetimi') yazilariGetirOzel(); // YENİ: Sadece yazıları getir
         }
 
         // --- İKON SİSTEMİ ---
@@ -423,6 +436,7 @@
             const tarih = firebase.firestore.FieldValue.serverTimestamp();
 
             if(tur === 'yazilar') {
+                // Yazı kaydederken içerik HTML'i kaydedilir
                 batch.set(db.collection('yazilar').doc(), { baslik, icerik, tarih });
             } else {
                 if (cats.length > 0) {
@@ -439,14 +453,15 @@
                 showToast("✅ İçerik Eklendi!");
                 document.getElementById('p-baslik').value="";
                 document.getElementById('p-link').value="";
+                document.getElementById('p-icerik').value="";
                 verileriYukle();
+                if(tur === 'yazilar') yazilariGetirOzel(); // Yazı eklediyse o listeyi de yenile
             });
         }
 
-        // --- VERİ YÜKLEME (ANTI-BLOKAJ) ---
+        // --- VERİ YÜKLEME ---
         function verileriYukle() {
             tumIceriklerCache = [];
-            // "Yükleniyor" yazısını temizle
             const listContainer = document.getElementById('tum-icerik-listesi');
             listContainer.innerHTML = '<div style="text-align:center; padding:15px; color:#666;">Veriler çekiliyor...</div>';
 
@@ -455,15 +470,16 @@
                     snap.forEach(d => {
                         tumIceriklerCache.push({ id: d.id, col: colName, type: type, ...d.data() });
                     });
-                    renderList(); // Her veri geldiğinde listeyi güncelle
+                    renderList();
                 }).catch(err => console.log(colName + " boş veya hata: ", err));
             };
 
             loadCollection("projeler", "OYUN");
             loadCollection("videolar", "VİDEO");
             loadCollection("kaynaklar", "PDF");
-            loadCollection("yazilar", "YAZI");
-            // Kitapları ayrıca çekip listeye ekleyelim
+            // loadCollection("yazilar", "YAZI"); // Yazıları burada değil, özel alanda yöneteceğiz artık
+
+            // Kitapları çek
             db.collection("kitaplar").get().then(snap => {
                 snap.forEach(d => {
                     tumIceriklerCache.push({ id: d.id, col: "kitaplar", type: "KİTAP", link: d.data().link, baslik: d.data().baslik, ...d.data() });
@@ -500,13 +516,39 @@
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; }});
         }
 
+        // YENİ: Sadece Yazıları Getiren Fonksiyon
+        function yazilariGetirOzel() {
+            db.collection("yazilar").orderBy("tarih", "desc").get().then(snap => {
+                let h = "";
+                if(snap.empty) {
+                    h = '<div style="text-align:center; color:#999;">Henüz hiç yazı eklenmemiş.</div>';
+                } else {
+                    snap.forEach(d => {
+                        const y = d.data();
+                        h += `
+                        <div class="list-item">
+                            <div style="flex:1;">
+                                <span style="background:#e0e7ff; color:#6366f1; padding:2px 6px; border-radius:4px; font-size:0.7rem;">YAZI</span> 
+                                <b>${y.baslik}</b>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-mini bg-sil" onclick="sil('yazilar','${d.id}')">🗑️ Sil</button>
+                            </div>
+                        </div>`;
+                    });
+                }
+                document.getElementById('ozel-yazi-listesi').innerHTML = h;
+            }).catch(e => {
+                document.getElementById('ozel-yazi-listesi').innerHTML = "Hata oluştu: " + e.message;
+            });
+        }
+
         function renderList() {
             // Tarihe göre sırala
             tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
             
             let h = "";
             tumIceriklerCache.forEach(i => {
-                // LİNK DÜZELTME (OTOMATİK MAVİ LİNK)
                 let fullLink = i.link;
                 if (!fullLink.startsWith('http')) {
                     const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
@@ -535,7 +577,6 @@
             else container.innerHTML = '<div style="text-align:center; padding:15px; color:#666;">İçerik bulunamadı.</div>';
         }
 
-        // --- ACİL BUTON ---
         function enYeniOyunGetir() {
             db.collection("projeler").orderBy("tarih", "desc").limit(1).get().then(snap => {
                 if(!snap.empty) {
@@ -596,7 +637,6 @@
             document.getElementById('demo-text').innerText = document.getElementById('set-text').value;
         }
 
-        // --- MESAJLAR ---
         function mesajlariGetir() {
             db.collection("iletisim_talepleri").orderBy("tarih", "desc").onSnapshot(snap => {
                 let h = "";
@@ -631,7 +671,6 @@
             });
         }
 
-        // --- DİĞER İŞLEVLER ---
         function kitapKaydet() {
             db.collection("kitaplar").add({
                 baslik: document.getElementById('k-baslik').value,
@@ -655,10 +694,7 @@
         }
 
         function vitrinYap(col, id, baslik, link) {
-            // Vitrine ekle
             db.collection(col).doc(id).update({ vitrin: true });
-            
-            // Haftanın Oyunu olarak ayarla
             db.collection("site_ayarlari").doc("haftanin_oyunu").set({ 
                 baslik: baslik, 
                 url: link 
@@ -670,6 +706,7 @@
                 db.collection(col).doc(id).delete().then(() => {
                     showToast("Silindi.");
                     verileriYukle();
+                    if(col === 'yazilar') yazilariGetirOzel(); // Eğer yazı sildiyse o listeyi de yenile
                 });
             }
         }
