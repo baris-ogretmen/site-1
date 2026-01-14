@@ -3,801 +3,699 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sihirli Kitap - Final Sürüm</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src='https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Fener Akademi | Özel Eğitim & Anaokulu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #000;
-            overflow: hidden;
-            touch-action: none;
-            font-family: 'Montserrat', sans-serif;
+        * {
+            border: 0;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            touch-action: none; 
             user-select: none;
             -webkit-user-select: none;
         }
 
-        /* Giriş Ekranı */
-        #setup-screen {
-            background: radial-gradient(circle at center, #111 0%, #000 100%);
-            z-index: 50;
+        :root {
+            --bg: #2c3e50;
+            --fg: #ecf0f1;
+            --primary: #f1c40f;
+            --accent: #e74c3c;
+            --success: #2ecc71;
+            --font-main: 'Lexend', sans-serif;
         }
 
-        .neon-textarea {
-            background: rgba(30, 30, 30, 0.8);
-            border: 2px solid #333;
-            color: #eee;
-            font-family: 'Lora', serif;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            transition: all 0.3s ease;
-        }
-        .neon-textarea:focus {
-            border-color: #00e5ff;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-            outline: none;
-            background: rgba(40, 40, 40, 0.9);
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Butonlar */
-        .btn-start {
-            background: linear-gradient(135deg, #00e5ff 0%, #00ff41 100%);
-            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
-            color: #000;
-            font-weight: 800;
-            letter-spacing: 2px;
-            transition: transform 0.2s;
-        }
-        .btn-start:active { transform: scale(0.95); }
-        
-        .btn-action {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn-action:hover { transform: scale(1.05); }
-
-        /* Yükleniyor */
-        #loading-overlay {
-            background: rgba(0,0,0,0.95);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-
-        /* Canvas */
-        canvas {
+        /* --- ANA MENÜ --- */
+        #mainMenu {
             position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
+            inset: 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+            touch-action: pan-y;
         }
 
-        /* Sürüklenebilir Panel */
-        #draggable-controls {
+        .menu-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            min-height: min-content; 
+        }
+
+        .title-area {
+            text-align: center;
+            margin-bottom: 3vh;
+            margin-top: 20px;
+        }
+
+        .main-title {
+            font-size: clamp(2.5rem, 6vw, 5rem); 
+            color: var(--primary);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .sub-title {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            color: #bdc3c7;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            width: 100%;
+            padding-bottom: 40px;
+        }
+
+        .category-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 160px;
+        }
+        
+        .category-card.custom-mode {
+            border-color: var(--primary);
+            background: rgba(241, 196, 15, 0.15);
+        }
+
+        .category-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .cat-icon { font-size: 3.5rem; margin-bottom: 10px; }
+        .cat-name { font-size: 1.2rem; font-weight: bold; color: white; margin-bottom: 5px; }
+        .cat-desc { font-size: 0.9rem; color: #bdc3c7; line-height: 1.3; }
+
+        /* --- MANUEL GİRİŞ MODAL --- */
+        #inputModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-box {
+            background: #34495e;
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 2px solid var(--primary);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5rem;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: none;
+            text-align: center;
+            font-family: var(--font-main);
+        }
+        
+        .modal-btn {
+            background: var(--success);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .close-modal {
+            background: var(--accent);
+            margin-top: 10px;
+        }
+
+        /* --- OYUN ALANI --- */
+        #gameLayer {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 100;
+            cursor: none;
+            display: none;
+        }
+
+        .flashlight-beam {
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.96);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 150;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            transition: width 0.1s, height 0.1s;
+        }
+
+        #contentContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 120;
+        }
+
+        .game-item {
+            position: absolute;
+            font-weight: bold;
+            padding: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #7f8c8d; /* Karanlıkta çok silik gri */
+            transition: transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .game-item:active { transform: scale(0.9); }
+
+        .tracking-object {
+            position: absolute;
+            font-size: clamp(4rem, 10vw, 8rem);
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            transition: all 4s ease-in-out; /* Hız Yavaşlatıldı (4 saniye) */
+            z-index: 130;
+        }
+
+        #hud {
             position: absolute;
             top: 20px;
-            right: 20px;
-            z-index: 60;
-            cursor: move;
-            touch-action: none;
-            transition: box-shadow 0.3s;
-        }
-        
-        /* Modal (Hikaye Seçimi) */
-        #story-modal {
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            z-index: 80;
+            left: 0;
+            width: 100%;
+            z-index: 160;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
         }
 
-        /* Slider */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-            cursor: pointer;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #00e5ff;
-            box-shadow: 0 0 10px #00e5ff;
-            margin-top: -8px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: #444;
-            border-radius: 2px;
-        }
-
-        .mode-btn.active {
-            background: #00e5ff;
-            color: #000;
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
-        }
-        
-        .story-card {
-            background: rgba(255,255,255,0.1);
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 10px 25px;
+            border-radius: 30px;
             border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s;
-        }
-        .story-card:hover {
-            background: rgba(0, 229, 255, 0.2);
-            border-color: #00e5ff;
-            transform: translateY(-2px);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
-        /* Renk Seçici */
-        input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-            width: 30px;
-            height: 30px;
+        .exit-btn {
+            pointer-events: auto;
+            background: var(--accent);
+            border: 2px solid white;
+            color: white;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
+            font-size: 1.5rem;
             cursor: pointer;
-            overflow: hidden;
-            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; border: 2px solid #555; }
+
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: 1fr; }
+            .flashlight-beam { width: 180px; height: 180px; }
+            .category-card { min-height: 100px; flex-direction: row; text-align: left; padding: 15px; gap: 20px;}
+            .category-card .cat-icon { margin-bottom: 0; font-size: 2.5rem; }
+            .cat-desc { display: none; }
+        }
+        
+        @media (min-width: 1200px) {
+            .grid-container { grid-template-columns: repeat(2, 1fr); gap: 30px; }
+            .category-card { padding: 40px; }
+            .flashlight-beam { width: 300px; height: 300px; }
+        }
     </style>
 </head>
-<body class="h-screen w-screen text-white overflow-hidden bg-black">
+<body>
 
-    <!-- YÜKLENİYOR -->
-    <div id="loading-overlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-        <div class="relative">
-            <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-cyan-400 mb-6"></div>
-            <i class="fas fa-magic absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-cyan-400 opacity-50 text-xl mb-6"></i>
-        </div>
-        <h2 class="text-2xl font-bold mb-2 text-cyan-400">İŞLENİYOR</h2>
-        <p class="text-gray-300 text-sm mb-1" id="loading-stage">Lütfen bekleyin...</p>
-        <div class="w-64 h-2 bg-gray-800 rounded-full mt-4 overflow-hidden">
-            <div id="progress-bar" class="h-full bg-cyan-400 w-0 transition-all duration-300"></div>
-        </div>
-    </div>
-
-    <!-- HİKAYE SEÇİM MODALI -->
-    <div id="story-modal" class="hidden fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-2xl shadow-2xl relative">
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-6 text-center">HİKAYE KONUSU SEÇ</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('space')"><i class="fas fa-rocket text-3xl text-orange-400"></i><span class="font-bold">UZAY</span></button>
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('forest')"><i class="fas fa-tree text-3xl text-green-400"></i><span class="font-bold">ORMAN</span></button>
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('sea')"><i class="fas fa-water text-3xl text-blue-400"></i><span class="font-bold">DENİZ</span></button>
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('dino')"><i class="fas fa-dragon text-3xl text-red-400"></i><span class="font-bold">DİNOZOR</span></button>
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('school')"><i class="fas fa-school text-3xl text-yellow-400"></i><span class="font-bold">OKUL</span></button>
-                <button class="story-card p-4 rounded-xl flex flex-col items-center gap-2" onclick="generateStory('random')"><i class="fas fa-dice text-3xl text-purple-400"></i><span class="font-bold">SÜRPRİZ</span></button>
+    <div id="mainMenu">
+        <div class="menu-content">
+            <div class="title-area">
+                <div class="main-title">🔦 Fener Akademi</div>
+                <div class="sub-title">Dokun, Ara, Keşfet</div>
             </div>
-            <p class="text-gray-500 text-xs text-center mt-6">İnternet bağlantısı gerekmez.</p>
-        </div>
-    </div>
 
-    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+            <div class="grid-container">
+                <div class="category-card custom-mode" onclick="openCustomInput()">
+                    <div class="cat-icon">✍️</div>
+                    <div>
+                        <div class="cat-name">Kelime Yaz & Oyna</div>
+                        <div class="cat-desc">Kendi kelimenizi veya isminizi yazın</div>
+                    </div>
+                </div>
 
-    <!-- GİRİŞ EKRANI -->
-    <div id="setup-screen" class="absolute inset-0 flex flex-col items-center justify-center p-4">
-        <div class="w-full max-w-4xl flex flex-col items-center h-full justify-center">
-            <header class="text-center mb-4">
-                <h1 class="text-3xl md:text-5xl font-black mb-1 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400 drop-shadow-lg">SİHİRLİ KİTAP</h1>
-                <p class="text-gray-400 text-xs md:text-sm">Yaz, Çek veya Hikaye Oluştur!</p>
-            </header>
-            
-            <div class="w-full relative flex-grow max-h-[50vh] mb-4">
-                <textarea id="word-input" class="neon-textarea w-full h-full p-6 rounded-xl resize-none" placeholder="Metni buraya yazın..."></textarea>
-                <div class="absolute bottom-4 right-4 flex gap-2 z-10">
-                    <button id="story-btn" class="btn-action bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-3 md:px-6 rounded-full shadow-lg flex items-center gap-2 font-bold text-xs md:text-sm">
-                        <i class="fas fa-magic"></i> <span class="hidden md:inline">HİKAYE YAZ</span>
-                    </button>
-                    <button id="camera-btn" class="btn-action bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 md:px-6 rounded-full shadow-lg flex items-center gap-2 font-bold text-xs md:text-sm">
-                        <i class="fas fa-camera"></i> <span class="hidden md:inline">FOTOĞRAF ÇEK</span>
-                    </button>
+                <div class="category-card" onclick="startGame('eye_contact')">
+                    <div class="cat-icon">👁️</div>
+                    <div>
+                        <div class="cat-name">Göz Takibi (Yavaş)</div>
+                        <div class="cat-desc">Hareket eden nesneyi izle</div>
+                    </div>
+                </div>
+                
+                <div class="category-card" onclick="startGame('attention')">
+                    <div class="cat-icon">🎯</div>
+                    <div>
+                        <div class="cat-name">Dikkat (Zorlu)</div>
+                        <div class="cat-desc">Kalabalıkta gizlenmiş nesneyi bul</div>
+                    </div>
+                </div>
+
+                <div class="category-card" onclick="startGame('kinder_shapes')">
+                    <div class="cat-icon">🔺</div>
+                    <div>
+                        <div class="cat-name">Şekiller & Renkler</div>
+                        <div class="cat-desc">Karışık şekiller arasından bul</div>
+                    </div>
+                </div>
+
+                <div class="category-card" onclick="startGame('kinder_concepts')">
+                    <div class="cat-icon">🐘</div>
+                    <div>
+                        <div class="cat-name">Kavramlar</div>
+                        <div class="cat-desc">Hayvanlar, Sayılar, Zıtlıklar</div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="flex flex-wrap justify-center gap-4 mb-6 w-full">
-                <div class="flex items-center space-x-3 bg-gray-800 p-3 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-700 transition" onclick="document.getElementById('uppercase-toggle').click()">
-                    <input type="checkbox" id="uppercase-toggle" class="w-5 h-5 rounded text-cyan-500 focus:ring-0 cursor-pointer">
-                    <label class="text-gray-300 text-sm font-bold cursor-pointer select-none">BÜYÜK HARF</label>
-                </div>
-                <div class="flex items-center space-x-3 bg-gray-800 p-3 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-700 transition" onclick="document.getElementById('tts-toggle').click()">
-                    <input type="checkbox" id="tts-toggle" checked class="w-5 h-5 rounded text-pink-500 focus:ring-0 cursor-pointer">
-                    <label class="text-gray-300 text-sm font-bold cursor-pointer select-none flex items-center gap-2">
-                        <i class="fas fa-volume-up text-pink-500"></i> SESLİ OKU
-                    </label>
-                </div>
-            </div>
-
-            <button id="start-btn" class="btn-start w-full md:w-auto px-20 py-4 rounded-full text-xl shadow-lg uppercase">OKUMAYA BAŞLA</button>
         </div>
     </div>
 
-    <!-- OYUN ALANI -->
-    <canvas id="game-canvas"></canvas>
-
-    <!-- KONTROL PANELİ -->
-    <div id="draggable-controls" class="hidden flex flex-col items-end gap-2">
-        <div class="flex gap-2 mb-1 pointer-events-auto">
-            <button id="fullscreen-btn" class="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg" title="Tam Ekran"><i class="fas fa-expand"></i></button>
-            <button id="reset-btn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-lg text-sm tracking-wider">DÜZENLE</button>
-        </div>
-
-        <div class="bg-gray-900/95 p-4 rounded-2xl border border-gray-600 backdrop-blur-md shadow-2xl w-64 pointer-events-auto select-none">
-            <div class="flex items-center justify-center text-gray-500 text-[10px] mb-2 gap-1 opacity-60"><i class="fas fa-arrows-alt"></i> <span>PANELİ SÜRÜKLEYEBİLİRSİN</span></div>
-            
-            <div class="flex bg-gray-800 rounded-lg p-1 mb-4">
-                <button class="mode-btn active flex-1 py-2 rounded-md text-xs font-bold text-gray-400 transition flex items-center justify-center gap-2" data-tool="read" onclick="setInteractionTool('read')"><i class="fas fa-lightbulb"></i> OKU</button>
-                <button class="mode-btn flex-1 py-2 rounded-md text-xs font-bold text-gray-400 transition flex items-center justify-center gap-2" data-tool="move" onclick="setInteractionTool('move')"><i class="fas fa-hand-paper"></i> TAŞI</button>
-            </div>
-
-            <label class="text-xs text-cyan-400 block mb-2 font-bold tracking-wider">FENER ŞEKLİ</label>
-            <div class="flex bg-gray-800 rounded-full p-1 mb-4">
-                <button class="mode-btn active flex-1 py-1 rounded-full text-xs font-bold text-gray-400 transition" data-mode="circle" onclick="setFlashlightMode('circle')">YUVARLAK</button>
-                <button class="mode-btn flex-1 py-1 rounded-full text-xs font-bold text-gray-400 transition" data-mode="rect" onclick="setFlashlightMode('rect')">SATIR</button>
-            </div>
-
-            <label class="text-xs text-cyan-400 block mb-2 font-bold tracking-wider">RENK STİLİ</label>
-            <div class="flex items-center justify-between bg-gray-800 rounded-lg p-2 mb-4">
-                <select id="color-mode-select" class="bg-transparent text-white text-xs font-bold outline-none flex-1">
-                    <option value="rainbow">GÖKKUŞAĞI</option>
-                    <option value="white">BEYAZ / SADE</option>
-                    <option value="custom">ÖZEL RENK</option>
-                </select>
-                <input type="color" id="custom-color-picker" value="#00ff41" class="ml-2 hidden">
-            </div>
-
-            <label class="text-xs text-cyan-400 block mb-2 font-bold tracking-wider flex justify-between">
-                BÜYÜTEÇ BOYUTU
-                <span id="radius-val" class="text-white">100</span>
-            </label>
-            <input type="range" id="radius-slider" min="20" max="800" value="100">
+    <div id="inputModal">
+        <div class="modal-box">
+            <h2 style="color:white; margin-bottom:10px;">Kelime Oluştur</h2>
+            <p style="color:#bdc3c7;">Bulunmasını istediğiniz kelimeyi yazın.</p>
+            <input type="text" id="customWordInput" class="modal-input" placeholder="Örn: Barış, A, Elma" autocomplete="off">
+            <button class="modal-btn" onclick="startCustomGame()">BAŞLA</button>
+            <button class="modal-btn close-modal" onclick="closeCustomInput()">İPTAL</button>
         </div>
     </div>
 
-    <div id="word-toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur text-black px-6 py-2 rounded-full font-bold shadow-2xl opacity-0 transition-opacity duration-300 z-50 pointer-events-none text-lg border-2 border-cyan-500">...</div>
+    <div id="gameLayer">
+        <div id="hud">
+            <div class="panel">
+                <span id="targetIcon" style="font-size:2rem">❓</span>
+                <span id="targetText" style="font-size:1.5rem">...</span>
+            </div>
+            <button class="exit-btn" onclick="exitGame()">✕</button>
+        </div>
+
+        <div id="flashlight" class="flashlight-beam"></div>
+        <div id="contentContainer"></div>
+    </div>
 
     <script>
-        // --- HİKAYE VERİLERİ ---
-        const storyData = {
-            space: {
-                subjects: ["Cesur astronot", "Küçük uzaylı", "Meraklı yıldız", "Hızlı roket", "Bilge robot"],
-                actions: ["aya zıpladı", "yıldızları saydı", "kara deliği keşfetti", "kuyruklu yıldıza bindi", "uzay gemisini tamir etti"],
-                places: ["Mars'ta", "Samanyolu'nda", "Ay üssünde", "derin uzayda", "mor bir gezegende"],
-                adjectives: ["parlayan", "kocaman", "hızlı", "renkli", "gizemli"],
-                endings: ["Sonra mutlu bir şekilde dünyaya döndü.", "Yeni arkadaşlar edindi.", "Bu en güzel maceraydı.", "Yıldızlar ona gülümsedi."]
-            },
-            forest: {
-                subjects: ["Sevimli tavşan", "Koca ayı", "Kurnaz tilki", "Şarkı söyleyen kuş", "Yeşil kaplumbağa"],
-                actions: ["havuç aradı", "bal buldu", "saklambaç oynadı", "derede yüzdü", "ağaca tırmandı"],
-                places: ["sık ormanda", "büyük mağarada", "çiçekli bahçede", "nehir kenarında", "ağaç evde"],
-                adjectives: ["yumuşacık", "neşeli", "hızlı", "minik", "güçlü"],
-                endings: ["Ormandaki herkes onu çok sevdi.", "Güneş batarken evine döndü.", "Karnı doyunca derin bir uykuya daldı.", "Yarın yine oyun oynayacaklar."]
-            },
-            sea: {
-                subjects: ["Küçük balık", "Mavi yunus", "Dev balina", "Yaramaz yengeç", "Deniz atı"],
-                actions: ["incileri topladı", "dalgalarla yarıştı", "batık gemiyi buldu", "köpüklerle oynadı", "mercanlara saklandı"],
-                places: ["derin maviliklerde", "kumlu sahilde", "su altı şehrinde", "okyanusun kalbinde", "mercan resifinde"],
-                adjectives: ["ıslak", "tuzlu", "parıltılı", "mavi", "hızlı"],
-                endings: ["Deniz kabuğunun içinde uyuyakaldı.", "Baloncuklar çıkararak güldü.", "Deniz anası ona yol gösterdi.", "Okyanusun en mutlu canlısı oldu."]
-            },
-            dino: {
-                subjects: ["T-Rex", "Uzun boyunlu dinozor", "Uçan Pterodaktil", "Minik dinozor", "Triceratops"],
-                actions: ["kükredi", "yaprak yedi", "yumurtasını korudu", "volkana baktı", "koşu yarışı yaptı"],
-                places: ["eski vadide", "yanardağın yanında", "bataklıkta", "büyük ormanda", "sıcacık yuvasında"],
-                adjectives: ["dev", "pullu", "yeşil", "korkusuz", "aç"],
-                endings: ["Tarih öncesi bir uykuya daldı.", "Bütün vadi onun sesiyle yankılandı.", "Annesi onu yanına çağırdı.", "Karnını doyurup dinlendi."]
-            },
-            school: {
-                subjects: ["Çalışkan öğrenci", "Komik öğretmen", "Okul müdürü", "Sınıfın en küçüğü", "Nöbetçi öğrenci"],
-                actions: ["kitap okudu", "resim çizdi", "teneffüste koştu", "soruyu bildi", "kantine gitti"],
-                places: ["sınıfta", "bahçede", "kütüphanede", "spor salonunda", "koridorda"],
-                adjectives: ["akıllı", "neşeli", "düzenli", "heyecanlı", "meraklı"],
-                endings: ["Zil çalınca eve koştu.", "Öğretmeni ona yıldız verdi.", "Arkadaşlarıyla çok eğlendi.", "Yarın için çantasını hazırladı."]
-            }
-        };
-
-        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-        function generateStory(topic) {
-            let selectedTopic = topic;
-            if (topic === 'random') {
-                const keys = Object.keys(storyData);
-                selectedTopic = keys[Math.floor(Math.random() * keys.length)];
-            }
-            const data = storyData[selectedTopic];
-            const title = selectedTopic === 'space' ? "UZAY MACERASI" : 
-                          selectedTopic === 'forest' ? "ORMAN GÜNLÜĞÜ" : 
-                          selectedTopic === 'sea' ? "DENİZ HİKAYESİ" : 
-                          selectedTopic === 'dino' ? "DİNOZOR ÇAĞI" : "OKUL GÜNÜ";
-            let story = `${title}\n\n`;
-            story += `Bir zamanlar, ${getRandom(data.places)} yaşayan ${getRandom(data.adjectives)} bir ${getRandom(data.subjects).toLowerCase()} varmış. `;
-            story += `Bu ${getRandom(data.subjects).split(' ').pop().toLowerCase()}, her gün ${getRandom(data.actions)}. \n\n`;
-            story += `Bir gün, yine ${getRandom(data.places)} dolaşırken, ${getRandom(data.adjectives)} bir arkadaşıyla karşılaştı. `;
-            story += `Birlikte ${getRandom(data.actions)} ve çok eğlendiler. Etraflarındaki her şey ${getRandom(data.adjectives)} görünüyordu. \n\n`;
-            story += `${getRandom(data.endings)} ${getRandom(data.subjects)} çok mutluydu.`;
-            document.getElementById('word-input').value = story;
-            closeModal();
-        }
-
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const wordInput = document.getElementById('word-input');
-        const setupScreen = document.getElementById('setup-screen');
-        const draggableControls = document.getElementById('draggable-controls');
-        const storyModal = document.getElementById('story-modal');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const loadingStage = document.getElementById('loading-stage');
-        const progressBar = document.getElementById('progress-bar');
-        const radiusValDisplay = document.getElementById('radius-val');
-        const wordToast = document.getElementById('word-toast');
-        const colorModeSelect = document.getElementById('color-mode-select');
-        const customColorPicker = document.getElementById('custom-color-picker');
+        // --- GENEL ÇELDİRİCİ HAVUZU (Ekranı doldurmak için) ---
+        const genericDistractors = [
+            '🔴','🔵','🟢','🟡','🟣','🔶','🔺','⭐','🌙','☀️','☁️','⚡',
+            '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮',
+            '🍎','🍌','🍇','🍉','🍒','🍓','🍍','🥭','🍑','🍐','🍋','🍊',
+            '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚚','🚛'
+        ];
         
-        let isGameRunning = false;
-        let pos = { x: -5000, y: -5000 }; // Fenerin çizim merkezi
-        let pointerPos = { x: -5000, y: -5000 }; // Kullanıcının dokunduğu yer
-        let textOffset = { x: 0, y: 0 };
-        let isDraggingText = false;
-        let lastPointerPos = { x: 0, y: 0 };
-        
-        let flashlightRadius = 100;
-        let flashlightMode = 'circle';
-        let interactionTool = 'read'; 
-        let colorMode = 'rainbow'; 
-        let customColorVal = '#00ff41';
-        
-        // Sabit ofset: Fener parmağın ne kadar yukarısında dursun?
-        const FINGER_OFFSET = 150; 
+        const letterDistractors = "ABCDEFGHIJKLMNOPRSTUVYZQXW".split('');
 
-        let displayLines = [];
-        let hitboxes = [];
-        const syllableColors = ['#ff80ab', '#80d8ff', '#ffff8d', '#ccff90', '#ffd180', '#e1bee7'];
-        let fontSize = 40;
-        let lineHeight = 65;
-        const fontFamily = "Montserrat, sans-serif";
-
-        document.getElementById('story-btn').addEventListener('click', () => storyModal.classList.remove('hidden'));
-        document.getElementById('close-modal-btn').addEventListener('click', closeModal);
-        function closeModal() { storyModal.classList.add('hidden'); }
-
-        const dragItem = document.getElementById("draggable-controls");
-        let active = false;
-        let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
-
-        dragItem.addEventListener("pointerdown", (e) => {
-            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-            if (e.target === dragItem || dragItem.contains(e.target)) active = true;
-        });
-
-        window.addEventListener("pointerup", () => { active = false; initialX = currentX; initialY = currentY; isDraggingText = false; if(interactionTool === 'move') canvas.style.cursor = 'grab'; });
-        window.addEventListener("pointermove", (e) => {
-            if (active) {
-                e.preventDefault();
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-                xOffset = currentX;
-                yOffset = currentY;
-                dragItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-            }
-        });
-
-        colorModeSelect.addEventListener('change', (e) => {
-            colorMode = e.target.value;
-            if(colorMode === 'custom') customColorPicker.classList.remove('hidden');
-            else customColorPicker.classList.add('hidden');
-        });
-        customColorPicker.addEventListener('input', (e) => customColorVal = e.target.value);
-
-        window.setInteractionTool = (tool) => {
-            interactionTool = tool;
-            document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
-            document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
-            if(tool === 'move') {
-                canvas.style.cursor = 'grab';
-                pos = { x: -9999, y: -9999 };
-            } else {
-                canvas.style.cursor = 'none';
-            }
-        };
-
-        window.setFlashlightMode = (mode) => {
-            flashlightMode = mode;
-            document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
-            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
-        };
-
-        async function preprocessImage(file) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const tempCanvas = document.createElement('canvas');
-                    const tempCtx = tempCanvas.getContext('2d');
-                    const MAX_WIDTH = 1600;
-                    let width = img.width; let height = img.height;
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    tempCanvas.width = width; tempCanvas.height = height;
-                    tempCtx.drawImage(img, 0, 0, width, height);
-                    const imageData = tempCtx.getImageData(0, 0, width, height);
-                    const data = imageData.data;
-                    let totalBrightness = 0;
-                    for (let i = 0; i < data.length; i += 4) totalBrightness += (data[i] + data[i+1] + data[i+2]) / 3;
-                    const threshold = (totalBrightness / (data.length / 4)) * 0.75;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const gray = (data[i] * 0.3 + data[i+1] * 0.59 + data[i+2] * 0.11);
-                        const val = gray > threshold ? 255 : 0;
-                        data[i] = data[i+1] = data[i+2] = val;
-                    }
-                    tempCtx.putImageData(imageData, 0, 0);
-                    resolve(tempCanvas.toDataURL('image/jpeg', 0.9));
-                };
-                img.src = URL.createObjectURL(file);
-            });
-        }
-
-        function cleanAndCorrectText(text) {
-            const lines = text.split('\n');
-            let cleanedLines = [];
-            lines.forEach(line => {
-                let l = line.trim();
-                if (l.length < 2) return;
-                l = l.replace(/5/g, 'S').replace(/0/g, 'O').replace(/1/g, 'I').replace(/@/g, 'a')
-                     .replace(/\$/g, 'Ş').replace(/\|/g, 'I').replace(/İ/g, 'İ').replace(/ı/g, 'ı')
-                     .replace(/([.,!?])(?=[a-zA-Z])/g, '$1 ');
-                cleanedLines.push(l);
-            });
-            return cleanedLines.join('\n');
-        }
-
-        document.getElementById('camera-btn').addEventListener('click', () => document.getElementById('camera-input').click());
-        document.getElementById('camera-input').addEventListener('change', async (e) => {
-            if (e.target.files.length > 0) {
-                loadingOverlay.classList.remove('hidden');
-                loadingStage.innerText = "Sayfa netleştiriliyor...";
-                progressBar.style.width = "10%";
-                try {
-                    const processedImg = await preprocessImage(e.target.files[0]);
-                    progressBar.style.width = "30%";
-                    loadingStage.innerText = "Metin okunuyor...";
-                    const worker = await Tesseract.createWorker({ logger: m => { if(m.status === 'recognizing text') progressBar.style.width = `${30 + (m.progress * 70)}%`; } });
-                    await worker.loadLanguage('tur');
-                    await worker.initialize('tur');
-                    await worker.setParameters({ tessedit_char_whitelist: 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZabcçdefgğhıijklmnoöprsştuüvyz0123456789.,:;!?-()\'" \n', preserve_interword_spaces: '1' });
-                    const { data: { text } } = await worker.recognize(processedImg);
-                    await worker.terminate();
-                    const finalField = cleanAndCorrectText(text);
-                    wordInput.value = finalField.length < 5 ? "Metin okunamadı." : finalField;
-                    loadingOverlay.classList.add('hidden');
-                    progressBar.style.width = "0%";
-                } catch (err) { alert("Hata: " + err.message); loadingOverlay.classList.add('hidden'); }
-                e.target.value = '';
-            }
-        });
-
-        function hecele(kelime) {
-            const sesliler = "aeıioöuüAEIİOÖUÜ";
-            let hasVowel = false;
-            for(let char of kelime) if(sesliler.includes(char)) hasVowel = true;
-            if(!hasVowel) return [kelime];
-            let heceler = [], i = kelime.length;
-            while (i > 0) {
-                let vowelPos = -1;
-                for (let j = i - 1; j >= 0; j--) { if (sesliler.includes(kelime[j])) { vowelPos = j; break; } }
-                if (vowelPos === -1) { if(heceler.length > 0) heceler[0] = kelime.substring(0, i) + heceler[0]; else heceler.unshift(kelime.substring(0, i)); break; }
-                let start = 0, hasPrevVowel = false;
-                for (let k = vowelPos - 1; k >= 0; k--) { if (sesliler.includes(kelime[k])) { hasPrevVowel = true; break; } }
-                start = !hasPrevVowel ? 0 : (!sesliler.includes(kelime[vowelPos - 1]) ? vowelPos - 1 : vowelPos);
-                heceler.unshift(kelime.substring(start, i));
-                i = start;
-            }
-            return heceler;
-        }
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            fontSize = Math.min(Math.max(window.innerWidth / 25, 28), 60);
-            lineHeight = fontSize * 1.6;
-            if (isGameRunning) { prepareText(); draw(); }
-        }
-        window.addEventListener('resize', resize);
-
-        function prepareText() {
-            ctx.font = `600 ${fontSize}px ${fontFamily}`;
-            let rawText = wordInput.value.trim();
-            if (document.getElementById('uppercase-toggle').checked) rawText = rawText.toLocaleUpperCase('tr-TR');
-            const paragraphs = rawText.split('\n');
-            displayLines = [];
-            const marginX = Math.min(100, window.innerWidth * 0.1); 
-            const maxWidth = window.innerWidth - (marginX * 2);
-            const spaceWidth = ctx.measureText(" ").width;
-            let colorIndex = 0;
-
-            paragraphs.forEach(paragraph => {
-                if (paragraph.trim() === "") { displayLines.push({ content: [], width: 0, isSpacer: true }); return; }
-                const words = paragraph.split(/\s+/);
-                let currentLine = [], currentLineWidth = 0;
-                words.forEach(word => {
-                    const syllables = hecele(word);
-                    let wordWidth = 0;
-                    let syllableObjs = syllables.map(syl => {
-                        const w = ctx.measureText(syl).width;
-                        wordWidth += w;
-                        const rainbowColor = syllableColors[colorIndex % syllableColors.length];
-                        colorIndex++;
-                        return { text: syl, width: w, rainbowColor: rainbowColor, fullWord: word };
-                    });
-                    if (currentLineWidth + wordWidth + spaceWidth > maxWidth && currentLine.length > 0) {
-                        displayLines.push({ content: currentLine, width: currentLineWidth, isSpacer: false });
-                        currentLine = []; currentLineWidth = 0;
-                    }
-                    if (currentLine.length > 0) { currentLine.push({ text: " ", width: spaceWidth, color: null }); currentLineWidth += spaceWidth; }
-                    currentLine.push(...syllableObjs);
-                    currentLineWidth += wordWidth;
-                });
-                if (currentLine.length > 0) displayLines.push({ content: currentLine, width: currentLineWidth, isSpacer: false });
-            });
-        }
-
-        function draw() {
-            if (!isGameRunning) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 1. MASKELEME (Fener Deliği)
-            ctx.save();
-            ctx.beginPath();
+        // --- MÜFREDAT ---
+        const curriculum = {
+            // ÖZEL EĞİTİM: GÖZ TAKİBİ (Hızlar 4000ms+ yapıldı)
+            eye_contact: [
+                { type: 'tracking', target: '🔴', text: 'Kırmızı Top', speed: 4000 },
+                { type: 'tracking', target: '⭐', text: 'Yıldız', speed: 4500 },
+                { type: 'tracking', target: '🙂', text: 'Gülen Yüz', speed: 5000 },
+                { type: 'tracking', target: '🦋', text: 'Kelebek', speed: 3500 },
+                { type: 'tracking', target: '🚗', text: 'Araba', speed: 4000 }
+            ],
             
-            if (interactionTool === 'move') {
-                ctx.rect(0, 0, canvas.width, canvas.height);
-            } else {
-                if (flashlightMode === 'circle') {
-                    // Yuvarlak fener (pos merkezli)
-                    ctx.arc(pos.x, pos.y, flashlightRadius, 0, Math.PI * 2);
-                } else { 
-                    // Satır Modu (Dikdörtgen fener)
-                    const minHeight = fontSize * 1.5;
-                    const calculatedHeight = flashlightRadius * 1.5;
-                    const rectH = Math.max(minHeight, calculatedHeight); 
-                    
-                    // Satırı pos.y merkezli çiziyoruz
-                    ctx.rect(0, pos.y - rectH/2, canvas.width, rectH); 
-                }
-            }
-            ctx.clip(); 
+            // ÖZEL EĞİTİM: DİKKAT (Bol Çeldiricili)
+            attention: [
+                { type: 'find', target: '🧸', text: 'Ayıcık', distractors: ['🎈','🎁','🎨','🧶'] },
+                { type: 'find', target: '🎈', text: 'Balon', distractors: ['🪁','🧸','🎊','🎐'] },
+                { type: 'find', target: '👓', text: 'Gözlük', distractors: ['✏️','📏','📎','📐'] },
+                { type: 'find', target: '🔑', text: 'Anahtar', distractors: ['📦','🚪','🔒','🧷'] }
+            ],
 
-            // Arka plan (Fenerin içi)
-            ctx.fillStyle = interactionTool === 'move' ? '#222' : '#18181b'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // ANAOKULU: ŞEKİLLER & RENKLER
+            kinder_shapes: [
+                { type: 'find', target: '🟦', text: 'Mavi Kare', distractors: ['🔴', '🔺', '⭐', '🟢', '🟨'] },
+                { type: 'find', target: '🔴', text: 'Kırmızı Daire', distractors: ['🟦', '🟩', '🟨', '🟣', '🔶'] },
+                { type: 'find', target: '🔺', text: 'Üçgen', distractors: ['🟣', '⬜', '🔶', '🔷', '🔳'] },
+                { type: 'find', target: '⭐', text: 'Yıldız', distractors: ['🌙', '☀️', '☁️', '⚡', '❄️'] }
+            ],
 
-            // 2. METİN ÇİZİMİ
-            ctx.font = `600 ${fontSize}px ${fontFamily}`;
-            ctx.textBaseline = 'middle';
-            const marginX = Math.min(100, window.innerWidth * 0.1);
-            let startY = 100 + textOffset.y;
-            let baseX = marginX + textOffset.x;
+            // ANAOKULU: KAVRAMLAR
+            kinder_concepts: [
+                { type: 'find', target: '🐶', text: 'Köpek', distractors: ['🐱', '🐭', '🐰', '🦊', '🐻'] },
+                { type: 'find', target: '🍎', text: 'Elma', distractors: ['🍌', '🍇', '🍐', '🍒', '🍓'] },
+                { type: 'find', target: '3', text: '3 Sayısı', distractors: ['1', '2', '5', '8', '0', '4', '6', '9'] },
+                { type: 'find', target: '🚗', text: 'Araba', distractors: ['✈️', '⛵', '🚲', '🛴', '🛵'] }
+            ]
+        };
 
-            hitboxes = [];
+        let currentList = [];
+        let qIndex = 0;
+        let isGameRunning = false;
+        
+        const mainMenu = document.getElementById('mainMenu');
+        const inputModal = document.getElementById('inputModal');
+        const gameLayer = document.getElementById('gameLayer');
+        const container = document.getElementById('contentContainer');
+        const flashlight = document.getElementById('flashlight');
+        const hudText = document.getElementById('targetText');
+        const hudIcon = document.getElementById('targetIcon');
 
-            displayLines.forEach((lineObj) => {
-                if (lineObj.isSpacer) { startY += lineHeight * 0.5; return; }
-                const y = startY;
-                let currentX = baseX;
-                // Ekran dışı çizim optimizasyonu
-                if (y > -100 && y < canvas.height + 100) {
-                    lineObj.content.forEach(item => {
-                        if (item.text !== " ") {
-                            let finalColor = '#fff';
-                            if (colorMode === 'rainbow') finalColor = item.rainbowColor;
-                            else if (colorMode === 'custom') finalColor = customColorVal;
-                            
-                            ctx.fillStyle = finalColor;
-                            ctx.shadowColor = finalColor;
-                            ctx.shadowBlur = interactionTool === 'move' ? 0 : 10;
-                            ctx.fillText(item.text, currentX, y);
-                            
-                            if (interactionTool === 'read') {
-                                hitboxes.push({ x: currentX, y: y - fontSize/2, w: item.width, h: fontSize, text: item.text });
-                            }
-                        }
-                        currentX += item.width;
-                    });
-                }
-                startY += lineHeight;
-            });
-            ctx.restore(); 
-
-            // 3. KARANLIK KATMAN (Overlay) ve SAP ÇİZİMİ
-            if (interactionTool === 'read') {
-                ctx.save();
-                
-                if (flashlightMode === 'circle') {
-                    // YUVARLAK MOD
-                    ctx.beginPath(); 
-                    ctx.rect(0, 0, canvas.width, canvas.height); 
-                    // Delik aç (Ters yön)
-                    ctx.arc(pos.x, pos.y, flashlightRadius, 0, Math.PI * 2, true);
-                    ctx.fillStyle = '#000000'; 
-                    ctx.fill();
-                    
-                    // Kenar Glow
-                    ctx.beginPath();
-                    const grad = ctx.createRadialGradient(pos.x, pos.y, flashlightRadius - 2, pos.x, pos.y, flashlightRadius + 20);
-                    grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'black');
-                    ctx.fillStyle = grad; 
-                    ctx.arc(pos.x, pos.y, flashlightRadius + 20, 0, Math.PI * 2); 
-                    ctx.fill();
-                    
-                    // Çerçeve
-                    ctx.beginPath(); 
-                    ctx.arc(pos.x, pos.y, flashlightRadius, 0, Math.PI * 2);
-                    ctx.strokeStyle = customColorVal; // Seçilen renk
-                    ctx.lineWidth = 3; 
-                    ctx.stroke();
-
-                    // --- SİHİRLİ SAP (HANDLE) ---
-                    // Fenerin altından parmağa kadar çizgi
-                    if(pointerPos.y > pos.y + flashlightRadius) {
-                        ctx.beginPath();
-                        ctx.moveTo(pos.x, pos.y + flashlightRadius);
-                        ctx.lineTo(pointerPos.x, pointerPos.y);
-                        ctx.strokeStyle = customColorVal;
-                        ctx.lineWidth = 4;
-                        ctx.setLineDash([5, 5]); // Kesikli çizgi
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-                        
-                        // Parmak ucu noktası
-                        ctx.beginPath();
-                        ctx.arc(pointerPos.x, pointerPos.y, 8, 0, Math.PI * 2);
-                        ctx.fillStyle = customColorVal;
-                        ctx.fill();
-                    }
-
-                } else {
-                    // SATIR MODU
-                    // Tam ekran siyah çiz
-                    ctx.fillStyle = '#000000';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    const minHeight = fontSize * 1.5;
-                    const calculatedHeight = flashlightRadius * 1.5;
-                    const rectH = Math.max(minHeight, calculatedHeight);
-
-                    // Deliği aç
-                    ctx.globalCompositeOperation = 'destination-out'; 
-                    ctx.fillStyle = 'rgba(0,0,0,1)';
-                    ctx.fillRect(0, pos.y - rectH/2, canvas.width, rectH);
-                    
-                    // Normale dön
-                    ctx.globalCompositeOperation = 'source-over';
-                    
-                    // Satır Çerçeveleri
-                    ctx.beginPath();
-                    ctx.moveTo(0, pos.y - rectH/2); ctx.lineTo(canvas.width, pos.y - rectH/2);
-                    ctx.moveTo(0, pos.y + rectH/2); ctx.lineTo(canvas.width, pos.y + rectH/2);
-                    ctx.strokeStyle = customColorVal; 
-                    ctx.lineWidth = 3; 
-                    ctx.stroke();
-
-                    // --- SİHİRLİ SAP (SATIR İÇİN) ---
-                    if(pointerPos.y > pos.y + rectH/2) {
-                        ctx.beginPath();
-                        ctx.moveTo(pos.x, pos.y + rectH/2); // Satırın ortasından aşağı
-                        ctx.lineTo(pointerPos.x, pointerPos.y);
-                        ctx.strokeStyle = customColorVal;
-                        ctx.lineWidth = 4;
-                        ctx.setLineDash([5, 5]);
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-
-                        // Parmak ucu
-                        ctx.beginPath();
-                        ctx.arc(pointerPos.x, pointerPos.y, 8, 0, Math.PI * 2);
-                        ctx.fillStyle = customColorVal;
-                        ctx.fill();
-                    }
-                }
-                ctx.restore();
-            }
-
-            requestAnimationFrame(draw);
+        // --- MANUEL GİRİŞ İŞLEMLERİ ---
+        function openCustomInput() {
+            inputModal.style.display = 'flex';
+            document.getElementById('customWordInput').focus();
         }
 
-        function startGame() {
-            if (!wordInput.value.trim()) { alert("Lütfen metin girin."); return; }
-            setupScreen.classList.add('hidden');
-            draggableControls.classList.remove('hidden');
+        function closeCustomInput() {
+            inputModal.style.display = 'none';
+        }
+
+        function startCustomGame() {
+            const val = document.getElementById('customWordInput').value.trim();
+            if (!val) return;
+
+            // Özel oyun listesi oluştur
+            const isSingleChar = val.length === 1;
+            
+            // Çeldiricileri belirle (Harf ise harf havuzu, kelime ise genel havuz)
+            let dists = isSingleChar ? letterDistractors : genericDistractors;
+            
+            // Tek soruluk bir liste oluşturuyoruz ama tekrar oynanabilir
+            currentList = [{
+                type: 'find',
+                target: val.toUpperCase(), // Büyük harf yap
+                text: val.toUpperCase(),
+                distractors: dists
+            }];
+            
+            closeCustomInput();
+            document.getElementById('customWordInput').value = ''; // Temizle
+            
+            qIndex = 0;
+            mainMenu.style.display = 'none';
+            gameLayer.style.display = 'block';
             isGameRunning = true;
-            textOffset = { x: 0, y: 0 }; 
-            resize(); 
-            // Başlangıç pozisyonu
-            pos.x = window.innerWidth / 2; pos.y = window.innerHeight / 2;
-            pointerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 + FINGER_OFFSET };
-            draw();
+            
+            document.addEventListener('mousemove', moveFlashlight);
+            document.addEventListener('touchmove', moveFlashlight, {passive: false});
+            
+            loadLevel();
         }
 
-        function resetGame() {
-            isGameRunning = false;
-            setupScreen.classList.remove('hidden');
-            draggableControls.classList.add('hidden');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // --- STANDART OYUN BAŞLATMA ---
+        function startGame(category) {
+            currentList = [...curriculum[category]];
+            currentList.sort(() => Math.random() - 0.5);
+            qIndex = 0;
+            
+            mainMenu.style.display = 'none';
+            gameLayer.style.display = 'block';
+            isGameRunning = true;
+
+            document.addEventListener('mousemove', moveFlashlight);
+            document.addEventListener('touchmove', moveFlashlight, {passive: false});
+
+            loadLevel();
         }
 
-        canvas.addEventListener('pointerdown', (e) => {
-            if (!isGameRunning) return;
-            lastPointerPos = { x: e.clientX, y: e.clientY };
-            if (interactionTool === 'move') {
-                isDraggingText = true;
-                canvas.style.cursor = 'grabbing';
+        function loadLevel() {
+            if (qIndex >= currentList.length) {
+                speak("Tebrikler, bitti.");
+                setTimeout(exitGame, 2000);
+                return;
+            }
+
+            container.innerHTML = ''; 
+            const q = currentList[qIndex];
+
+            // HUD
+            hudText.innerText = q.text;
+            // Eğer hedef çok uzunsa (kelimeyse) ikonda gösterme, ? koy veya ilk harfi koy
+            // Ama manuel girişte tam kelimeyi göstermek daha iyi olabilir.
+            hudIcon.innerText = q.target.length > 2 ? '📝' : q.target;
+            
+            speak(q.text + " bul"); 
+
+            if (q.type === 'tracking') {
+                createTrackingObject(q);
             } else {
-                // FENER MODUNDA TIKLAMA
-                // Tıklama fenerin (pos) olduğu yerde mi yoksa parmağın (pointer) olduğu yerde mi?
-                // Genelde kullanıcı parmağıyla hedef alır ama fener yukarıdadır.
-                // Biz fenerin AYDINLATTIĞI yeri okutmalıyız.
-                const checkX = pos.x; 
-                const checkY = pos.y;
+                createFindObject(q);
+            }
+        }
+
+        function createTrackingObject(q) {
+            const el = document.createElement('div');
+            el.className = 'tracking-object';
+            el.innerText = q.target;
+            
+            el.style.left = '50%';
+            el.style.top = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+
+            el.onclick = (e) => {
+                e.stopPropagation();
+                successEffect(el);
+            };
+
+            container.appendChild(el);
+
+            function animateMove() {
+                if (!isGameRunning || !document.body.contains(el)) return;
                 
-                for (let box of hitboxes) {
-                    // Fenerin merkezi kelimenin içindeyse oku
-                    // Veya fenerin alanı içindeyse
-                    if (checkX >= box.x && checkX <= box.x + box.w && checkY >= box.y && checkY <= box.y + box.h) {
-                        speak(box.text); break;
+                const x = 15 + Math.random() * 70;
+                const y = 20 + Math.random() * 60;
+                
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                
+                // Hız müfredattaki 'speed' değerinden gelir (artık daha yavaş)
+                setTimeout(animateMove, q.speed || 4000);
+            }
+            
+            setTimeout(animateMove, 500);
+        }
+
+        function createFindObject(q) {
+            const itemsToPlace = [];
+            // 1. Hedef
+            itemsToPlace.push({ text: q.target, isTarget: true });
+
+            // 2. Çeldiriciler
+            // ÇOK ŞEKİL OLSUN MANTIĞI: Ekranı 15-20 nesne ile dolduruyoruz.
+            const totalItemsNeeded = 18; 
+            const availableDistractors = q.distractors && q.distractors.length > 0 ? q.distractors : genericDistractors;
+
+            while (itemsToPlace.length < totalItemsNeeded) {
+                // Rastgele bir çeldirici seç
+                const randDist = availableDistractors[Math.floor(Math.random() * availableDistractors.length)];
+                // Hedef ile aynı olmasın
+                if (randDist !== q.target) {
+                    itemsToPlace.push({ text: randDist, isTarget: false });
+                }
+            }
+
+            const placedItems = [];
+
+            itemsToPlace.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'game-item';
+                el.innerText = item.text;
+                
+                // Metin uzunluğuna göre fontu ayarla (Kelime sığsın)
+                if (item.text.length > 3) {
+                    el.style.fontSize = 'clamp(1.5rem, 4vw, 3rem)';
+                    el.style.width = 'auto';
+                    el.style.borderRadius = '10px'; // Kelime ise tam yuvarlak olmasın
+                } else {
+                    el.style.fontSize = 'clamp(2.5rem, 6vw, 5rem)';
+                }
+                
+                let safePos = getSafePosition(placedItems);
+                el.style.left = safePos.x + '%';
+                el.style.top = safePos.y + '%';
+                el.style.transform = 'translate(-50%, -50%)';
+
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    if (item.isTarget) {
+                        successEffect(el);
+                    } else {
+                        failEffect(el);
+                    }
+                };
+
+                container.appendChild(el);
+            });
+        }
+
+        function getSafePosition(existingItems) {
+            const maxAttempts = 100;
+            // Ekranda çok nesne olduğu için mesafeyi biraz azalttık
+            const minDistance = 15; 
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const x = 5 + Math.random() * 90;
+                const y = 10 + Math.random() * 80;
+
+                let collision = false;
+                for (const item of existingItems) {
+                    const dx = x - item.x;
+                    const dy = y - item.y;
+                    const distance = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (distance < minDistance) {
+                        collision = true;
+                        break;
                     }
                 }
-            }
-        });
 
-        window.addEventListener('pointerup', () => { isDraggingText = false; if(interactionTool === 'move') canvas.style.cursor = 'grab'; });
-
-        window.addEventListener('pointermove', (e) => {
-            if (!isGameRunning) return;
-            if (active || e.target.closest('#draggable-controls')) return;
-
-            if (interactionTool === 'move') {
-                if (isDraggingText) {
-                    e.preventDefault(); 
-                    const dx = e.clientX - lastPointerPos.x;
-                    const dy = e.clientY - lastPointerPos.y;
-                    textOffset.x += dx; textOffset.y += dy;
-                    lastPointerPos = { x: e.clientX, y: e.clientY };
+                if (!collision) {
+                    existingItems.push({x, y});
+                    return {x, y};
                 }
-            } else {
-                // OKUMA MODU: OFSETLİ HAREKET
-                e.preventDefault();
-                pointerPos.x = e.clientX;
-                pointerPos.y = e.clientY;
-                
-                // Fener, parmağın FINGER_OFFSET kadar yukarısında olsun
-                pos.x = e.clientX;
-                pos.y = e.clientY - FINGER_OFFSET;
             }
-        });
+            return {x: 50, y: 50}; 
+        }
+
+        function moveFlashlight(e) {
+            let x, y;
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+                x = e.touches[0].clientX;
+                y = e.touches[0].clientY;
+            } else {
+                x = e.clientX;
+                y = e.clientY;
+            }
+            flashlight.style.left = x + 'px';
+            flashlight.style.top = y + 'px';
+        }
+
+        function successEffect(el) {
+            el.style.color = '#2ecc71';
+            el.style.textShadow = '0 0 40px #2ecc71';
+            el.style.transform = 'translate(-50%, -50%) scale(1.5)';
+            el.style.zIndex = 200;
+
+            playSound('win');
+            speak("Harika!");
+
+            const c = document.createElement('div');
+            c.innerText = '🎉';
+            c.style.position = 'absolute';
+            c.style.left = el.style.left;
+            c.style.top = el.style.top;
+            c.style.fontSize = '8rem';
+            c.style.transform = 'translate(-50%, -50%)';
+            c.style.zIndex = 201;
+            container.appendChild(c);
+
+            setTimeout(() => {
+                // Manuel modda ise tekrar sormak yerine aynı kelimeyi tekrar sakla veya menüye dön
+                // Şimdilik listeye devam et mantığı (qIndex artar)
+                qIndex++;
+                if (currentList.length === 1 && qIndex >= 1) {
+                     // Tek soruluk özel oyun bitti
+                     setTimeout(exitGame, 1500);
+                } else {
+                    loadLevel();
+                }
+            }, 2000);
+        }
+
+        function failEffect(el) {
+            el.style.color = '#e74c3c';
+            el.animate([
+                { transform: 'translate(-50%, -50%) translateX(0)' },
+                { transform: 'translate(-50%, -50%) translateX(-15px)' },
+                { transform: 'translate(-50%, -50%) translateX(15px)' },
+                { transform: 'translate(-50%, -50%) translateX(0)' }
+            ], { duration: 300 });
+            
+            playSound('fail');
+            
+            setTimeout(() => {
+                el.style.color = '#7f8c8d'; // Eski silik rengine dön
+            }, 600);
+        }
+
+        function exitGame() {
+            isGameRunning = false;
+            gameLayer.style.display = 'none';
+            mainMenu.style.display = 'flex';
+            document.removeEventListener('mousemove', moveFlashlight);
+            document.removeEventListener('touchmove', moveFlashlight);
+        }
 
         function speak(text) {
-            if (!document.getElementById('tts-toggle').checked) return;
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'tr-TR'; u.rate = 0.9;
-            wordToast.textContent = text;
-            wordToast.classList.remove('opacity-0');
-            setTimeout(() => wordToast.classList.add('opacity-0'), 800);
-            window.speechSynthesis.speak(u);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'tr-TR';
+                u.rate = 0.9;
+                window.speechSynthesis.speak(u);
+            }
         }
 
-        document.getElementById('radius-slider').addEventListener('input', (e) => { flashlightRadius = parseInt(e.target.value); radiusValDisplay.textContent = flashlightRadius; });
-        document.getElementById('fullscreen-btn').addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); });
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('reset-btn').addEventListener('click', resetGame);
-        window.addEventListener('wheel', (e) => { if(isGameRunning) textOffset.y -= e.deltaY; });
-        resize();
+        function playSound(type) {
+            if (navigator.vibrate) {
+                navigator.vibrate(type === 'win' ? [50, 50, 50] : 100);
+            }
+        }
+
     </script>
 </body>
 </html>
-
