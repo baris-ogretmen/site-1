@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v40.1 (Fix) | Barış İlkan</title>
+    <title>Yönetici Paneli v40.2 (Full Kontrol) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -132,7 +132,7 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.1 (Fix)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.2 (Full Kontrol)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
             <button class="menu-btn" onclick="showSection('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</button>
@@ -378,7 +378,7 @@
             document.getElementById(id).classList.add('active');
             if(window.innerWidth <= 768) toggleSidebar();
             if(id === 'kitap-ekle') kitaplariGetir();
-            if(id === 'yazi-yonetimi') yazilariGetirOzel(); // YENİ: Sadece yazıları getir
+            if(id === 'yazi-yonetimi') yazilariGetirOzel(); 
         }
 
         // --- İKON SİSTEMİ ---
@@ -436,7 +436,6 @@
             const tarih = firebase.firestore.FieldValue.serverTimestamp();
 
             if(tur === 'yazilar') {
-                // Yazı kaydederken içerik HTML'i kaydedilir
                 batch.set(db.collection('yazilar').doc(), { baslik, icerik, tarih });
             } else {
                 if (cats.length > 0) {
@@ -455,7 +454,7 @@
                 document.getElementById('p-link').value="";
                 document.getElementById('p-icerik').value="";
                 verileriYukle();
-                if(tur === 'yazilar') yazilariGetirOzel(); // Yazı eklediyse o listeyi de yenile
+                if(tur === 'yazilar') yazilariGetirOzel(); 
             });
         }
 
@@ -477,7 +476,6 @@
             loadCollection("projeler", "OYUN");
             loadCollection("videolar", "VİDEO");
             loadCollection("kaynaklar", "PDF");
-            // loadCollection("yazilar", "YAZI"); // Yazıları burada değil, özel alanda yöneteceğiz artık
 
             // Kitapları çek
             db.collection("kitaplar").get().then(snap => {
@@ -487,12 +485,23 @@
                 renderList();
             });
 
-            // Kitap Yönetimi Listesi
+            // Kitap Yönetimi Listesi (GÜNCELLENDİ: BUTONLAR EKLENDİ)
             db.collection("kitaplar").orderBy("sira", "desc").get().then(snap => {
                 let h = "";
                 snap.forEach(d => {
                     const k = d.data();
-                    h += `<div class="list-item"><span><b>${k.baslik}</b> (${k.sira})</span> <button class="btn-mini bg-sil" onclick="sil('kitaplar','${d.id}')">Sil</button></div>`;
+                    const shareText = `Barış Hoca'dan Kitap Tavsiyesi: *${k.baslik}*\n\n${k.link}`;
+                    const shareLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                    
+                    h += `<div class="list-item">
+                            <span><b>${k.baslik}</b> (${k.sira})</span> 
+                            <div class="action-btns">
+                                <a href="${shareLink}" target="_blank" class="btn-mini bg-paylas">📤 Paylaş</a>
+                                <button class="btn-mini bg-vitrin" onclick="vitrinYap('kitaplar','${d.id}','${k.baslik}','${k.link}')">⭐ Vitrin</button>
+                                <button class="btn-mini bg-buton" onclick="daireYap('${k.baslik}','${k.link}')">⭕ Buton</button>
+                                <button class="btn-mini bg-sil" onclick="sil('kitaplar','${d.id}')">🗑️ Sil</button>
+                            </div>
+                          </div>`;
                 });
                 document.getElementById('kitap-listesi').innerHTML = h;
             });
@@ -511,12 +520,34 @@
                 }
             });
 
+            // Duyurular
             db.collection("duyurular").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item">${d.data().metin} <button class="btn-mini bg-sil" onclick="sil('duyurular','${d.id}')">Sil</button></div>`); document.getElementById('list-duyurular').innerHTML=h; });
-            db.collection("tavsiyeler").onSnapshot(s => { let h=""; s.forEach(d => h+=`<div class="list-item">${d.data().baslik} <button class="btn-mini bg-sil" onclick="sil('tavsiyeler','${d.id}')">Sil</button></div>`); document.getElementById('list-tavsiyeler').innerHTML=h; });
+            
+            // Tavsiyeler (GÜNCELLENDİ: BUTONLAR EKLENDİ)
+            db.collection("tavsiyeler").onSnapshot(s => { 
+                let h=""; 
+                s.forEach(d => {
+                    const t = d.data();
+                    const shareText = `Barış Hoca Tavsiye Ediyor: *${t.baslik}*\n\n${t.link}`;
+                    const shareLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+                    h+=`<div class="list-item">
+                            ${t.baslik} 
+                            <div class="action-btns">
+                                <a href="${shareLink}" target="_blank" class="btn-mini bg-paylas">📤 Paylaş</a>
+                                <button class="btn-mini bg-vitrin" onclick="vitrinYap('tavsiyeler','${d.id}','${t.baslik}','${t.link}')">⭐ Vitrin</button>
+                                <button class="btn-mini bg-buton" onclick="daireYap('${t.baslik}','${t.link}')">⭕ Buton</button>
+                                <button class="btn-mini bg-sil" onclick="sil('tavsiyeler','${d.id}')">🗑️ Sil</button>
+                            </div>
+                        </div>`;
+                }); 
+                document.getElementById('list-tavsiyeler').innerHTML=h; 
+            });
+
             db.collection("site_ayarlari").doc("robot").get().then(d => { if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; }});
         }
 
-        // YENİ: Sadece Yazıları Getiren Fonksiyon
+        // --- GÜNCELLENMİŞ YAZI LİSTESİ (BUTONLAR EKLENDİ) ---
         function yazilariGetirOzel() {
             db.collection("yazilar").orderBy("tarih", "desc").get().then(snap => {
                 let h = "";
@@ -525,6 +556,11 @@
                 } else {
                     snap.forEach(d => {
                         const y = d.data();
+                        // Yazılar için site ana sayfasını link veriyoruz (yazı linki DB'de olmadığı için)
+                        const anaSayfaLink = "https://baris-ogretmen.github.io/site-1/"; 
+                        const shareText = `Barış Hoca'dan Yeni Yazı: *${y.baslik}*\n\nOkumak için:\n${anaSayfaLink}`;
+                        const shareLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
                         h += `
                         <div class="list-item">
                             <div style="flex:1;">
@@ -532,6 +568,9 @@
                                 <b>${y.baslik}</b>
                             </div>
                             <div class="action-btns">
+                                <a href="${shareLink}" target="_blank" class="btn-mini bg-paylas">📤 Paylaş</a>
+                                <button class="btn-mini bg-vitrin" onclick="vitrinYap('yazilar','${d.id}','${y.baslik}','${anaSayfaLink}')">⭐ Vitrin</button>
+                                <button class="btn-mini bg-buton" onclick="daireYap('${y.baslik}','${anaSayfaLink}')">⭕ Buton</button>
                                 <button class="btn-mini bg-sil" onclick="sil('yazilar','${d.id}')">🗑️ Sil</button>
                             </div>
                         </div>`;
@@ -544,7 +583,6 @@
         }
 
         function renderList() {
-            // Tarihe göre sırala
             tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
             
             let h = "";
@@ -687,7 +725,18 @@
                 let h = "";
                 snap.forEach(d => {
                     const k = d.data();
-                    h += `<div class="list-item"><span><b>${k.baslik}</b> (${k.sira})</span> <button class="btn-mini bg-sil" onclick="sil('kitaplar','${d.id}')">Sil</button></div>`;
+                    const shareText = `Barış Hoca'dan Kitap Tavsiyesi: *${k.baslik}*\n\n${k.link}`;
+                    const shareLink = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                    
+                    h += `<div class="list-item">
+                            <span><b>${k.baslik}</b> (${k.sira})</span> 
+                            <div class="action-btns">
+                                <a href="${shareLink}" target="_blank" class="btn-mini bg-paylas">📤 Paylaş</a>
+                                <button class="btn-mini bg-vitrin" onclick="vitrinYap('kitaplar','${d.id}','${k.baslik}','${k.link}')">⭐ Vitrin</button>
+                                <button class="btn-mini bg-buton" onclick="daireYap('${k.baslik}','${k.link}')">⭕ Buton</button>
+                                <button class="btn-mini bg-sil" onclick="sil('kitaplar','${d.id}')">🗑️ Sil</button>
+                            </div>
+                          </div>`;
                 });
                 document.getElementById('kitap-listesi').innerHTML = h;
             });
@@ -706,7 +755,7 @@
                 db.collection(col).doc(id).delete().then(() => {
                     showToast("Silindi.");
                     verileriYukle();
-                    if(col === 'yazilar') yazilariGetirOzel(); // Eğer yazı sildiyse o listeyi de yenile
+                    if(col === 'yazilar') yazilariGetirOzel(); 
                 });
             }
         }
@@ -722,16 +771,15 @@
             });
         }
 
-        // --- GÜNCELLENMİŞ İSTATİSTİK FONKSİYONU ---
-        // ARTIK TOPLAM SAYISINI DA TEK TEK HESAPLAR
+        // --- İSTATİSTİK FONKSİYONU (AYNEN KORUNDU v40.1) ---
         function istatistikGetir() {
             db.collection("istatistik").get().then(snap => {
                 let gunluk = 0;
                 let aylik = 0;
-                let genelToplam = 0; // Toplamı sıfırdan biz hesaplayacağız
+                let genelToplam = 0; 
 
                 const bugun = new Date().toISOString().split('T')[0];
-                const buAy = bugun.substring(0, 7); // Örn: 2026-01
+                const buAy = bugun.substring(0, 7); 
 
                 snap.forEach(doc => {
                     const data = doc.data();
@@ -751,7 +799,6 @@
                     }
                 });
 
-                // Hepsini Ekrana Bas
                 document.getElementById('stat-today').innerText = gunluk;
                 document.getElementById('stat-month').innerText = aylik;
                 document.getElementById('stat-total').innerText = genelToplam;
