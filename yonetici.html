@@ -722,15 +722,50 @@
             });
         }
 
+        // --- GÜNCELLENMİŞ İSTATİSTİK FONKSİYONU ---
         function istatistikGetir() {
-            const bugun = new Date().toISOString().split('T')[0];
-            db.collection("istatistik").doc(bugun).onSnapshot(d => {
-                const val = d.exists ? d.data().ziyaret : 0;
+            // Bugünün tarihi: YYYY-MM-DD
+            const bugunTarih = new Date().toISOString().split('T')[0];
+            // Bu ayın başlangıcı: YYYY-MM
+            const buAyPrefix = bugunTarih.substring(0, 7);
+
+            // 1. BUGÜNÜ GETİR
+            db.collection("istatistik").doc(bugunTarih).onSnapshot(d => {
+                const val = d.exists ? (d.data().ziyaret || 0) : 0;
                 document.getElementById('stat-today').innerText = val;
-                document.getElementById('stat-month').innerText = val * 5; 
             });
+
+            // 2. TOPLAMI GETİR (Genel sayaç varsa)
             db.collection("site_verileri").doc("genel_sayac").onSnapshot(d => {
-                if(d.exists) document.getElementById('stat-total').innerText = d.data().toplam_ziyaret;
+                if(d.exists) {
+                    document.getElementById('stat-total').innerText = d.data().toplam_ziyaret || 0;
+                }
+            });
+
+            // 3. BU AYI HESAPLA (Gerçek Veri)
+            // Tüm istatistik dokümanlarını çeker ve sadece bu aya ait olanları toplar
+            db.collection("istatistik").get().then(snapshot => {
+                let aylikToplam = 0;
+                let yedekGenelToplam = 0; // Eğer genel sayaç 0 ise buradan hesaplayalım
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const gunlukZiyaret = data.ziyaret || 0;
+                    yedekGenelToplam += gunlukZiyaret;
+
+                    // Eğer doküman ID'si (tarih) bu ay ile başlıyorsa (örn: 2026-01...)
+                    if (doc.id.startsWith(buAyPrefix)) {
+                        aylikToplam += gunlukZiyaret;
+                    }
+                });
+
+                document.getElementById('stat-month').innerText = aylikToplam;
+
+                // Eğer stat-total 0 görünüyorsa, yedek hesaplamayı kullan
+                const currentTotal = document.getElementById('stat-total').innerText;
+                if(currentTotal == "0" || currentTotal == "") {
+                    document.getElementById('stat-total').innerText = yedekGenelToplam;
+                }
             });
         }
     </script>
