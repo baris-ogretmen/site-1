@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v40.0 (Yazı Editörü) | Barış İlkan</title>
+    <title>Yönetici Paneli v40.1 (Fix) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -132,7 +132,7 @@
     <div style="display:flex; width:100%; height:100%;">
         
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.0 (Yazı Editörü)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.1 (Fix)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
             <button class="menu-btn" onclick="showSection('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</button>
@@ -723,49 +723,38 @@
         }
 
         // --- GÜNCELLENMİŞ İSTATİSTİK FONKSİYONU ---
+        // ARTIK TOPLAM SAYISINI DA TEK TEK HESAPLAR
         function istatistikGetir() {
-            // Bugünün tarihi: YYYY-MM-DD
-            const bugunTarih = new Date().toISOString().split('T')[0];
-            // Bu ayın başlangıcı: YYYY-MM
-            const buAyPrefix = bugunTarih.substring(0, 7);
+            db.collection("istatistik").get().then(snap => {
+                let gunluk = 0;
+                let aylik = 0;
+                let genelToplam = 0; // Toplamı sıfırdan biz hesaplayacağız
 
-            // 1. BUGÜNÜ GETİR
-            db.collection("istatistik").doc(bugunTarih).onSnapshot(d => {
-                const val = d.exists ? (d.data().ziyaret || 0) : 0;
-                document.getElementById('stat-today').innerText = val;
-            });
+                const bugun = new Date().toISOString().split('T')[0];
+                const buAy = bugun.substring(0, 7); // Örn: 2026-01
 
-            // 2. TOPLAMI GETİR (Genel sayaç varsa)
-            db.collection("site_verileri").doc("genel_sayac").onSnapshot(d => {
-                if(d.exists) {
-                    document.getElementById('stat-total').innerText = d.data().toplam_ziyaret || 0;
-                }
-            });
-
-            // 3. BU AYI HESAPLA (Gerçek Veri)
-            // Tüm istatistik dokümanlarını çeker ve sadece bu aya ait olanları toplar
-            db.collection("istatistik").get().then(snapshot => {
-                let aylikToplam = 0;
-                let yedekGenelToplam = 0; // Eğer genel sayaç 0 ise buradan hesaplayalım
-
-                snapshot.forEach(doc => {
+                snap.forEach(doc => {
                     const data = doc.data();
-                    const gunlukZiyaret = data.ziyaret || 0;
-                    yedekGenelToplam += gunlukZiyaret;
+                    const sayi = data.ziyaret || 0;
 
-                    // Eğer doküman ID'si (tarih) bu ay ile başlıyorsa (örn: 2026-01...)
-                    if (doc.id.startsWith(buAyPrefix)) {
-                        aylikToplam += gunlukZiyaret;
+                    // 1. HER GÜNÜ TOPLAMA EKLE
+                    genelToplam += sayi;
+
+                    // 2. BU AYIN GÜNLERİNİ AYRICA TOPLA
+                    if(doc.id.startsWith(buAy)) {
+                        aylik += sayi;
+                    }
+
+                    // 3. BUGÜNÜ BUL
+                    if(doc.id === bugun) {
+                        gunluk = sayi;
                     }
                 });
 
-                document.getElementById('stat-month').innerText = aylikToplam;
-
-                // Eğer stat-total 0 görünüyorsa, yedek hesaplamayı kullan
-                const currentTotal = document.getElementById('stat-total').innerText;
-                if(currentTotal == "0" || currentTotal == "") {
-                    document.getElementById('stat-total').innerText = yedekGenelToplam;
-                }
+                // Hepsini Ekrana Bas
+                document.getElementById('stat-today').innerText = gunluk;
+                document.getElementById('stat-month').innerText = aylik;
+                document.getElementById('stat-total').innerText = genelToplam;
             });
         }
     </script>
