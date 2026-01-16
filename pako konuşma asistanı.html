@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pako - Tam Kapsamlı Dil ve Konuşma Asistanı</title>
+    
+    <!-- React ve ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- İkonlar -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fontları -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F0F9FF;
+            background-image: radial-gradient(#bae6fd 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        .font-kids {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .animate-bounce-slight {
+            animation: bounce-slight 2s infinite;
+        }
+        @keyframes bounce-slight {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            animation: fall linear forwards;
+            z-index: 100;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8; 
+            border-radius: 4px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // --- İkonlar ---
+        const MicIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
+        const StarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+        const SendIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+        const BackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+        const ReportIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>;
+        const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+
+        // --- Konfeti Efekti ---
+        const Confetti = () => {
+            const [particles, setParticles] = useState([]);
+            useEffect(() => {
+                const colors = ['#EF476F', '#FFD166', '#06D6A0', '#118AB2', '#073B4C'];
+                const newParticles = Array.from({ length: 70 }).map((_, i) => ({
+                    id: i,
+                    left: Math.random() * 100 + '%',
+                    bg: colors[Math.floor(Math.random() * colors.length)],
+                    duration: Math.random() * 2 + 1.5 + 's',
+                    delay: Math.random() * 0.5 + 's'
+                }));
+                setParticles(newParticles);
+            }, []);
+
+            return (
+                <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+                    {particles.map(p => (
+                        <div key={p.id} className="confetti rounded-full" style={{
+                            left: p.left,
+                            top: '-20px',
+                            backgroundColor: p.bg,
+                            animationDuration: p.duration,
+                            animationDelay: p.delay
+                        }}></div>
+                    ))}
+                </div>
+            );
+        };
+
+        // --- Pako Karakteri (Göz Kırpma Animasyonlu) ---
+        const PakoCharacter = ({ isSpeaking, isListening }) => {
+            const [isBlinking, setIsBlinking] = useState(false);
+
+            useEffect(() => {
+                const blinkInterval = setInterval(() => {
+                    setIsBlinking(true);
+                    setTimeout(() => setIsBlinking(false), 200);
+                }, 4000);
+                return () => clearInterval(blinkInterval);
+            }, []);
+
+            return (
+                <div className={`relative w-56 h-56 md:w-72 md:h-72 transition-transform duration-300 ${isSpeaking ? 'animate-bounce-slight' : ''}`}>
+                   <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl filter">
+                    {/* Vücut */}
+                    <path d="M100,20 Q160,20 160,90 Q160,180 100,180 Q40,180 40,90 Q40,20 100,20" fill="#2DD4BF" />
+                    <path d="M100,60 Q130,60 130,110 Q130,160 100,160 Q70,160 70,110 Q70,60 100,60" fill="#FEF3C7" />
+                    
+                    {/* Kanatlar */}
+                    <path d="M40,90 Q10,100 40,140" fill="#0EA5E9" className={`transition-all duration-500 ${isListening ? 'origin-top-right rotate-12' : ''}`} />
+                    <path d="M160,90 Q190,100 160,140" fill="#0EA5E9" className={`transition-all duration-500 ${isListening ? 'origin-top-left -rotate-12' : ''}`} />
+
+                    {/* Gözler */}
+                    <circle cx="75" cy="70" r="15" fill="white" />
+                    <circle cx="125" cy="70" r="15" fill="white" />
+                    
+                    {/* Göz Bebekleri (Kırpma Efekti) */}
+                    {!isBlinking ? (
+                        <>
+                            <circle cx="75" cy="70" r="5" fill="#0F172A" className={`${isSpeaking ? 'animate-pulse' : ''}`} />
+                            <circle cx="125" cy="70" r="5" fill="#0F172A" className={`${isSpeaking ? 'animate-pulse' : ''}`} />
+                        </>
+                    ) : (
+                        <>
+                            <line x1="60" y1="70" x2="90" y2="70" stroke="#0F172A" strokeWidth="2" />
+                            <line x1="110" y1="70" x2="140" y2="70" stroke="#0F172A" strokeWidth="2" />
+                        </>
+                    )}
+                    
+                    {/* Gözlük */}
+                    <path d="M55,70 Q75,50 95,70" fill="none" stroke="#0F172A" strokeWidth="3" />
+                    <path d="M105,70 Q125,50 145,70" fill="none" stroke="#0F172A" strokeWidth="3" />
+                    <line x1="95" y1="70" x2="105" y2="70" stroke="#0F172A" strokeWidth="3" />
+
+                    {/* Gaga */}
+                    <path d="M90,90 Q100,120 110,90" fill="#F43F5E" />
+                    <path d="M90,90 Q100,110 110,90" fill="#F43F5E" className={`origin-top transition-transform duration-100 ${isSpeaking ? 'scale-y-150' : 'scale-y-100'}`} />
+
+                    {/* Ayaklar */}
+                    <path d="M80,180 L80,195" stroke="#F97316" strokeWidth="8" strokeLinecap="round" />
+                    <path d="M120,180 L120,195" stroke="#F97316" strokeWidth="8" strokeLinecap="round" />
+                  </svg>
+                  
+                  {isListening && (
+                    <div className="absolute top-0 right-0 bg-white p-2 rounded-full shadow-lg animate-pulse border-2 border-red-100 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-75"></div>
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-150"></div>
+                    </div>
+                  )}
+                </div>
+            );
+        };
+
+        // --- HECELERİ BULMA (Basit Türkçe Kuralı) ---
+        const getSyllables = (word) => {
+            // Türkçede sesli harf sayısı = hece sayısı
+            const vowels = 'aeıioöuüAEIİOÖUÜ';
+            let count = 0;
+            for (let char of word) {
+                if (vowels.includes(char)) count++;
+            }
+            return Math.max(1, count);
+        };
+
+        // --- TAM MÜFREDAT ---
+        const curriculum = {
+            'Hayvanlar': {
+                icon: '🐶',
+                color: 'bg-orange-100 text-orange-700 border-orange-200',
+                words: [
+                    { t: 'Kedi', i: '🐱' }, { t: 'Köpek', i: '🐶' }, { t: 'Kuş', i: '🐦' }, 
+                    { t: 'Balık', i: '🐟' }, { t: 'İnek', i: '🐮' }, { t: 'At', i: '🐴' },
+                    { t: 'Tavuk', i: '🐔' }, { t: 'Aslan', i: '🦁' }, { t: 'Fil', i: '🐘' },
+                    { t: 'Maymun', i: '🐵' }, { t: 'Zürafa', i: '🦒' }, { t: 'Ördek', i: '🦆' }
+                ]
+            },
+            'Yiyecekler': {
+                icon: '🍎',
+                color: 'bg-red-100 text-red-700 border-red-200',
+                words: [
+                    { t: 'Elma', i: '🍎' }, { t: 'Muz', i: '🍌' }, { t: 'Süt', i: '🥛' },
+                    { t: 'Su', i: '💧' }, { t: 'Ekmek', i: '🍞' }, { t: 'Yumurta', i: '🥚' },
+                    { t: 'Çorba', i: '🍲' }, { t: 'Dondurma', i: '🍦' }, { t: 'Pasta', i: '🍰' },
+                    { t: 'Peynir', i: '🧀' }, { t: 'Üzüm', i: '🍇' }, { t: 'Karpuz', i: '🍉' }
+                ]
+            },
+            'Taşıtlar': {
+                icon: '🚗',
+                color: 'bg-blue-100 text-blue-700 border-blue-200',
+                words: [
+                    { t: 'Araba', i: '🚗' }, { t: 'Otobüs', i: '🚌' }, { t: 'Uçak', i: '✈️' },
+                    { t: 'Gemi', i: '🚢' }, { t: 'Tren', i: '🚂' }, { t: 'Bisiklet', i: '🚲' },
+                    { t: 'Traktör', i: '🚜' }, { t: 'Kamyon', i: '🚚' }, { t: 'Helikopter', i: '🚁' }
+                ]
+            },
+            'Duygular': {
+                icon: '😊',
+                color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                words: [
+                    { t: 'Mutlu', i: '😊' }, { t: 'Üzgün', i: '😢' }, { t: 'Kızgın', i: '😡' },
+                    { t: 'Şaşkın', i: '😮' }, { t: 'Korkmuş', i: '😱' }, { t: 'Yorgun', i: '😴' }
+                ]
+            },
+            'Sayılar (1-10)': {
+                icon: '🔢',
+                color: 'bg-green-100 text-green-700 border-green-200',
+                words: [
+                    { t: 'Bir', i: '1️⃣' }, { t: 'İki', i: '2️⃣' }, { t: 'Üç', i: '3️⃣' },
+                    { t: 'Dört', i: '4️⃣' }, { t: 'Beş', i: '5️⃣' }, { t: 'Altı', i: '6️⃣' },
+                    { t: 'Yedi', i: '7️⃣' }, { t: 'Sekiz', i: '8️⃣' }, { t: 'Dokuz', i: '9️⃣' },
+                    { t: 'On', i: '🔟' }
+                ]
+            },
+            'Renkler': {
+                icon: '🎨',
+                color: 'bg-pink-100 text-pink-700 border-pink-200',
+                words: [
+                    { t: 'Kırmızı', i: '🔴' }, { t: 'Mavi', i: '🔵' }, { t: 'Sarı', i: '🟡' },
+                    { t: 'Yeşil', i: '🟢' }, { t: 'Mor', i: '🟣' }, { t: 'Turuncu', i: '🟠' },
+                    { t: 'Siyah', i: '⚫' }, { t: 'Beyaz', i: '⚪' }
+                ]
+            },
+            'Artikülasyon (R Sesi)': {
+                icon: '🗣️',
+                color: 'bg-purple-100 text-purple-700 border-purple-200',
+                words: [
+                    { t: 'Arı', i: '🐝' }, { t: 'Radyo', i: '📻' }, { t: 'Robot', i: '🤖' },
+                    { t: 'Roket', i: '🚀' }, { t: 'Renk', i: '🎨' }, { t: 'Resim', i: '🖼️' }
+                ]
+            },
+            'Artikülasyon (S Sesi)': {
+                icon: '🐍',
+                color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                words: [
+                    { t: 'Su', i: '💧' }, { t: 'Saat', i: '⏰' }, { t: 'Sasa', i: '🏺' },
+                    { t: 'Süt', i: '🥛' }, { t: 'Masa', i: '🪑' }, { t: 'Sandviç', i: '🥪' }
+                ]
+            },
+            'Artikülasyon (K Sesi)': {
+                icon: '🗝️',
+                color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                words: [
+                    { t: 'Kapı', i: '🚪' }, { t: 'Kale', i: '🏰' }, { t: 'Kutu', i: '📦' },
+                    { t: 'Kitap', i: '📖' }, { t: 'Köpek', i: '🐶' }, { t: 'Kaşık', i: '🥄' }
+                ]
+            },
+            'Eylemler': {
+                icon: '🏃',
+                color: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+                words: [
+                    { t: 'Gel', i: '👋' }, { t: 'Git', i: '👉' }, { t: 'Ye', i: '🍽️' },
+                    { t: 'İç', i: '🥤' }, { t: 'Uyu', i: '😴' }, { t: 'Koş', i: '🏃' },
+                    { t: 'Yıka', i: '🧼' }, { t: 'Oyna', i: '🧸' }, { t: 'Oku', i: '📖' }
+                ]
+            },
+            'Zıt Kavramlar': {
+                icon: '↔️',
+                color: 'bg-stone-100 text-stone-700 border-stone-200',
+                words: [
+                    { t: 'Büyük', i: '🐘' }, { t: 'Küçük', i: '🐜' }, 
+                    { t: 'Uzun', i: '🦒' }, { t: 'Kısa', i: '🐛' },
+                    { t: 'Sıcak', i: '🔥' }, { t: 'Soğuk', i: '❄️' },
+                    { t: 'Dolu', i: '🌕' }, { t: 'Boş', i: '🌑' }
+                ]
+            },
+            '2 Kelimeli Cümleler': {
+                icon: '💬',
+                color: 'bg-teal-100 text-teal-700 border-teal-200',
+                words: [
+                    { t: 'Elma Ye', i: '🍎' }, { t: 'Top At', i: '⚽' }, { t: 'Eve Git', i: '🏠' },
+                    { t: 'Süt İç', i: '🥛' }, { t: 'Bebek Uyudu', i: '👶' }, { t: 'Kapıyı Aç', i: '🚪' }
+                ]
+            }
+        };
+
+        const App = () => {
+            const [mode, setMode] = useState('free');
+            const [currentCategory, setCurrentCategory] = useState(null);
+            const [transcript, setTranscript] = useState('');
+            const [isListening, setIsListening] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const [feedback, setFeedback] = useState('Merhaba! Ben Pako. Hazır mısın?');
+            const [score, setScore] = useState(0);
+            const [showConfetti, setShowConfetti] = useState(false);
+            const [manualInput, setManualInput] = useState('');
+            const [targetWord, setTargetWord] = useState(null);
+            const [sessionLog, setSessionLog] = useState([]); // Raporlama için
+            const [showReport, setShowReport] = useState(false);
+
+            const recognitionRef = useRef(null);
+            const synthRef = useRef(window.speechSynthesis);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.lang = 'tr-TR';
+                    recognitionRef.current.interimResults = true;
+
+                    recognitionRef.current.onstart = () => setIsListening(true);
+                    recognitionRef.current.onend = () => setIsListening(false);
+                    
+                    recognitionRef.current.onresult = (event) => {
+                        const text = Array.from(event.results).map(r => r[0].transcript).join('');
+                        setTranscript(text);
+                        if (event.results[0].isFinal) handleFinalSpeech(text);
+                    };
+                } else {
+                    setFeedback("Tarayıcınız ses tanımayı desteklemiyor. Chrome kullanın.");
+                }
+            }, [targetWord, mode]);
+
+            const speak = (text) => {
+                if (synthRef.current) {
+                    synthRef.current.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'tr-TR';
+                    utterance.rate = 0.9; 
+                    utterance.pitch = 1.2; 
+                    utterance.onstart = () => setIsSpeaking(true);
+                    utterance.onend = () => setIsSpeaking(false);
+                    synthRef.current.speak(utterance);
+                }
+            };
+
+            const startListening = () => {
+                try {
+                    setTranscript('');
+                    recognitionRef.current.start();
+                    setFeedback("Seni dinliyorum...");
+                } catch (e) {
+                    recognitionRef.current.stop();
+                }
+            };
+
+            const logSession = (word, result, spoken) => {
+                const now = new Date();
+                setSessionLog(prev => [...prev, {
+                    time: now.toLocaleTimeString(),
+                    target: word,
+                    spoken: spoken,
+                    result: result
+                }]);
+            };
+
+            const handleFinalSpeech = (text) => {
+                const cleanText = text.toLowerCase().trim();
+                
+                if (mode === 'practice' && targetWord) {
+                    const cleanTarget = targetWord.t.toLowerCase();
+                    if (cleanText.includes(cleanTarget) || cleanTarget.includes(cleanText)) {
+                        setFeedback("Mükemmel! Çok güzel söyledin!");
+                        setScore(s => s + 10);
+                        setShowConfetti(true);
+                        speak(`Aferin sana! ${targetWord.t} dedin.`);
+                        logSession(targetWord.t, 'Başarılı', text);
+                        setTimeout(() => setShowConfetti(false), 3000);
+                    } else {
+                        setFeedback(`Şunu duydum: "${text}". Tekrar dene: ${targetWord.t}`);
+                        speak(`Ben ${text} duydum. Hadi tekrar dene. ${targetWord.t}`);
+                        logSession(targetWord.t, 'Tekrar', text);
+                    }
+                } else {
+                    setFeedback(`Duydum: ${text}`);
+                    speak(text);
+                    logSession('Serbest', 'Bilgi', text);
+                }
+            };
+
+            const handleManualSubmit = (e) => {
+                e.preventDefault();
+                if (!manualInput) return;
+                setTranscript(manualInput);
+                setFeedback(`Anladım! "${manualInput}" demek istedin.`);
+                speak(manualInput);
+                logSession('Manuel Giriş', 'Düzeltme', manualInput);
+                setManualInput('');
+            };
+
+            const selectWord = (wordObj) => {
+                setTargetWord(wordObj);
+                setMode('practice');
+                setTranscript('');
+                setFeedback(`Hadi "${wordObj.t}" diyelim!`);
+                speak(`Hadi, ${wordObj.t}, diyelim.`);
+            };
+
+            // Hece görseli oluşturucu
+            const renderSyllables = (word) => {
+                const count = getSyllables(word);
+                return (
+                    <div className="flex gap-2 justify-center mt-2">
+                        {[...Array(count)].map((_, i) => (
+                            <div key={i} className="w-4 h-4 rounded-full bg-blue-400 animate-pulse"></div>
+                        ))}
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    {showConfetti && <Confetti />}
+                    
+                    {/* Üst Bar (Skor ve Rapor) */}
+                    <div className="w-full max-w-6xl flex justify-between items-center mb-4">
+                        <div className="bg-white px-4 py-2 rounded-full shadow-sm flex items-center gap-2 border border-slate-200">
+                            <StarIcon />
+                            <span className="font-kids font-bold text-xl text-slate-700">{score} Puan</span>
+                        </div>
+                        <button 
+                            onClick={() => setShowReport(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 font-bold transition-colors"
+                        >
+                            <ReportIcon className="w-5 h-5" /> Seans Raporu
+                        </button>
+                    </div>
+
+                    <div className="glass-panel w-full max-w-6xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[650px]">
+                        
+                        {/* SOL PANEL: PAKO ve ETKİLEŞİM */}
+                        <div className="lg:w-5/12 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 p-6 flex flex-col items-center border-b lg:border-b-0 lg:border-r border-blue-100 relative">
+                            
+                            <div className="flex-1 flex flex-col justify-center items-center w-full">
+                                <PakoCharacter isSpeaking={isSpeaking} isListening={isListening} />
+                                
+                                {/* Konuşma Balonu */}
+                                <div className="mt-6 relative bg-white px-6 py-4 rounded-3xl shadow-lg border-2 border-indigo-50 w-full text-center max-w-sm">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-white rotate-45 border-t-2 border-l-2 border-indigo-50"></div>
+                                    <p className="font-kids text-xl text-slate-700 font-bold min-h-[3rem] flex items-center justify-center leading-tight">
+                                        {feedback}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Ses Çıktısı (Transkript) */}
+                            <div className="mt-4 w-full bg-slate-800 rounded-2xl p-4 text-center min-h-[90px] flex flex-col items-center justify-center shadow-inner border border-slate-700">
+                                {transcript ? (
+                                    <span className="font-kids text-3xl text-white font-bold animate-pulse tracking-wide">"{transcript}"</span>
+                                ) : (
+                                    <span className="text-slate-500 italic text-sm font-medium">Sen konuşunca buraya yazacağım...</span>
+                                )}
+                            </div>
+                            
+                            <button 
+                                onClick={startListening}
+                                disabled={isListening}
+                                className={`mt-4 w-full py-5 rounded-2xl font-kids text-2xl font-bold shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 border-b-4 ${
+                                    isListening 
+                                    ? 'bg-rose-500 border-rose-700 text-white animate-pulse' 
+                                    : 'bg-emerald-500 hover:bg-emerald-600 border-emerald-700 text-white'
+                                }`}
+                            >
+                                <MicIcon className="w-8 h-8" />
+                                {isListening ? 'Dinliyorum...' : 'BAS ve KONUŞ'}
+                            </button>
+                        </div>
+
+                        {/* SAĞ PANEL: MÜFREDAT */}
+                        <div className="lg:w-7/12 p-6 md:p-8 bg-white/60 flex flex-col">
+                            
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h1 className="font-kids text-3xl font-extrabold text-slate-800 tracking-tight">Eğitim Paketi</h1>
+                                    <p className="text-slate-500 font-medium">Kategori seç ve çalışmaya başla!</p>
+                                </div>
+                                {currentCategory && (
+                                    <button 
+                                        onClick={() => { setCurrentCategory(null); setMode('free'); setTargetWord(null); }}
+                                        className="bg-slate-200 text-slate-700 px-5 py-2.5 rounded-full font-bold text-sm hover:bg-slate-300 transition flex items-center gap-2"
+                                    >
+                                        <BackIcon className="w-4 h-4" /> Geri Dön
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* İÇERİK ALANI */}
+                            <div className="flex-1 overflow-y-auto custom-scroll pr-2 pb-4">
+                                
+                                {/* Ana Menü */}
+                                {!currentCategory && (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {Object.entries(curriculum).map(([key, data]) => (
+                                            <button 
+                                                key={key}
+                                                onClick={() => setCurrentCategory(key)}
+                                                className={`${data.color} bg-opacity-10 border-2 p-3 rounded-2xl hover:shadow-md transition-all hover:-translate-y-1 hover:bg-opacity-20 flex flex-col items-center justify-center gap-2 h-36`}
+                                            >
+                                                <span className="text-5xl drop-shadow-sm mb-2">{data.icon}</span>
+                                                <span className="font-kids font-bold text-base text-center leading-tight">{key}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Alt Menü (Kelimeler) */}
+                                {currentCategory && (
+                                    <div className="space-y-6">
+                                        <div className={`p-4 rounded-2xl ${curriculum[currentCategory].color} bg-opacity-20 border-2 flex items-center gap-4`}>
+                                            <span className="text-4xl bg-white p-2 rounded-xl shadow-sm">{curriculum[currentCategory].icon}</span>
+                                            <h2 className="font-kids font-bold text-2xl tracking-wide">{currentCategory}</h2>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                            {curriculum[currentCategory].words.map((word, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => selectWord(word)}
+                                                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 relative h-40 group
+                                                        ${targetWord?.t === word.t 
+                                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-105 z-10' 
+                                                            : 'bg-white border-slate-100 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md'
+                                                        }`}
+                                                >
+                                                    <span className="text-5xl drop-shadow-md group-hover:scale-110 transition-transform">{word.i}</span>
+                                                    <span className="font-kids font-bold text-lg">{word.t}</span>
+                                                    
+                                                    {/* Hece Görseli (Sadece aktifse) */}
+                                                    {targetWord?.t === word.t && (
+                                                        <div className="absolute bottom-2">
+                                                            {renderSyllables(word.t)}
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Uzman Paneli (Footer) */}
+                            <form onSubmit={handleManualSubmit} className="mt-4 pt-4 border-t border-slate-200">
+                                <div className="flex gap-2 items-center bg-white p-2 rounded-2xl border border-slate-200 shadow-sm focus-within:ring-2 focus-within:ring-indigo-300 transition-all">
+                                    <div className="bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-bold uppercase text-center leading-tight">
+                                        Uzman<br/>Girişi
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        value={manualInput}
+                                        onChange={(e) => setManualInput(e.target.value)}
+                                        placeholder="Çocuğun kastettiği kelimeyi yazın..."
+                                        className="flex-1 px-3 py-2 bg-transparent focus:outline-none font-medium text-slate-700"
+                                    />
+                                    <button type="submit" className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-colors">
+                                        <SendIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+                    
+                    {/* SEANS RAPORU MODALI */}
+                    {showReport && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                                    <h2 className="font-kids text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                        <ReportIcon /> Seans Özeti
+                                    </h2>
+                                    <button onClick={() => setShowReport(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                        <XIcon className="w-8 h-8" />
+                                    </button>
+                                </div>
+                                
+                                <div className="flex-1 overflow-y-auto p-6 custom-scroll">
+                                    {sessionLog.length === 0 ? (
+                                        <div className="text-center text-slate-400 py-10">
+                                            Henüz bir kayıt yok. Hadi çalışmaya başlayalım!
+                                        </div>
+                                    ) : (
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="text-xs font-bold text-slate-400 uppercase border-b border-slate-200">
+                                                    <th className="py-2">Saat</th>
+                                                    <th className="py-2">Hedef</th>
+                                                    <th className="py-2">Söylenen</th>
+                                                    <th className="py-2">Sonuç</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-sm">
+                                                {sessionLog.map((log, i) => (
+                                                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
+                                                        <td className="py-3 text-slate-500 font-mono text-xs">{log.time}</td>
+                                                        <td className="py-3 font-bold text-slate-700">{log.target}</td>
+                                                        <td className="py-3 text-slate-600 italic">"{log.spoken}"</td>
+                                                        <td className="py-3">
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                                log.result === 'Başarılı' ? 'bg-green-100 text-green-700' : 
+                                                                log.result === 'Düzeltme' ? 'bg-indigo-100 text-indigo-700' :
+                                                                'bg-orange-100 text-orange-700'
+                                                            }`}>
+                                                                {log.result}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+
+                                <div className="p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex justify-between items-center">
+                                    <div className="text-sm text-slate-500">
+                                        Toplam İşlem: <b>{sessionLog.length}</b>
+                                    </div>
+                                    <button 
+                                        onClick={() => window.print()} 
+                                        className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition-colors"
+                                    >
+                                        Yazdır / PDF Kaydet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="mt-6 text-slate-400 text-xs text-center font-medium">
+                        Rehabilitasyon ve Özel Eğitim Dijital Asistanı v2.0 Final
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
