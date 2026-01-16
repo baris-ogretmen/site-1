@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v40.6 (Fix) | Barış İlkan</title>
+    <title>Yönetici Paneli v40.8 (Link Fix) | Barış İlkan</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -18,10 +18,10 @@
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--acik); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* TOAST BİLDİRİM (Garanti Görünüm) */
+        /* TOAST BİLDİRİM */
         #toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
         .toast { background: #10b981; color: white; padding: 15px 25px; border-radius: 50px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: slideUp 0.4s; display: flex; align-items: center; gap: 15px; border: 2px solid white; font-size: 1rem; justify-content: center; pointer-events: auto; }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px) scale(0.8); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 
         /* GİRİŞ EKRANI */
         #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; }
@@ -95,7 +95,7 @@
 
     <div style="display:flex; width:100%; height:100%;">
         <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.6 (Fix)</small></h2>
+            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.8 (Link Fix)</small></h2>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
             <button class="menu-btn" onclick="showSection('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</button>
@@ -245,13 +245,27 @@
         function loadIcons() { const g=document.getElementById('icon-grid-container'); g.innerHTML=""; iconList.forEach(i=>{ const d=document.createElement('div'); d.className='icon-opt'; d.innerHTML=`<i class="fas ${i.c}" style="color:${i.k}"></i>`; d.onclick=()=>{document.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); document.getElementById('p-selected-icon').value=i.c; document.getElementById('preview-icon').className=`fas ${i.c}`;}; g.appendChild(d); }); }
         function filterIcons() { const t=document.getElementById('icon-search').value.toLowerCase(); document.querySelectorAll('.icon-opt').forEach(i=>i.style.display=i.innerHTML.includes(t)?'flex':'none'); }
 
-        // LİSTE SATIRI (TIRNAK İŞARETİ HATASINI DÜZELTEN FONKSİYON)
+        // --- GÜÇLENDİRİLMİŞ LİNK OLUŞTURUCU (BOŞLUK VE KARAKTER DÜZELTME) ---
+        function formatLink(link) {
+            if (!link) return "";
+            if (link.startsWith("http")) return link;
+            // Site ana dizinini bul
+            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            // Boşlukları ve özel karakterleri URL formatına çevir (encodeURI)
+            return baseUrl + encodeURI(link);
+        }
+
+        // Tırnak işaretlerini temizleyen fonksiyon
         function escapeStr(str) { return str ? str.replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; }
 
         function createRow(baslik, id, col, link, tur) {
             const safeBaslik = escapeStr(baslik);
-            const safeLink = escapeStr(link);
-            const shareLink = `https://wa.me/?text=${encodeURIComponent(baslik + " " + link)}`;
+            const fullLink = formatLink(link); // Linki düzelt ve full hale getir
+            const safeLink = escapeStr(fullLink);
+            
+            // Paylaşım metninde tam link görünsün
+            const shareLink = `https://wa.me/?text=${encodeURIComponent(baslik + "\n" + fullLink)}`;
+            
             return `<div class="list-item">
                 <div style="flex:1;"><b>${baslik}</b> <span style="font-size:0.7rem; background:#e0e7ff; padding:2px 5px; border-radius:4px;">${tur}</span></div>
                 <div class="action-btns">
@@ -288,10 +302,29 @@
         }
 
         function yazilariGetirOzel() { db.collection("yazilar").orderBy("tarih","desc").get().then(snap=>{ let h=""; snap.forEach(d=>{ const y=d.data(); const link="ebeveyn-kosesi.html"; h+=createRow(y.baslik, d.id, 'yazilar', link, 'YAZI'); }); document.getElementById('ozel-yazi-listesi').innerHTML=h || 'Yazı yok.'; }); }
-        function renderList() { tumIceriklerCache.sort((a,b)=>(b.tarih?.seconds||0)-(a.tarih?.seconds||0)); let h=""; tumIceriklerCache.forEach(i => { let fullLink = i.link && !i.link.startsWith('http') ? window.location.href.substring(0, window.location.href.lastIndexOf('/')+1)+i.link : i.link; h += createRow(i.baslik, i.id, i.col, fullLink, i.type); }); document.getElementById('tum-icerik-listesi').innerHTML = h || 'İçerik yok.'; }
+        
+        function renderList() { 
+            tumIceriklerCache.sort((a,b)=>(b.tarih?.seconds||0)-(a.tarih?.seconds||0)); 
+            let h=""; 
+            tumIceriklerCache.forEach(i => { h += createRow(i.baslik, i.id, i.col, i.link, i.type); }); 
+            document.getElementById('tum-icerik-listesi').innerHTML = h || 'İçerik yok.'; 
+        }
 
-        function vitrinYap(col, id, baslik, link) { db.collection(col).doc(id).update({ vitrin: true }); db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik, url: link }).then(() => showToast("⭐ Vitrine Eklendi!")); }
-        function daireYap(baslik, link) { document.getElementById('set-text').value="YENİ"; document.getElementById('set-media').value=link; document.getElementById('set-msg').value=baslik; showToast("⭕ Ayarlara Çekildi (Kaydet'e bas!)"); updateButtonPreview(); }
+        function vitrinYap(col, id, baslik, link) { 
+            const fullLink = formatLink(link); 
+            db.collection(col).doc(id).update({ vitrin: true }); 
+            db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik, url: fullLink }).then(() => showToast("⭐ Vitrine Eklendi!")); 
+        }
+        
+        function daireYap(baslik, link) { 
+            const fullLink = formatLink(link);
+            document.getElementById('set-text').value="YENİ"; 
+            document.getElementById('set-media').value=fullLink; 
+            document.getElementById('set-msg').value=baslik; 
+            showToast("⭕ Ayarlara Çekildi (Kaydet'e bas!)"); 
+            updateButtonPreview(); 
+        }
+        
         function daireKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ aktif: document.getElementById('set-active').checked, daireMetni: document.getElementById('set-text').value, link: document.getElementById('set-media').value, renk: document.getElementById('set-color').value, sekil: document.getElementById('set-shape').value, mesaj: document.getElementById('set-msg').value, anim: "anim-pulse" }).then(()=>showToast("✅ Buton Kaydedildi!")); }
         function sil(col, id) { if(confirm("Silinecek?")) db.collection(col).doc(id).delete().then(()=>{ showToast("🗑 Silindi"); verileriYukle(); if(col==='yazilar') yazilariGetirOzel(); }); }
         
