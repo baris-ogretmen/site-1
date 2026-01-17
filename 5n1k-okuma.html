@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5N1K Dedektifleri | Akıllı Okuma Asistanı</title>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@400;600&family=Nunito:wght@400;700;800&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#dcfce7 2px, transparent 2px);
+            background-size: 32px 32px;
+            overscroll-behavior: none;
+        }
+        .font-comic { font-family: 'Comic Neue', cursive; }
+        .font-kids { font-family: 'Fredoka', sans-serif; }
+        .font-reading { font-family: 'Open Sans', sans-serif; letter-spacing: 0.02em; }
+        
+        /* Smooth Scrollbar */
+        .reading-box::-webkit-scrollbar { width: 10px; }
+        .reading-box::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .reading-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+        .reading-box::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animations */
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-soft { animation: pulse-soft 2s infinite; }
+
+        .highlight-word {
+            transition: background-color 0.2s;
+            border-radius: 4px;
+            padding: 0 2px;
+            cursor: pointer;
+        }
+        
+        .reading-guide {
+            pointer-events: none;
+            transition: top 0.1s ease;
+            mix-blend-mode: multiply;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- VERİTABANI ---
+        const HIKAYELER = [
+            {
+                id: 1,
+                seviye: "ilkokul",
+                zorluk: "kolay",
+                baslik: "Minik Uzaylının Kayıp Çorabı",
+                metin: "Bir sabah, Zupi adındaki minik uzaylı, mor renkli uzay gemisiyle okulun bahçesine indi. Zupi çok üzgündü çünkü en sevdiği, yıldız desenli çorabını kaybetmişti. Bahçede top oynayan Ali, Zupi'yi görünce hemen yanına gitti. Birlikte kaydırağın altına baktılar. Orada, uyuyan bir kedinin patisinde çorabı buldular! Zupi çok sevindi ve Ali'ye teşekkür etmek için ona parlayan bir taş hediye etti.",
+                sorular: {
+                    kim: { s: "Hikayenin kahramanları kimlerdir?", c: ["Zupi ve Ali", "Zupi ve Öğretmen", "Ali ve Ayşe"], d: 0 },
+                    ne: { s: "Zupi neyi kaybetmişti?", c: ["Uzay gemisini", "Yıldız desenli çorabını", "Parlayan taşını"], d: 1 },
+                    nerede: { s: "Uzay gemisi nereye indi?", c: ["Evin çatısına", "Ormana", "Okulun bahçesine"], d: 2 },
+                    ne_zaman: { s: "Olay ne zaman gerçekleşti?", c: ["Bir sabah", "Gece yarısı", "Öğleden sonra"], d: 0 },
+                    nasil: { s: "Çorabı nasıl buldular?", c: ["Ağaca tırmanarak", "Kaydırağın altına bakarak", "Polisi arayarak"], d: 1 },
+                    neden: { s: "Zupi neden üzgündü?", c: ["Karnı acıktığı için", "Gemisi bozulduğu için", "Çorabını kaybettiği için"], d: 2 }
+                }
+            },
+            {
+                id: 2,
+                seviye: "ilkokul",
+                zorluk: "orta",
+                baslik: "Gökkuşağı Ormanı",
+                metin: "Gökkuşağı Ormanı'nda yaşayan sincap Pıtır, kış hazırlığı yapıyordu. Ancak bu sene fındıklar çok azdı. Pıtır, bilge baykuşa danışmak için en yüksek ağaca tırmandı. Baykuş ona nehrin karşısındaki gizli vadiyi anlattı. Pıtır cesaretini toplayıp nehrin üzerindeki eski köprüden geçti ve orada kocaman fındık ağaçları buldu. Böylece kışı rahat geçirebildi.",
+                sorular: {
+                    kim: { s: "Yiyecek arayan kimdi?", c: ["Ayı Yogi", "Sincap Pıtır", "Tavşan Tivi"], d: 1 },
+                    ne: { s: "Pıtır ne arıyordu?", c: ["Havuç", "Bal", "Fındık"], d: 2 },
+                    nerede: { s: "Gizli vadi neredeydi?", c: ["Nehrin karşısında", "Dağın tepesinde", "Mağaranın içinde"], d: 0 },
+                    ne_zaman: { s: "Pıtır hazırlığı ne zaman yapıyordu?", c: ["Yazın", "Kış gelmeden önce", "İlkbaharda"], d: 1 },
+                    nasil: { s: "Vadiye nasıl ulaştı?", c: ["Yüzerek", "Uçarak", "Eski köprüden geçerek"], d: 2 },
+                    neden: { s: "Neden bilge baykuşa gitti?", c: ["Fındıklar az olduğu için", "Canı sıkıldığı için", "Yolu kaybettiği için"], d: 0 }
+                }
+            },
+            {
+                id: 3,
+                seviye: "ortaokul",
+                zorluk: "zor",
+                baslik: "Mars Kolonisinde İlk Gün",
+                metin: "Yıl 2085. Genç mühendis Ece, Mars'taki 'Kızıl Umut' kolonisine atanan en genç görevliydi. Görevi, gezegenin zorlu kum fırtınalarına dayanıklı enerji panellerini tamir etmekti. Üçüncü gün, beklenmedik bir fırtına çıktı. Ece, iletişim kulesinin zarar gördüğünü fark etti. Oksijen seviyesi düşerken, robotik kolu kullanarak panelleri sabitledi ve üssü enerji kesintisinden kurtardı. Bu başarısı sayesinde Mars Valisi tarafından madalya ile ödüllendirildi.",
+                sorular: {
+                    kim: { s: "Hikayenin ana karakteri kimdir?", c: ["Mars Valisi", "Mühendis Ece", "Robotik Kol"], d: 1 },
+                    ne: { s: "Ece'nin görevi neydi?", c: ["Su bulmak", "Enerji panellerini tamir etmek", "Uzaylı aramak"], d: 1 },
+                    nerede: { s: "Olay nerede geçmektedir?", c: ["Ay Üssü", "Dünya", "Mars'taki Kızıl Umut Kolonisi"], d: 2 },
+                    ne_zaman: { s: "Olay hangi yılda geçiyor?", c: ["2023", "2050", "2085"], d: 2 },
+                    nasil: { s: "Ece panelleri nasıl sabitledi?", c: ["Robotik kolu kullanarak", "Çekiçle vurarak", "Arkadaşından yardım isteyerek"], d: 0 },
+                    neden: { s: "Ece neden ödüllendirildi?", c: ["Fırtınada üssü kurtardığı için", "En genç olduğu için", "Mars'a gittiği için"], d: 0 }
+                }
+            },
+            {
+                id: 4,
+                seviye: "ortaokul",
+                zorluk: "orta",
+                baslik: "Antik Kentin Sırrı",
+                metin: "Arkeolog grubu, Efes Antik Kenti'nde yaptıkları kazı sırasında yerin altında gizli bir oda keşfettiler. Oda, güneş ışığı belirli bir açıdan geldiğinde parlayan özel mermerlerle kaplıydı. Ekip lideri Dr. Canan, duvarda Latince bir yazı fark etti. Yazı, şehrin kayıp kütüphanesinin yerini tarif ediyordu. Ekip, haritayı takip ederek yüzyıllardır kayıp olan binlerce el yazması kitabı gün yüzüne çıkardı.",
+                sorular: {
+                    kim: { s: "Keşfi yapan grubun lideri kimdi?", c: ["Dr. Canan", "Müze Müdürü", "Turist Rehberi"], d: 0 },
+                    ne: { s: "Ekip ne keşfetti?", c: ["Altın sandığı", "Gizli bir oda ve kitaplar", "Dinozor kemiği"], d: 1 },
+                    nerede: { s: "Kazı nerede yapılıyordu?", c: ["Göbeklitepe", "Efes Antik Kenti", "Troya"], d: 1 },
+                    ne_zaman: { s: "Oda ne zaman parlıyordu?", c: ["Geceleyin", "Yağmur yağınca", "Güneş belirli bir açıdan gelince"], d: 2 },
+                    nasil: { s: "Kütüphaneyi nasıl buldular?", c: ["Rastgele kazarak", "Duvardaki yazıyı takip ederek", "Uydu haritasıyla"], d: 1 },
+                    neden: { s: "Bu keşif neden önemliydi?", c: ["Kayıp kitaplar bulunduğu için", "Oda mermer olduğu için", "Çok para kazandıkları için"], d: 0 }
+                }
+            },
+            {
+                id: 5,
+                seviye: "ilkokul",
+                zorluk: "kolay",
+                baslik: "Uykucu Kaplumbağa",
+                metin: "Tomi adında çok uykucu bir kaplumbağa vardı. Tomi, marul yemeyi çok severdi ama o kadar yavaştı ki marullar hep diğer kaplumbağalar tarafından yenirdi. Bir gün, bahçıvan Amca, Tomi'ye özel kırmızı bir sepet hediye etti. Sepetin içi taptaze marullarla doluydu. Tomi artık arkadaşlarıyla yarışmak zorunda kalmadan, göl kenarındaki söğüt ağacının altında keyifle marullarını yedi.",
+                sorular: {
+                    kim: { s: "Hikayenin baş kahramanı kimdir?", c: ["Bahçıvan Amca", "Tavşan", "Uykucu Kaplumbağa Tomi"], d: 2 },
+                    ne: { s: "Bahçıvan Amca, Tomi'ye ne hediye etti?", c: ["Hızlı bir kaykay", "İçi marul dolu kırmızı bir sepet", "Güneş gözlüğü"], d: 1 },
+                    nerede: { s: "Tomi marullarını nerede yedi?", c: ["Evin mutfağında", "Göl kenarındaki söğüt ağacının altında", "Pazarda"], d: 1 },
+                    ne_zaman: { s: "Bahçıvan hediyeyi ne zaman verdi?", c: ["Bir gün", "Gece yarısı", "Kışın"], d: 0 },
+                    nasil: { s: "Tomi marulları nasıl yedi?", c: ["Gizlice", "Koşarak", "Keyifle"], d: 2 },
+                    neden: { s: "Tomi neden marul yiyemiyordu?", c: ["Marul sevmediği için", "Çok yavaş olduğu için", "Dişi ağrıdığı için"], d: 1 }
+                }
+            }
+        ];
+
+        // --- YARDIMCI FONKSİYONLAR ---
+
+        // Basit Türkçe heceleme mantığı (Yaklaşımsal, çocuklar için yeterli)
+        const hecele = (kelime) => {
+            if (!kelime || kelime.length < 2) return [kelime];
+            // Ünlü harfler ve ünsüz harf kurallarına dayalı basit ayırma
+            // Regex: Ünsüz kümesi + Ünlü harf + (Sonraki hecenin başlangıcına kadar olan ünsüzler)
+            const regex = /[^aeıioöuüAEIİOÖUÜ]*[aeıioöuüAEIİOÖUÜ](?:[^aeıioöuüAEIİOÖUÜ]*$|[^aeıioöuüAEIİOÖUÜ](?=[^aeıioöuüAEIİOÖUÜ]))?/gi;
+            return kelime.match(regex) || [kelime];
+        };
+
+        const Icon = ({ name, color, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+            return <i data-lucide={name} className={`${color} ${className}`} style={{ width: size, height: size }}></i>;
+        };
+
+        const Notification = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 2500);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            const config = type === 'success' 
+                ? { bg: 'bg-emerald-500', icon: 'check-circle' } 
+                : { bg: 'bg-red-500', icon: 'alert-circle' };
+
+            return (
+                <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[60] animate-pop w-[90%] md:w-auto">
+                    <div className={`${config.bg} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border-4 border-white`}>
+                        <Icon name={config.icon} color="text-white" size={32} />
+                        <span className="font-bold text-lg font-kids tracking-wide">{message}</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const WelcomeScreen = ({ onStart }) => {
+            const [grade, setGrade] = useState(null); 
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center anim-fade">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 md:p-10 rounded-[3rem] shadow-xl max-w-3xl w-full border-4 border-emerald-200 relative overflow-hidden">
+                        {/* Arka plan dekorasyonu */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-200 rounded-full opacity-50 -mr-10 -mt-10"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-200 rounded-full opacity-50 -ml-10 -mb-10"></div>
+
+                        <div className="mb-6 flex justify-center relative z-10">
+                            <div className="bg-emerald-100 p-6 rounded-full gem-anim shadow-inner border-4 border-white">
+                                <Icon name="search" size={64} color="text-emerald-600" />
+                            </div>
+                        </div>
+                        <h1 className="font-kids text-4xl md:text-6xl font-black text-slate-800 mb-2 tracking-tight relative z-10">5N1K Dedektifleri</h1>
+                        <p className="text-slate-500 text-lg mb-8 font-comic font-bold relative z-10">Gizemli soruları bul, rozetleri topla!</p>
+
+                        {!grade ? (
+                            <div className="space-y-6 relative z-10">
+                                <p className="text-xl font-bold text-indigo-600 bg-indigo-50 inline-block px-6 py-2 rounded-full shadow-sm">Dedektif Kimliğinizi Seçin:</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button onClick={() => setGrade('ilkokul')} className="group bg-orange-50 hover:bg-orange-100 border-b-4 border-orange-200 hover:border-orange-400 p-6 rounded-3xl flex flex-col items-center gap-3 transition-all active:scale-95">
+                                        <div className="bg-white p-3 rounded-full shadow-sm group-hover:scale-110 transition">
+                                            <Icon name="backpack" size={40} color="text-orange-500"/>
+                                        </div>
+                                        <span className="font-bold text-2xl text-orange-800 font-kids">İlkokul (1-4)</span>
+                                    </button>
+                                    <button onClick={() => setGrade('ortaokul')} className="group bg-blue-50 hover:bg-blue-100 border-b-4 border-blue-200 hover:border-blue-400 p-6 rounded-3xl flex flex-col items-center gap-3 transition-all active:scale-95">
+                                        <div className="bg-white p-3 rounded-full shadow-sm group-hover:scale-110 transition">
+                                            <Icon name="graduation-cap" size={40} color="text-blue-500"/>
+                                        </div>
+                                        <span className="font-bold text-2xl text-blue-800 font-kids">Ortaokul (5-8)</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 animate-pop relative z-10">
+                                <div className="flex items-center justify-center gap-3 mb-4">
+                                    <button onClick={() => setGrade(null)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
+                                        <Icon name="arrow-left" size={20} color="text-slate-500"/>
+                                    </button>
+                                    <span className="font-bold text-slate-700 bg-slate-100 px-4 py-1 rounded-full">Seçilen: {grade === 'ilkokul' ? 'İlkokul' : 'Ortaokul'}</span>
+                                </div>
+                                <p className="text-xl font-bold text-indigo-600 bg-indigo-50 inline-block px-6 py-2 rounded-full shadow-sm">Görev Zorluğu:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <button onClick={() => onStart(grade, 'kolay')} className="bg-emerald-100 hover:bg-emerald-200 border-b-4 border-emerald-300 p-4 rounded-2xl font-bold text-emerald-800 transition active:scale-95 flex items-center justify-center gap-2">
+                                        🌱 Çırak
+                                    </button>
+                                    <button onClick={() => onStart(grade, 'orta')} className="bg-yellow-100 hover:bg-yellow-200 border-b-4 border-yellow-300 p-4 rounded-2xl font-bold text-yellow-800 transition active:scale-95 flex items-center justify-center gap-2">
+                                        ⭐ Usta
+                                    </button>
+                                    <button onClick={() => onStart(grade, 'zor')} className="bg-rose-100 hover:bg-rose-200 border-b-4 border-rose-300 p-4 rounded-2xl font-bold text-rose-800 transition active:scale-95 flex items-center justify-center gap-2">
+                                        🕵️ Dedektif
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const GameScreen = ({ grade, difficulty, onBack }) => {
+            const [story, setStory] = useState(null);
+            const [gems, setGems] = useState({ kim:false, ne:false, nerede:false, ne_zaman:false, nasil:false, neden:false });
+            const [activeQ, setActiveQ] = useState(null);
+            const [showResult, setShowResult] = useState(false);
+            const [notification, setNotification] = useState(null);
+            const [wrongShake, setWrongShake] = useState(false);
+            
+            // --- OKUMA ARAÇLARI STATE ---
+            const [fontSize, setFontSize] = useState(20); // Font boyutu
+            const [selectedColor, setSelectedColor] = useState('bg-yellow-200'); // Seçili kalem
+            const [wordHighlights, setWordHighlights] = useState({}); // Kelime boyamaları {index: colorClass}
+            const [isSyllableMode, setIsSyllableMode] = useState(false); // Heceleme modu
+            const [readingGuide, setReadingGuide] = useState(false); // Okuma cetveli
+            const [guideY, setGuideY] = useState(0); // Cetvel pozisyonu
+            const textBoxRef = useRef(null);
+
+            useEffect(() => {
+                const suitableStories = HIKAYELER.filter(h => h.seviye === grade && (difficulty === 'tumu' || h.zorluk === difficulty));
+                const pool = suitableStories.length > 0 ? suitableStories : HIKAYELER.filter(h => h.seviye === grade);
+                
+                if(pool.length > 0) {
+                    const randomStory = pool[Math.floor(Math.random() * pool.length)];
+                    setStory(randomStory);
+                } else {
+                    setNotification({msg: "Bu kategoride henüz hikaye yok.", type: 'error'});
+                    setTimeout(onBack, 2000);
+                }
+            }, []);
+
+            // Metin konuşma fonksiyonu
+            const speakText = () => {
+                if (!story) return;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(story.metin);
+                utterance.lang = 'tr-TR';
+                utterance.rate = 0.9; // Biraz yavaş okusun çocuklar için
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const stopSpeak = () => {
+                window.speechSynthesis.cancel();
+            };
+
+            const checkAnswer = (qType, choiceIndex) => {
+                if (story.sorular[qType].d === choiceIndex) {
+                    const newGems = { ...gems, [qType]: true };
+                    setGems(newGems);
+                    setActiveQ(null);
+                    setNotification({ msg: "Harika! Bir ipucu buldun! 🎉", type: 'success' });
+                    
+                    if (Object.values(newGems).every(v => v === true)) {
+                        confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#10b981', '#fbbf24', '#3b82f6', '#f43f5e'] });
+                        setTimeout(() => setShowResult(true), 1500);
+                    }
+                } else {
+                    setWrongShake(true);
+                    setNotification({ msg: "Dikkatli oku dedektif! Yanlış iz. 🔍", type: 'error' });
+                    setTimeout(() => setWrongShake(false), 500);
+                }
+            };
+
+            // Kelimeye tıklayınca boyama işlemi
+            const handleWordClick = (index) => {
+                if (isSyllableMode) return; // Heceleme modunda boyama kapalı olsun
+                
+                setWordHighlights(prev => {
+                    const current = prev[index];
+                    // Eğer zaten aynı renkse sil, farklıysa değiştir, yoksa ekle
+                    if (current === selectedColor) {
+                        const newState = { ...prev };
+                        delete newState[index];
+                        return newState;
+                    }
+                    return { ...prev, [index]: selectedColor };
+                });
+            };
+
+            // Okuma cetveli hareketi
+            const handleMouseMove = (e) => {
+                if (readingGuide && textBoxRef.current) {
+                    const rect = textBoxRef.current.getBoundingClientRect();
+                    // Mouse kutunun içindeyse
+                    if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                        setGuideY(e.clientY - rect.top);
+                    }
+                }
+            };
+
+            if (!story) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin text-emerald-500"><Icon name="loader-2" size={48}/></div></div>;
+
+            if (showResult) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-emerald-50 animate-pop">
+                        <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl text-center max-w-lg w-full border-4 border-emerald-200">
+                            <div className="mb-6 inline-block bg-yellow-100 p-6 rounded-full animate-bounce">
+                                <Icon name="trophy" size={64} color="text-yellow-500" />
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-kids font-bold text-emerald-600 mb-4">Tebrikler Dedektif! 🏆</h2>
+                            <p className="text-slate-600 text-lg mb-8 font-comic font-bold">Bu vakanın 5N1K dosyasını başarıyla tamamladın.</p>
+                            
+                            <div className="bg-slate-50 rounded-2xl p-4 mb-8 grid grid-cols-6 gap-2">
+                                {Object.keys(gems).map(k => <div key={k} className="aspect-square rounded-full bg-emerald-400 border-2 border-emerald-600 flex items-center justify-center text-white shadow-sm"><Icon name="check" size={16}/></div>)}
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <button onClick={() => window.location.reload()} className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-200 transition active:scale-95 flex items-center justify-center gap-2">
+                                    <Icon name="refresh-ccw" size={20} color="text-white"/> Yeni Vaka Çöz
+                                </button>
+                                <button onClick={onBack} className="bg-white border-2 border-slate-200 text-slate-500 py-4 rounded-xl font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                                    <Icon name="home" size={20} color="text-slate-400"/> Ana Menü
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Metni kelime kelime render etme mantığı
+            const words = story.metin.split(' ');
+
+            return (
+                <div className="min-h-screen p-3 md:p-6 max-w-7xl mx-auto flex flex-col gap-4 md:gap-6 pb-20">
+                    {notification && <Notification message={notification.msg} type={notification.type} onClose={() => setNotification(null)} />}
+
+                    {/* Üst Bar & Navigasyon */}
+                    <div className="flex justify-between items-center bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <button onClick={() => { stopSpeak(); onBack(); }} className="flex items-center gap-2 text-slate-500 hover:text-red-500 font-bold bg-slate-50 hover:bg-red-50 px-4 py-2 rounded-xl transition">
+                            <Icon name="arrow-left"/> <span className="hidden md:inline">Çıkış</span>
+                        </button>
+                        <div className="font-kids text-lg md:text-2xl font-bold text-indigo-700 truncate px-2">{story.baslik}</div>
+                        <div className="flex gap-1">
+                            {Object.keys(gems).map((k) => (
+                                <div key={k} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${gems[k] ? 'bg-yellow-400 border-yellow-600 scale-110 shadow-md' : 'bg-slate-100 border-slate-200'}`} title={k.toUpperCase()}>
+                                    {gems[k] && <span className="text-xs">💎</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-full">
+                        {/* Sol: Okuma Alanı ve Araçlar */}
+                        <div className="lg:w-3/5 flex flex-col gap-4">
+                            
+                            {/* OKUMA ARAÇLARI TOOLBAR */}
+                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center justify-between">
+                                {/* Renk Seçici */}
+                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                                    <Icon name="highlighter" size={18} className="text-slate-400"/>
+                                    <div className="flex gap-1">
+                                        {[
+                                            { c: 'bg-yellow-200', b: 'border-yellow-400' },
+                                            { c: 'bg-green-200', b: 'border-green-400' },
+                                            { c: 'bg-blue-200', b: 'border-blue-400' },
+                                            { c: 'bg-pink-200', b: 'border-pink-400' },
+                                            { c: 'bg-transparent', b: 'border-slate-300', icon: 'eraser' } // Silgi
+                                        ].map((color, i) => (
+                                            <button 
+                                                key={i}
+                                                onClick={() => setSelectedColor(color.c)}
+                                                className={`w-7 h-7 rounded-full ${color.c} border-2 ${color.b} ${selectedColor === color.c ? 'scale-125 ring-2 ring-indigo-300' : 'hover:scale-110'} transition flex items-center justify-center`}
+                                            >
+                                                {color.icon && <Icon name="eraser" size={12} className="text-slate-500"/>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Font ve Heceleme */}
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center bg-slate-50 rounded-xl border border-slate-200 p-1">
+                                        <button onClick={() => setFontSize(Math.max(16, fontSize - 2))} className="p-2 hover:bg-slate-200 rounded-lg"><Icon name="minus" size={16}/></button>
+                                        <span className="w-8 text-center font-bold text-slate-600">{fontSize}</span>
+                                        <button onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="p-2 hover:bg-slate-200 rounded-lg"><Icon name="plus" size={16}/></button>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => setIsSyllableMode(!isSyllableMode)}
+                                        className={`px-3 py-2 rounded-xl font-bold text-sm border-2 transition flex items-center gap-1 ${isSyllableMode ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}
+                                    >
+                                        <Icon name="binary" size={16}/> Hecele
+                                    </button>
+                                </div>
+
+                                {/* Ses ve Cetvel */}
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => setReadingGuide(!readingGuide)}
+                                        className={`p-2 rounded-xl border-2 transition ${readingGuide ? 'bg-orange-100 border-orange-300 text-orange-600' : 'bg-white border-slate-200 text-slate-400'}`}
+                                        title="Okuma Cetveli"
+                                    >
+                                        <Icon name="ruler" size={20}/>
+                                    </button>
+                                    <button 
+                                        onClick={speakText}
+                                        className="p-2 rounded-xl bg-indigo-100 border-2 border-indigo-300 text-indigo-600 hover:bg-indigo-200 transition"
+                                        title="Sesli Oku"
+                                    >
+                                        <Icon name="volume-2" size={20}/>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* METİN ALANI */}
+                            <div 
+                                ref={textBoxRef}
+                                className="bg-white p-6 md:p-10 rounded-[2rem] shadow-lg border-2 border-slate-100 reading-box overflow-y-auto max-h-[50vh] lg:max-h-[60vh] relative cursor-text select-none"
+                                onMouseMove={handleMouseMove}
+                                onMouseLeave={() => setGuideY(-100)} // Gizle
+                            >
+                                {/* Okuma Cetveli */}
+                                {readingGuide && (
+                                    <div 
+                                        className="reading-guide absolute left-0 w-full h-12 bg-yellow-300 opacity-20 border-b-2 border-yellow-500 pointer-events-none z-0"
+                                        style={{ top: guideY - 24 }} // Ortalama
+                                    ></div>
+                                )}
+
+                                <div className="font-reading leading-loose text-slate-800 relative z-10" style={{ fontSize: `${fontSize}px` }}>
+                                    {words.map((word, index) => {
+                                        // Heceleme Modu
+                                        if (isSyllableMode) {
+                                            const heceler = hecele(word);
+                                            return (
+                                                <span key={index} className="inline-block mr-2 mb-2">
+                                                    {heceler.map((hece, hIndex) => (
+                                                        <span key={hIndex} className={hIndex % 2 === 0 ? 'text-blue-600' : 'text-rose-600'}>
+                                                            {hece}
+                                                            {/* Heceler arasına tire koymak istersen: {hIndex < heceler.length - 1 ? '-' : ''} */}
+                                                        </span>
+                                                    ))}
+                                                </span>
+                                            );
+                                        }
+
+                                        // Normal + Vurgulama Modu
+                                        return (
+                                            <span 
+                                                key={index}
+                                                onClick={() => handleWordClick(index)}
+                                                className={`inline-block mr-1.5 px-1 rounded transition-colors duration-200 border border-transparent hover:border-slate-200 ${wordHighlights[index] || ''}`}
+                                            >
+                                                {word}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            <p className="text-center text-slate-400 text-sm flex items-center justify-center gap-2">
+                                <Icon name="mouse-pointer-2" size={14}/> 
+                                Kelimelere tıklayarak istediğin renkle boyayabilirsin!
+                            </p>
+                        </div>
+
+                        {/* Sağ: 5N1K Paneli */}
+                        <div className="lg:w-2/5 flex flex-col gap-4">
+                            {!activeQ ? (
+                                <div className="grid grid-cols-2 gap-3 h-full content-start">
+                                    {[
+                                        { id: 'kim', l: 'KİM?', icon: 'user', c: 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300' },
+                                        { id: 'ne', l: 'NE?', icon: 'box', c: 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300' },
+                                        { id: 'nerede', l: 'NEREDE?', icon: 'map-pin', c: 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100 hover:border-green-300' },
+                                        { id: 'ne_zaman', l: 'NE ZAMAN?', icon: 'clock', c: 'bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-100 hover:border-purple-300' },
+                                        { id: 'nasil', l: 'NASIL?', icon: 'activity', c: 'bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100 hover:border-orange-300' },
+                                        { id: 'neden', l: 'NEDEN?', icon: 'help-circle', c: 'bg-pink-50 border-pink-200 text-pink-600 hover:bg-pink-100 hover:border-pink-300' },
+                                    ].map(btn => (
+                                        <button 
+                                            key={btn.id}
+                                            disabled={gems[btn.id]}
+                                            onClick={() => setActiveQ(btn.id)}
+                                            className={`p-4 rounded-2xl border-b-4 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 ${gems[btn.id] ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200 grayscale' : `${btn.c} h-32`}`}
+                                        >
+                                            <Icon name={gems[btn.id] ? 'check' : btn.icon} size={32} />
+                                            <span className="font-black text-xl">{gems[btn.id] ? 'ÇÖZÜLDÜ' : btn.l}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className={`bg-white p-6 rounded-[2rem] shadow-xl border-4 border-indigo-100 animate-pop flex flex-col h-auto ${wrongShake ? 'animate-shake' : ''}`}>
+                                    <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                                        <h3 className="font-black text-2xl text-indigo-600 uppercase flex items-center gap-2">
+                                            <Icon name="help-circle" color="text-indigo-600"/> {activeQ.replace('_', ' ')}?
+                                        </h3>
+                                        <button onClick={() => setActiveQ(null)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition"><Icon name="x"/></button>
+                                    </div>
+                                    <p className="text-xl font-bold text-slate-800 mb-6 font-comic">{story.sorular[activeQ].s}</p>
+                                    <div className="space-y-3 flex-1 overflow-y-auto">
+                                        {story.sorular[activeQ].c.map((opt, idx) => (
+                                            <button 
+                                                key={idx} 
+                                                onClick={() => checkAnswer(activeQ, idx)}
+                                                className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-md transition-all font-bold text-slate-600 text-lg group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-black group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                                        {["A", "B", "C"][idx]}
+                                                    </div>
+                                                    {opt}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+                                        <p className="text-sm text-yellow-600 font-bold flex items-center justify-center gap-2 bg-yellow-50 p-2 rounded-lg">
+                                            <Icon name="lightbulb" size={16}/> İpucu: Soldaki metinde ipucunu boyayabilirsin!
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [screen, setScreen] = useState('welcome');
+            const [gameConfig, setGameConfig] = useState(null);
+
+            const startGame = (grade, diff) => {
+                setGameConfig({ grade, diff });
+                setScreen('game');
+            };
+
+            return (
+                <div className="antialiased h-screen overflow-x-hidden">
+                    {screen === 'welcome' && <WelcomeScreen onStart={startGame} />}
+                    {screen === 'game' && <GameScreen grade={gameConfig.grade} difficulty={gameConfig.diff} onBack={() => setScreen('welcome')} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
