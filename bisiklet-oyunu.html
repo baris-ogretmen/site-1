@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Eğitici Bisiklet Oyunu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;900&display=swap" rel="stylesheet">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css'>
+  
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      font-family: "Roboto", sans-serif;
+      background: #dfe1eb;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #gameContainer {
+      position: relative;
+      width: 800px;
+      height: 550px;
+      background: #efefef;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      z-index: 10;
+      transition: opacity 0.3s;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    h1 {
+      color: #4e567d;
+      font-size: 36px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    p {
+      color: #555;
+      font-size: 18px;
+      margin-bottom: 30px;
+      font-weight: 500;
+      text-align: center;
+      max-width: 80%;
+    }
+
+    .grid-menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      width: 80%;
+      max-width: 600px;
+    }
+
+    button {
+      background: #ff6a5e;
+      color: white;
+      border: none;
+      padding: 20px;
+      font-size: 20px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-family: "Roboto", sans-serif;
+      font-weight: 900;
+      box-shadow: 0 8px 0px #d43f33;
+      transition: transform 0.1s, box-shadow 0.1s;
+      text-transform: uppercase;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #ff7b70;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 0px #d43f33;
+    }
+
+    button:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0px #d43f33;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #questionModal {
+      background: rgba(240, 248, 255, 0.98);
+      border: 5px solid #4e567d;
+    }
+
+    #questionText {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 30px;
+      font-weight: bold;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 90%;
+    }
+
+    .answer-btn {
+      background: #4e567d;
+      box-shadow: 0 8px 0px #2c324a;
+    }
+    .answer-btn:hover { background: #5d6691; box-shadow: 0 10px 0px #2c324a; }
+    .answer-btn:active { box-shadow: 0 4px 0px #2c324a; }
+
+    /* --- BİLGİ PANELLERİ --- */
+    
+    /* Skor (Sağ Üst) */
+    #scoreBoard {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 24px;
+      font-weight: 900;
+      color: #4e567d;
+      pointer-events: none;
+      z-index: 5;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* Kalan Soru (Sağ Üst - Skorun Altı) */
+    #questionCounterPanel {
+      position: absolute;
+      top: 80px;
+      right: 30px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: #ff6a5e;
+      pointer-events: none;
+      z-index: 5;
+      padding: 8px 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* Sol Üst Bilgi (Soruya Kalan Engel) */
+    #infoPanel {
+      position: absolute;
+      top: 20px;
+      left: 30px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      background: #4e567d;
+      padding: 10px 20px;
+      border-radius: 20px;
+      z-index: 5;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* Hız Kontrol Paneli (Ortada) */
+    #speedControl {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 20px;
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    #speedControl span { font-size: 24px; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 200px;
+      height: 10px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+    input[type=range]:hover { opacity: 1; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #ff6a5e;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    #controlsHint {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    #victoryScreen h1 { color: #2ecc71; }
+    
+    @media (max-width: 600px) {
+      .grid-menu { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+      #questionText { font-size: 22px; }
+      button { padding: 15px; font-size: 18px; }
+      #scoreBoard { font-size: 16px; right: 10px; top: 10px; padding: 5px 10px;}
+      #questionCounterPanel { font-size: 14px; right: 10px; top: 55px; padding: 5px 10px; }
+      #infoPanel { font-size: 14px; left: 10px; top: 10px; padding: 5px 10px; }
+      #speedControl { top: 50px; padding: 5px 10px; left: 10px; transform: none; display: none; /* Mobilde yer kazanmak için gizleyebiliriz veya küçültebiliriz */ } 
+      /* Mobilde hız kontrolünü göstermek isterseniz display:flex yapıp konumu ayarlayabilirsiniz, şu an ekran doluluğu için gizledim */
+    }
+  </style>
+</head>
+<body>
+
+  <div id="scaler">
+    <div id="gameContainer">
+      <canvas id="gameCanvas" width="800" height="550"></canvas>
+      
+      <!-- Üst Bilgi Alanları -->
+      <div id="scoreBoard">Puan: 0 / 20</div>
+      <div id="questionCounterPanel">Kalan Soru: 3</div>
+      <div id="infoPanel">Soruya Kalan: 5 Engel</div>
+      
+      <!-- Hız Kontrolü -->
+      <div id="speedControl">
+        <span>🐢</span>
+        <input type="range" id="speedSlider" min="3" max="15" value="5" step="0.5">
+        <span>🐇</span>
+      </div>
+
+      <!-- Seviye Seçim Ekranı -->
+      <div id="levelSelectScreen" class="ui-layer">
+        <h1>Eğitici Bisiklet Oyunu</h1>
+        <p>Lütfen eğitim seviyesini seçiniz:</p>
+        <div class="grid-menu">
+          <button onclick="selectLevel('anasinifi')">🧸 Anasınıfı</button>
+          <button onclick="selectLevel('ilkokul')">🎒 İlkokul</button>
+          <button onclick="selectLevel('ortaokul')">📚 Ortaokul</button>
+          <button onclick="selectLevel('ozel')">⭐ Özel Eğitim</button>
+        </div>
+      </div>
+
+      <!-- Başlangıç Ekranı -->
+      <div id="startScreen" class="ui-layer hidden">
+        <h1 id="selectedLevelTitle">Başlamaya Hazır Mısın?</h1>
+        <p>20 Puan toplayıp okula ulaşmaya çalış!<br>Her 5 engelde bir soru çıkacak.</p>
+        <button id="startBtn" style="width: auto; padding: 20px 60px;">🚀 OYUNA BAŞLA</button>
+      </div>
+
+      <!-- Soru Modalı -->
+      <div id="questionModal" class="ui-layer hidden">
+        <h2>Soru Zamanı!</h2>
+        <p id="questionText">Soru buraya gelecek...</p>
+        <div class="answer-grid" id="answersContainer">
+          <!-- Cevap butonları JS ile eklenecek -->
+        </div>
+      </div>
+
+      <!-- Oyun Bitti Ekranı (Kaybetme) -->
+      <div id="gameOverScreen" class="ui-layer hidden">
+        <h1 style="color: #e74c3c;">Oyun Bitti!</h1>
+        <p>Engele çarptın. Tekrar denemek ister misin?</p>
+        <p>Puanın: <span id="finalScore" style="color:#ff6a5e; font-weight:bold; font-size:30px">0</span></p>
+        <button id="restartBtn">🔄 Yeniden Başla</button>
+      </div>
+
+      <!-- Oyun Bitti Ekranı (Kazanma) -->
+      <div id="victoryScreen" class="ui-layer hidden">
+        <h1>🎉 Tebrikler! 🎉</h1>
+        <p>Tüm soruları bildin ve okula vardın!</p>
+        <p style="font-size: 60px;">🏫🚲</p>
+        <button id="victoryBtn">Ana Menüye Dön</button>
+      </div>
+
+      <div id="controlsHint">Zıplamak için Boşluk Tuşuna Bas veya Ekrana Dokun</div>
+    </div>
+  </div>
+
+  <script>
+    // --- Responsive Ölçeklendirme ---
+    function scaleContent() {
+      const scaler = document.getElementById('scaler');
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const baseWidth = 800;
+      const baseHeight = 550;
+      
+      let scale = Math.min((windowWidth - 20) / baseWidth, (windowHeight - 20) / baseHeight);
+      if (scale > 1.2) scale = 1.2;
+
+      scaler.style.transform = `scale(${scale})`;
+      scaler.style.width = `${baseWidth}px`;
+      scaler.style.height = `${baseHeight}px`;
+    }
+    window.addEventListener('resize', scaleContent);
+    window.addEventListener('load', scaleContent);
+
+    // --- GENİŞLETİLMİŞ SORU BANKASI (Her Seviye 10 Soru) ---
+    const questionBank = {
+      anasinifi: [
+        { q: "Hangisi kırmızı renktedir?", answers: ["🍎 Elma", "🥦 Brokoli", "🍌 Muz", "🍆 Patlıcan"], correct: 0 },
+        { q: "3 + 1 kaç eder?", answers: ["2", "4", "5", "1"], correct: 1 },
+        { q: "Hangisi havada uçar?", answers: ["🐱 Kedi", "🐟 Balık", "🐦 Kuş", "🐶 Köpek"], correct: 2 },
+        { q: "Hangisi 'Miyav' der?", answers: ["Köpek", "Kedi", "İnek", "Kuş"], correct: 1 },
+        { q: "Kaç tane parmağımız var (bir elde)?", answers: ["3", "4", "5", "10"], correct: 2 },
+        { q: "Hangi hayvanın uzun hortumu var?", answers: ["Zürafa", "Fil", "Aslan", "Ayı"], correct: 1 },
+        { q: "Limonun tadı nasıldır?", answers: ["Tatlı", "Ekşi", "Tuzlu", "Acı"], correct: 1 },
+        { q: "Gece gökyüzünde ne görürüz?", answers: ["Güneş", "Gökkuşağı", "Ay", "Bulut"], correct: 2 },
+        { q: "Dişlerimizi ne ile fırçalarız?", answers: ["Tarak", "Kaşık", "Diş Fırçası", "Kalem"], correct: 2 },
+        { q: "Hangisi bir meyvedir?", answers: ["Pırasa", "Ispanak", "Çilek", "Patates"], correct: 2 }
+      ],
+      ilkokul: [
+        { q: "Türkiye'nin başkenti neresidir?", answers: ["İstanbul", "İzmir", "Ankara", "Bursa"], correct: 2 },
+        { q: "5 x 5 işleminin sonucu kaçtır?", answers: ["20", "25", "30", "10"], correct: 1 },
+        { q: "Hangi mevsimde kar yağar?", answers: ["Yaz", "Kış", "Sonbahar", "İlkbahar"], correct: 1 },
+        { q: "Bir yılda kaç ay vardır?", answers: ["10", "11", "12", "13"], correct: 2 },
+        { q: "Alfabemizin ilk harfi nedir?", answers: ["Z", "B", "C", "A"], correct: 3 },
+        { q: "İstiklal Marşı'mızın şairi kimdir?", answers: ["Mehmet Akif Ersoy", "Ömer Seyfettin", "Ziya Gökalp", "Namık Kemal"], correct: 0 },
+        { q: "Dünya'nın uydusu nedir?", answers: ["Güneş", "Mars", "Ay", "Yıldız"], correct: 2 },
+        { q: "Aşağıdakilerden hangisi bir yön değildir?", answers: ["Kuzey", "Güney", "Aşağı", "Doğu"], correct: 2 },
+        { q: "Su donunca ne olur?", answers: ["Buhar", "Buz", "Yağmur", "Bulut"], correct: 1 },
+        { q: "Trafik ışığında kırmızı ne anlama gelir?", answers: ["Geç", "Hazırlan", "Dur", "Hızlan"], correct: 2 }
+      ],
+      ortaokul: [
+        { q: "Suyun kimyasal formülü nedir?", answers: ["CO2", "H2O", "O2", "NaCl"], correct: 1 },
+        { q: "İstanbul kaç yılında fethedildi?", answers: ["1453", "1071", "1923", "1299"], correct: 0 },
+        { q: "Kareköklü ifade √64 kaça eşittir?", answers: ["6", "4", "8", "32"], correct: 2 },
+        { q: "Türkiye'nin en yüksek dağı hangisidir?", answers: ["Erciyes", "Palandöken", "Ağrı Dağı", "Uludağ"], correct: 2 },
+        { q: "Hücrenin yönetim merkezi neresidir?", answers: ["Sitoplazma", "Hücre Zarı", "Çekirdek", "Koful"], correct: 2 },
+        { q: "Hangi gezegen 'Kızıl Gezegen' olarak bilinir?", answers: ["Venüs", "Mars", "Jüpiter", "Satürn"], correct: 1 },
+        { q: "Maddenin hallerinden biri değildir?", answers: ["Katı", "Sıvı", "Gaz", "Plastik"], correct: 3 },
+        { q: "İngilizce 'Book' kelimesinin anlamı nedir?", answers: ["Defter", "Kalem", "Kitap", "Silgi"], correct: 2 },
+        { q: "Bir üçgenin iç açıları toplamı kaçtır?", answers: ["180", "360", "90", "100"], correct: 0 },
+        { q: "Mustafa Kemal Atatürk nerede doğmuştur?", answers: ["Ankara", "İstanbul", "Selanik", "İzmir"], correct: 2 }
+      ],
+      ozel: [
+        { q: "Hangisi 'MUTLU' yüz ifadesidir?", answers: ["😊", "😢", "😠", "🤢"], correct: 0 },
+        { q: "Resimdeki meyveyi bul: 'MUZ'", answers: ["🍎", "🍌", "🍇", "🍉"], correct: 1 },
+        { q: "Hangisi taşıttır?", answers: ["🏠 Ev", "🚗 Araba", "🌳 Ağaç", "🐕 Köpek"], correct: 1 },
+        { q: "Hangisi giysidir?", answers: ["👕 Tişört", "🥛 Bardak", "🚪 Kapı", "📱 Telefon"], correct: 0 },
+        { q: "Kırmızı rengi göster.", answers: ["🔴", "🔵", "🟢", "🟡"], correct: 0 },
+        { q: "Hangisi soğuktur?", answers: ["Ateş", "Güneş", "Çay", "Dondurma"], correct: 3 },
+        { q: "Yağmur yağınca ne kullanırız?", answers: ["Şemsiye", "Güneş Gözlüğü", "Terlik", "Havlu"], correct: 0 },
+        { q: "Hangisi bir hayvandır?", answers: ["Masa", "Kedi", "Bilgisayar", "Kitap"], correct: 1 },
+        { q: "Uyumak için nereye yatarız?", answers: ["Yatak", "Dolap", "Mutfak", "Banyo"], correct: 0 },
+        { q: "Hangisi sıcak içecektir?", answers: ["Kola", "Su", "Çay", "Limonata"], correct: 2 }
+      ]
+    };
+
+    // --- Oyun Değişkenleri ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elementleri
+    const levelSelectScreen = document.getElementById('levelSelectScreen');
+    const startScreen = document.getElementById('startScreen');
+    const questionModal = document.getElementById('questionModal');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const victoryScreen = document.getElementById('victoryScreen');
+    
+    const scoreBoard = document.getElementById('scoreBoard');
+    const questionCounterPanel = document.getElementById('questionCounterPanel');
+    const infoPanel = document.getElementById('infoPanel');
+    
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const victoryBtn = document.getElementById('victoryBtn');
+    const questionText = document.getElementById('questionText');
+    const answersContainer = document.getElementById('answersContainer');
+    
+    // Hız Kontrol Elementi
+    const speedSlider = document.getElementById('speedSlider');
+
+    let gameRunning = false;
+    let isPausedForQuestion = false;
+    let frameId;
+    let score = 0;
+    
+    // Hız Değişkeni
+    let gameSpeed = parseFloat(speedSlider.value);
+    
+    let gravity = 0.6;
+    let currentLevel = 'anasinifi';
+    
+    // Soru ve Oyun Sonu Ayarları
+    const questionInterval = 5; // Her 5 engelde bir soru
+    const winningScore = 20; // 20 Engelde oyun biter
+    let nextQuestionScore = questionInterval; 
+    
+    // Soru Yönetimi (Tekrarsız)
+    let currentQuestionQueue = [];
+    let totalQuestionsToAsk = 0;
+    let questionsAnsweredCount = 0;
+
+    // Hız Değişimini Dinle
+    speedSlider.addEventListener('input', (e) => {
+        gameSpeed = parseFloat(e.target.value);
+    });
+
+    // Bisiklet
+    const bike = {
+      x: 100,
+      y: 400,
+      width: 60,
+      height: 40,
+      dy: 0,
+      jumpForce: -13,
+      grounded: false,
+      rotation: 0,
+      wheelRotation: 0,
+      pedalAngle: 0
+    };
+
+    const groundHeight = 450;
+    let obstacles = [];
+    let clouds = [];
+
+    // --- Fonksiyonlar ---
+
+    // Dizi karıştırma fonksiyonu (Fisher-Yates Shuffle)
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    window.selectLevel = function(level) {
+      currentLevel = level;
+      let levelName = "";
+      switch(level) {
+        case 'anasinifi': levelName = "🧸 Anasınıfı"; break;
+        case 'ilkokul': levelName = "🎒 İlkokul"; break;
+        case 'ortaokul': levelName = "📚 Ortaokul"; break;
+        case 'ozel': levelName = "⭐ Özel Eğitim"; break;
+      }
+      document.getElementById('selectedLevelTitle').innerText = levelName + " Seviyesi";
+      
+      // Soru havuzunu kopyala ve karıştır
+      currentQuestionQueue = shuffleArray([...questionBank[level]]);
+      
+      // Oyunda kaç soru sorulacağını hesapla (Kazanma puanı / aralık - 1, çünkü son puanda oyun bitiyor)
+      // Ancak mantık gereği 5, 10, 15. puanlarda soru var. 20'de bitiyor. Yani 3 soru.
+      totalQuestionsToAsk = Math.floor((winningScore - 1) / questionInterval);
+      questionsAnsweredCount = 0;
+
+      levelSelectScreen.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+    }
+
+    function init() {
+      obstacles = [];
+      clouds = [];
+      score = 0;
+      questionsAnsweredCount = 0;
+      
+      // Hızı slider'dan al
+      gameSpeed = parseFloat(speedSlider.value);
+      
+      nextQuestionScore = questionInterval; 
+
+      bike.y = 400;
+      bike.dy = 0;
+      bike.rotation = 0;
+      scoreBoard.innerText = "Puan: " + score + " / " + winningScore;
+      
+      updateInfoPanel();
+      updateQuestionCounter();
+      
+      for(let i=0; i<5; i++) {
+        spawnCloud(Math.random() * 800);
+      }
+    }
+
+    function updateInfoPanel() {
+      let remaining = nextQuestionScore - score;
+      if (remaining < 0) remaining = 0;
+      infoPanel.innerText = `Soruya Kalan: ${remaining} Engel`;
+    }
+
+    function updateQuestionCounter() {
+      let remainingQuestions = totalQuestionsToAsk - questionsAnsweredCount;
+      questionCounterPanel.innerText = `Kalan Soru: ${remainingQuestions}`;
+    }
+
+    function askQuestion() {
+      isPausedForQuestion = true;
+      gameRunning = false;
+      
+      // Sıradaki soruyu al (kuyruktan çek)
+      let currentQ;
+      if (currentQuestionQueue.length > 0) {
+        currentQ = currentQuestionQueue.pop();
+      } else {
+        // Yedek plan: Sorular biterse (olmaması lazım ama) baştan karıştırıp al
+        currentQuestionQueue = shuffleArray([...questionBank[currentLevel]]);
+        currentQ = currentQuestionQueue.pop();
+      }
+
+      questionText.innerText = currentQ.q;
+      answersContainer.innerHTML = '';
+
+      currentQ.answers.forEach((ans, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerText = ans;
+        // Tıklayınca butonları pasif yap
+        btn.onclick = (e) => {
+           const allBtns = answersContainer.querySelectorAll('button');
+           allBtns.forEach(b => b.disabled = true);
+           checkAnswer(index, currentQ.correct);
+        };
+        answersContainer.appendChild(btn);
+      });
+
+      questionModal.classList.remove('hidden');
+    }
+
+    function checkAnswer(selectedIndex, correctIndex) {
+      if (selectedIndex === correctIndex) {
+        // Doğru Cevap
+        alert("🎉 Doğru Cevap! Yola Devam!");
+        questionModal.classList.add('hidden');
+        isPausedForQuestion = false;
+        
+        cancelAnimationFrame(frameId); 
+        
+        gameRunning = true;
+        
+        // İstatistikleri güncelle
+        questionsAnsweredCount++;
+        nextQuestionScore = score + questionInterval; 
+        
+        updateInfoPanel();
+        updateQuestionCounter();
+        
+        update();
+      } else {
+        alert("😔 Yanlış Cevap. Tekrar dene!");
+        const allBtns = answersContainer.querySelectorAll('button');
+        allBtns.forEach(b => b.disabled = false);
+      }
+    }
+
+    function gameWin() {
+      gameRunning = false;
+      cancelAnimationFrame(frameId);
+      victoryScreen.classList.remove('hidden');
+    }
+
+    function spawnObstacle() {
+      const type = Math.random() > 0.5 ? 'rock' : 'crate';
+      const height = type === 'rock' ? 30 : 40;
+      const width = type === 'rock' ? 40 : 40;
+      
+      obstacles.push({
+        x: 850,
+        y: groundHeight - height,
+        width: width,
+        height: height,
+        type: type,
+        passed: false
+      });
+    }
+
+    function spawnCloud(xPos) {
+      clouds.push({
+        x: xPos || 850,
+        y: Math.random() * 200 + 50,
+        width: Math.random() * 60 + 40,
+        speed: Math.random() * 1 + 0.5
+      });
+    }
+
+    function drawRider(x, y) {
+        ctx.save();
+        let bobY = Math.sin(Date.now() / 100) * 2;
+
+        ctx.fillStyle = '#FFD700'; 
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 25, y + 15);
+        ctx.lineTo(x + 30, y + 35 + bobY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 25, y + 15);
+        ctx.lineTo(x + 40, y - 15 + bobY);
+        ctx.lineCap = "round";
+        ctx.lineWidth = 8;
+        ctx.stroke();
+        
+        ctx.strokeStyle = '#FFC107'; 
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x + 42, y - 25 + bobY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#f1c27d'; 
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(x + 42, y - 25 + bobY, 11, Math.PI, 0); 
+        ctx.fillStyle = '#ff6a5e'; 
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(x + 35, y - 25 + bobY);
+        ctx.lineTo(x + 42, y - 15 + bobY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 40, y - 15 + bobY); 
+        ctx.lineTo(x + 48, y + 5); 
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 25, y + 15); 
+        let pedalX = Math.cos(bike.pedalAngle) * 5;
+        let pedalY = Math.sin(bike.pedalAngle) * 5;
+        ctx.lineTo(x + 30 + pedalX, y + 35 + pedalY); 
+        ctx.strokeStyle = '#222'; 
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function drawBike(x, y, rot) {
+      ctx.save();
+      ctx.translate(x + bike.width/2, y + bike.height/2);
+      ctx.rotate(rot * Math.PI / 180); 
+      ctx.translate(-(x + bike.width/2), -(y + bike.height/2));
+
+      drawRider(x, y);
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#333';
+      
+      ctx.beginPath();
+      ctx.arc(x + 10, y + 35, 12, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(x + 10, y + 35);
+      ctx.rotate(bike.wheelRotation);
+      ctx.beginPath();
+      ctx.moveTo(-12, 0); ctx.lineTo(12, 0);
+      ctx.moveTo(0, -12); ctx.lineTo(0, 12);
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(x + 50, y + 35, 12, 0, Math.PI * 2);
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(x + 50, y + 35);
+      ctx.rotate(bike.wheelRotation);
+      ctx.beginPath();
+      ctx.moveTo(-12, 0); ctx.lineTo(12, 0);
+      ctx.moveTo(0, -12); ctx.lineTo(0, 12);
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#ff6a5e';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      ctx.moveTo(x + 10, y + 35);
+      ctx.lineTo(x + 25, y + 15);
+      ctx.lineTo(x + 30, y + 35);
+      ctx.lineTo(x + 45, y + 10);
+      ctx.lineTo(x + 50, y + 35);
+      ctx.moveTo(x + 25, y + 15);
+      ctx.lineTo(x + 42, y + 15);
+      ctx.stroke();
+
+      ctx.fillStyle = '#333';
+      ctx.fillRect(x + 20, y + 10, 10, 3);
+      ctx.beginPath();
+      ctx.moveTo(x + 42, y + 15);
+      ctx.lineTo(x + 40, y + 8);
+      ctx.lineTo(x + 48, y + 5);
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#fff';
+      clouds.forEach(cloud => {
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.width/2, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 15, cloud.y - 10, cloud.width/2, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 30, cloud.y, cloud.width/2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = '#4e567d';
+      ctx.fillRect(0, groundHeight, canvas.width, canvas.height - groundHeight);
+      ctx.beginPath();
+      ctx.moveTo(0, groundHeight);
+      ctx.lineTo(canvas.width, groundHeight);
+      ctx.strokeStyle = '#3d4361';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      obstacles.forEach(obs => {
+        if (obs.type === 'rock') {
+          ctx.fillStyle = '#777';
+          ctx.beginPath();
+          ctx.moveTo(obs.x, obs.y + obs.height);
+          ctx.lineTo(obs.x + obs.width/2, obs.y);
+          ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#8B4513';
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+          ctx.strokeStyle = '#65320e';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+          ctx.beginPath();
+          ctx.moveTo(obs.x, obs.y); ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+          ctx.moveTo(obs.x + obs.width, obs.y); ctx.lineTo(obs.x, obs.y + obs.height);
+          ctx.stroke();
+        }
+      });
+
+      drawBike(bike.x, bike.y, bike.rotation);
+    }
+
+    function update() {
+      if (!gameRunning || isPausedForQuestion) return;
+
+      bike.dy += gravity;
+      bike.y += bike.dy;
+
+      if (bike.y + bike.height > groundHeight) {
+        bike.y = groundHeight - bike.height;
+        bike.dy = 0;
+        bike.grounded = true;
+        if (bike.rotation > 0) bike.rotation -= 5;
+        if (bike.rotation < 0) bike.rotation += 5;
+      } else {
+        bike.grounded = false;
+        if (bike.dy < 0 && bike.rotation > -20) bike.rotation -= 2;
+        if (bike.dy > 0 && bike.rotation < 15) bike.rotation += 1.5;
+      }
+
+      bike.wheelRotation += 0.1 + (gameSpeed * 0.02);
+      bike.pedalAngle += 0.2; 
+
+      if (Math.random() < 0.015 && obstacles.length < 3) {
+        if (obstacles.length === 0 || canvas.width - obstacles[obstacles.length-1].x > 350) {
+           spawnObstacle();
+        }
+      }
+
+      for (let i = 0; i < obstacles.length; i++) {
+        let obs = obstacles[i];
+        obs.x -= gameSpeed;
+
+        let bikeHitX = bike.x + 10;
+        let bikeHitY = bike.y + 10;
+        let bikeHitW = bike.width - 20; 
+        let bikeHitH = bike.height - 10;
+
+        if (
+          bikeHitX < obs.x + obs.width &&
+          bikeHitX + bikeHitW > obs.x &&
+          bikeHitY < obs.y + obs.height &&
+          bikeHitY + bikeHitH > obs.y
+        ) {
+          gameOver();
+        }
+
+        if (obs.x + obs.width < bike.x && !obs.passed) {
+          score++; 
+          scoreBoard.innerText = "Puan: " + score + " / " + winningScore;
+          obs.passed = true;
+          updateInfoPanel(); 
+
+          if (score >= winningScore) {
+            gameWin();
+            return;
+          }
+
+          if (score % questionInterval === 0) { 
+             askQuestion();
+          }
+        }
+
+        if (obs.x + obs.width < 0) {
+          obstacles.splice(i, 1);
+          i--;
+        }
+      }
+
+      for (let i = 0; i < clouds.length; i++) {
+        let c = clouds[i];
+        c.x -= c.speed;
+        if (c.x + c.width < 0) {
+          c.x = canvas.width + Math.random() * 200;
+          c.y = Math.random() * 200 + 50;
+        }
+      }
+
+      draw();
+      frameId = requestAnimationFrame(update);
+    }
+
+    function jump() {
+      if (!gameRunning) return;
+      if (bike.grounded) {
+        bike.dy = bike.jumpForce;
+        bike.grounded = false;
+      }
+    }
+
+    function startGame() {
+      if (gameRunning) return;
+      init();
+      gameRunning = true;
+      startScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      victoryScreen.classList.add('hidden');
+      update();
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      cancelAnimationFrame(frameId);
+      document.getElementById('finalScore').innerText = score;
+      gameOverScreen.classList.remove('hidden');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        if (isPausedForQuestion) return; 
+        
+        if (!gameRunning && !startScreen.classList.contains('hidden')) {
+           startGame();
+        } else if (!gameRunning && (!gameOverScreen.classList.contains('hidden') || !victoryScreen.classList.contains('hidden'))) {
+           // Butonlar kullanılır
+        } else {
+           jump();
+        }
+      }
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if(!isPausedForQuestion && gameRunning) jump();
+    });
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if(!isPausedForQuestion && gameRunning) jump();
+    });
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    victoryBtn.addEventListener('click', () => {
+       victoryScreen.classList.add('hidden');
+       levelSelectScreen.classList.remove('hidden');
+    });
+
+    init();
+    bike.y = groundHeight - bike.height; 
+    draw();
+
+  </script>
+</body>
+</html>
