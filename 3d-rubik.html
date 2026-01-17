@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Rubik Küpü Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #2b3242 0%, #1a1f29 100%);
+            font-family: 'Montserrat', sans-serif;
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Konfeti Canvas */
+        #confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            align-self: center;
+            min-width: 300px;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, #ffeb3b, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #b0bec5;
+        }
+
+        .stat-item span {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .controls-area {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .main-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eceff1;
+            padding: 12px 28px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .icon-btn {
+            padding: 12px;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .settings-panel {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transform: scale(0);
+            transform-origin: bottom center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: absolute;
+            bottom: 80px;
+        }
+
+        .settings-panel.open {
+            transform: scale(1);
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #4caf50; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Overlay Styles */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .overlay h2 {
+            font-size: 4rem;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(255, 235, 59, 0.6);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .overlay p {
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-bottom: 30px;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: 100px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            pointer-events: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="ui-container">
+        <div class="header">
+            <h1>RUBIK PRO</h1>
+            <div class="stats-row">
+                <div class="stat-item">Süre<br><span id="timer">00:00</span></div>
+                <div class="stat-item">Hamle<br><span id="moves">0</span></div>
+            </div>
+        </div>
+        
+        <div class="instruction">
+            Çevirmek için sürükle • Döndürmek için boşluğu kullan
+        </div>
+
+        <div class="controls-area">
+            <div id="settings-panel" class="settings-panel">
+                <div class="setting-item">
+                    <span>Ses</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="chk-sound" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Hız</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="chk-speed">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="main-buttons">
+                <button id="btn-settings" class="icon-btn">⚙️</button>
+                <button id="btn-scramble">KARIŞTIR</button>
+                <button id="btn-reset" class="icon-btn">↺</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-overlay" class="overlay">
+        <h2>HARİKA!</h2>
+        <p>Küpü <span id="final-time"></span> sürede çözdün.</p>
+        <button id="btn-play-again">TEKRAR OYNA</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // --- SES YÖNETİCİSİ (Prosedürel Sesler) ---
+        const SoundManager = {
+            ctx: null,
+            enabled: true,
+            
+            init: function() {
+                try {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                } catch(e) { console.warn("Web Audio API desteklenmiyor"); }
+            },
+
+            playTone: function(freq, type, duration, vol=0.1) {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            playMove: function() {
+                // "Swoosh" efekti
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                // Filtre ekle (Rüzgar gibi ses için noise daha iyi ama basit sinüs/üçgen yeterli)
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            },
+
+            playClick: function() {
+                this.playTone(800, 'sine', 0.05, 0.05);
+            },
+
+            playWin: function() {
+                if (!this.enabled || !this.ctx) return;
+                // Arpeggio
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C Major
+                let delay = 0;
+                notes.forEach(note => {
+                    setTimeout(() => this.playTone(note, 'triangle', 0.3, 0.2), delay);
+                    delay += 100;
+                });
+                setTimeout(() => this.playTone(523.25, 'sine', 1.0, 0.2), delay + 200); // Final note
+            }
+        };
+
+        // --- KONFETİ EFEKTİ ---
+        const Confetti = {
+            canvas: document.getElementById('confetti-canvas'),
+            ctx: document.getElementById('confetti-canvas').getContext('2d'),
+            particles: [],
+            isActive: false,
+
+            init: function() {
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            },
+
+            resize: function() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            },
+
+            start: function() {
+                this.isActive = true;
+                this.particles = [];
+                for(let i=0; i<150; i++) {
+                    this.particles.push({
+                        x: window.innerWidth / 2,
+                        y: window.innerHeight / 2,
+                        vx: (Math.random() - 0.5) * 20,
+                        vy: (Math.random() - 0.5) * 20 - 5,
+                        color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                        size: Math.random() * 10 + 5,
+                        rotation: Math.random() * Math.PI * 2,
+                        vRot: (Math.random() - 0.5) * 0.2
+                    });
+                }
+                this.animate();
+            },
+
+            stop: function() {
+                this.isActive = false;
+                this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+            },
+
+            animate: function() {
+                if(!this.isActive) return;
+                this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+                
+                this.particles.forEach((p, index) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.2; // Gravity
+                    p.vx *= 0.96; // Friction
+                    p.rotation += p.vRot;
+
+                    this.ctx.save();
+                    this.ctx.translate(p.x, p.y);
+                    this.ctx.rotate(p.rotation);
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    this.ctx.restore();
+
+                    if(p.y > window.innerHeight) this.particles.splice(index, 1);
+                });
+
+                if(this.particles.length > 0) requestAnimationFrame(() => this.animate());
+                else this.isActive = false;
+            }
+        };
+
+        // --- YAPILANDIRMA ---
+        const CONF = {
+            size: 3,
+            cubeSize: 1,
+            spacing: 0.03, // Biraz daha boşluk gölgeleri belirginleştirir
+            colors: {
+                U: 0xFFFFFF, D: 0xFFD500, F: 0x009E60, 
+                R: 0xC41E3A, B: 0x0051BA, L: 0xFF5800,
+                Core: 0x0a0a0a
+            },
+            scrambleMoves: 25,
+            baseSpeed: 300,
+            fastSpeed: 150
+        };
+
+        // --- GLOBAL DEĞİŞKENLER ---
+        let scene, camera, renderer;
+        let cubes = [];
+        let pivot, worldObj;
+        let isAnimating = false;
+        let isScrambling = false;
+        let isGameActive = false;
+        let moveCount = 0;
+        let timerStart = 0, timerInterval;
+        let raycaster, mouse;
+        let startPos = null, intersectPiece = null, isDragging = false;
+        let orbitControl = { isDown: false, lastX: 0, lastY: 0 };
+        
+        // Parçacık sistemi (Arkaplan)
+        let particlesMesh;
+
+        // --- BAŞLATMA ---
+        function init() {
+            SoundManager.init();
+            Confetti.init();
+
+            // Sahne
+            scene = new THREE.Scene();
+            // Arkaplan CSS ile hallediliyor, ThreeJS şeffaf veya sisli olabilir
+            scene.fog = new THREE.FogExp2(0x1a1f29, 0.02);
+
+            // Kamera
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 100);
+            camera.position.set(6, 4, 8);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true; // Gölgeleri aç
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Işıklar
+            setupLights();
+
+            // Dünya Objesi
+            worldObj = new THREE.Object3D();
+            scene.add(worldObj);
+            pivot = new THREE.Object3D();
+            worldObj.add(pivot);
+
+            // Küpü oluştur
+            createCube();
+            createParticles();
+
+            // Başlangıç açısı
+            worldObj.rotation.x = 0.5;
+            worldObj.rotation.y = -0.7;
+
+            // Event Listeners
+            setupEvents();
+
+            // Loop
+            animate();
+        }
+
+        function setupLights() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 1);
+            spotLight.position.set(10, 20, 10);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.1;
+            spotLight.decay = 2;
+            spotLight.distance = 200;
+            spotLight.castShadow = true;
+            spotLight.shadow.mapSize.width = 1024;
+            spotLight.shadow.mapSize.height = 1024;
+            scene.add(spotLight);
+
+            const fillLight = new THREE.PointLight(0x88ccff, 0.5);
+            fillLight.position.set(-10, -10, -10);
+            scene.add(fillLight);
+        }
+
+        function createParticles() {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            for (let i = 0; i < 500; i++) {
+                vertices.push((Math.random() - 0.5) * 40);
+                vertices.push((Math.random() - 0.5) * 40);
+                vertices.push((Math.random() - 0.5) * 40);
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.5 });
+            particlesMesh = new THREE.Points(geometry, material);
+            scene.add(particlesMesh);
+        }
+
+        function createRoundedBox(width, height, depth, radius, smoothness) {
+            let shape = new THREE.Shape();
+            let eps = 0.00001;
+            let radius0 = radius - eps;
+            shape.absarc(eps, eps, eps, -Math.PI / 2, -Math.PI, true);
+            shape.absarc(eps, height - radius * 2, eps, Math.PI, Math.PI / 2, true);
+            shape.absarc(width - radius * 2, height - radius * 2, eps, Math.PI / 2, 0, true);
+            shape.absarc(width - radius * 2, eps, eps, 0, -Math.PI / 2, true);
+            let geometry = new THREE.ExtrudeGeometry(shape, {
+                depth: depth - radius0 * 2,
+                bevelEnabled: true,
+                bevelSegments: smoothness * 2,
+                steps: 1,
+                bevelSize: radius,
+                bevelThickness: radius0,
+                curveSegments: smoothness
+            });
+            geometry.center();
+            return geometry;
+        }
+
+        function createCube() {
+            cubes.forEach(c => worldObj.remove(c));
+            cubes = [];
+
+            const offset = (CONF.size - 1) / 2;
+            // Yuvarlak köşe simülasyonu için standart box kullanıp scale ile oynayabiliriz
+            // Veya ExtrudeGeometry ile gerçek yuvarlak köşe yapabiliriz (ağır olabilir)
+            // Performans için bevelled box geometry kullanalım (ThreeJS BoxGeometry'de yok, kendimiz yapabiliriz veya basit box + texture kullanabiliriz)
+            
+            // En temiz görünüm için standart BoxGeometry + MeshStandardMaterial + hafif bevel efekti veren doku veya
+            // Basitçe hafif boşluklu BoxGeometry yeterlidir.
+            const geometry = new THREE.BoxGeometry(CONF.cubeSize, CONF.cubeSize, CONF.cubeSize); 
+
+            // Renkleri hazırla
+            const faceColors = [CONF.colors.R, CONF.colors.L, CONF.colors.U, CONF.colors.D, CONF.colors.F, CONF.colors.B];
+            
+            for(let x = 0; x < CONF.size; x++) {
+                for(let y = 0; y < CONF.size; y++) {
+                    for(let z = 0; z < CONF.size; z++) {
+                        
+                        const materials = faceColors.map(c => {
+                            // Siyah plastik çerçeveli etiket görünümü
+                            return getMaterial(c);
+                        });
+
+                        // İç yüzeyleri siyah yap
+                        if (x < CONF.size - 1) materials[0] = getMaterial(CONF.colors.Core);
+                        if (x > 0) materials[1] = getMaterial(CONF.colors.Core);
+                        if (y < CONF.size - 1) materials[2] = getMaterial(CONF.colors.Core);
+                        if (y > 0) materials[3] = getMaterial(CONF.colors.Core);
+                        if (z < CONF.size - 1) materials[4] = getMaterial(CONF.colors.Core);
+                        if (z > 0) materials[5] = getMaterial(CONF.colors.Core);
+
+                        const mesh = new THREE.Mesh(geometry, materials);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+
+                        // Grid pozisyonu
+                        mesh.position.set(
+                            (x - offset) * (CONF.cubeSize + CONF.spacing),
+                            (y - offset) * (CONF.cubeSize + CONF.spacing),
+                            (z - offset) * (CONF.cubeSize + CONF.spacing)
+                        );
+
+                        // Yuvarlatılmış köşe illüzyonu için kenarları yumuşatan siyah bir iç kutu ekleyebiliriz 
+                        // veya geometrinin kenarlarını scale edebiliriz.
+                        // Bu örnekte scale ile parçaları hafif küçültüp spacing'i artırdık.
+                        mesh.scale.set(0.96, 0.96, 0.96);
+
+                        // Orijinal verileri sakla (Çözüm kontrolü için)
+                        mesh.userData = { 
+                            initialPos: mesh.position.clone(),
+                            initialRot: mesh.rotation.clone(), // Euler
+                            id: `${x},${y},${z}`
+                        };
+
+                        worldObj.add(mesh);
+                        cubes.push(mesh);
+                    }
+                }
+            }
+        }
+
+        function getMaterial(color) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.1, // Parlak plastik
+                metalness: 0.1,
+                polygonOffset: true,
+                polygonOffsetFactor: 1, 
+                polygonOffsetUnits: 1
+            });
+        }
+
+        // --- MANTIK ---
+        
+        function rotateSlice(axis, index, direction, speed) {
+            if (isAnimating) return;
+            isAnimating = true;
+            SoundManager.playMove();
+
+            let activeGroup = [];
+            const epsilon = 0.1;
+
+            cubes.forEach(cube => {
+                let coord;
+                // Lokal pozisyona bak (WorldObj dönmüş olsa bile küplerin parent'a göre konumu)
+                if (axis === 'x') coord = cube.position.x;
+                if (axis === 'y') coord = cube.position.y;
+                if (axis === 'z') coord = cube.position.z;
+
+                const targetPos = index * (CONF.cubeSize + CONF.spacing);
+                if (Math.abs(coord - targetPos) < epsilon) {
+                    activeGroup.push(cube);
+                }
+            });
+
+            pivot.rotation.set(0,0,0);
+            pivot.position.set(0,0,0);
+            
+            // Attach to pivot
+            activeGroup.forEach(c => pivot.attach(c));
+
+            const targetRotation = (Math.PI / 2) * direction;
+            const startRotation = 0;
+            const startTime = Date.now();
+            
+            // Hız ayarı
+            const currentSpeed = speed || (document.getElementById('chk-speed').checked ? CONF.fastSpeed : CONF.baseSpeed);
+
+            function loop() {
+                const now = Date.now();
+                const p = Math.min((now - startTime) / currentSpeed, 1);
+                // EaseInOutCubic
+                const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+
+                pivot.rotation[axis] = startRotation + (targetRotation * ease);
+
+                if (p < 1) {
+                    requestAnimationFrame(loop);
+                } else {
+                    pivot.rotation[axis] = targetRotation;
+                    pivot.updateMatrixWorld();
+                    
+                    activeGroup.forEach(c => {
+                        worldObj.attach(c);
+                        // Snap values
+                        const unit = CONF.cubeSize + CONF.spacing;
+                        c.position.x = Math.round(c.position.x / unit) * unit;
+                        c.position.y = Math.round(c.position.y / unit) * unit;
+                        c.position.z = Math.round(c.position.z / unit) * unit;
+                        
+                        const e = new THREE.Euler().setFromQuaternion(c.quaternion);
+                        const halfPi = Math.PI/2;
+                        c.rotation.set(
+                            Math.round(e.x / halfPi) * halfPi,
+                            Math.round(e.y / halfPi) * halfPi,
+                            Math.round(e.z / halfPi) * halfPi
+                        );
+                        c.updateMatrix();
+                    });
+
+                    isAnimating = false;
+                    if(isGameActive && !isScrambling) {
+                        moveCount++;
+                        updateUI();
+                        checkSolved();
+                    }
+                }
+            }
+            loop();
+        }
+
+        // --- ÇÖZÜM KONTROLÜ (Gelişmiş) ---
+        function checkSolved() {
+            let solved = true;
+            const eps = 0.1;
+
+            for(let c of cubes) {
+                // 1. Pozisyon kontrolü
+                if (c.position.distanceTo(c.userData.initialPos) > eps) {
+                    solved = false;
+                    break;
+                }
+                
+                // 2. Rotasyon Kontrolü
+                // Quaternion identity olmalı (veya 360 derece katları)
+                // Basitçe: Objenin Up vektörü (0,1,0), World Up (0,1,0) ile eşleşmeli mi?
+                // Evet çünkü başlangıçta hepsi aligned.
+                
+                const up = new THREE.Vector3(0,1,0);
+                up.applyQuaternion(c.quaternion);
+                // Başlangıçta hepsi Y ekseninde yukarı bakıyor (veya kendi local'lerinde)
+                // Daha basit: c.rotation x,y,z değerleri PI/2 nin çift katları mı (0, 180, 360)?
+                // Tek katları (90, 270) ise yanlıştır.
+                
+                const r = c.rotation;
+                const pi = Math.PI;
+                const isAligned = (val) => {
+                    const mod = Math.abs(val) % pi; // 0 veya 180 (yaklaşık)
+                    return mod < 0.1 || Math.abs(mod - pi) < 0.1; 
+                };
+                
+                if (!isAligned(r.x) || !isAligned(r.y) || !isAligned(r.z)) {
+                    solved = false;
+                    break;
+                }
+            }
+
+            if (solved && moveCount > 0) {
+                gameWin();
+            }
+        }
+
+        function gameWin() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            SoundManager.playWin();
+            Confetti.start();
+            
+            document.getElementById('final-time').innerText = document.getElementById('timer').innerText;
+            document.getElementById('win-overlay').classList.add('visible');
+        }
+
+        // --- OYUN AKIŞI ---
+        function scramble() {
+            if(isAnimating) return;
+            isScrambling = true;
+            isGameActive = false;
+            moveCount = 0;
+            updateUI();
+            
+            // UI Sıfırla
+            document.getElementById('timer').innerText = "00:00";
+            document.getElementById('win-overlay').classList.remove('visible');
+            
+            let moves = 0;
+            const axes = ['x', 'y', 'z'];
+            const indices = [-1, 0, 1];
+
+            function next() {
+                if (moves >= CONF.scrambleMoves) {
+                    isScrambling = false;
+                    startGame();
+                    return;
+                }
+                
+                const axis = axes[Math.floor(Math.random()*3)];
+                const index = indices[Math.floor(Math.random()*3)];
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                
+                // Scramble hızı her zaman hızlı olmalı
+                rotateSlice(axis, index, dir, 80);
+                moves++;
+                SoundManager.playClick();
+                
+                setTimeout(next, 90);
+            }
+            next();
+        }
+
+        function startGame() {
+            isGameActive = true;
+            timerStart = Date.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const d = Math.floor((Date.now() - timerStart)/1000);
+                const m = Math.floor(d/60).toString().padStart(2,'0');
+                const s = (d%60).toString().padStart(2,'0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('moves').innerText = moveCount;
+        }
+
+        function reset() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            moveCount = 0;
+            updateUI();
+            document.getElementById('timer').innerText = "00:00";
+            document.getElementById('win-overlay').classList.remove('visible');
+            Confetti.stop();
+            createCube();
+            worldObj.rotation.set(0.5, -0.7, 0);
+        }
+
+        // --- ETKİLEŞİM ---
+        function setupEvents() {
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            const c = renderer.domElement;
+            c.addEventListener('mousedown', onDown);
+            c.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            c.addEventListener('touchstart', onDown, {passive:false});
+            c.addEventListener('touchmove', onTouchMove, {passive:false});
+            window.addEventListener('touchend', onUp);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                Confetti.resize();
+            });
+
+            // UI
+            document.getElementById('btn-scramble').onclick = scramble;
+            document.getElementById('btn-reset').onclick = reset;
+            document.getElementById('btn-play-again').onclick = () => { reset(); scramble(); };
+            
+            // Ayarlar
+            document.getElementById('btn-settings').onclick = () => {
+                document.getElementById('settings-panel').classList.toggle('open');
+            };
+            document.getElementById('chk-sound').onchange = (e) => {
+                SoundManager.enabled = e.target.checked;
+                SoundManager.init(); // İlk tıklamada AudioContext başlatmak için
+            };
+        }
+
+        function getIntersects(e) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            let x, y;
+            if(e.changedTouches) { x = e.changedTouches[0].clientX; y = e.changedTouches[0].clientY; }
+            else { x = e.clientX; y = e.clientY; }
+            mouse.x = ((x - rect.left)/rect.width)*2 - 1;
+            mouse.y = -((y - rect.top)/rect.height)*2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            return raycaster.intersectObjects(worldObj.children);
+        }
+
+        function onDown(e) {
+            if(isScrambling) return;
+            // Web Audio için kullanıcı etkileşimi gerekebilir
+            if(SoundManager.enabled && SoundManager.ctx && SoundManager.ctx.state === 'suspended') {
+                SoundManager.ctx.resume();
+            }
+
+            e.preventDefault();
+            const hits = getIntersects(e);
+            if(hits.length > 0) {
+                isDragging = true;
+                intersectPiece = hits[0].object;
+                startPos = { x: e.clientX || e.changedTouches[0].clientX, y: e.clientY || e.changedTouches[0].clientY };
+                orbitControl.isDown = false;
+            } else {
+                orbitControl.isDown = true;
+                orbitControl.lastX = e.clientX || e.changedTouches[0].clientX;
+                orbitControl.lastY = e.clientY || e.changedTouches[0].clientY;
+            }
+        }
+
+        function onMove(e) {
+            if(orbitControl.isDown) {
+                const cx = e.clientX || e.changedTouches[0].clientX;
+                const cy = e.clientY || e.changedTouches[0].clientY;
+                const dx = cx - orbitControl.lastX;
+                const dy = cy - orbitControl.lastY;
+                worldObj.rotation.y += dx * 0.005;
+                worldObj.rotation.x += dy * 0.005;
+                orbitControl.lastX = cx;
+                orbitControl.lastY = cy;
+            }
+
+            if(isDragging && intersectPiece && !isAnimating) {
+                const cx = e.clientX || e.changedTouches[0].clientX;
+                const cy = e.clientY || e.changedTouches[0].clientY;
+                const dx = cx - startPos.x;
+                const dy = cy - startPos.y;
+
+                if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+
+                // Yön belirleme mantığı (Basitleştirilmiş)
+                // Ekran hareketini 3D eksene map ediyoruz
+                const absDx = Math.abs(dx);
+                const absDy = Math.abs(dy);
+                
+                let axis, index, dir;
+                
+                // Normal'i kontrol etmek daha iyidir ama basit UX:
+                // Yatay sürükleme -> Y ekseni dönüşü (Üst/Alt)
+                // Dikey sürükleme -> X ekseni dönüşü (Yanlar)
+                
+                const pos = intersectPiece.position;
+                const unit = CONF.cubeSize + CONF.spacing;
+                const gx = Math.round(pos.x/unit);
+                const gy = Math.round(pos.y/unit);
+                
+                if (absDx > absDy) {
+                    axis = 'y';
+                    index = gy;
+                    dir = dx > 0 ? 1 : -1;
+                } else {
+                    axis = 'x';
+                    index = gx;
+                    dir = dy > 0 ? 1 : -1;
+                }
+
+                rotateSlice(axis, index, dir);
+                isDragging = false;
+            }
+        }
+
+        function onTouchMove(e) { onMove(e); }
+        function onUp() { isDragging = false; orbitControl.isDown = false; }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(particlesMesh) particlesMesh.rotation.y += 0.0005;
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
+
+
