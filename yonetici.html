@@ -2,8 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yönetici Paneli v40.8 (Link Fix) | Barış İlkan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barış Hoca - Final Panel v45</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -11,217 +11,276 @@
     <script src="firebase-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --ana: #6366f1; --koyu: #1e293b; --acik: #f1f5f9; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--acik); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary: #2563eb; --secondary: #f59e0b; --danger: #ef4444; --dark: #0f172a; --light: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SOL MENÜ (FOTOĞRAFTAKİ GİBİ KOYU VE ŞIK) */
+        .sidebar { width: 260px; background: #111827; color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; overflow-y: auto; }
+        .brand { font-size: 1.4rem; font-weight: 700; color: #fbbf24; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        
+        .menu-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #9ca3af; font-weight: 500; transition: 0.2s; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .menu-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+        .menu-item.gold { color: #fbbf24; } 
+        .menu-item.gold:hover { background: rgba(251, 191, 36, 0.1); }
+        .badge { background: var(--danger); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin-left: auto; }
 
-        /* TOAST BİLDİRİM */
-        #toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
-        .toast { background: #10b981; color: white; padding: 15px 25px; border-radius: 50px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: slideUp 0.4s; display: flex; align-items: center; gap: 15px; border: 2px solid white; font-size: 1rem; justify-content: center; pointer-events: auto; }
-        @keyframes slideUp { from { transform: translateY(50px) scale(0.8); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        /* ANA İÇERİK */
+        .main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .title { font-size: 1.8rem; font-weight: 700; color: #1f2937; }
+        
+        /* KARTLAR VE KUTULAR */
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e5e7eb; }
+        .section { display: none; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-        /* GİRİŞ EKRANI */
-        #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e293b, #0f172a); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        /* İSTATİSTİK KUTULARI (FOTOĞRAFTAKİ GİBİ BÜYÜK VE RENKLİ) */
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-box { padding: 30px; border-radius: 20px; color: white; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .sb-blue { background: #3b82f6; } .sb-red { background: #ef4444; } .sb-purple { background: #8b5cf6; }
+        .sb-val { font-size: 3.5rem; font-weight: 800; line-height: 1; margin-top: 10px; }
+        .sb-label { font-size: 1rem; opacity: 0.9; font-weight: 600; }
 
-        /* DİĞER STİLLER */
-        #mobile-toggle-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: var(--ana); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; }
-        .sidebar { width: 260px; background: var(--koyu); color: white; display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; z-index: 1000; transition: transform 0.3s ease; }
-        .sidebar h2 { margin: 0 0 20px 0; font-size: 1.4rem; color: #fbbf24; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
-        .menu-btn { background: none; border: none; color: #cbd5e1; text-align: left; padding: 15px; font-size: 1rem; cursor: pointer; transition: 0.2s; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; width: 100%; font-weight: 600; }
-        .menu-btn:hover, .menu-btn.active { background: var(--ana); color: white; transform: translateX(5px); }
-        .main-content { flex: 1; padding: 20px; overflow-y: auto; background: #f8fafc; position: relative; padding-top: 20px; }
-        .panel-section { display: none; animation: fadeIn 0.3s; }
-        .panel-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
-        h3 { color: var(--koyu); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.2rem; }
-        .inp, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; margin-bottom: 15px; font-family: inherit; background: white; transition: 0.3s; }
-        .inp:focus { border-color: var(--ana); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); outline: none; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 1rem; margin-bottom: 5px; text-align: center; }
-        .btn:active { transform: scale(0.98); }
-        .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-        .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
-        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-        .btn-info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-        .btn-wa { background: #25D366; } 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { text-align:center; padding:20px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); color:white; }
-        .stat-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-        .stat-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-        .stat-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
-        .stat-val { font-size: 2.5rem; font-weight: 800; margin-top: 10px; }
-        .icon-selector-area { border: 2px solid #e2e8f0; padding: 10px; border-radius: 12px; background: #f8fafc; max-height: 250px; overflow-y: auto; }
-        .icon-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: flex-start; }
-        .icon-opt { width: 50px; height: 50px; background: white; border: 1px solid #ddd; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .icon-opt:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 10; border-color: var(--ana); }
-        .icon-opt.selected { border: 3px solid var(--ana); background: #e0e7ff; transform: scale(1.1); }
-        .list-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--ana); box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; border: 1px solid #f1f5f9; }
-        .action-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px; }
-        .btn-mini { padding: 8px 15px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; border: none; color: white; font-weight: bold; flex: 1; min-width: 90px; text-align:center; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.2s; }
-        .btn-mini:hover { transform: translateY(-2px); opacity: 0.9; }
-        .bg-vitrin { background: #f59e0b; } .bg-buton { background: #ef4444; } .bg-sil { background: #64748b; } .bg-sil:hover { background: #dc2626; } .bg-cevap { background: #10b981; } .bg-paylas { background: #25D366; } .bg-gozat { background: #0ea5e9; }
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .cat-item { display: flex; align-items: center; gap: 5px; font-weight: 500; font-size: 0.9rem; cursor: pointer; background: #f1f5f9; padding: 8px; border-radius: 8px; }
-        .cat-check { transform: scale(1.3); margin-right: 5px; }
-        #preview-box { width: 100%; height: 160px; background: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 15px; margin-bottom: 20px; border: 2px dashed #cbd5e1; }
-        .demo-btn { width: 100px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; text-decoration: none; border: none; transition: all 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.3); z-index: 5; }
-        .shape-circle { border-radius: 50%; } .shape-square { border-radius: 15px; } .shape-leaf { border-radius: 50% 0 50% 50%; } .shape-msg { border-radius: 40px 40px 40px 0px; } .shape-blob { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-        .shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 110px !important; height: 110px !important; border-radius: 0 !important; }
-        .shape-hex { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); width: 110px !important; height: 110px !important; border-radius: 0 !important; }
-        .anim-pulse { animation: pulse 1.5s infinite; } 
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        @media (max-width: 768px) { .sidebar { position: fixed; left: -270px; top: 0; bottom: 0; transition: 0.3s; } .sidebar.show { left: 0; } #mobile-toggle-btn { display: block; } .main-content { padding-top: 60px; } .stats-grid { grid-template-columns: 1fr; } .action-btns { flex-direction: row; } .category-grid { grid-template-columns: 1fr 1fr; } }
+        /* INPUTLAR VE BUTONLAR */
+        .inp, select, textarea { width: 100%; padding: 14px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 0.95rem; margin-bottom: 15px; outline: none; transition: 0.3s; background: #f9fafb; font-family: 'Inter', sans-serif; }
+        .inp:focus { border-color: var(--primary); background: white; }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; color: white; font-size: 1rem; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: #10b981; }
+        .btn-warning { background: var(--secondary); }
+        .btn-danger { background: var(--danger); }
+
+        /* LİSTE GÖRÜNÜMÜ (ÖZET KISMI İÇİN) */
+        .item-list { display: flex; flex-direction: column; gap: 10px; }
+        .item-row { background: #f8fafc; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #e2e8f0; }
+        .item-info b { color: #334155; font-size: 1rem; }
+        .item-tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; background: #e0e7ff; color: var(--primary); font-weight: 600; margin-left: 5px; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; border: none; cursor: pointer; color: white; margin-left: 5px; }
+
+        /* İKON GRID (YAN YANA) */
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 8px; padding: 10px; background: #f8fafc; border-radius: 12px; border: 2px solid #e2e8f0; max-height: 200px; overflow-y: auto; }
+        .icon-opt { height: 45px; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; color: #64748b; font-size: 1.2rem; }
+        .icon-opt:hover { border-color: var(--primary); color: var(--primary); }
+        .icon-opt.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* KATEGORİLER (YAN YANA CHECKBOX) */
+        .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .cat-item { background: #f1f5f9; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #475569; }
+        .cat-item input { accent-color: var(--primary); transform: scale(1.2); }
+
+        /* STORY MODÜLÜ */
+        .story-page { background: white; border: 2px dashed #cbd5e1; padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; }
+        .sp-badge { position: absolute; top: -10px; left: 10px; background: var(--secondary); color: white; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+
+        /* TOAST */
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 25px; border-radius: 50px; font-weight: 600; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 9999; }
     </style>
 </head>
 <body>
 
-    <div id="toast-container"></div>
+    <div id="toast">İşlem Başarılı!</div>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="color:#6366f1;">Yönetici Girişi</h2>
-            <input type="email" id="email" class="inp" placeholder="E-posta">
-            <input type="password" id="password" class="inp" placeholder="Şifre">
-            <button onclick="girisYap()" class="btn btn-primary">Giriş Yap</button>
+    <div class="sidebar">
+        <div class="brand"><i class="fas fa-rocket"></i> Barış Hoca</div>
+        <div class="menu-item active" onclick="nav('ozet')"><i class="fas fa-chart-pie"></i> Özet</div>
+        <div class="menu-item gold" onclick="nav('hikaye-yaz')"><i class="fas fa-pen-nib"></i> <b>HİKAYE YAZ</b></div>
+        <div class="menu-item" onclick="nav('vitrin-yonetimi')"><i class="fas fa-star"></i> Vitrin Yönetimi</div>
+        <div class="menu-item" onclick="nav('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</div>
+        <div class="menu-item" onclick="nav('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</div>
+        <div class="menu-item" onclick="nav('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</div>
+        <div class="menu-item" onclick="nav('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" class="badge">0</span></div>
+        <div class="menu-item" onclick="nav('duyuru-tavsiye')"><i class="fas fa-bullhorn"></i> Duyuru & Tavsiye</div>
+        <div class="menu-item" onclick="nav('ayarlar')"><i class="fas fa-cog"></i> Ayarlar & Buton</div>
+        <div style="margin-top: auto;">
+            <div class="menu-item" onclick="auth.signOut()" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Çıkış</div>
         </div>
     </div>
 
-    <button id="mobile-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-
-    <div style="display:flex; width:100%; height:100%;">
-        <div class="sidebar" id="sidebar">
-            <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v40.8 (Link Fix)</small></h2>
-            <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
-            <button class="menu-btn" onclick="showSection('sihirbaz')"><i class="fas fa-magic"></i> İçerik Ekle</button>
-            <button class="menu-btn" onclick="showSection('yazi-yonetimi')"><i class="fas fa-feather-alt"></i> Köşe Yazıları</button>
-            <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
-            <button class="menu-btn" onclick="showSection('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" style="display:none; background:#ef4444; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:auto;">0</span></button>
-            <button class="menu-btn" onclick="showSection('duyuru-tavsiye')"><i class="fas fa-bullhorn"></i> Duyuru & Tavsiye</button>
-            <button class="menu-btn" onclick="showSection('ayarlar')"><i class="fas fa-cog"></i> Ayarlar & Buton</button>
-            <div style="margin-top:auto;">
-                <button onclick="if(confirm('Çıkış?')) auth.signOut()" class="menu-btn" style="color:#ef4444;"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
+    <div class="main">
+        
+        <div id="ozet" class="section active">
+            <div class="header"><div class="title">Panel Özeti</div></div>
+            <div class="stats">
+                <div class="stat-box sb-blue">
+                    <div class="sb-label">Bugün</div>
+                    <div class="sb-val" id="stat-today">0</div>
+                </div>
+                <div class="stat-box sb-red">
+                    <div class="sb-label">Bu Ay</div>
+                    <div class="sb-val" id="stat-month">0</div>
+                </div>
+                <div class="stat-box sb-purple">
+                    <div class="sb-label">Toplam</div>
+                    <div class="sb-val" id="stat-total">0</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3><i class="fas fa-bolt" style="color:var(--secondary);"></i> Hızlı İçerik Yönetimi</h3>
+                <input type="text" id="search-content" class="inp" placeholder="İçerik ara (Oyun, Kitap, Yazı)..." onkeyup="icerikFiltrele()">
+                <div id="tum-icerik-listesi" class="item-list"><div style="padding:20px; text-align:center; color:#999;">Yükleniyor...</div></div>
             </div>
         </div>
 
-        <div class="main-content" onclick="if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('show')">
-
-            <div id="ozet" class="panel-section active">
-                <h3>📊 İstatistikler</h3>
-                <div class="stats-grid">
-                    <div class="stat-card stat-blue"><div>Bugün</div><div class="stat-val" id="stat-today">0</div></div>
-                    <div class="stat-card stat-red"><div>Bu Ay</div><div class="stat-val" id="stat-month">0</div></div>
-                    <div class="stat-card stat-purple"><div>Toplam</div><div class="stat-val" id="stat-total">0</div></div>
+        <div id="hikaye-yaz" class="section">
+            <div class="header"><div class="title">Hikaye Yazarı</div></div>
+            <div class="card" style="border-top: 5px solid var(--secondary);">
+                <p style="color:#666; margin-bottom:20px;">Buradan yazdığın kitap, <b>otomatik olarak</b> siteye eklenir ve <b>Mavi Vitrin Kutusuna</b> yerleşir.</p>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <input type="text" id="h-baslik" class="inp" placeholder="Kitap Adı">
+                    <input type="text" id="h-alt" class="inp" placeholder="Alt Başlık">
                 </div>
-                <div class="card">
-                    <h3>⚡ Hızlı İçerik Yönetimi</h3>
-                    <input type="text" id="search-content" class="inp" placeholder="İçerik ara (Tüm Site)..." onkeyup="icerikFiltrele()">
-                    <div id="tum-icerik-listesi"><div style="text-align:center; padding:15px; color:#666;">Veriler Yükleniyor...</div></div>
+                <select id="h-renk" class="inp">
+                    <option value="linear-gradient(135deg, #f59e0b, #d97706)">Turuncu Tema</option>
+                    <option value="linear-gradient(135deg, #3b82f6, #1d4ed8)">Mavi Tema</option>
+                    <option value="linear-gradient(135deg, #10b981, #059669)">Yeşil Tema</option>
+                    <option value="linear-gradient(135deg, #ef4444, #b91c1c)">Kırmızı Tema</option>
+                </select>
+
+                <div id="sayfalar-alani"></div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button onclick="yeniSayfaEkle()" class="btn" style="background:#e2e8f0; color:#333; flex:1;">+ Sayfa Ekle</button>
+                    <button onclick="hikayeyiKaydet()" class="btn btn-success" style="flex:2;">KİTABI YAYINLA</button>
                 </div>
-            </div>
-
-            <div id="sihirbaz" class="panel-section">
-                <div class="card">
-                    <h3>🪄 Yeni İçerik Ekle</h3>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
-                        <label><input type="radio" name="tur" value="projeler" checked onchange="formuGuncelle()"> 🎮 Oyun</label>
-                        <label><input type="radio" name="tur" value="videolar" onchange="formuGuncelle()"> 🎥 Video</label>
-                        <label><input type="radio" name="tur" value="kaynaklar" onchange="formuGuncelle()"> 📚 PDF</label>
-                        <label><input type="radio" name="tur" value="yazilar" onchange="formuGuncelle()"> 📝 Köşe Yazısı</label>
-                    </div>
-                    <input type="text" id="p-baslik" class="inp" placeholder="Başlık">
-                    <input type="text" id="p-aciklama" class="inp" placeholder="Kısa Açıklama (Örn: Dikkat ve hafıza oyunu)">
-                    <input type="text" id="p-link" class="inp" placeholder="Link / Dosya Adı / Video URL">
-                    <div id="area-yazi" style="display:none;"><label>Yazı İçeriği (HTML)</label><textarea id="p-icerik" class="inp" rows="10"></textarea></div>
-                    <div id="area-detay">
-                        <label>Renkli İkon Seç</label>
-                        <div class="icon-selector-area">
-                            <input type="text" id="icon-search" class="inp" placeholder="İkon ara..." onkeyup="filterIcons()" style="margin-bottom:10px; padding:8px;">
-                            <div class="icon-grid" id="icon-grid-container"></div>
-                            <input type="hidden" id="p-selected-icon" value="fa-gamepad">
-                        </div>
-                        <div style="margin:10px 0;">Seçilen: <i id="preview-icon" class="fas fa-gamepad" style="font-size:2rem; color:var(--ana);"></i></div>
-                        <label>Kategoriler</label>
-                        <div class="category-grid">
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Anaokulu"> 🧸 Anaokulu</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Özel Eğitim"> 🧩 Özel Eğitim</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="1. Sınıf"> 1. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="2. Sınıf"> 2. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="3. Sınıf"> 3. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="4. Sınıf"> 4. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="5. Sınıf"> 5. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="6. Sınıf"> 6. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="7. Sınıf"> 7. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="8. Sınıf"> 8. Sınıf</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Robotik"> 🤖 Robotik</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Kodlama"> 💻 Kodlama</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Akıl Zeka"> 🧠 Akıl Zeka</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Satranç"> ♟️ Satranç</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Dil Konuşma"> 🗣️ Dil</label>
-                            <label class="cat-item"><input type="checkbox" class="cat-check" value="Tasarım"> 🎨 Tasarım</label>
-                        </div>
-                    </div>
-                    <label><input type="checkbox" id="is-vitrin" checked> Vitrine Ekle</label>
-                    <button onclick="icerikKaydet()" class="btn btn-success" style="margin-top:10px;">KAYDET</button>
-                </div>
-            </div>
-
-            <div id="yazi-yonetimi" class="panel-section">
-                <div class="card"><h3>✍️ Köşe Yazıları Listesi</h3><div id="ozel-yazi-listesi">Yükleniyor...</div></div>
-            </div>
-
-            <div id="kitap-ekle" class="panel-section">
-                <div class="card"><h3>📚 Kitap Ekle</h3>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                        <div><input type="text" id="k-baslik" class="inp" placeholder="Kitap Adı"><input type="text" id="k-alt" class="inp" placeholder="Alt Başlık"><input type="text" id="k-link" class="inp" placeholder="Link"></div>
-                        <div><select id="k-renk" class="inp"><option value="linear-gradient(135deg, #2563eb, #1e3a8a)">Mavi</option><option value="linear-gradient(135deg, #f59e0b, #d97706)">Turuncu</option><option value="linear-gradient(135deg, #ef4444, #991b1b)">Kırmızı</option><option value="linear-gradient(135deg, #10b981, #059669)">Yeşil</option></select><input type="number" id="k-sira" class="inp" value="1"></div>
-                    </div>
-                    <button onclick="kitapKaydet()" class="btn btn-primary">EKLE</button>
-                </div>
-                <div class="card"><h3>📖 Kitap Listesi</h3><div id="kitap-listesi"></div></div>
-            </div>
-
-            <div id="mesajlar" class="panel-section">
-                <div class="card"><h3>📩 Gelen Mesajlar</h3><div id="mesaj-listesi">Yükleniyor...</div></div>
-            </div>
-
-            <div id="duyuru-tavsiye" class="panel-section">
-                <div class="card"><h3>📢 Duyuru Ekle</h3><input type="text" id="d-metin" class="inp" placeholder="Duyuru metni..."><button onclick="duyuruEkle()" class="btn btn-primary">Ekle</button><div id="list-duyurular" style="margin-top:15px;"></div></div>
-                <div class="card"><h3>⭐ Tavsiye Ekle</h3><input type="text" id="t-baslik" class="inp" placeholder="Başlık"><input type="text" id="t-link" class="inp" placeholder="Link"><button onclick="tavsiyeEkle()" class="btn btn-success">Ekle</button><div id="list-tavsiyeler" style="margin-top:15px;"></div></div>
-            </div>
-
-            <div id="ayarlar" class="panel-section">
-                <div class="card" style="border:2px solid #fcd34d;">
-                    <h3>🔴 Acil Buton Ayarları</h3>
-                    <div id="preview-box">
-                        <button id="demo-btn" class="demo-btn" onclick="testLink()"><i id="demo-icon" class="fas fa-play" style="font-size:1.5rem;"></i><span id="demo-text">YENİ</span></button>
-                    </div>
-                    <label><input type="checkbox" id="set-active"> Buton Aktif</label>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                        <select id="set-shape" class="inp" onchange="updateButtonPreview()">
-                            <option value="shape-circle">Yuvarlak</option><option value="shape-square">Kare</option><option value="shape-leaf">Yaprak</option><option value="shape-msg">Mesaj Balonu</option><option value="shape-blob">Damla</option><option value="shape-star">Yıldız</option><option value="shape-hex">Altıgen</option>
-                        </select>
-                        <select id="set-color" class="inp" onchange="updateButtonPreview()">
-                            <option value="linear-gradient(135deg, #ef4444, #b91c1c)">Kırmızı</option><option value="linear-gradient(135deg, #f59e0b, #d97706)">Turuncu</option><option value="linear-gradient(135deg, #3b82f6, #1d4ed8)">Mavi</option><option value="linear-gradient(135deg, #10b981, #059669)">Yeşil</option><option value="linear-gradient(135deg, #8b5cf6, #6d28d9)">Mor</option>
-                        </select>
-                    </div>
-                    <label>Link ve Metin</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="set-media" class="inp" placeholder="Link...">
-                        <button onclick="enYeniOyunGetir()" class="btn btn-primary" style="width:auto; white-space:nowrap;">En Yeni OYUN</button>
-                        <button onclick="enYeniHerseyGetir()" class="btn btn-info" style="width:auto; white-space:nowrap;">En Yeni Her Şey</button>
-                    </div>
-                    <input type="text" id="set-text" class="inp" value="YENİ" onkeyup="updateButtonPreview()">
-                    <input type="text" id="set-msg" class="inp" placeholder="Balon Mesajı (Opsiyonel)">
-                    <button onclick="daireKaydet()" class="btn btn-warning">AYARLARI KAYDET</button>
-                </div>
-                <div class="card"><h3>🤖 Robot Asistan</h3><input type="text" id="api-key" class="inp" placeholder="API Key"><textarea id="robot-prompt" class="inp" placeholder="Prompt..."></textarea><button onclick="robotKaydet()" class="btn btn-primary">Robotu Güncelle</button></div>
             </div>
         </div>
+
+        <div id="sihirbaz" class="section">
+            <div class="header"><div class="title">İçerik Sihirbazı</div></div>
+            <div class="card">
+                <div style="display:flex; gap:15px; margin-bottom:20px;">
+                    <label style="font-weight:bold;"><input type="radio" name="tur" value="projeler" checked onchange="formuGuncelle()"> 🎮 Oyun</label>
+                    <label style="font-weight:bold;"><input type="radio" name="tur" value="videolar" onchange="formuGuncelle()"> 🎥 Video</label>
+                    <label style="font-weight:bold;"><input type="radio" name="tur" value="kaynaklar" onchange="formuGuncelle()"> 📚 PDF</label>
+                    <label style="font-weight:bold;"><input type="radio" name="tur" value="yazilar" onchange="formuGuncelle()"> 📝 Köşe Yazısı</label>
+                </div>
+
+                <input type="text" id="p-baslik" class="inp" placeholder="Başlık">
+                <input type="text" id="p-aciklama" class="inp" placeholder="Kısa Açıklama">
+                <input type="text" id="p-link" class="inp" placeholder="Link / Dosya Adı / Video URL">
+
+                <div id="area-yazi" style="display:none;">
+                    <textarea id="p-icerik" class="inp" rows="12" placeholder="Yazı içeriği HTML..."></textarea>
+                    <small style="color:#d97706;">* Kaydettiğinde otomatik olarak <b>Sarı Kutu (Son Yazı)</b> güncellenir.</small>
+                </div>
+
+                <div id="area-detay">
+                    <label style="font-weight:600; display:block; margin-bottom:10px;">Renkli İkon Seç:</label>
+                    <div class="icon-grid" id="icon-grid-container"></div>
+                    <input type="hidden" id="p-selected-icon" value="fa-gamepad">
+                    
+                    <label style="font-weight:600; display:block; margin:20px 0 10px;">Kategoriler (Eksiksiz):</label>
+                    <div class="cat-grid">
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Anaokulu"> 🧸 Anaokulu</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Özel Eğitim"> 🧩 Özel Eğitim</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="1. Sınıf"> 1. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="2. Sınıf"> 2. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="3. Sınıf"> 3. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="4. Sınıf"> 4. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="5. Sınıf"> 5. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="6. Sınıf"> 6. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="7. Sınıf"> 7. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="8. Sınıf"> 8. Sınıf</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Robotik"> 🤖 Robotik</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Kodlama"> 💻 Kodlama</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Akıl Zeka"> 🧠 Akıl Zeka</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Satranç"> ♟️ Satranç</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Dil Konuşma"> 🗣️ Dil</label>
+                        <label class="cat-item"><input type="checkbox" class="cat-check" value="Tasarım"> 🎨 Tasarım</label>
+                    </div>
+                </div>
+
+                <button onclick="icerikKaydet()" class="btn btn-primary" style="margin-top:20px;">İÇERİĞİ KAYDET</button>
+            </div>
+        </div>
+
+        <div id="vitrin-yonetimi" class="section">
+            <div class="header"><div class="title">Vitrin Yönetimi</div></div>
+            <div class="card">
+                <p style="color:#666;">İçerik eklediğinde burası otomatik değişir. Ama eski bir şeyi öne çıkarmak istersen buradan seçebilirsin.</p>
+                
+                <h4 style="color:#2563eb;">🔵 MAVİ KUTU (Yeni Kitap)</h4>
+                <div id="drop-kitap" style="max-height:200px; overflow-y:auto; border:2px solid #e2e8f0; border-radius:12px; padding:10px;">Yükleniyor...</div>
+
+                <h4 style="color:#d97706; margin-top:30px;">🟡 SARI KUTU (Son Yazı)</h4>
+                <div id="drop-yazi" style="max-height:200px; overflow-y:auto; border:2px solid #e2e8f0; border-radius:12px; padding:10px;">Yükleniyor...</div>
+            </div>
+        </div>
+
+        <div id="yazi-yonetimi" class="section">
+            <div class="header"><div class="title">Köşe Yazıları</div></div>
+            <div class="card" id="ozel-yazi-listesi">Yükleniyor...</div>
+        </div>
+
+        <div id="kitap-ekle" class="section">
+            <div class="header"><div class="title">Kitap Yönetimi</div></div>
+            <div class="card" id="kitap-listesi">Yükleniyor...</div>
+        </div>
+
+        <div id="mesajlar" class="section">
+            <div class="header"><div class="title">Mesaj Kutusu</div></div>
+            <div class="card" id="mesaj-listesi">Yükleniyor...</div>
+        </div>
+
+        <div id="duyuru-tavsiye" class="section">
+            <div class="header"><div class="title">Duyurular & Tavsiyeler</div></div>
+            <div class="card">
+                <h3>📢 Duyuru Ekle (Kayan Yazı)</h3>
+                <input type="text" id="d-metin" class="inp" placeholder="Duyuru metni...">
+                <button onclick="duyuruEkle()" class="btn btn-primary">Yayınla</button>
+                <div id="list-duyurular" style="margin-top:15px;"></div>
+            </div>
+            <div class="card">
+                <h3>⭐ Tavsiye Ekle</h3>
+                <input type="text" id="t-baslik" class="inp" placeholder="Tavsiye Başlığı">
+                <input type="text" id="t-link" class="inp" placeholder="Link">
+                <button onclick="tavsiyeEkle()" class="btn btn-success">Ekle</button>
+                <div id="list-tavsiyeler" style="margin-top:15px;"></div>
+            </div>
+        </div>
+
+        <div id="ayarlar" class="section">
+            <div class="header"><div class="title">Ayarlar</div></div>
+            <div class="card">
+                <h3>Buton Özelleştirme</h3>
+                <div style="display:flex; align-items:center; justify-content:center; background:#f1f5f9; padding:20px; border-radius:15px; margin-bottom:20px;">
+                    <button id="demo-btn" style="width:80px; height:80px; border:none; color:white; font-weight:bold; box-shadow:0 10px 20px rgba(0,0,0,0.2); transition:0.3s;">YENİ</button>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <select id="set-shape" class="inp" onchange="updateButtonPreview()">
+                        <option value="shape-circle">Yuvarlak</option>
+                        <option value="shape-square">Kare</option>
+                        <option value="shape-leaf">Yaprak</option>
+                        <option value="shape-cloud">Bulut</option>
+                        <option value="shape-heart">Kalp</option>
+                        <option value="shape-star">Yıldız</option>
+                    </select>
+                    <select id="set-color" class="inp" onchange="updateButtonPreview()">
+                        <option value="linear-gradient(135deg, #ef4444, #b91c1c)">Kırmızı</option>
+                        <option value="linear-gradient(135deg, #f59e0b, #d97706)">Turuncu</option>
+                        <option value="linear-gradient(135deg, #3b82f6, #1d4ed8)">Mavi</option>
+                        <option value="linear-gradient(135deg, #10b981, #059669)">Yeşil</option>
+                    </select>
+                </div>
+                
+                <input type="text" id="set-text" class="inp" value="YENİ" placeholder="Buton Yazısı" onkeyup="updateButtonPreview()">
+                <input type="text" id="set-link" class="inp" placeholder="Gideceği Link">
+                <label><input type="checkbox" id="set-active"> Buton Sitede Gözüksün</label>
+                
+                <button onclick="daireKaydet()" class="btn btn-warning" style="margin-top:15px;">AYARLARI KAYDET</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -229,137 +288,201 @@
         const db = firebase.firestore();
         let tumIceriklerCache = [];
 
+        // TOAST MESAJI
         function showToast(msg) {
-            const c = document.getElementById('toast-container');
-            const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`; c.appendChild(t);
-            setTimeout(() => { t.style.opacity='0'; setTimeout(()=>t.remove(), 400); }, 3000);
+            const t = document.getElementById('toast');
+            t.innerText = "✅ " + msg; t.style.display = "block";
+            setTimeout(() => t.style.display = "none", 3000);
         }
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
-        function girisYap() { const e=document.getElementById('email').value; const p=document.getElementById('password').value; auth.signInWithEmailAndPassword(e,p).catch(err=>alert(err.message)); }
-        auth.onAuthStateChanged(user => { if(user){ document.getElementById('login-screen').style.display='none'; verileriYukle(); istatistikGetir(); mesajlariGetir(); loadIcons(); } else document.getElementById('login-screen').style.display='flex'; });
-        function showSection(id) { document.querySelectorAll('.panel-section').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(window.innerWidth<=768) toggleSidebar(); if(id==='kitap-ekle') kitaplariGetir(); if(id==='yazi-yonetimi') yazilariGetirOzel(); }
-        function formuGuncelle() { const tur=document.querySelector('input[name="tur"]:checked').value; document.getElementById('area-detay').style.display=tur==='yazilar'?'none':'block'; document.getElementById('area-yazi').style.display=tur==='yazilar'?'block':'none'; }
-
-        const iconList = [{c:"fa-gamepad", k:"#3b82f6"}, {c:"fa-book", k:"#10b981"}, {c:"fa-video", k:"#ef4444"}, {c:"fa-robot", k:"#64748b"}, {c:"fa-chess", k:"#1e293b"}, {c:"fa-brain", k:"#ec4899"}, {c:"fa-rocket", k:"#f59e0b"}, {c:"fa-star", k:"#eab308"}, {c:"fa-pen-nib", k:"#8b5cf6"}, {c:"fa-music", k:"#ef4444"}, {c:"fa-code", k:"#10b981"}, {c:"fa-puzzle-piece", k:"#f59e0b"}];
-        function loadIcons() { const g=document.getElementById('icon-grid-container'); g.innerHTML=""; iconList.forEach(i=>{ const d=document.createElement('div'); d.className='icon-opt'; d.innerHTML=`<i class="fas ${i.c}" style="color:${i.k}"></i>`; d.onclick=()=>{document.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); document.getElementById('p-selected-icon').value=i.c; document.getElementById('preview-icon').className=`fas ${i.c}`;}; g.appendChild(d); }); }
-        function filterIcons() { const t=document.getElementById('icon-search').value.toLowerCase(); document.querySelectorAll('.icon-opt').forEach(i=>i.style.display=i.innerHTML.includes(t)?'flex':'none'); }
-
-        // --- GÜÇLENDİRİLMİŞ LİNK OLUŞTURUCU (BOŞLUK VE KARAKTER DÜZELTME) ---
-        function formatLink(link) {
-            if (!link) return "";
-            if (link.startsWith("http")) return link;
-            // Site ana dizinini bul
-            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            // Boşlukları ve özel karakterleri URL formatına çevir (encodeURI)
-            return baseUrl + encodeURI(link);
-        }
-
-        // Tırnak işaretlerini temizleyen fonksiyon
-        function escapeStr(str) { return str ? str.replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; }
-
-        function createRow(baslik, id, col, link, tur) {
-            const safeBaslik = escapeStr(baslik);
-            const fullLink = formatLink(link); // Linki düzelt ve full hale getir
-            const safeLink = escapeStr(fullLink);
+        // NAVİGASYON
+        function nav(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            // Menü item'ini aktif yap
+            event.currentTarget.classList.add('active');
             
-            // Paylaşım metninde tam link görünsün
-            const shareLink = `https://wa.me/?text=${encodeURIComponent(baslik + "\n" + fullLink)}`;
-            
-            return `<div class="list-item">
-                <div style="flex:1;"><b>${baslik}</b> <span style="font-size:0.7rem; background:#e0e7ff; padding:2px 5px; border-radius:4px;">${tur}</span></div>
-                <div class="action-btns">
-                    <a href="${shareLink}" target="_blank" class="btn-mini bg-paylas"><i class="fab fa-whatsapp"></i> Paylaş</a>
-                    <button class="btn-mini bg-vitrin" onclick="vitrinYap('${col}','${id}','${safeBaslik}','${safeLink}')">⭐ Vitrin</button>
-                    <button class="btn-mini bg-buton" onclick="daireYap('${safeBaslik}','${safeLink}')">⭕ Buton</button>
-                    <button class="btn-mini bg-sil" onclick="sil('${col}','${id}')">🗑 Sil</button>
-                </div>
-            </div>`;
+            if(id === 'vitrin-yonetimi') vitrinVerileriniGetir();
+            if(id === 'ozet') verileriYukle();
         }
 
-        async function icerikKaydet() {
-            const baslik = document.getElementById('p-baslik').value;
+        // GİRİŞ KONTROLÜ
+        auth.onAuthStateChanged(user => {
+            if(user) { verileriYukle(); istatistikGetir(); mesajlariGetir(); loadIcons(); yeniSayfaEkle(); } 
+            else { window.location.reload(); /* Giriş yoksa sayfayı yenile veya login göster */ }
+        });
+
+        // --- 1. OTOMATİK VİTRİN GÜNCELLEME (SİHİRLİ KISIM) ---
+        function vitrinGuncelle(tur, baslik, link) {
+            const docId = tur === 'kitap' ? 'vitrin_kitap' : 'vitrin_yazi';
+            db.collection("site_ayarlari").doc(docId).set({ baslik, link }).then(() => console.log("Vitrin güncellendi"));
+        }
+
+        // --- 2. HİKAYE YAZMA ---
+        let sayfaSayisi = 0;
+        function yeniSayfaEkle() {
+            sayfaSayisi++;
+            const div = document.createElement('div'); div.className = 'story-page';
+            div.innerHTML = `<div class="sp-badge">Sayfa ${sayfaSayisi}</div><span style="float:right; color:red; cursor:pointer;" onclick="this.parentElement.remove()">Sil</span><input type="text" class="inp s-resim" placeholder="Resim Adı (ali1.jpg)"><textarea class="inp s-metin" rows="3" placeholder="Hikaye metni..."></textarea>`;
+            document.getElementById('sayfalar-alani').appendChild(div);
+        }
+
+        function hikayeyiKaydet() {
+            const baslik = document.getElementById('h-baslik').value;
+            if(!baslik) return alert("Başlık gir!");
+            
+            let sayfalar = [];
+            document.querySelectorAll('.story-page').forEach(box => {
+                sayfalar.push({ img: box.querySelector('.s-resim').value, text: box.querySelector('.s-metin').value });
+            });
+
+            if(sayfalar.length === 0) return alert("Sayfa ekle!");
+
+            db.collection("dijital_kitaplar").add({ baslik, sayfalar, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(docRef => {
+                const link = `kitap-oku.html?id=${docRef.id}`;
+                db.collection("kitaplar").add({ baslik, altBaslik: document.getElementById('h-alt').value, link, renk: document.getElementById('h-renk').value, sira:100, tarih: firebase.firestore.FieldValue.serverTimestamp() });
+                
+                // OTOMATİK VİTRİN GÜNCELLEME
+                vitrinGuncelle('kitap', baslik, link);
+                
+                showToast("Kitap Yayınlandı!");
+                verileriYukle(); // Listeyi güncelle
+                document.getElementById('sayfalar-alani').innerHTML=""; yeniSayfaEkle();
+            });
+        }
+
+        // --- 3. İÇERİK KAYDETME ---
+        function icerikKaydet() {
             const tur = document.querySelector('input[name="tur"]:checked').value;
-            if(!baslik) return alert("Başlık girin!");
+            const baslik = document.getElementById('p-baslik').value;
+            if(!baslik) return alert("Başlık gir!");
+
             const batch = db.batch();
             const ref = tur === 'yazilar' ? db.collection('yazilar').doc() : db.collection(tur).doc();
             let data = { baslik, tarih: firebase.firestore.FieldValue.serverTimestamp() };
-            if(tur === 'yazilar') { data.icerik = document.getElementById('p-icerik').value; }
-            else { data.link = document.getElementById('p-link').value; data.aciklama = document.getElementById('p-aciklama').value; data.vitrin = document.getElementById('is-vitrin').checked; data.icon = document.getElementById('p-selected-icon').value; const cats=[]; document.querySelectorAll('.cat-check:checked').forEach(c=>cats.push(c.value)); if(cats.length>0) { cats.forEach(k => { batch.set(db.collection(tur).doc(), {...data, kategori:k}); }); batch.commit().then(() => { showToast("✅ İçerik Eklendi!"); verileriYukle(); }); return; } else { data.kategori="Genel"; } }
-            batch.set(ref, data);
-            batch.commit().then(() => { showToast("✅ İçerik Eklendi!"); verileriYukle(); if(tur==='yazilar') yazilariGetirOzel(); });
+
+            if(tur === 'yazilar') {
+                data.icerik = document.getElementById('p-icerik').value;
+                vitrinGuncelle('yazi', baslik, 'ebeveyn-kosesi.html');
+            } else {
+                data.link = document.getElementById('p-link').value; data.aciklama = document.getElementById('p-aciklama').value; data.icon = document.getElementById('p-selected-icon').value;
+                const cats = []; document.querySelectorAll('.cat-check:checked').forEach(c => cats.push(c.value));
+                if(cats.length > 0) { cats.forEach(k => batch.set(db.collection(tur).doc(), { ...data, kategori:k })); batch.commit(); showToast("İçerik Eklendi"); verileriYukle(); return; }
+                else { data.kategori = "Genel"; }
+            }
+            batch.set(ref, data); batch.commit().then(() => { showToast("Kaydedildi"); verileriYukle(); });
         }
 
+        function formuGuncelle() { const tur = document.querySelector('input[name="tur"]:checked').value; document.getElementById('area-yazi').style.display = tur === 'yazilar' ? 'block' : 'none'; document.getElementById('area-detay').style.display = tur === 'yazilar' ? 'none' : 'block'; }
+
+        // --- VERİ ÇEKME & LİSTELEME ---
         function verileriYukle() {
             tumIceriklerCache = [];
             const load = (col, type) => { db.collection(col).get().then(snap => { snap.forEach(d => tumIceriklerCache.push({ id:d.id, col, type, ...d.data() })); renderList(); }); };
-            load("projeler","OYUN"); load("videolar","VİDEO"); load("kaynaklar","PDF");
-            db.collection("kitaplar").orderBy("sira","desc").get().then(snap=>{ let h=""; snap.forEach(d=>{ const k=d.data(); h+=createRow(k.baslik, d.id, 'kitaplar', k.link, 'KİTAP'); }); document.getElementById('kitap-listesi').innerHTML=h; });
-            db.collection("tavsiyeler").orderBy("tarih","desc").onSnapshot(s=>{ let h=""; s.forEach(d=>{ const t=d.data(); h+=createRow(t.baslik, d.id, 'tavsiyeler', t.link, 'TAVSİYE'); }); document.getElementById('list-tavsiyeler').innerHTML=h; });
-            db.collection("duyurular").onSnapshot(s=>{ let h=""; s.forEach(d=>h+=`<div class="list-item">${d.data().metin} <button class="btn-mini bg-sil" onclick="sil('duyurular','${d.id}')">Sil</button></div>`); document.getElementById('list-duyurular').innerHTML=h; });
-            db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d=>{ if(d.exists) { const v=d.data(); document.getElementById('set-active').checked=v.aktif; document.getElementById('set-text').value=v.daireMetni; document.getElementById('set-media').value=v.link; document.getElementById('set-msg').value=v.mesaj; document.getElementById('set-shape').value=v.sekil; document.getElementById('set-color').value=v.renk; updateButtonPreview(); } });
-            db.collection("site_ayarlari").doc("robot").get().then(d=>{ if(d.exists) { document.getElementById('api-key').value=d.data().apiKey; document.getElementById('robot-prompt').value=d.data().prompt; } });
-        }
-
-        function yazilariGetirOzel() { db.collection("yazilar").orderBy("tarih","desc").get().then(snap=>{ let h=""; snap.forEach(d=>{ const y=d.data(); const link="ebeveyn-kosesi.html"; h+=createRow(y.baslik, d.id, 'yazilar', link, 'YAZI'); }); document.getElementById('ozel-yazi-listesi').innerHTML=h || 'Yazı yok.'; }); }
-        
-        function renderList() { 
-            tumIceriklerCache.sort((a,b)=>(b.tarih?.seconds||0)-(a.tarih?.seconds||0)); 
-            let h=""; 
-            tumIceriklerCache.forEach(i => { h += createRow(i.baslik, i.id, i.col, i.link, i.type); }); 
-            document.getElementById('tum-icerik-listesi').innerHTML = h || 'İçerik yok.'; 
-        }
-
-        function vitrinYap(col, id, baslik, link) { 
-            const fullLink = formatLink(link); 
-            db.collection(col).doc(id).update({ vitrin: true }); 
-            db.collection("site_ayarlari").doc("haftanin_oyunu").set({ baslik, url: fullLink }).then(() => showToast("⭐ Vitrine Eklendi!")); 
-        }
-        
-        function daireYap(baslik, link) { 
-            const fullLink = formatLink(link);
-            document.getElementById('set-text').value="YENİ"; 
-            document.getElementById('set-media').value=fullLink; 
-            document.getElementById('set-msg').value=baslik; 
-            showToast("⭕ Ayarlara Çekildi (Kaydet'e bas!)"); 
-            updateButtonPreview(); 
-        }
-        
-        function daireKaydet() { db.collection("site_ayarlari").doc("ozel_duyuru").set({ aktif: document.getElementById('set-active').checked, daireMetni: document.getElementById('set-text').value, link: document.getElementById('set-media').value, renk: document.getElementById('set-color').value, sekil: document.getElementById('set-shape').value, mesaj: document.getElementById('set-msg').value, anim: "anim-pulse" }).then(()=>showToast("✅ Buton Kaydedildi!")); }
-        function sil(col, id) { if(confirm("Silinecek?")) db.collection(col).doc(id).delete().then(()=>{ showToast("🗑 Silindi"); verileriYukle(); if(col==='yazilar') yazilariGetirOzel(); }); }
-        
-        function kitapKaydet() { db.collection("kitaplar").add({ baslik:document.getElementById('k-baslik').value, altBaslik:document.getElementById('k-alt').value, link:document.getElementById('k-link').value, renk:document.getElementById('k-renk').value, sira:parseInt(document.getElementById('k-sira').value), tarih:firebase.firestore.FieldValue.serverTimestamp() }).then(()=>{showToast("Kitap Eklendi"); kitaplariGetir();}); }
-        function kitaplariGetir() { db.collection("kitaplar").orderBy("sira","desc").get().then(snap=>{ let h=""; snap.forEach(d=>{const k=d.data(); h+=createRow(k.baslik,d.id,'kitaplar',k.link,'KİTAP')}); document.getElementById('kitap-listesi').innerHTML=h; }); }
-        function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>showToast("Duyuru Eklendi")); }
-        function tavsiyeEkle() { db.collection("tavsiyeler").add({ baslik: document.getElementById('t-baslik').value, link: document.getElementById('t-link').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>showToast("Tavsiye Eklendi")); }
-        function robotKaydet() { db.collection("site_ayarlari").doc("robot").set({ apiKey: document.getElementById('api-key').value, prompt: document.getElementById('robot-prompt').value }, {merge:true}).then(()=>showToast("Robot Ayarlandı")); }
-        function updateButtonPreview() { const btn=document.getElementById('demo-btn'); btn.style.background=document.getElementById('set-color').value; btn.className=`demo-btn ${document.getElementById('set-shape').value} anim-pulse`; document.getElementById('demo-text').innerText=document.getElementById('set-text').value; }
-        function testLink() { window.open(document.getElementById('set-media').value, '_blank'); }
-        function icerikFiltrele() { const v=document.getElementById('search-content').value.toLowerCase(); document.querySelectorAll('#tum-icerik-listesi .list-item').forEach(i=>i.style.display=i.innerText.toLowerCase().includes(v)?'flex':'none'); }
-        
-        function istatistikGetir() { db.collection("istatistik").get().then(snap => { let g=0, a=0, t=0; const bugun=new Date().toISOString().split('T')[0]; const ay=bugun.substring(0,7); snap.forEach(d => { const s=d.data().ziyaret||0; t+=s; if(d.id.startsWith(ay)) a+=s; if(d.id===bugun) g=s; }); document.getElementById('stat-today').innerText=g; document.getElementById('stat-month').innerText=a; document.getElementById('stat-total').innerText=t; }); }
-        
-        function mesajlariGetir() {
-            db.collection("iletisim_talepleri").orderBy("tarih","desc").onSnapshot(s=>{
-                let h=""; document.getElementById('msg-badge').innerText=s.size; document.getElementById('msg-badge').style.display=s.size>0?'inline':'none';
-                s.forEach(d=>{ 
-                    const m=d.data(); 
-                    let btn = "";
-                    if(m.email) {
-                        btn = `<a href="mailto:${m.email}?subject=Cevap: ${m.konu}" class="btn-mini bg-cevap">✉️ Mail</a>`;
-                    } else if(m.telefon) {
-                        const tel = m.telefon.replace(/[^0-9]/g, '');
-                        const cleanTel = tel.startsWith('90') ? tel : '90' + tel;
-                        const autoMsg = `Merhaba, ben Barış Öğretmen. "${m.konu}" hakkında gönderdiğiniz talep üzerine yazıyorum. Size nasıl yardımcı olabilirim?`;
-                        btn = `<a href="https://wa.me/${cleanTel}?text=${encodeURIComponent(autoMsg)}" target="_blank" class="btn-mini bg-wa">📞 WA</a>`;
-                    }
-                    h+=`<div class="list-item"><div><b>${m.ad_soyad}</b><br><small>${m.konu}</small></div><div class="action-btns">${btn}<button class="btn-mini bg-sil" onclick="sil('iletisim_talepleri','${d.id}')">Sil</button></div></div>`; 
-                });
-                document.getElementById('mesaj-listesi').innerHTML=h;
+            load("projeler","OYUN"); load("videolar","VİDEO"); load("kaynaklar","PDF"); load("kitaplar","KİTAP"); load("yazilar","YAZI");
+            
+            // Kitap Listesi (Manuel Yönetim İçin)
+            db.collection("kitaplar").orderBy("tarih","desc").get().then(snap => {
+                let h=""; snap.forEach(d => { const k=d.data(); h+=`<div class="item-row"><div class="item-info"><b>${k.baslik}</b></div><button class="btn-sm" style="background:#ef4444;" onclick="sil('kitaplar','${d.id}')">Sil</button></div>`; });
+                document.getElementById('kitap-listesi').innerHTML = h;
+            });
+            
+            // Yazı Listesi
+            db.collection("yazilar").orderBy("tarih","desc").get().then(snap => {
+                let h=""; snap.forEach(d => { const k=d.data(); h+=`<div class="item-row"><div class="item-info"><b>${k.baslik}</b></div><button class="btn-sm" style="background:#ef4444;" onclick="sil('yazilar','${d.id}')">Sil</button></div>`; });
+                document.getElementById('ozel-yazi-listesi').innerHTML = h;
             });
         }
-        function enYeniOyunGetir() { db.collection("projeler").orderBy("tarih","desc").limit(1).get().then(s=>{if(!s.empty){const d=s.docs[0].data(); daireYap(d.baslik,d.link);}else{alert("Oyun yok");}}); }
-        function enYeniHerseyGetir() { if(tumIceriklerCache.length>0) { const y=tumIceriklerCache[0]; daireYap(y.baslik,y.link); } else { alert("İçerik yok"); } }
+
+        function renderList() {
+            tumIceriklerCache.sort((a,b) => (b.tarih?.seconds || 0) - (a.tarih?.seconds || 0));
+            let h = "";
+            tumIceriklerCache.forEach(i => {
+                h += `<div class="item-row">
+                    <div class="item-info"><b>${i.baslik}</b> <span class="item-tag">${i.type}</span></div>
+                    <div>
+                        <button class="btn-sm" style="background:#3b82f6;" onclick="window.open('${i.link}')">Gözat</button>
+                        <button class="btn-sm" style="background:#94a3b8;" onclick="sil('${i.col}','${i.id}')">Sil</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('tum-icerik-listesi').innerHTML = h;
+        }
+
+        function sil(col, id) { if(confirm("Silinsin mi?")) db.collection(col).doc(id).delete().then(() => { showToast("Silindi"); verileriYukle(); }); }
+
+        // --- İKONLAR & ŞEKİLLER ---
+        const icons = ["fa-gamepad","fa-book","fa-video","fa-robot","fa-chess","fa-brain","fa-rocket","fa-star","fa-pen-nib","fa-music","fa-code","fa-puzzle-piece","fa-child","fa-shapes"];
+        function loadIcons() { const c = document.getElementById('icon-grid-container'); c.innerHTML=""; icons.forEach(i => { const d=document.createElement('div'); d.className='icon-opt'; d.innerHTML=`<i class="fas ${i}"></i>`; d.onclick=()=>{document.querySelectorAll('.icon-opt').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); document.getElementById('p-selected-icon').value=i;}; c.appendChild(d); }); }
+
+        function updateButtonPreview() {
+            const btn = document.getElementById('demo-btn');
+            btn.innerText = document.getElementById('set-text').value;
+            btn.style.background = document.getElementById('set-color').value;
+            
+            // Şekil Reset
+            btn.style.borderRadius = ""; btn.style.clipPath = ""; btn.style.transform = ""; btn.style.width="80px"; btn.style.height="80px";
+            
+            const shape = document.getElementById('set-shape').value;
+            if(shape === 'shape-circle') btn.style.borderRadius = "50%";
+            else if(shape === 'shape-square') btn.style.borderRadius = "15px";
+            else if(shape === 'shape-leaf') btn.style.borderRadius = "50% 0 50% 50%";
+            else if(shape === 'shape-cloud') { btn.style.borderRadius = "50px"; btn.style.width="120px"; }
+            else if(shape === 'shape-star') { btn.style.clipPath = "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)"; btn.style.width="100px"; btn.style.height="100px"; }
+            else if(shape === 'shape-heart') { btn.style.clipPath = "path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z')"; btn.style.transform="scale(2.5)"; btn.style.marginTop="20px"; }
+        }
+
+        function daireKaydet() {
+            db.collection("site_ayarlari").doc("ozel_duyuru").set({
+                aktif: document.getElementById('set-active').checked,
+                daireMetni: document.getElementById('set-text').value,
+                link: document.getElementById('set-link').value,
+                renk: document.getElementById('set-color').value,
+                sekil: document.getElementById('set-shape').value,
+                anim: "anim-pulse"
+            }, {merge:true}).then(() => showToast("Ayarlar Kaydedildi"));
+        }
+
+        // --- İSTATİSTİK & MESAJLAR ---
+        function istatistikGetir() {
+            const bugun = new Date().toISOString().split('T')[0];
+            const ay = bugun.substring(0,7);
+            db.collection("istatistik").get().then(snap => {
+                let g=0, a=0, t=0;
+                snap.forEach(d => { const v = d.data().ziyaret || 0; t+=v; if(d.id.startsWith(ay)) a+=v; if(d.id===bugun) g=v; });
+                document.getElementById('stat-today').innerText = g;
+                document.getElementById('stat-month').innerText = a;
+                document.getElementById('stat-total').innerText = t;
+            });
+        }
+
+        function mesajlariGetir() {
+            db.collection("iletisim_talepleri").orderBy("tarih","desc").onSnapshot(s => {
+                let h=""; document.getElementById('msg-badge').innerText = s.size;
+                s.forEach(d => { const m = d.data(); h+=`<div class="item-row"><div class="item-info"><b>${m.ad_soyad}</b><br><small>${m.konu}</small></div><button class="btn-sm" style="background:#94a3b8;" onclick="sil('iletisim_talepleri','${d.id}')">Sil</button></div>`; });
+                document.getElementById('mesaj-listesi').innerHTML = h;
+            });
+        }
+
+        function vitrinVerileriniGetir() {
+            db.collection("kitaplar").orderBy("tarih","desc").get().then(snap => {
+                let h=""; snap.forEach(d => { const k=d.data(); h+=`<div class="item-row"><span>${k.baslik}</span><button class="btn-sm" style="background:var(--primary);" onclick="vitrinGuncelle('kitap','${k.baslik}','${k.link}'); showToast('Seçildi');">SEÇ</button></div>`; });
+                document.getElementById('drop-kitap').innerHTML = h;
+            });
+            db.collection("yazilar").orderBy("tarih","desc").get().then(snap => {
+                let h=""; snap.forEach(d => { const k=d.data(); h+=`<div class="item-row"><span>${k.baslik}</span><button class="btn-sm" style="background:var(--secondary);" onclick="vitrinGuncelle('yazi','${k.baslik}','ebeveyn-kosesi.html'); showToast('Seçildi');">SEÇ</button></div>`; });
+                document.getElementById('drop-yazi').innerHTML = h;
+            });
+        }
+        
+        function duyuruEkle() { db.collection("duyurular").add({ metin: document.getElementById('d-metin').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>showToast("Duyuru Yayınlandı")); }
+        function tavsiyeEkle() { db.collection("tavsiyeler").add({ baslik: document.getElementById('t-baslik').value, link: document.getElementById('t-link').value, tarih: firebase.firestore.FieldValue.serverTimestamp() }).then(()=>showToast("Tavsiye Eklendi")); }
+        
+        // Verileri Getir
+        db.collection("site_ayarlari").doc("ozel_duyuru").get().then(d => {
+            if(d.exists) { const v=d.data(); document.getElementById('set-text').value=v.daireMetni; document.getElementById('set-link').value=v.link; document.getElementById('set-shape').value=v.sekil; document.getElementById('set-color').value=v.renk; document.getElementById('set-active').checked=v.aktif; updateButtonPreview(); }
+        });
     </script>
 </body>
 </html>
