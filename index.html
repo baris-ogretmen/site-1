@@ -7,8 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="firebase-config.js"></script> <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;800&family=Fredoka:wght@400;600&family=Rubik+Wet+Paint&display=swap" rel="stylesheet">
@@ -107,13 +106,12 @@
         
         .surprise-circle { width: 70px; height: 70px; border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.8rem; text-align: center; cursor: pointer; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); }
         
-        /* Şekil Sınıfları */
+        /* Şekil Sınıfları - Panelden gelen verilere uygun */
         .shape-circle { border-radius: 50%; border: 3px solid white; }
         .shape-square { border-radius: 15px; border: 3px solid white; }
         .shape-leaf { border-radius: 50% 0 50% 50%; border: 3px solid white; }
         .shape-msg { border-radius: 40px 40px 40px 0px; border: 3px solid white; }
         .shape-blob { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; border: 3px solid white; }
-        /* Clip-path kullanılanlarda border olmaz, drop-shadow kullanılır */
         .shape-star { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 80px !important; height: 80px !important; border-radius: 0 !important; border: none !important; }
         .shape-hex { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); width: 80px !important; height: 80px !important; border-radius: 0 !important; border: none !important; }
 
@@ -147,7 +145,10 @@
     <div class="news-ticker-wrap"><div class="ticker-content" id="duyuru-alani">Eğitimde Sınır Yok! Duyurular Yükleniyor...</div></div>
 
     <header>
-        <div class="header-tools"><button class="tool-btn" onclick="openShareModal()"><i class="fas fa-qrcode"></i> Paylaş</button></div>
+        <div class="header-tools">
+            <button class="tool-btn" onclick="openShareModal()"><i class="fas fa-qrcode"></i> Paylaş</button>
+            <a href="panel.html" style="color:rgba(255,255,255,0.3); text-decoration:none; font-size:0.7rem; margin-left:10px;">Yönetici</a>
+        </div>
         <img src="profil.jpg.jpeg" class="profile-img" alt="Barış İlkan">
         <h1 class="hero-title">BARIŞ İLKAN</h1>
         <div class="slogan">EĞİTİM KOÇU | EĞİTİM TEKNOLOĞU | DİJİTAL İÇERİK ÜRETİCİSİ</div>
@@ -183,6 +184,7 @@
                 <i class="fas fa-book-open vitrin-ok ok-mavi"></i>
             </div>
         </div>
+        
         <div class="bio-wrapper">
             <div class="bio-box">
                 <div class="bio-title">BARIŞ İLKAN KİMDİR?</div>
@@ -248,7 +250,8 @@
     </div>
 
     <div class="floating-container">
-        <div class="surprise-circle" id="special-circle" onclick="showSpecialAlert()">ACİL<br>DUYURU</div>
+        <div class="surprise-circle" id="special-circle"></div>
+        
         <button class="robot-btn" onclick="document.getElementById('chat-modal').style.display='flex'"></button>
         <div class="wa-btn" onclick="document.getElementById('wa-modal').style.display='flex'"><i class="fab fa-whatsapp"></i></div>
     </div>
@@ -283,146 +286,168 @@
 
     <script>
         let robotConfig = { apiKey: "", prompt: "" };
-        const db = firebase.firestore();
-        let makaleVerileri = {};
-        let sonKitapLink = "";
+        
+        // FIREBASE KONTROLÜ
+        if (typeof firebase === 'undefined') {
+            alert("firebase-config.js dosyası eksik! Lütfen panele bağlayın.");
+        } else {
+            const db = firebase.firestore();
+            let makaleVerileri = {};
+            let sonKitapLink = "";
 
-        const sozler = ["Çocuğun kalbi ekilmemiş tarlaya benzer.", "Bir şeyi öğrenmek, onu yaşamaktır.", "Kökü olmayan ağacın dalı olmaz.", "Çocuğuna değer ver ki, o da kendine değer versin.", "İlim ilim bilmektir.", "Merhamet tohumu ekilmeyen kalpte saadet açmaz."];
-        document.getElementById('daily-quote').innerText = sozler[Math.floor(Math.random()*sozler.length)];
+            const sozler = ["Çocuğun kalbi ekilmemiş tarlaya benzer.", "Bir şeyi öğrenmek, onu yaşamaktır.", "Kökü olmayan ağacın dalı olmaz.", "Çocuğuna değer ver ki, o da kendine değer versin.", "İlim ilim bilmektir.", "Merhamet tohumu ekilmeyen kalpte saadet açmaz."];
+            document.getElementById('daily-quote').innerText = sozler[Math.floor(Math.random()*sozler.length)];
 
-        db.collection("site_ayarlari").doc("robot").onSnapshot(doc => { if(doc.exists) { const v = doc.data(); robotConfig.apiKey=v.apiKey; robotConfig.prompt=v.prompt; } });
+            db.collection("site_ayarlari").doc("robot").onSnapshot(doc => { if(doc.exists) { const v = doc.data(); robotConfig.apiKey=v.apiKey; robotConfig.prompt=v.prompt; } });
 
-        // --- YAZI VİTRİNİ ---
-        db.collection("yazilar").orderBy("tarih", "desc").limit(1).onSnapshot(snap => {
-            const vitrin = document.getElementById("vitrin-yazi-alani");
-            if (!snap.empty) {
-                vitrin.style.display = "flex"; 
-                document.getElementById("vitrin-baslik-text").innerText = snap.docs[0].data().baslik;
-            } else vitrin.style.display = "none";
-        });
+            // --- YAZI VİTRİNİ ---
+            db.collection("yazilar").orderBy("tarih", "desc").limit(1).onSnapshot(snap => {
+                const vitrin = document.getElementById("vitrin-yazi-alani");
+                if (!snap.empty) {
+                    vitrin.style.display = "flex"; 
+                    document.getElementById("vitrin-baslik-text").innerText = snap.docs[0].data().baslik;
+                } else vitrin.style.display = "none";
+            });
 
-        // --- KİTAP VİTRİNİ & LİSTESİ ---
-        db.collection("kitaplar").orderBy("sira", "desc").onSnapshot(s => { 
-            let h=""; 
-            if(!s.empty) {
-                // En son eklenen kitap (sırası en büyük olan)
-                const sonKitap = s.docs[0].data();
-                const vitrinKitap = document.getElementById("vitrin-kitap-alani");
-                vitrinKitap.style.display = "flex";
-                document.getElementById("vitrin-kitap-text").innerText = sonKitap.baslik;
-                sonKitapLink = sonKitap.link;
+            // --- KİTAP VİTRİNİ & LİSTESİ ---
+            db.collection("kitaplar").orderBy("sira", "desc").onSnapshot(s => { 
+                let h=""; 
+                if(!s.empty) {
+                    const sonKitap = s.docs[0].data();
+                    const vitrinKitap = document.getElementById("vitrin-kitap-alani");
+                    vitrinKitap.style.display = "flex";
+                    document.getElementById("vitrin-kitap-text").innerText = sonKitap.baslik;
+                    sonKitapLink = sonKitap.link;
+                }
+
+                s.docs.forEach(d => { 
+                    const k=d.data(); 
+                    // Panelden gelen 'renk' (gradient) arka plan olarak kullanılır
+                    h+=`<a href="${k.link}" class="book-container searchable" data-name="${k.baslik}">
+                        <div class="book-cover-art" style="background: ${k.renk || 'linear-gradient(135deg, #2563eb, #1e3a8a)'};">
+                            ${k.altBaslik ? k.altBaslik.substring(0,10) : 'KİTAP'}
+                        </div>
+                        <div class="book-details">
+                            <h3>${k.baslik}</h3>
+                            <p>${k.altBaslik || ''}</p>
+                            <small style="color:#2563eb; font-weight:bold;">Oku &rarr;</small>
+                        </div>
+                    </a>`; 
+                }); 
+                if(h) document.getElementById('kitaplar-alani').innerHTML=h; 
+                else document.getElementById('kitaplar-alani').innerHTML='<div style="padding:20px; color:#999;">Kitaplar yükleniyor...</div>';
+            });
+
+            function gitYeniKitap() { if(sonKitapLink) location.href = sonKitapLink; }
+
+            // --- ZİYARET SAYACI ---
+            const bugunStr = new Date().toISOString().split('T')[0];
+            if (localStorage.getItem('gunluk_ziyaret') !== bugunStr) {
+                db.collection("istatistik").doc(bugunStr).set({ ziyaret: firebase.firestore.FieldValue.increment(1), tarih: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                db.collection("site_verileri").doc("genel_sayac").set({ toplam_ziyaret: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+                localStorage.setItem('gunluk_ziyaret', bugunStr);
             }
 
-            s.docs.forEach(d => { 
-                const k=d.data(); 
-                h+=`<a href="${k.link}" class="book-container searchable" data-name="${k.baslik}"><div class="book-cover-art" style="background: ${k.renk || 'linear-gradient(135deg, #2563eb, #1e3a8a)'};">${k.kapakMetni || 'KİTAP'}</div><div class="book-details"><h3>${k.baslik}</h3><p>${k.altBaslik || ''}</p><small style="color:${k.renkKod || 'blue'}; font-weight:bold;">${k.etiket || 'Oku'} &rarr;</small></div></a>`; 
-            }); 
-            if(h) document.getElementById('kitaplar-alani').innerHTML=h; 
-            else document.getElementById('kitaplar-alani').innerHTML='<div style="padding:20px; color:#999;">Kitaplar yükleniyor...</div>';
-        });
+            // --- CHATBOT ---
+            async function sendMessage() {
+                const input = document.getElementById('user-input');
+                const msg = input.value.trim(); if(!msg) return;
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML += `<div class="message msg-user">${msg}</div>`;
+                input.value = '';
+                const loadingId = 'load'+Date.now();
+                chatBox.innerHTML += `<div class="message msg-bot" id="${loadingId}">...</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                try {
+                    if(!robotConfig.apiKey) throw new Error("API Key girilmemiş!");
+                    
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${robotConfig.apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: robotConfig.prompt + " Kullanıcı: " + msg }] }] })
+                    });
+                    const data = await response.json();
+                    document.getElementById(loadingId).innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
+                } catch (e) { document.getElementById(loadingId).innerHTML = "<i>Bir sorun oluştu.</i>"; }
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            window.sendMessage = sendMessage; // Global erişim
 
-        function gitYeniKitap() { if(sonKitapLink) location.href = sonKitapLink; }
-
-        const bugunStr = new Date().toISOString().split('T')[0];
-        if (localStorage.getItem('gunluk_ziyaret') !== bugunStr) {
-            db.collection("istatistik").doc(bugunStr).set({ ziyaret: firebase.firestore.FieldValue.increment(1), tarih: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-            db.collection("site_verileri").doc("genel_sayac").set({ toplam_ziyaret: firebase.firestore.FieldValue.increment(1) }, { merge: true });
-            localStorage.setItem('gunluk_ziyaret', bugunStr);
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const msg = input.value.trim(); if(!msg) return;
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class="message msg-user">${msg}</div>`;
-            input.value = '';
-            const loadingId = 'load'+Date.now();
-            chatBox.innerHTML += `<div class="message msg-bot" id="${loadingId}">...</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-            try {
-                if(!robotConfig.apiKey) throw new Error("API Key girilmemiş!");
+            // --- TALEP GÖNDERME ---
+            function talepGonder() { 
+                const ad = document.getElementById('talep-ad').value; 
+                const iletisim = document.getElementById('talep-iletisim').value; 
+                const konu = document.getElementById('talep-konu').value; 
+                if(!ad || !iletisim || !konu) { alert("Lütfen tüm alanları doldurunuz."); return; } 
                 
-                // YENİ MODEL: gemini-2.0-flash-exp (OTOMATİK AYARLANDI)
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${robotConfig.apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: robotConfig.prompt + " Kullanıcı: " + msg }] }] })
-                });
-                const data = await response.json();
-                document.getElementById(loadingId).innerHTML = marked.parse(data.candidates[0].content.parts[0].text);
-            } catch (e) { document.getElementById(loadingId).innerHTML = "<i>Bir sorun oluştu.</i>"; }
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+                let veri = { ad_soyad: ad, konu: konu, tarih: firebase.firestore.FieldValue.serverTimestamp(), durum: "bekliyor" };
+                if(iletisim.includes("@")) veri.email = iletisim; else veri.telefon = iletisim;
 
-        function talepGonder() { 
-            const ad = document.getElementById('talep-ad').value; 
-            const iletisim = document.getElementById('talep-iletisim').value; 
-            const konu = document.getElementById('talep-konu').value; 
-            if(!ad || !iletisim || !konu) { alert("Lütfen tüm alanları doldurunuz."); return; } 
+                db.collection("iletisim_talepleri").add(veri).then(() => { alert("Mesajınız iletildi!"); document.getElementById('wa-modal').style.display = 'none'; }); 
+            }
+            window.talepGonder = talepGonder;
+
+            // --- ŞANS ÇARKI ---
+            function spinWheel() {
+                const icon = document.querySelector('#spinBtn i');
+                icon.classList.add('spinning');
+                const items = document.querySelectorAll('.searchable'); 
+                setTimeout(() => {
+                    icon.classList.remove('spinning');
+                    if(items.length > 0) {
+                        const randomItem = items[Math.floor(Math.random() * items.length)];
+                        let title = "Sürpriz İçerik";
+                        const h3 = randomItem.querySelector('h3');
+                        if(h3) title = h3.innerText;
+                        document.getElementById('wheel-result-text').innerText = title;
+                        document.getElementById('wheel-go-link').setAttribute('href', randomItem.getAttribute('href'));
+                        confetti();
+                        document.getElementById('wheel-modal').style.display = 'flex';
+                    }
+                }, 500);
+            }
+            window.spinWheel = spinWheel;
+
+            function openShareModal() { document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`; document.getElementById('share-modal').style.display = 'flex'; }
+            window.openShareModal = openShareModal;
             
-            let veri = { ad_soyad: ad, konu: konu, tarih: firebase.firestore.FieldValue.serverTimestamp(), durum: "bekliyor" };
-            if(iletisim.includes("@")) veri.email = iletisim; else veri.telefon = iletisim;
+            // --- ÖZEL BUTON (PANEL KONTROLLÜ) ---
+            db.collection("site_ayarlari").doc("ozel_duyuru").onSnapshot(doc => { 
+                const c = document.getElementById('special-circle'); 
+                if(doc.exists && doc.data().aktif) { 
+                    const v = doc.data();
+                    c.style.display = "flex"; 
+                    c.innerText = v.daireMetni || "DUYURU";
+                    c.style.background = v.renk;
+                    c.className = `surprise-circle ${v.sekil} ${v.anim}`; 
+                    
+                    c.onclick = () => { if(v.mesaj) alert(v.mesaj); if(v.link) window.location.href = v.link; }; 
+                } else c.style.display = "none"; 
+            });
 
-            db.collection("iletisim_talepleri").add(veri).then(() => { alert("Mesajınız iletildi!"); document.getElementById('wa-modal').style.display = 'none'; }); 
+            db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById('haftanin-oyunu-karti').setAttribute("href", d.url); document.getElementById('vitrin-baslik').innerText = d.baslik || "HAFTANIN OYUNU"; } });
+            db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>h+=`<span style="margin-right:100px; display:inline-block;">📢 ${d.data().metin}</span>`); if(h) document.getElementById('duyuru-alani').innerHTML=h; });
+            db.collection("projeler").orderBy("tarih", "desc").limit(6).onSnapshot(s => { let h=""; s.forEach(d=>{const p=d.data(); h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori}</p></div></a>`}); if(h) document.getElementById('proje-alani').innerHTML=h; });
+            
+            db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => { 
+                let h=""; 
+                s.forEach(d=>{ 
+                    const y=d.data(); 
+                    makaleVerileri[d.id]=y.icerik; 
+                    const safeTitle = y.baslik.replace(/'/g, "\\'"); 
+                    h+=`<div class="resource-card searchable" onclick="yaziAc('${d.id}', '${safeTitle}')"><div class="rc-icon"><i class="fas fa-newspaper"></i></div><div style="flex:1;"><h4>${y.baslik}</h4><p>Okumak için tıklayın</p></div><div class="rc-btn">OKU</div></div>`; 
+                }); 
+                if(h) document.getElementById('kaynak-grid').innerHTML=h; 
+            });
+            
+            db.collection("tavsiyeler").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>{const t=d.data(); h+=`<a href="${t.link}" target="_blank" class="resource-card" style="border-left:5px solid #4361ee;"><div class="rc-icon"><i class="fab ${t.icon}"></i></div><div><h4>${t.baslik}</h4><p>${t.aciklama}</p></div></a>`}); if(h) document.getElementById('tavsiye-alani').innerHTML=h; });
+
+            function yaziAc(id, baslik) { 
+                document.getElementById('modal-baslik').innerText = baslik; 
+                document.getElementById('modal-icerik').innerHTML = makaleVerileri[id]; 
+                document.getElementById('yazi-modal').style.display = 'flex'; 
+            }
+            window.yaziAc = yaziAc;
         }
-
-        function spinWheel() {
-            const icon = document.querySelector('#spinBtn i');
-            icon.classList.add('spinning');
-            const items = document.querySelectorAll('.searchable'); 
-            setTimeout(() => {
-                icon.classList.remove('spinning');
-                if(items.length > 0) {
-                    const randomItem = items[Math.floor(Math.random() * items.length)];
-                    let title = "Sürpriz İçerik";
-                    const h3 = randomItem.querySelector('h3');
-                    if(h3) title = h3.innerText;
-                    document.getElementById('wheel-result-text').innerText = title;
-                    document.getElementById('wheel-go-link').setAttribute('href', randomItem.getAttribute('href'));
-                    confetti();
-                    document.getElementById('wheel-modal').style.display = 'flex';
-                }
-            }, 500);
-        }
-
-        function openShareModal() { document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`; document.getElementById('share-modal').style.display = 'flex'; }
-        
-        // ÖZEL BUTON VERİ ÇEKME (ŞEKİL DÜZELTMELİ)
-        db.collection("site_ayarlari").doc("ozel_duyuru").onSnapshot(doc => { 
-            const c = document.getElementById('special-circle'); 
-            if(doc.exists && doc.data().aktif) { 
-                const v = doc.data();
-                c.style.display = "flex"; 
-                c.innerText = v.daireMetni || "DUYURU";
-                c.style.background = v.renk;
-                c.className = `surprise-circle ${v.sekil} ${v.anim}`; // Şekil sınıfını ekle
-                
-                c.onclick = () => { if(v.mesaj) alert(v.mesaj); if(v.link) window.location.href = v.link; }; 
-            } else c.style.display = "none"; 
-        });
-
-        db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById('haftanin-oyunu-karti').setAttribute("href", d.url); document.getElementById('vitrin-baslik').innerText = d.baslik || "HAFTANIN OYUNU"; } });
-        db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>h+=`<span style="margin-right:100px; display:inline-block;">📢 ${d.data().metin}</span>`); if(h) document.getElementById('duyuru-alani').innerHTML=h; });
-        db.collection("projeler").orderBy("tarih", "desc").limit(6).onSnapshot(s => { let h=""; s.forEach(d=>{const p=d.data(); h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori}</p></div></a>`}); if(h) document.getElementById('proje-alani').innerHTML=h; });
-        
-        db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => { 
-            let h=""; 
-            s.forEach(d=>{ 
-                const y=d.data(); 
-                makaleVerileri[d.id]=y.icerik; 
-                const safeTitle = y.baslik.replace(/'/g, "\\'"); 
-                h+=`<div class="resource-card searchable" onclick="yaziAc('${d.id}', '${safeTitle}')"><div class="rc-icon"><i class="fas fa-newspaper"></i></div><div style="flex:1;"><h4>${y.baslik}</h4><p>Okumak için tıklayın</p></div><div class="rc-btn">OKU</div></div>`; 
-            }); 
-            if(h) document.getElementById('kaynak-grid').innerHTML=h; 
-        });
-        
-        db.collection("tavsiyeler").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>{const t=d.data(); h+=`<a href="${t.link}" target="_blank" class="resource-card" style="border-left:5px solid #4361ee;"><div class="rc-icon"><i class="fab ${t.icon}"></i></div><div><h4>${t.baslik}</h4><p>${t.aciklama}</p></div></a>`}); if(h) document.getElementById('tavsiye-alani').innerHTML=h; });
-
-        function yaziAc(id, baslik) { 
-            document.getElementById('modal-baslik').innerText = baslik; 
-            document.getElementById('modal-icerik').innerHTML = makaleVerileri[id]; 
-            document.getElementById('yazi-modal').style.display = 'flex'; 
-        }
-        function showSpecialAlert() { /* Tıklanınca çalışacak kod yukarıda ayarlandı */ }
     </script>
 </body>
 </html>
