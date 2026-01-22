@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sihirli Kum Tepsisi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            user-select: none;
+        }
+
+        body {
+            background: #1a1a1a;
+            overflow: hidden;
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            color: white;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            cursor: none; /* Özel imleç için */
+        }
+
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Özel İmleç */
+        #cursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+            display: none; /* Mobilde gizle */
+        }
+        
+        @media (pointer: fine) {
+            #cursor { display: block; }
+        }
+
+        .cursor-pen {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+            opacity: 0.8;
+        }
+
+        .cursor-hand {
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(2px);
+        }
+
+        /* UI Panelleri */
+        .ui-panel {
+            position: absolute;
+            background: rgba(30, 30, 35, 0.9);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 0.8rem;
+            display: flex;
+            gap: 1rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        /* Araç Kutusu (Alt Orta) */
+        .bottom-toolbar {
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            align-items: center;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .tool-btn svg {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 4px;
+            stroke-width: 2;
+        }
+
+        .tool-btn span {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .tool-btn.active {
+            background: #6366f1;
+            color: white;
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+        }
+        
+        .tool-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .tool-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+
+        /* Renk Seçici (Sağ Üst) */
+        .color-panel {
+            top: 2rem;
+            right: 2rem;
+            flex-direction: column;
+            padding: 0.8rem;
+            gap: 0.8rem;
+        }
+
+        .color-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .color-dot:hover { transform: scale(1.2); }
+        .color-dot.active { 
+            border-color: white; 
+            transform: scale(1.1); 
+            box-shadow: 0 0 15px currentColor; 
+        }
+
+        /* Başlık (Sol Üst) */
+        .header {
+            top: 2rem;
+            left: 2rem;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            backdrop-filter: none;
+            padding: 0;
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            color: white;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-top: 0.2rem;
+        }
+
+        /* Mobil Düzenlemeler */
+        @media (max-width: 768px) {
+            .bottom-toolbar {
+                bottom: 1.5rem;
+                width: 90%;
+                justify-content: space-around;
+                padding: 0.6rem;
+            }
+            
+            .tool-btn {
+                width: 60px;
+                height: 60px;
+            }
+
+            .color-panel {
+                top: 1rem;
+                right: 1rem;
+                flex-direction: row;
+                padding: 0.5rem;
+            }
+
+            .header {
+                top: 1rem;
+                left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <!-- Özel İmleç -->
+    <div id="cursor" class="cursor-pen"></div>
+
+    <div class="ui-panel header">
+        <div>
+            <h1>Kum Tepsisi</h1>
+            <p>Parmağınla yaz, elinle sil!</p>
+        </div>
+    </div>
+
+    <div class="ui-panel color-panel">
+        <div class="color-dot active" style="background: #ffd700;" onclick="setColor('gold')"></div>
+        <div class="color-dot" style="background: #00ffff;" onclick="setColor('cyan')"></div>
+        <div class="color-dot" style="background: #ff00ff;" onclick="setColor('magenta')"></div>
+        <div class="color-dot" style="background: #ffffff;" onclick="setColor('white')"></div>
+    </div>
+
+    <div class="ui-panel bottom-toolbar">
+        <button class="tool-btn active" onclick="setTool('pen')" id="btn-pen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                <path d="M2 2l7.586 7.586"></path>
+                <circle cx="11" cy="11" r="2"></circle>
+            </svg>
+            <span>Yaz</span>
+        </button>
+        
+        <button class="tool-btn" onclick="setTool('eraser')" id="btn-eraser">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+            </svg>
+            <span>Sil</span>
+        </button>
+
+        <button class="tool-btn" onclick="resetSand()" id="btn-reset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            </svg>
+            <span>Temizle</span>
+        </button>
+    </div>
+
+    <script>
+        let scene, camera, renderer, particles;
+        // Çizim için çok sayıda parçacığa ihtiyaç var
+        const isMobile = window.innerWidth < 768;
+        const count = isMobile ? 15000 : 30000; 
+        
+        let positions, originals, colors, sizes;
+        
+        // Etkileşim Durumu
+        let mouse = new THREE.Vector2(-1000, -1000); // Normalize mouse
+        let mouse3D = new THREE.Vector3(0, 0, 0); // 3D Dünya koordinatı
+        let isTouching = false;
+        
+        let currentTool = 'pen'; 
+        let drawIndex = 0; // Sıradaki hangi parçacığı kullanacağız?
+        
+        // Renkler
+        let activeColor = new THREE.Color('#ffd700');
+        const defaultY = -40; // Kumun dipte duracağı yer
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x1a1a1a, 0.02);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 40;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            initParticles();
+            setupInteraction();
+            animate();
+        }
+
+        function initParticles() {
+            const geometry = new THREE.BufferGeometry();
+            
+            positions = new Float32Array(count * 3);
+            originals = new Float32Array(count * 3); // Hedef konum (Hafıza)
+            colors = new Float32Array(count * 3);
+            sizes = new Float32Array(count);
+
+            for (let i = 0; i < count; i++) {
+                // Başlangıç: Ekranın altında birikmiş kum
+                const x = (Math.random() - 0.5) * 100;
+                const y = defaultY + (Math.random() * 5); // Dipte yayvan
+                const z = (Math.random() - 0.5) * 10;
+                
+                positions[i*3] = x;
+                positions[i*3+1] = y;
+                positions[i*3+2] = z;
+
+                // Hedef de aynı yer (uykuda)
+                originals[i*3] = x;
+                originals[i*3+1] = y;
+                originals[i*3+2] = z;
+
+                // Renk (Hafif varyasyonlu altın)
+                const c = activeColor.clone();
+                c.offsetHSL(0, 0, (Math.random() - 0.5) * 0.2);
+                
+                colors[i*3] = c.r;
+                colors[i*3+1] = c.g;
+                colors[i*3+2] = c.b;
+
+                sizes[i] = Math.random() * 0.5 + 0.5;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.35,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.9,
+                sizeAttenuation: true
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // --- 3D Fare Pozisyonu Hesaplama ---
+            let vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vector.unproject(camera);
+            let dir = vector.sub(camera.position).normalize();
+            let distance = -camera.position.z / dir.z;
+            mouse3D = camera.position.clone().add(dir.multiplyScalar(distance));
+
+            // --- Araç Mantığı (Yazma ve Silme) ---
+            if (isTouching) {
+                if (currentTool === 'pen') {
+                    // YAZMA: Kullanılmayan parçacıkları fareye çağır
+                    // Her karede birden fazla parçacık çekerek yoğun çizgi oluştur
+                    const density = 15; 
+                    for(let k=0; k<density; k++) {
+                        // Sıradaki parçacığı seç
+                        drawIndex = (drawIndex + 1) % count;
+                        
+                        // Parçacığın yeni hedefi farenin olduğu yer (hafif rastgelelik ile doğal görünüm)
+                        const spread = 0.5;
+                        originals[drawIndex*3] = mouse3D.x + (Math.random()-0.5) * spread;
+                        originals[drawIndex*3+1] = mouse3D.y + (Math.random()-0.5) * spread;
+                        originals[drawIndex*3+2] = 0; // Z düzlemine yapıştır
+                        
+                        // Rengini aktif renge güncelle
+                        const c = activeColor.clone();
+                        c.offsetHSL(0, 0, (Math.random() - 0.5) * 0.2);
+                        particles.geometry.attributes.color.array[drawIndex*3] = c.r;
+                        particles.geometry.attributes.color.array[drawIndex*3+1] = c.g;
+                        particles.geometry.attributes.color.array[drawIndex*3+2] = c.b;
+                    }
+                    particles.geometry.attributes.color.needsUpdate = true;
+                } 
+                else if (currentTool === 'eraser') {
+                    // SİLME: Farenin yakınındaki hedefleri aşağıya düşür
+                    const eraseRadius = 4;
+                    
+                    for (let i = 0; i < count; i++) {
+                        const ox = originals[i*3];
+                        const oy = originals[i*3+1];
+                        // Sadece "havada" olan (yazılmış) parçacıkları kontrol et
+                        if (oy > defaultY + 10) { 
+                            const dx = ox - mouse3D.x;
+                            const dy = oy - mouse3D.y;
+                            
+                            if (dx*dx + dy*dy < eraseRadius*eraseRadius) {
+                                // Hedefi aşağıya resetle
+                                originals[i*3] = (Math.random() - 0.5) * 100;
+                                originals[i*3+1] = defaultY + (Math.random() * 5);
+                                originals[i*3+2] = (Math.random() - 0.5) * 10;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- Fizik Motoru ---
+            const pos = particles.geometry.attributes.position.array;
+            const lerpFactor = 0.15; // Hız (Ne kadar yüksekse o kadar çabuk hedefe gider)
+
+            for (let i = 0; i < count; i++) {
+                // Her parçacık 'original' (hedef) konumuna gitmeye çalışır
+                const tx = originals[i*3];
+                const ty = originals[i*3+1];
+                const tz = originals[i*3+2];
+
+                // Basit yumuşak geçiş (Lerp)
+                pos[i*3] += (tx - pos[i*3]) * lerpFactor;
+                pos[i*3+1] += (ty - pos[i*3+1]) * lerpFactor;
+                pos[i*3+2] += (tz - pos[i*3+2]) * lerpFactor;
+            }
+
+            particles.geometry.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+
+        // --- Kontroller ---
+
+        window.setTool = (tool) => {
+            currentTool = tool;
+            
+            // UI Güncelleme
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            if(tool === 'pen') document.getElementById('btn-pen').classList.add('active');
+            if(tool === 'eraser') document.getElementById('btn-eraser').classList.add('active');
+
+            // İmleç Güncelleme
+            const cursor = document.getElementById('cursor');
+            cursor.className = tool === 'pen' ? 'cursor-pen' : 'cursor-hand';
+        };
+
+        window.setColor = (colorName) => {
+            const map = {
+                'gold': '#ffd700',
+                'cyan': '#00ffff',
+                'magenta': '#ff00ff',
+                'white': '#ffffff'
+            };
+            activeColor = new THREE.Color(map[colorName]);
+            
+            // UI
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Eğer kalem aracı seçili değilse seç
+            if(currentTool !== 'pen') setTool('pen');
+        };
+
+        window.resetSand = () => {
+            // Tüm hedefleri aşağıya çek
+            // Şık bir efekt için aşağıya doğru animasyonlu reset
+            gsap.to(camera.position, {
+                z: 20, duration: 0.3, yoyo: true, repeat: 1
+            }); // Hafif bir kamera sarsıntısı efekti
+
+            for (let i = 0; i < count; i++) {
+                originals[i*3] = (Math.random() - 0.5) * 100;
+                originals[i*3+1] = defaultY + (Math.random() * 5);
+                originals[i*3+2] = (Math.random() - 0.5) * 10;
+            }
+        };
+
+        // --- Event Listeners ---
+
+        function setupInteraction() {
+            const container = document.getElementById('container');
+            const cursor = document.getElementById('cursor');
+
+            const updateMouse = (x, y) => {
+                mouse.x = (x / window.innerWidth) * 2 - 1;
+                mouse.y = -(y / window.innerHeight) * 2 + 1;
+                
+                cursor.style.left = x + 'px';
+                cursor.style.top = y + 'px';
+            };
+
+            container.addEventListener('mousemove', (e) => {
+                updateMouse(e.clientX, e.clientY);
+                if(e.buttons === 1) isTouching = true;
+            });
+            
+            container.addEventListener('mousedown', () => isTouching = true);
+            container.addEventListener('mouseup', () => isTouching = false);
+            
+            // Touch
+            container.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isTouching = true;
+                updateMouse(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: false });
+            
+            container.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                updateMouse(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: false });
+            
+            container.addEventListener('touchend', () => isTouching = false);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
