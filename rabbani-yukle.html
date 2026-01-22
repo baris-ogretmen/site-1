@@ -2,73 +2,98 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Otomatik Tamir</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="firebase-config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalplerin Kandili</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #ecfeff; text-align: center; }
-        .box { background: white; padding: 30px; border-radius: 15px; border: 3px solid #0891b2; max-width: 500px; }
-        h2 { color: #0e7490; }
-        button { background: #0891b2; color: white; border: none; padding: 15px 40px; font-size: 1.3rem; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 20px; width: 100%; }
-        button:hover { background: #155e75; }
-        #durum { margin-top: 20px; font-weight: bold; }
+        body { margin: 0; padding: 0; background-color: #fff7ed; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .header { background: white; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .back-btn { text-decoration: none; color: #333; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        .book-title { font-weight: bold; color: #d97706; font-size: 1.2rem; }
+
+        /* Masaüstü: Yazı Solda, Resim Sağda */
+        .container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .book-card { width: 95%; max-width: 1100px; height: 85vh; background: white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); display: flex; overflow: hidden; border: 4px solid #ea580c; }
+        
+        .text-area { flex: 1; padding: 50px; overflow-y: auto; font-family: 'Merriweather', serif; font-size: 1.4rem; line-height: 1.8; color: #2d3748; display: flex; flex-direction: column; justify-content: center; background: #fffaf0; border-right: 2px solid #eee; }
+        
+        .image-area { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
+        .image-area img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Butonlar */
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; background: rgba(234, 88, 12, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; border: 2px solid white; font-size: 1.5rem; transition: 0.2s; z-index: 20; }
+        .nav-btn:hover { background: #c2410c; transform: scale(1.1) translateY(-50%); }
+        .prev { left: 20px; } 
+        .next { right: 20px; }
+        
+        .page-num { position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.7); color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; }
+
+        /* TELEFON ve TABLET AYARLARI */
+        @media (max-width: 900px) {
+            .book-card { flex-direction: column-reverse; height: 90vh; } /* Yazı altta, resim üstte */
+            .text-area { flex: 1; padding: 25px; font-size: 1.1rem; border-right: none; justify-content: flex-start; }
+            .image-area { flex: 1; max-height: 40%; }
+            .nav-btn { width: 45px; height: 45px; font-size: 1.2rem; top: auto; bottom: 50%; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h2>🔧 Vitrindeki Kitabı Tamir Et</h2>
-        <p>Butona basınca site adresini algılayıp resimleri kitaba gömer.</p>
-        <button onclick="tamirEt()">TAMİR ET VE BİTİR</button>
-        <div id="durum"></div>
+    <div class="header">
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Ana Sayfa</a>
+        <div class="book-title">Kalplerin Kandili</div>
+        <div style="width: 20px;"></div>
+    </div>
+
+    <div class="container">
+        <div class="book-card">
+            <div class="text-area" id="yaziKutusu"></div>
+
+            <div class="image-area">
+                <img id="resimKutusu" src="">
+                <div class="page-num" id="sayfaNo">1 / 11</div>
+                <div class="nav-btn prev" onclick="degistir(-1)"><i class="fas fa-chevron-left"></i></div>
+                <div class="nav-btn next" onclick="degistir(1)"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        function tamirEt() {
-            const db = firebase.firestore();
-            const durum = document.getElementById("durum");
-            durum.innerHTML = "⏳ Adres algılanıyor...";
-            durum.style.color = "orange";
+        // HİKAYE VE FOTOĞRAFLAR BURADA (VERİTABANI YOK, DİREKT ÇALIŞIR)
+        const veriler = [
+            { img: "rab1.jpg", text: "<h2 style='color:#ea580c'>1. Başlangıç</h2><br>Çok uzun zaman önce, Hindistan’ın Sarhind kasabasında Ahmad adında bir çocuk yaşardı.<br><br>Ahmad, akranları oyun oynarken bile elinden kitabını düşürmezdi. Babası Abdal-Ahad, oğlundaki bu öğrenme aşkını görünce gülümsedi: <b style='color:#d97706'>'Bilgi, karanlıkta yolunu bulmanı sağlayan bir yıldızdır Ahmad,'</b> dedi." },
+            { img: "rab2.jpg", text: "Küçük Ahmad, o gece yıldızlara bakarak içinden bir söz verdi: <b style='color:#ea580c'>Sadece kendisi için değil, herkes için bir ışık olacaktı.</b><br><br>Yıllar geçtikçe Ahmad’ın kalbindeki merak daha da büyüdü." },
+            { img: "rab3.jpg", text: "Sadece kitaplardaki bilgileri değil, hayatın ve sevginin anlamını da merak ediyordu. Şehrin en büyük kütüphanelerinde sabahladı.<br><br>Bir gün, <b style='color:#2563eb'>'Gerçek bilgi sadece zihinle değil, kalple öğrenilir,'</b> diye düşündü." },
+            { img: "rab4.jpg", text: "Bu düşünceyle, ruhunu eğitecek büyük bir öğretmen aramaya karar verdi. Sonunda Delhi şehrine ulaştı ve bilge bir öğretmen olan Baqi ile tanıştı." },
+            { img: "rab5.jpg", text: "Baqi, Ahmad’ın gözlerindeki kararlılığı gördü. Ona sabretmeyi, tevazuyu ve her canlının içindeki güzelliği görmeyi öğretti.<br><br>Ahmad, hocasının yanında diz çöktü ve sessizliğin sesini dinlemeye başladı." },
+            { img: "rab6.jpg", text: "Artık o, sadece öğrenen değil, olgunlaşan bir yolcuydu. Eğitimini tamamlayan Ahmad, Sarhind’e geri döndü.<br><br>Artık insanlar ona <b>'İmam Rabbani'</b> diyordu, yani 'Kendini Allah'a adayan önder.'" },
+            { img: "rab7.jpg", text: "Genç yaşlı herkes onun etrafında toplanıyordu. Onun en genç öğrencisi Sami, bir gün yanına gelip, 'Efendim, en büyük ders nedir?' diye sordu.<br><br>İmam Rabbani, <b style='color:#16a34a'>'Dürüstlük ve sevgiyle yoğrulmuş bir ahlaktır evladım,'</b> diye cevap verdi." },
+            { img: "rab8.jpg", text: "Zamanla insanlar doğruyu unutmaya ve haksızlık yapmaya başlamıştı. İmam Rabbani, saraydaki yanlış uygulamalara karşı cesurca durdu.<br><br>Doğruyu söylediği için bir kaleye hapsedildi. Ancak o, karanlık zindanı bile bir okul haline getirdi." },
+            { img: "rab9.jpg", text: "Zindandan çıktığında, o artık 'Bin Yılın Yenileyicisi' olarak anılıyordu. Binlerce sayfalık mektuplar yazdı.<br><br>Yazdığı her kelime, bir kalbi iyileştiriyordu." },
+            { img: "rab10.jpg", text: "Bir gün Sami ile bahçede yürürken yerdeki bir karıncayı fark ettiler. İmam Rabbani durdu ve Sami’ye:<br><br><b style='color:#ea580c'>'Evrendeki her şey bir düzen içindedir. En küçük karıncadan en büyük yıldıza kadar her şey bize bir şeyler anlatır,'</b> dedi." },
+            { img: "rab11.jpg", text: "<h2 style='color:#ea580c'>Son</h2><br>İmam Rabbani’nin en büyük mirası, yazdığı 'Mektubat' isimli eseriydi.<br><br>Bugün bile, bir çocuk dürüst olduğunda, İmam Rabbani’nin ektiği o tohumlar çiçek açmaya devam ediyor.<br><br><b style='color:#2563eb'>Kalbinde sevgi ve zihninde doğru bilgi olan hiç kimse, yolunu asla kaybetmez.</b>" }
+        ];
 
-            // SİTE ADRESİNİ OTOMATİK BULUR (Hata yapma şansı yok)
-            // Örn: https://baris-ogretmen.github.io/
-            let yol = window.location.href;
-            yol = yol.substring(0, yol.lastIndexOf('/') + 1);
-            
-            console.log("Resim Yolu: " + yol);
+        let aktifSayfa = 0;
 
-            // SENİN VİTRİNDEKİ KİTABIN ID'Sİ
-            const kitapID = "dt8snrbRkivYCHnDPzKF";
-
-            const yeniVeri = {
-                baslik: "Kalplerin Kandili: İmam Rabbani’nin Yolculuğu",
-                sayfalar: [
-                    { img: yol + "rab1.jpg", text: "Çok uzun zaman önce, Hindistan’ın Sarhind kasabasında Ahmad adında bir çocuk yaşardı. Ahmad, akranları oyun oynarken bile elinden kitabını düşürmezdi. Babası Abdal-Ahad, oğlundaki bu öğrenme aşkını görünce gülümsedi. 'Bilgi, karanlıkta yolunu bulmanı sağlayan bir yıldızdır Ahmad,' dedi." },
-                    { img: yol + "rab2.jpg", text: "Küçük Ahmad, o gece yıldızlara bakarak içinden bir söz verdi: Sadece kendisi için değil, herkes için bir ışık olacaktı. Yıllar geçtikçe Ahmad’ın kalbindeki merak daha da büyüdü." },
-                    { img: yol + "rab3.jpg", text: "Sadece kitaplardaki bilgileri değil, hayatın ve sevginin anlamını da merak ediyordu. Şehrin en büyük kütüphanelerinde sabahladı. Bir gün, 'Gerçek bilgi sadece zihinle değil, kalple öğrenilir,' diye düşündü." },
-                    { img: yol + "rab4.jpg", text: "Bu düşünceyle, ruhunu eğitecek büyük bir öğretmen aramaya karar verdi. Sonunda Delhi şehrine ulaştı ve bilge bir öğretmen olan Baqi ile tanıştı." },
-                    { img: yol + "rab5.jpg", text: "Baqi, Ahmad’ın gözlerindeki kararlılığı gördü. Ona sabretmeyi, tevazuyu ve her canlının içindeki güzelliği görmeyi öğretti. Ahmad, hocasının yanında diz çöktü ve sessizliğin sesini dinlemeye başladı." },
-                    { img: yol + "rab6.jpg", text: "Artık o, sadece öğrenen değil, olgunlaşan bir yolcuydu. Eğitimini tamamlayan Ahmad, Sarhind’e geri döndü. Artık insanlar ona 'İmam Rabbani' diyordu, yani 'Kendini Allah'a adayan önder.'" },
-                    { img: yol + "rab7.jpg", text: "Genç yaşlı herkes onun etrafında toplanıyordu. Onun en genç öğrencisi Sami, bir gün yanına gelip, 'Efendim, en büyük ders nedir?' diye sordu. İmam Rabbani, 'Dürüstlük ve sevgiyle yoğrulmuş bir ahlaktır evladım,' diye cevap verdi." },
-                    { img: yol + "rab8.jpg", text: "Zamanla insanlar doğruyu unutmaya ve haksızlık yapmaya başlamıştı. İmam Rabbani, saraydaki yanlış uygulamalara karşı cesurca durdu. Doğruyu söylediği için bir kaleye hapsedildi. Ancak o, karanlık zindanı bile bir okul haline getirdi." },
-                    { img: yol + "rab9.jpg", text: "Zindandan çıktığında, o artık 'Bin Yılın Yenileyicisi' olarak anılıyordu. Binlerce sayfalık mektuplar yazdı. Bu mektuplarda; doğruluğu, kardeşliği ve sevginin gücünü anlattı. Yazdığı her kelime, bir kalbi iyileştiriyordu." },
-                    { img: yol + "rab10.jpg", text: "Bir gün Sami ile bahçede yürürken yerdeki bir karıncayı fark ettiler. İmam Rabbani durdu ve Sami’ye, 'Evrendeki her şey bir düzen içindedir. En küçük karıncadan en büyük yıldıza kadar her şey bize bir şeyler anlatır,' dedi." },
-                    { img: yol + "rab11.jpg", text: "İmam Rabbani’nin en büyük mirası, yazdığı 'Mektubat' isimli eseriydi. Bugün bile, bir çocuk dürüst olduğunda, İmam Rabbani’nin ektiği o tohumlar çiçek açmaya devam ediyor. <b>Kalbinde sevgi ve zihninde doğru bilgi olan hiç kimse, yolunu asla kaybetmez.</b> -SON-" }
-                ]
-            };
-
-            db.collection("dijital_kitaplar").doc(kitapID).update(yeniVeri)
-            .then(() => {
-                durum.innerHTML = "✅ BAŞARILI! (" + yol + " adresi kullanıldı)";
-                durum.style.color = "green";
-                alert("Harika! Resimler bağlandı. Şimdi ana sayfaya gidip kitabına bakabilirsin.");
-            })
-            .catch((hata) => {
-                durum.innerHTML = "Hata: " + hata.message;
-                durum.style.color = "red";
-            });
+        function goster() {
+            const veri = veriler[aktifSayfa];
+            document.getElementById("yaziKutusu").innerHTML = veri.text;
+            document.getElementById("resimKutusu").src = veri.img;
+            document.getElementById("sayfaNo").innerText = (aktifSayfa + 1) + " / " + veriler.length;
         }
+
+        function degistir(yon) {
+            if (aktifSayfa + yon >= 0 && aktifSayfa + yon < veriler.length) {
+                aktifSayfa += yon;
+                goster();
+            }
+        }
+
+        // Başlat
+        goster();
     </script>
 </body>
 </html>
