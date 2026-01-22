@@ -3,219 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kitap Okuma</title>
+    <title>Kitap Okuma Modu</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="firebase-config.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
-        body { 
-            background: #2c3e50; 
-            font-family: 'Fredoka', sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            overflow: hidden; 
-        }
+        body { margin: 0; padding: 0; background-color: #1e293b; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* KİTAP ÇERÇEVESİ */
-        .book-container { 
-            width: 95%; 
-            max-width: 1100px; 
-            height: 90vh; 
-            background: #fffbf0; 
-            border-radius: 20px; 
-            display: flex; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
-            border: 8px solid #5d4037; 
-            overflow: hidden; 
-            position: relative; 
-        }
+        /* KAPAT BUTONU */
+        .close-btn { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; text-decoration: none; z-index: 100; cursor: pointer; opacity: 0.8; }
+        .close-btn:hover { opacity: 1; transform: scale(1.1); }
 
-        /* YAZI ALANI (SOL) */
-        .text-area { 
-            flex: 1; 
-            padding: 40px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            border-right: 3px dashed #d7ccc8; 
-            overflow-y: auto; 
-            position: relative; 
-        }
+        /* KİTAP ALANI */
+        .book-stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 20px; }
+        
+        .page-card { width: 100%; max-width: 500px; height: 80vh; background: white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; position: relative; animation: pageIn 0.5s ease-out; }
+        @keyframes pageIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
-        /* RESİM ALANI (SAĞ) */
-        .image-area { 
-            flex: 1; 
-            background: #fdf2e9; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 20px; 
-        }
+        /* RESİM ALANI */
+        .page-image-area { flex: 3; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .page-image-area img { width: 100%; height: 100%; object-fit: contain; }
+        .no-img { color: #94a3b8; font-size: 0.9rem; }
 
-        .story-img { 
-            max-width: 100%; 
-            max-height: 90%; 
-            border-radius: 15px; 
-            border: 5px solid white; 
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.2); 
-            object-fit: contain;
-        }
-
-        h1 { color: #d35400; font-family: 'Patrick Hand', cursive; font-size: 2.5rem; margin-bottom: 20px; line-height: 1.2; }
-        p { font-size: 1.4rem; line-height: 1.6; color: #444; }
+        /* YAZI ALANI */
+        .page-text-area { flex: 2; padding: 25px; overflow-y: auto; font-size: 1.25rem; line-height: 1.6; color: #334155; text-align: center; display: flex; align-items: center; justify-content: center; }
 
         /* BUTONLAR */
-        .nav-btn { 
-            position: absolute; 
-            bottom: 20px; 
-            padding: 10px 25px; 
-            font-size: 1.2rem; 
-            cursor: pointer; 
-            background: #ff9800; 
-            color: white; 
-            border: none; 
-            border-radius: 50px; 
-            font-family: 'Patrick Hand', cursive; 
-            z-index: 10; 
-            transition: transform 0.2s;
-        }
-        .nav-btn:hover { transform: scale(1.1); }
-        .nav-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.3s; z-index: 50; }
+        .nav-btn:hover { background: white; color: #1e293b; }
+        .prev-btn { left: 20px; }
+        .next-btn { right: 20px; }
 
-        #prev { left: 30px; } 
-        #next { right: 30px; }
-        
-        .page-num { 
-            position: absolute; 
-            bottom: 30px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-family: 'Patrick Hand', cursive; 
-            color: #795548; 
-            font-weight: bold; 
-            font-size: 1.2rem;
-        }
-        
-        /* YÜKLENİYOR EKRANI */
-        #loader { position: fixed; inset: 0; background: #2c3e50; color: white; display: flex; align-items: center; justify-content: center; z-index: 999; font-size: 2rem; flex-direction: column; }
-        .spinner { margin-top: 20px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 4px solid white; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* SAYFA NUMARASI */
+        .page-num { position: absolute; bottom: 20px; width: 100%; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9rem; font-weight: bold; pointer-events: none; }
 
-        /* MOBİL UYUM */
-        @media (max-width: 768px) {
-            .book-container { flex-direction: column-reverse; height: 95vh; }
-            .text-area { border-right: none; border-top: 2px dashed #ccc; padding: 20px; justify-content: flex-start; }
-            .image-area { height: 40%; padding: 10px; }
-            h1 { font-size: 1.5rem; margin-top: 0; } p { font-size: 1.1rem; }
-            .nav-btn { bottom: 10px; padding: 8px 15px; font-size: 1rem; }
-        }
+        /* YÜKLENİYOR */
+        #loader { color: white; font-size: 1.2rem; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div>Kitaplıktan Çekiliyor...</div>
-    <div class="spinner"></div>
-</div>
+    <a href="index.html" class="close-btn" title="Kapat">&times;</a>
 
-<div class="book-container" id="book-content" style="display:none;">
-    <div class="text-area">
-        <h1 id="baslik"></h1>
-        <p id="metin"></p>
+    <div class="book-stage" id="stage">
+        <div id="loader">
+            <div class="spinner"></div>
+            <div>Kitap Açılıyor...</div>
+        </div>
     </div>
-    <div class="image-area">
-        <img id="resim" class="story-img" src="" onerror="this.src='https://via.placeholder.com/400x300?text=Resim+Yok'">
-    </div>
-    
-    <button id="prev" class="nav-btn" onclick="sayfaDegistir(-1)">❮ Geri</button>
-    <div class="page-num" id="sayfa-no"></div>
-    <button id="next" class="nav-btn" onclick="sayfaDegistir(1)">İleri ❯</button>
-</div>
 
-<script>
-    // URL'den ID parametresini al (?id=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    const kitapID = urlParams.get('id');
-    
-    // Resimlerin olduğu klasör (Kendi kullanıcı adını buraya yazdım)
-    const RESIM_URL_PREFIX = "https://baris-ogretmen.github.io/site-1/"; 
+    <div class="nav-btn prev-btn" onclick="sayfaDegis(-1)"><i class="fas fa-chevron-left"></i></div>
+    <div class="nav-btn next-btn" onclick="sayfaDegis(1)"><i class="fas fa-chevron-right"></i></div>
 
-    // ID yoksa veya config dosyası yoksa hata ver
-    if (!kitapID) {
-        document.getElementById('loader').innerHTML = "<div style='text-align:center'>⚠️<br>Kitap seçilmedi!<br>Lütfen panelden oluşturduğunuz linke tıklayın.</div>";
-    } else if (typeof firebaseConfig === 'undefined') {
-        document.getElementById('loader').innerHTML = "<div style='text-align:center; color:red'>HATA:<br>firebase-config.js dosyası eksik!</div>";
-    } else {
-        // Firebase'i Başlat
-        firebase.initializeApp(firebaseConfig);
+    <div class="page-num" id="page-indicator"></div>
+
+    <script>
         const db = firebase.firestore();
-        
-        let SAYFALAR = [];
-        let aktifSayfa = 0;
+        let pages = [];
+        let currentIndex = 0;
 
-        // Veritabanından ID ile kitabı bul
-        db.collection("dijital_kitaplar").doc(kitapID).get().then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                SAYFALAR = data.sayfalar;
-                document.title = data.baslik; // Tarayıcı sekme adı
-                
-                // Yükleme ekranını kapat, kitabı aç
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('book-content').style.display = 'flex';
-                
-                // İlk sayfayı yükle
-                sahneYukle(0);
-            } else {
-                document.getElementById('loader').innerHTML = "😔<br>Bu kitap silinmiş veya bulunamadı.";
+        // URL'den Kitap ID'sini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookId = urlParams.get('id');
+
+        if(!bookId) {
+            document.getElementById('stage').innerHTML = "<div style='color:white;'>⚠️ Kitap bulunamadı.</div>";
+        } else {
+            // Veritabanından Kitabı Çek
+            db.collection("dijital_kitaplar").doc(bookId).get().then(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    pages = data.sayfalar || [];
+                    
+                    if(pages.length > 0) {
+                        renderPage();
+                    } else {
+                        document.getElementById('stage').innerHTML = "<div style='color:white;'>⚠️ Bu kitabın sayfası yok.</div>";
+                    }
+                } else {
+                    document.getElementById('stage').innerHTML = "<div style='color:white;'>⚠️ Kitap silinmiş olabilir.</div>";
+                }
+            }).catch(err => {
+                document.getElementById('stage').innerHTML = "<div style='color:white;'>Hata: " + err.message + "</div>";
+            });
+        }
+
+        // Sayfayı Ekrana Bas
+        function renderPage() {
+            const pageData = pages[currentIndex];
+            const stage = document.getElementById('stage');
+            
+            // Resim var mı kontrolü
+            let imgHTML = '<div class="no-img">Resim Yok</div>';
+            if(pageData.img && pageData.img.length > 2) {
+                // Eğer tam link değilse (dosya adıysa) başına klasör yolu ekleyebiliriz ama şimdilik direkt basıyoruz
+                imgHTML = `<img src="${pageData.img}" onerror="this.style.display='none'">`;
             }
-        }).catch(err => {
-            console.error(err);
-            document.getElementById('loader').innerHTML = "Bağlantı Hatası!<br>İnternetini kontrol et.";
+
+            stage.innerHTML = `
+                <div class="page-card">
+                    <div class="page-image-area">${imgHTML}</div>
+                    <div class="page-text-area">${pageData.text}</div>
+                </div>
+            `;
+
+            document.getElementById('page-indicator').innerText = `Sayfa ${currentIndex + 1} / ${pages.length}`;
+        }
+
+        // İleri Geri Fonksiyonu
+        function sayfaDegis(yon) {
+            if(pages.length === 0) return;
+            
+            let yeniIndex = currentIndex + yon;
+
+            // Sınırları Kontrol Et
+            if(yeniIndex < 0) {
+                alert("Başlangıçtasın!");
+                return;
+            }
+            if(yeniIndex >= pages.length) {
+                if(confirm("Kitap bitti! Ana sayfaya dönmek ister misin?")) {
+                    window.location.href = "index.html";
+                }
+                return;
+            }
+
+            currentIndex = yeniIndex;
+            renderPage();
+        }
+
+        // Klavye Yön Tuşları
+        document.addEventListener('keydown', (e) => {
+            if(e.key === "ArrowRight") sayfaDegis(1);
+            if(e.key === "ArrowLeft") sayfaDegis(-1);
         });
 
-        // Sayfayı Ekrana Basma Fonksiyonu
-        function sahneYukle(index) {
-            const sayfa = SAYFALAR[index];
-            
-            // Başlık: İlk sayfada Kitap Adı, sonrakilerde Bölüm X
-            document.getElementById('baslik').innerText = (index === 0) ? document.title : `Bölüm ${index + 1}`;
-            
-            // Metin (Satır başlarını korumak için replace yaptık)
-            document.getElementById('metin').innerText = sayfa.text;
-            
-            // Resim Ayarı
-            let imgLink = sayfa.img;
-            // Eğer "http" ile başlamıyorsa (yani sadece dosya adıysa), başına site adresini ekle
-            if(!imgLink.startsWith('http') && !imgLink.startsWith('https')) {
-                imgLink = RESIM_URL_PREFIX + imgLink;
-            }
-            document.getElementById('resim').src = imgLink;
-            
-            // Sayfa Numarası
-            document.getElementById('sayfa-no').innerText = `${index + 1} / ${SAYFALAR.length}`;
-
-            // Butonları Aç/Kapa
-            document.getElementById('prev').disabled = (index === 0);
-            document.getElementById('next').disabled = (index === SAYFALAR.length - 1);
-        }
-
-        // İleri/Geri Fonksiyonu
-        window.sayfaDegistir = function(yon) {
-            const yeni = aktifSayfa + yon;
-            if(yeni >= 0 && yeni < SAYFALAR.length) {
-                aktifSayfa = yeni;
-                sahneYukle(aktifSayfa);
-            }
-        }
-    }
-</script>
+    </script>
 </body>
 </html>
