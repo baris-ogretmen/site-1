@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Süper Tatil Çarkı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10B981;
+            --accent: #F59E0B;
+            --danger: #ef4444;
+            --bg: #F3F4F6;
+            --dark: #1f2937;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Giriş Ekranı (Modal) */
+        #loginScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 4px solid var(--primary);
+            position: relative;
+        }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-weight: 700; margin-bottom: 8px; color: #374151; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 14px; border: 2px solid #e5e7eb; border-radius: 12px;
+            font-size: 1rem; font-family: 'Nunito', sans-serif; outline: none; transition: 0.3s; background: #f9fafb;
+        }
+        .input-group input:focus, .input-group select:focus { border-color: var(--primary); background: white; }
+
+        .btn-start {
+            background: var(--primary); color: white; width: 100%; padding: 16px;
+            border: none; border-radius: 12px; font-size: 1.2rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 5px 0 #4338ca; transition: 0.1s;
+        }
+        .btn-start:active { transform: translateY(4px); box-shadow: 0 0 0 #4338ca; }
+
+        /* Ana Oyun Alanı */
+        #gameScreen { display: none; width: 100%; max-width: 600px; flex-direction: column; align-items: center; padding: 20px; padding-top: 10px; position: relative; }
+
+        .top-nav {
+            width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
+        }
+
+        .btn-home {
+            background: #e5e7eb; color: #374151; border: none; padding: 8px 16px;
+            border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;
+            transition: 0.2s;
+        }
+        .btn-home:hover { background: #d1d5db; }
+
+        header { margin-bottom: 15px; text-align: center; width: 100%; }
+        h1 { font-family: 'Fredoka', sans-serif; color: var(--primary); font-size: 1.8rem; text-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
+        .welcome-text { color: #6B7280; font-weight: 600; font-size: 0.95rem; }
+
+        /* İstatistikler ve Progress Bar */
+        .stats-container {
+            width: 100%; background: white; padding: 15px; border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;
+            border: 2px solid white;
+        }
+
+        .stats-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stat-item { display: flex; flex-direction: column; align-items: flex-start; }
+        .stat-val { font-family: 'Fredoka', sans-serif; font-size: 1.5rem; color: var(--accent); font-weight: bold; line-height: 1; }
+        .stat-lbl { font-size: 0.7rem; font-weight: 800; color: #9CA3AF; letter-spacing: 0.5px; }
+
+        .progress-wrapper { width: 100%; background: #E5E7EB; height: 10px; border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary)); width: 0%; transition: width 0.5s ease; border-radius: 10px; }
+        .progress-text { font-size: 0.7rem; color: #6B7280; margin-top: 5px; text-align: right; font-weight: 700; }
+
+        /* Çark Alanı */
+        .wheel-container {
+            position: relative;
+            width: 320px; height: 320px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+        }
+
+        canvas { width: 100%; height: 100%; /* transform transition JS ile yapılıyor */ }
+
+        .pointer {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 50px; background: #ef4444;
+            clip-path: polygon(100% 0, 50% 100%, 0 0);
+            z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        /* Çevir Butonu */
+        .spin-btn {
+            background: white; border: 4px solid var(--primary); color: var(--primary);
+            width: 70px; height: 70px; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-weight: 800; font-size: 1rem; cursor: pointer; z-index: 5;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            font-family: 'Fredoka', sans-serif;
+            transition: all 0.2s;
+        }
+        .spin-btn:active { transform: translate(-50%, -50%) scale(0.9); background: var(--bg); }
+        .spin-btn:disabled { opacity: 0.7; cursor: not-allowed; border-color: #9CA3AF; color: #9CA3AF; }
+
+        /* Görev Geçmişi */
+        .history-section {
+            width: 100%; background: rgba(255,255,255,0.6); padding: 15px; border-radius: 16px; margin-top: 20px;
+        }
+        .history-title { font-size: 0.9rem; font-weight: 800; color: #4B5563; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .history-list { list-style: none; }
+        .history-item { 
+            font-size: 0.85rem; color: #4B5563; padding: 8px 0; border-bottom: 1px dashed #D1D5DB; 
+            display: flex; justify-content: space-between;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-score { color: var(--secondary); font-weight: 700; }
+
+        /* Görev Kartı (Sonuç) */
+        #resultModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+            backdrop-filter: blur(3px);
+        }
+
+        .mission-card {
+            background: white; padding: 40px 30px; border-radius: 24px;
+            width: 100%; max-width: 400px; text-align: center;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-bottom: 8px solid #E5E7EB;
+            position: relative;
+        }
+
+        .mission-icon { font-size: 4rem; margin-bottom: 20px; display: block; animation: bounce 2s infinite; }
+        .mission-cat { background: #EFF6FF; color: var(--primary); padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 15px; display: inline-block; }
+        .mission-text { font-size: 1.3rem; font-weight: 700; color: #1f2937; margin-bottom: 30px; line-height: 1.4; }
+
+        .btn-complete {
+            background: var(--secondary); color: white; width: 100%; padding: 15px;
+            border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; border-bottom: 4px solid #059669; transition: 0.2s;
+        }
+        .btn-complete:active { border-bottom: 0; transform: translateY(4px); margin-top: 4px; }
+
+        .btn-close-modal {
+            position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; color: #9CA3AF; cursor: pointer;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* Mobil Uyum */
+        @media (max-width: 400px) {
+            .wheel-container { width: 280px; height: 280px; }
+            h1 { font-size: 1.5rem; }
+            .mission-text { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <h1 style="margin-bottom: 10px;">Tatil Çarkı 🎡</h1>
+            <p style="margin-bottom: 20px; color: #666;">İlerlemeni kaydetmek için bilgilerini gir.</p>
+            
+            <div class="input-group">
+                <label>Adın Nedir?</label>
+                <input type="text" id="playerName" placeholder="Örn: Ali" maxlength="15">
+            </div>
+
+            <div class="input-group">
+                <label>Sınıfın Kaç?</label>
+                <select id="playerGrade">
+                    <option value="ilkokul">İlkokul (1-4. Sınıf)</option>
+                    <option value="ortaokul">Ortaokul (5-8. Sınıf)</option>
+                    <option value="lise">Lise (9-12. Sınıf)</option>
+                </select>
+            </div>
+
+            <button class="btn-start" onclick="startGame()">OYUNA BAŞLA ▶</button>
+            <div style="margin-top: 15px; font-size: 0.75rem; color: #9CA3AF;">* Puanların otomatik saklanır.</div>
+        </div>
+    </div>
+
+    <!-- OYUN EKRANI -->
+    <div id="gameScreen">
+        <div class="top-nav">
+            <button class="btn-home" onclick="goHome()">🏠 Ana Menü</button>
+            <div id="gradeLabel" style="font-weight: 700; color: #6B7280; font-size: 0.8rem;">-</div>
+        </div>
+
+        <header>
+            <h1 id="welcomeTitle">Hoş Geldin!</h1>
+            <div class="welcome-text">Bugünkü şanslı görevin ne?</div>
+        </header>
+
+        <div class="stats-container">
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-lbl">TOPLAM PUAN</div>
+                    <div class="stat-val" id="score">0</div>
+                </div>
+                <div class="stat-item" style="align-items: flex-end;">
+                    <div class="stat-lbl">RÜTBE</div>
+                    <div class="stat-val" id="rankBadge" style="color:var(--primary); font-size: 1.1rem;">Çaylak</div>
+                </div>
+            </div>
+            
+            <div class="progress-wrapper">
+                <div class="progress-fill" id="xpBar"></div>
+            </div>
+            <div class="progress-text" id="nextRankInfo">Sonraki rütbeye: 50 Puan</div>
+        </div>
+
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="wheelCanvas" width="400" height="400"></canvas>
+            <button class="spin-btn" id="spinBtn" onclick="spinWheel()">ÇEVİR</button>
+        </div>
+
+        <div class="history-section">
+            <div class="history-title">📜 Son Görevlerin</div>
+            <ul class="history-list" id="historyList">
+                <li class="history-item" style="justify-content: center; color: #9CA3AF;">Henüz görev tamamlamadın.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- SONUÇ MODALI -->
+    <div id="resultModal">
+        <div class="mission-card">
+            <button class="btn-close-modal" onclick="closeModalWithoutPoint()">×</button>
+            <div class="mission-icon" id="mIcon">🎁</div>
+            <div class="mission-cat" id="mCat">KATEGORİ</div>
+            <div class="mission-text" id="mText">Görev burada yazacak...</div>
+            <button class="btn-complete" onclick="acceptMission()">Görevi Tamamladım (+20P)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SES EFEKTLERİ (GELİŞMİŞ) ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Çark Dönme Sesi (Tık)
+        function playTick() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            // Kısa, perküsif bir ses
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.05);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        // Kazanma Sesi (Akor - Ta-Da!)
+        function playWin() {
+            if (!audioCtx) return;
+            
+            const now = audioCtx.currentTime;
+            
+            // C Major Akor (Do-Mi-Sol-Do) - Arpej şeklinde
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine'; // Veya 'triangle' daha yumuşak olabilir
+                osc.frequency.value = freq;
+                
+                // Zamanlamayı biraz kaydırarak çal (Arpej etkisi)
+                const startTime = now + (i * 0.08); 
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + 1);
+            });
+        }
+
+        // --- VERİ & AYARLAR ---
+        // Kategorilerin sırası çarkta çizilirken önemlidir.
+        // Index 0: Zeka, Index 1: Spor...
+        const categories = [
+            { name: "Zeka", color: "#6366f1", icon: "🧠" },
+            { name: "Spor", color: "#10B981", icon: "⚽" },
+            { name: "Sanat", color: "#F59E0B", icon: "🎨" },
+            { name: "Aile", color: "#EC4899", icon: "👨‍👩‍👧" },
+            { name: "Doğa", color: "#84CC16", icon: "🌱" },
+            { name: "Joker", color: "#F43F5E", icon: "⭐" }
+        ];
+
+        // GENİŞLETİLMİŞ GÖREV HAVUZU
+        const missionsDB = {
+            'ilkokul': {
+                'Zeka': [
+                    "En sevdiğin kitabı ailene sesli oku.", 
+                    "20'den geriye 2'şer ritmik say.", 
+                    "Bir tekerlemeyi ezberle ve hızla söyle.",
+                    "Odandaki mavi renkli 5 eşyayı bul ve say.",
+                    "İsminin harfleriyle başlayan birer hayvan ismi bul.",
+                    "Ailenle 'Evet-Hayır' oyunu oyna (Sorulara evet/hayır demek yasak).",
+                    "Bir kağıda 2025 yılı için bir hayalini çiz."
+                ],
+                'Spor': [
+                    "Sevdiğin şarkıda 2 dakika dans et.", 
+                    "10 kez zıpla ve 5 kez çömel.", 
+                    "Tek ayak üstünde 10 saniye durmaya çalış.",
+                    "Koridorda yengeç gibi yan yan yürü.",
+                    "Bir balonu yere düşürmeden 1 dakika havada tut.",
+                    "Hayali bir ip atlama oyunu oyna (50 kez).",
+                    "Yatağını kendin düzelt (Bu da spordur!)."
+                ],
+                'Sanat': [
+                    "Hayalindeki evi çiz ve boya.", 
+                    "Bir kağıttan en uzağa giden uçağı yap.", 
+                    "Patates veya yaprak baskısı yapmayı dene.",
+                    "Tuvalet kağıdı rulosundan bir dürbün yap.",
+                    "En sevdiğin meyvenin resmini çiz.",
+                    "Bir şarkı uydur ve ailene söyle.",
+                    "Oyun hamurundan bir hayvan yap."
+                ],
+                'Aile': [
+                    "Annene veya babana kocaman sarıl.", 
+                    "Sofrayı kurmaya yardım et.", 
+                    "Bir aile büyüğünü görüntülü ara.",
+                    "Kardeşinle veya ailenle sessiz sinema oyna.",
+                    "Akşam yemeğinde herkese 'Günün nasıl geçti?' diye sor.",
+                    "Ailene bir fıkra anlat ve onları güldür.",
+                    "Evdeki çiçekleri sula (Ailenle birlikte)."
+                ],
+                'Doğa': [
+                    "Pencereden dışarı bak ve 3 farklı kuş bul.", 
+                    "Bir çiçeği veya bitkiyi incele, yapraklarını say.", 
+                    "Gökyüzüne bak ve bulutları bir şeye benzet.",
+                    "Dışarı çıkarsan bir sokak hayvanına mama/su ver.",
+                    "Meyve çekirdeklerini çöpe atma, biriktirip toprağa göm.",
+                    "Odanı havalandır ve derin bir nefes al.",
+                    "Doğa ile ilgili bir belgesel izle (kısa bir bölüm)."
+                ],
+                'Joker': [
+                    "Bugün senin günün! Akşam yemeğini sen seç.", 
+                    "1 saat boyunca istediğin oyunu oyna.",
+                    "Bugün evde 'Pijamalı Pazar' ilan et (Günü pijamayla geçir).",
+                    "Ailenden sana bir masal anlatmalarını iste.",
+                    "Kendi gizli selamlaşma hareketini uydur."
+                ]
+            },
+            'ortaokul': {
+                'Zeka': [
+                    "İngilizce 5 yeni kelime öğren ve cümle içinde kullan.", 
+                    "Satranç, Dama veya Sudoku oyna.", 
+                    "İlginç bir bilimsel gerçeği araştır ve ailene anlat.",
+                    "Bir ülkenin başkentini ve bayrağını öğren.",
+                    "Bugün okuduğun kitaptan 20 sayfa fazla oku.",
+                    "Gözlerini kapatıp odandaki eşyaların yerini hatırlamaya çalış.",
+                    "Bir matematik problemini aklından çözmeye çalış."
+                ],
+                'Spor': [
+                    "20 mekik çek.", 
+                    "Dışarı çıkıp 15 dakika tempolu yürü veya koş.", 
+                    "YouTube'dan bir egzersiz videosu aç ve yap.",
+                    "Evde 'Plank' duruşunda rekorunu kırmaya çalış.",
+                    "Varsa merdivenleri 3 kez inip çık.",
+                    "50 tane 'Jumping Jack' (Zıplama) hareketi yap.",
+                    "Vücut esnetme hareketleri yap (En az 5 dakika)."
+                ],
+                'Sanat': [
+                    "Gelecekteki mesleğini anlatan bir resim veya yazı hazırla.", 
+                    "Origami ile turna kuşu veya gemi yap.", 
+                    "Kendi çizgi romanının bir sayfasını tasarla.",
+                    "Eski bir tişörtünü veya eşyanı boyayarak yenile.",
+                    "Telefonunla sanatsal bir 'Gölge Fotoğrafı' çek.",
+                    "Sevdiğin bir şarkının sözlerini bir kağıda güzel yazıyla yaz.",
+                    "Bir karikatür çiz."
+                ],
+                'Aile': [
+                    "Evdeki bir tamir işine veya temizliğe yardım et.", 
+                    "Bulaşık makinesini boşalt veya yerleştir.", 
+                    "Ailenle eski fotoğraf albümlerine bak.",
+                    "Akşam çayını/kahvesini sen demle ve servis et.",
+                    "Ailene bugün öğrendiğin ilginç bir şeyi anlat.",
+                    "Kardeşine veya kuzenine bir konuda yardım et.",
+                    "Büyüklerinle çocukluk anıları hakkında röportaj yap."
+                ],
+                'Doğa': [
+                    "Plastik atıkları geri dönüşüme ayır.", 
+                    "Balkonda veya bahçede 10 dk sessizce otur ve dinle.", 
+                    "Doğa fotoğrafı çek (Ağaç, böcek veya gökyüzü).",
+                    "Evin önünü veya bahçeyi temizle.",
+                    "Sokak hayvanları için kapıya bir kap su koy.",
+                    "Gereksiz yanan ışıkları kapat, enerji tasarrufu yap.",
+                    "Bir bitkinin bakımını üstlen."
+                ],
+                'Joker': [
+                    "2 saat ekran detoksu yap (Telefon/Tablet yok!).", 
+                    "Bir arkadaşına 'Seni seviyorum' veya 'Özledim' mesajı at.",
+                    "Bugün yatağını toplama, dağınık kalsın! (Şaka, topla tabii).",
+                    "Kendine bir 'Yapılacaklar Listesi' hazırla.",
+                    "Bugün tatlı yeme hakkın var!"
+                ]
+            },
+            'lise': {
+                'Zeka': [
+                    "Üniversite hedefinle ilgili bir bölümü detaylı araştır.", 
+                    "İlgi duyduğun konuda bir TEDx konuşması izle.", 
+                    "Günde en az 40 sayfa kitap oku.",
+                    "İngilizce bir makale veya haber oku.",
+                    "Tarihte bugün ne olduğunu araştır.",
+                    "Bir kodlama diline (Python vb.) başlangıç videosu izle.",
+                    "Günlük tutmaya başla veya bugünü yaz."
+                ],
+                'Spor': [
+                    "30 şınav veya 50 squat yap.", 
+                    "Sabah erken kalkıp 30 dk yürüyüş yap.", 
+                    "Yoga veya meditasyon denemesi yap.",
+                    "Evde kendi vücut ağırlığınla antrenman yap.",
+                    "Varsa bisiklet sür veya ip atla.",
+                    "Postür (Duruş) egzersizleri yap.",
+                    "Günde 2 litre su içmeyi hedefle."
+                ],
+                'Sanat': [
+                    "Favori şiirini ezberlemeye çalış.", 
+                    "Telefonunla 'Minimalist' bir fotoğraf çek.", 
+                    "İzlediğin bir filme eleştiri yazısı yaz.",
+                    "Bir 'Mood Board' (İlham panosu) hazırla (Pinterest vb.).",
+                    "Kendi podcast kaydını yapmayı dene (Sadece deneme).",
+                    "Bir şarkıyı farklı bir tarzda mırıldan/söyle.",
+                    "Odanın dekorasyonunu değiştir."
+                ],
+                'Aile': [
+                    "Bu akşam yemeğini sen yap veya büyük katkı sağla.", 
+                    "Kardeşine veya bir küçüğüne ders çalıştır.", 
+                    "Ailenle siyaset dışı, keyifli bir sohbet aç.",
+                    "Ev alışverişine çık veya listeyi hazırla.",
+                    "Bozuk bir eşyayı tamir etmeye çalış.",
+                    "Ailene bir film önerisi yap ve birlikte izleyin.",
+                    "Büyüklerini ara ve hatırlarını sor."
+                ],
+                'Doğa': [
+                    "Sokak hayvanları için mama al veya yap.", 
+                    "Karbon ayak izini hesapla (İnternetten test yap).", 
+                    "Kullanmadığın kıyafetleri ayır ve bağışla.",
+                    "Plastik kullanımını bugün minimuma indir.",
+                    "Yakındaki bir parka git ve yürüyüş yap.",
+                    "Bir belgesel izle (Gezegenimiz vb.).",
+                    "Odandaki kağıt atıkları geri dönüşüme gönder."
+                ],
+                'Joker': [
+                    "Yarım bıraktığın bir işi tamamla.", 
+                    "Kendine bir kariyer planı veya vizyon panosu yap.",
+                    "Eski bir arkadaşını ara.",
+                    "Bugün sosyal medyayı sadece 30 dakika kullan.",
+                    "Kendine bir kahve ısmarla veya güzel bir içecek hazırla."
+                ]
+            }
+        };
+
+        let currentUser = { name: "", grade: "" };
+        let stats = { score: 0, completed: 0, history: [] };
+        let currentRotation = 0;
+        let isSpinning = false;
+        let selectedCategory = null;
+        let lastMissionText = ""; 
+
+        // --- ÇİZİM ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = width / 2 - 10;
+        const segmentAngle = (2 * Math.PI) / categories.length;
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, width, height);
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentRotation);
+
+            categories.forEach((cat, i) => {
+                const angle = i * segmentAngle;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius, angle, angle + segmentAngle);
+                ctx.fillStyle = cat.color;
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(angle + segmentAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "white";
+                ctx.font = "bold 20px Fredoka";
+                ctx.fillText(cat.name, radius - 20, 5);
+                ctx.font = "24px Arial";
+                ctx.fillText(cat.icon, radius - 80, 5);
+                ctx.restore();
+            });
+
+            ctx.restore();
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 40, 0, 2 * Math.PI);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#e5e7eb";
+            ctx.stroke();
+        }
+
+        // --- MANTIK ---
+        
+        function startGame() {
+            const nameInput = document.getElementById('playerName').value.trim();
+            const gradeInput = document.getElementById('playerGrade').value;
+
+            if(!nameInput) {
+                alert("Lütfen bir isim gir!");
+                return;
+            }
+
+            initAudio(); // Ses motorunu başlat
+
+            currentUser.name = nameInput;
+            currentUser.grade = gradeInput;
+
+            // LocalStorage'dan yükle
+            const storageKey = `tatil_${nameInput.toLowerCase()}_${gradeInput}`;
+            const savedData = JSON.parse(localStorage.getItem(storageKey));
+            
+            if(savedData) {
+                stats = savedData;
+                if(!stats.history) stats.history = [];
+            } else {
+                stats = { score: 0, completed: 0, history: [] };
+            }
+
+            // Arayüzü Hazırla
+            document.getElementById('welcomeTitle').innerText = `Hoş Geldin, ${currentUser.name}!`;
+            
+            let gradeText = "";
+            if(gradeInput === 'ilkokul') gradeText = "İLKOKUL SEVİYESİ";
+            else if(gradeInput === 'ortaokul') gradeText = "ORTAOKUL SEVİYESİ";
+            else gradeText = "LİSE SEVİYESİ";
+            document.getElementById('gradeLabel').innerText = gradeText;
+            
+            updateStatsUI();
+            updateHistoryUI();
+
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            
+            drawWheel();
+        }
+
+        function goHome() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+
+            const duration = 4000;
+            let startTime = null;
+            let startRot = currentRotation;
+            let finalRot = startRot + (Math.PI * 2 * 5) + (Math.random() * Math.PI * 4); 
+
+            let lastAngleForSound = startRot;
+
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 4); // Quartic ease-out
+                
+                currentRotation = startRot + (finalRot - startRot) * ease;
+                drawWheel();
+
+                // SES TETİKLEME MANTIĞI: Her dilim geçişinde ses çal
+                // currentRotation radyan cinsinden. segmentAngle radyan cinsinden.
+                // Kaç dilim geçtiğimizi hesaplayalım.
+                const currentStep = Math.floor(currentRotation / segmentAngle);
+                const lastStep = Math.floor(lastAngleForSound / segmentAngle);
+                
+                if (currentStep > lastStep) {
+                     playTick();
+                     lastAngleForSound = currentRotation;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    isSpinning = false;
+                    document.getElementById('spinBtn').disabled = false;
+                    determineWinner();
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function determineWinner() {
+            // MATEMATİKSEL DÜZELTME
+            // İbre tepede (270 derece / 3PI/2).
+            // Çark saat yönünde dönüyor (pozitif açı artışı).
+            // İbrenin gösterdiği açı = (270 - dönüşMiktarı) (Modüler aritmetikte)
+            
+            const normalizedRotation = currentRotation % (2 * Math.PI);
+            
+            // Pointer açısı (radyan olarak 3PI/2 yani 270 derece)
+            const pointerAngle = (3 * Math.PI) / 2;
+            
+            // Çarkın üzerindeki hangi açının pointer'a denk geldiğini bulalım
+            // Çizim yaparken rotate(currentRotation) yaptık.
+            // Yani koordinat sistemi döndü.
+            // Pointer'ın yeni koordinat sistemindeki açısı:
+            let relativeAngle = pointerAngle - normalizedRotation;
+            
+            // Açıyı 0 ile 2PI arasına sıkıştır (Normalize et)
+            while (relativeAngle < 0) relativeAngle += 2 * Math.PI;
+            relativeAngle = relativeAngle % (2 * Math.PI);
+
+            // Hangi dilime denk geldiğini bul
+            // Index = Açı / DilimGenişliği
+            const index = Math.floor(relativeAngle / segmentAngle);
+            
+            selectedCategory = categories[index];
+
+            // Sonucu göster (Hemen değil, çok kısa bir bekleme ile, göz yanılmasını önlemek için)
+            // Konfeti ve sesi burada, showResult içinde çağırıyoruz.
+            showResult(selectedCategory);
+        }
+
+        function showResult(category) {
+            // SES VE KONFETİ BURADA (Tam durduğu an)
+            playWin();
+            
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: [category.color, '#ffffff']
+            });
+            
+            const gradeMissions = missionsDB[currentUser.grade][category.name];
+            
+            let randomMission = "";
+            let attempts = 0;
+            
+            do {
+                randomMission = gradeMissions[Math.floor(Math.random() * gradeMissions.length)];
+                attempts++;
+            } while (randomMission === lastMissionText && attempts < 3);
+            
+            lastMissionText = randomMission;
+
+            document.getElementById('mIcon').innerText = category.icon;
+            document.getElementById('mCat').innerText = category.name;
+            document.getElementById('mCat').style.color = category.color;
+            document.getElementById('mCat').style.backgroundColor = category.color + "20";
+            document.getElementById('mText').innerText = randomMission;
+
+            const modal = document.getElementById('resultModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeModalWithoutPoint() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        function acceptMission() {
+            // Puan Ekle
+            stats.score += 20;
+            stats.completed += 1;
+            
+            // Geçmişe Ekle
+            const missionText = document.getElementById('mText').innerText;
+            stats.history.unshift({ text: missionText, cat: document.getElementById('mCat').innerText });
+            if(stats.history.length > 5) stats.history.pop(); 
+
+            // Kaydet
+            const storageKey = `tatil_${currentUser.name.toLowerCase()}_${currentUser.grade}`;
+            localStorage.setItem(storageKey, JSON.stringify(stats));
+
+            updateStatsUI();
+            updateHistoryUI();
+
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        function updateStatsUI() {
+            document.getElementById('score').innerText = stats.score;
+            
+            let rank = "Çaylak";
+            let nextRankScore = 50;
+            let currentBase = 0;
+
+            if(stats.score >= 50) { rank = "Kaşif"; nextRankScore = 150; currentBase = 50; }
+            if(stats.score >= 150) { rank = "Kaptan"; nextRankScore = 300; currentBase = 150; }
+            if(stats.score >= 300) { rank = "Efsane"; nextRankScore = 500; currentBase = 300; }
+            if(stats.score >= 500) { rank = "Lider"; nextRankScore = 1000; currentBase = 500; }
+
+            document.getElementById('rankBadge').innerText = rank;
+
+            let percent = 0;
+            if (stats.score < 500) {
+                 percent = ((stats.score - currentBase) / (nextRankScore - currentBase)) * 100;
+                 document.getElementById('nextRankInfo').innerText = `Sonraki rütbeye: ${nextRankScore - stats.score} Puan`;
+            } else {
+                percent = 100;
+                document.getElementById('nextRankInfo').innerText = "Maksimum Seviye!";
+            }
+            
+            document.getElementById('xpBar').style.width = `${percent}%`;
+        }
+
+        function updateHistoryUI() {
+            const list = document.getElementById('historyList');
+            if(stats.history.length === 0) {
+                list.innerHTML = '<li class="history-item" style="justify-content: center; color: #9CA3AF;">Henüz görev tamamlamadın.</li>';
+                return;
+            }
+            
+            let html = "";
+            stats.history.forEach(h => {
+                html += `
+                    <li class="history-item">
+                        <span>${h.text.substring(0, 30)}...</span>
+                        <span class="history-score">+20</span>
+                    </li>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+    </script>
+</body>
+</html>
