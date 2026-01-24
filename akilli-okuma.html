@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akıllı Okuma Asistanı</title>
+    <!-- Tailwind CSS (Tasarım için) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- İkonlar için -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Comic Neue', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation; /* Mobilde çift tıklama zoom'unu engeller */
+        }
+
+        .letter-box {
+            transition: all 0.2s ease;
+        }
+
+        /* Animasyonlar */
+        @keyframes pulse-red {
+            0%, 100% { background-color: #fee2e2; border-color: #ef4444; }
+            50% { background-color: #fecaca; border-color: #dc2626; }
+        }
+        .animate-error {
+            animation: pulse-red 0.5s infinite;
+        }
+        
+        @keyframes pop-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1.1); }
+        }
+        .animate-success {
+            animation: pop-green 0.3s forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col select-none overflow-x-hidden">
+
+    <!-- Üst Bar -->
+    <div class="bg-white shadow-sm border-b border-gray-200 p-3 sticky top-0 z-20 flex justify-between items-center">
+        <div class="flex items-center space-x-2 text-indigo-700">
+            <i data-lucide="volume-2" class="w-6 h-6"></i>
+            <h1 class="text-lg font-bold hidden md:block">Akıllı Okuma</h1>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleAdminPanel()" class="flex items-center space-x-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-bold hover:bg-indigo-200 transition">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <span id="adminBtnText">Ekle</span>
+            </button>
+            <div id="counter" class="px-3 py-1.5 bg-gray-100 rounded-full text-gray-600 text-sm font-bold border border-gray-200">
+                1 / 5
+            </div>
+        </div>
+    </div>
+
+    <!-- Yönetici Paneli -->
+    <div id="adminPanel" class="hidden bg-indigo-50 border-b border-indigo-100 p-4 animate-fade-in">
+        <form onsubmit="addSentence(event)" class="max-w-2xl mx-auto flex gap-2">
+            <input type="text" id="newSentenceInput" placeholder="Örn: Işık ılık süt iç" 
+                class="flex-1 px-4 py-3 rounded-xl border-2 border-indigo-200 focus:outline-none focus:border-indigo-500 font-bold text-gray-700">
+            <button type="submit" class="bg-indigo-600 text-white px-4 rounded-xl hover:bg-indigo-700 flex items-center shadow-lg active:scale-95 transition">
+                <i data-lucide="plus" class="w-6 h-6"></i>
+            </button>
+            <button type="button" onclick="deleteSentence()" class="bg-red-100 text-red-500 border-2 border-red-200 px-4 rounded-xl hover:bg-red-200 flex items-center active:scale-95 transition">
+                <i data-lucide="trash-2" class="w-6 h-6"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Ana İçerik -->
+    <div class="flex-1 flex flex-col items-center justify-center p-3 md:p-6 w-full max-w-4xl mx-auto">
+        <div class="w-full bg-white rounded-[2rem] shadow-xl border-2 border-slate-100 overflow-hidden relative min-h-[50vh] flex flex-col">
+            
+            <!-- Kelime Alanı -->
+            <div class="flex-1 p-4 md:p-12 flex flex-col items-center justify-center">
+                <div id="wordsContainer" class="flex flex-wrap justify-center content-center gap-y-6 w-full px-1 mb-8">
+                    <!-- Kelimeler JS ile buraya gelecek -->
+                </div>
+
+                <!-- Durum Mesajı -->
+                <div id="feedbackBox" class="text-lg md:text-xl font-bold px-6 py-3 rounded-full transition-all duration-300 flex items-center gap-2 bg-gray-100 text-gray-500">
+                    Mikrofona bas ve oku
+                </div>
+            </div>
+
+            <!-- Kontrol Butonları -->
+            <div class="bg-slate-50 p-4 md:p-6 flex justify-center items-center gap-6 md:gap-12 border-t border-slate-100">
+                
+                <!-- Dinle Butonu -->
+                <button onclick="speakTarget()" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border-2 border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-400 flex flex-col items-center justify-center gap-1 transition-all shadow-sm active:scale-95">
+                    <i data-lucide="volume-2" class="w-6 h-6 md:w-8 md:h-8"></i>
+                    <span class="text-[10px] md:text-xs font-bold">DİNLE</span>
+                </button>
+
+                <!-- Mikrofon -->
+                <button id="micBtn" onclick="toggleListening()" class="relative w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl border-[6px] bg-indigo-600 border-indigo-100 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95">
+                    <i id="micIcon" data-lucide="mic" class="w-10 h-10 md:w-14 md:h-14"></i>
+                </button>
+
+                <!-- İlerle Butonu -->
+                <button id="nextBtn" onclick="nextSentence()" disabled class="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 bg-white border-gray-200 text-gray-300 cursor-not-allowed flex flex-col items-center justify-center gap-1 transition-all shadow-sm">
+                    <i data-lucide="chevron-right" class="w-6 h-6 md:w-8 md:h-8"></i>
+                    <span class="text-[10px] md:text-xs font-bold">GEÇ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        // --- Değişkenler ---
+        let sentences = [
+            "Barış eve geldi",
+            "Ali topu at",
+            "Ayşe okula gitti",
+            "Oya ip atla",
+            "Babam bana elma aldı"
+        ];
+        
+        let currentIndex = 0;
+        let currentWordIndex = 0;
+        let isListening = false;
+        let recognition;
+        let currentTranscript = "";
+        let isComplete = false;
+
+        // --- Başlangıç ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initSpeech();
+            lucide.createIcons();
+            render();
+        });
+
+        // --- Ses Tanıma Kurulumu ---
+        function initSpeech() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'tr-TR';
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    updateUIState();
+                    setFeedback("Dinliyorum...", "blue");
+                };
+
+                recognition.onend = () => {
+                    isListening = false;
+                    updateUIState();
+                    if (!isComplete) setFeedback("Mikrofona bas ve devam et", "gray");
+                };
+
+                recognition.onresult = (event) => {
+                    // Tüm konuşmayı al ve temizle
+                    const transcript = Array.from(event.results)
+                        .map(result => result[0].transcript)
+                        .join(' ')
+                        .toLocaleLowerCase('tr-TR')
+                        .replace(/[.,!?;:]/g, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    
+                    currentTranscript = transcript;
+                    checkLogic();
+                    render(); // Ekranı güncelle
+                };
+            } else {
+                alert("Tarayıcınız ses tanımayı desteklemiyor. Lütfen Google Chrome kullanın.");
+            }
+        }
+
+        // --- Mantık Motoru ---
+        function checkLogic() {
+            if (isComplete) return;
+
+            const targetWords = sentences[currentIndex].split(' ');
+            const spokenWords = currentTranscript.split(' ');
+            
+            let matchCount = 0;
+            
+            // Konuşulan kelimeleri sırayla kontrol et
+            for (let i = 0; i < spokenWords.length; i++) {
+                const spoken = spokenWords[i];
+                const target = targetWords[matchCount] ? targetWords[matchCount].toLocaleLowerCase('tr-TR').replace(/[.,!]/g, '') : null;
+                
+                if (target && spoken === target) {
+                    matchCount++;
+                }
+            }
+
+            // İlerleme varsa güncelle
+            if (matchCount > currentWordIndex) {
+                currentWordIndex = matchCount;
+                if (currentWordIndex >= targetWords.length) {
+                    isComplete = true;
+                    setFeedback("Harika! Hepsi doğru.", "green");
+                    if(recognition) recognition.stop();
+                    document.getElementById('nextBtn').disabled = false;
+                    document.getElementById('nextBtn').classList.remove('bg-white', 'text-gray-300', 'cursor-not-allowed', 'border-gray-200');
+                    document.getElementById('nextBtn').classList.add('bg-green-600', 'text-white', 'border-green-600', 'shadow-green-200', 'hover:bg-green-700');
+                } else {
+                    setFeedback("Süper! Devam et.", "blue");
+                }
+            }
+        }
+
+        // --- Ekranı Çizme (Render) ---
+        function render() {
+            const container = document.getElementById('wordsContainer');
+            container.innerHTML = '';
+            
+            const targetWords = sentences[currentIndex].split(' ');
+            const spokenWords = currentTranscript.split(' ');
+            
+            // Son okunan kelimeyi (deneme halindeki) bul
+            // Mantık: Eğer 2 kelime onaylandıysa (matchCount=2), spokenWords dizisinde 
+            // onaylananların ötesindeki kelimelere bakmalıyız.
+            // Basitlik için: spokenWords dizisinin 'currentWordIndex'inci elemanı bizim şu an okuduğumuzdur.
+            const currentAttempt = spokenWords[currentWordIndex] || "";
+
+            targetWords.forEach((word, wIndex) => {
+                const letters = word.split('');
+                const isCompletedWord = wIndex < currentWordIndex;
+                const isCurrentWord = wIndex === currentWordIndex;
+
+                const wordDiv = document.createElement('div');
+                wordDiv.className = "flex mr-4 md:mr-8 mb-4";
+
+                letters.forEach((char, cIndex) => {
+                    const span = document.createElement('span');
+                    const targetChar = char.toLocaleLowerCase('tr-TR');
+                    
+                    // Temel Stil
+                    let classes = "flex justify-center items-center w-8 md:w-12 h-14 md:h-20 text-4xl md:text-6xl mx-0.5 border-b-4 rounded-t-lg transition-all duration-200 letter-box ";
+
+                    if (isCompletedWord) {
+                        // Tamamlanmış Kelime
+                        classes += "text-green-600 border-green-500 font-bold bg-green-50";
+                    } else if (isCurrentWord) {
+                        // Şu anki Kelime
+                        const spokenChar = currentAttempt.toLocaleLowerCase('tr-TR')[cIndex];
+
+                        if (spokenChar) {
+                            if (spokenChar === targetChar) {
+                                // Harf Doğru
+                                classes += "text-green-600 border-green-500 font-bold bg-green-50 transform scale-110";
+                            } else {
+                                // Harf Yanlış
+                                classes += "text-red-500 border-red-500 bg-red-50 animate-error";
+                            }
+                        } else {
+                            // Henüz Söylenmedi (Gri ama aktif)
+                            classes += "text-slate-400 border-slate-300";
+                        }
+                    } else {
+                        // Sırası Gelmeyen Kelime (Pasif Gri)
+                        classes += "text-gray-200 border-gray-100 opacity-50";
+                    }
+
+                    span.className = classes;
+                    span.textContent = char;
+                    wordDiv.appendChild(span);
+                });
+
+                container.appendChild(wordDiv);
+            });
+            
+            // Sayacı güncelle
+            document.getElementById('counter').innerText = `${currentIndex + 1} / ${sentences.length}`;
+        }
+
+        // --- Buton Aksiyonları ---
+        function toggleListening() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                // Yeni okuma başlatırken temizle
+                currentTranscript = "";
+                currentWordIndex = 0;
+                isComplete = false;
+                resetNextBtn();
+                render();
+                recognition.start();
+            }
+        }
+
+        function speakTarget() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(sentences[currentIndex]);
+                utterance.lang = 'tr-TR';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function nextSentence() {
+            if (currentIndex < sentences.length - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // Başa dön
+            }
+            resetCard();
+        }
+
+        // --- Yardımcılar ---
+        function resetCard() {
+            currentTranscript = "";
+            currentWordIndex = 0;
+            isComplete = false;
+            resetNextBtn();
+            setFeedback("Mikrofona bas ve oku", "gray");
+            render();
+            if (isListening) recognition.stop();
+        }
+
+        function resetNextBtn() {
+            const btn = document.getElementById('nextBtn');
+            btn.disabled = true;
+            btn.className = "w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 bg-white border-gray-200 text-gray-300 cursor-not-allowed flex flex-col items-center justify-center gap-1 transition-all shadow-sm";
+        }
+
+        function updateUIState() {
+            const micBtn = document.getElementById('micBtn');
+            const micIcon = document.getElementById('micIcon');
+            
+            if (isListening) {
+                micBtn.className = "relative w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl border-[6px] bg-red-500 border-red-200 text-white animate-pulse scale-105";
+                // İkonu değiştirmek için lucide güncellemesi gerekebilir ama şimdilik class yeterli
+            } else {
+                micBtn.className = "relative w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl border-[6px] bg-indigo-600 border-indigo-100 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95";
+            }
+        }
+
+        function setFeedback(msg, color) {
+            const box = document.getElementById('feedbackBox');
+            box.innerText = msg;
+            
+            box.className = "text-lg md:text-xl font-bold px-6 py-3 rounded-full transition-all duration-300 flex items-center gap-2 ";
+            
+            if (color === 'green') box.className += "bg-green-100 text-green-700 shadow-sm animate-success";
+            else if (color === 'blue') box.className += "bg-blue-50 text-blue-600 border border-blue-100";
+            else if (color === 'red') box.className += "bg-red-50 text-red-600";
+            else box.className += "bg-gray-100 text-gray-500";
+        }
+
+        // --- Yönetici Paneli ---
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            const btnText = document.getElementById('adminBtnText');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                btnText.innerText = "Gizle";
+            } else {
+                panel.classList.add('hidden');
+                btnText.innerText = "Ekle";
+            }
+        }
+
+        function addSentence(e) {
+            e.preventDefault();
+            const input = document.getElementById('newSentenceInput');
+            const val = input.value.trim();
+            if (val) {
+                sentences.push(val);
+                currentIndex = sentences.length - 1;
+                resetCard();
+                input.value = "";
+                toggleAdminPanel(); // Kapat
+                alert("Yeni cümle eklendi!");
+            }
+        }
+
+        function deleteSentence() {
+            if (sentences.length > 1) {
+                sentences.splice(currentIndex, 1);
+                currentIndex = 0;
+                resetCard();
+                toggleAdminPanel();
+            } else {
+                alert("En az bir cümle kalmalı!");
+            }
+        }
+    </script>
+</body>
+</html>
+
