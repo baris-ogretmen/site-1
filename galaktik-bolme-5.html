@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaktik Bölme - Akıllı Sorular</title>
+    <title>Galaktik Bölme - Efsane Sürüm</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-blue: #00f3ff;
-            --neon-purple: #bc13fe;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -19,27 +17,30 @@
             background-color: #000;
             color: white;
             overflow: hidden;
-            touch-action: none; 
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
         }
 
+        /* --- Arka Plan --- */
         .space-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #000000 100%);
+            background: radial-gradient(circle at center, #0f172a 0%, #000000 100%);
         }
         .stars {
             position: absolute; width: 100%; height: 100%;
             background: transparent url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMTAiIHI9IjEiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjUiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSI1MCIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC43Ii8+PGNpcmNsZSBjeD0iMzUwIiBjeT0iMzUwIiByPSIxIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC40Ii8+PC9zdmc+') repeat;
-            opacity: 0.5;
+            opacity: 0.6;
+            animation: moveStars 200s linear infinite;
         }
+        @keyframes moveStars { from {background-position:0 0;} to {background-position:-1000px 1000px;} }
 
+        /* --- UI Elementleri --- */
         .glass {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
 
         .btn-3d {
@@ -54,119 +55,166 @@
             box-shadow: 0 0 0 rgba(0,0,0,0);
         }
 
-        /* Türkiye Usulü Bölme */
+        /* Türkiye Usulü Bölme Görseli */
         .tr-division { display: inline-flex; font-family: monospace; line-height: 1.2; }
-        .tr-left { padding-right: 12px; display: flex; align-items: center; justify-content: flex-end; font-size: 3rem; }
-        .tr-right { border-left: 4px solid white; border-bottom: 4px solid white; padding-left: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 80px; }
-        .tr-divisor { border-bottom: 4px solid white; padding-bottom: 4px; margin-bottom: 4px; font-size: 2.5rem; color: #c084fc; }
-        .tr-quotient { padding-top: 4px; font-size: 2.5rem; color: #4ade80; }
+        .tr-left { padding-right: 15px; display: flex; align-items: center; justify-content: flex-end; font-size: 3rem; }
+        .tr-right { border-left: 4px solid white; border-bottom: 4px solid white; padding-left: 15px; display: flex; flex-direction: column; justify-content: space-between; min-width: 100px; }
+        .tr-divisor { border-bottom: 4px solid white; padding-bottom: 5px; margin-bottom: 5px; font-size: 2.5rem; color: #c084fc; }
+        .tr-quotient { padding-top: 5px; font-size: 2.5rem; color: #4ade80; }
         .tr-dividend { color: #60a5fa; }
 
-        .pulse-anim { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);} 100% {box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);} }
+        /* --- Canvas Stilleri --- */
+        #drawing-wrapper {
+            position: relative;
+            background-color: #1e293b;
+            border-radius: 1rem;
+            overflow: hidden;
+            cursor: crosshair;
+            border: 2px dashed #475569;
+            display: flex; flex-direction: column;
+        }
+        #drawing-wrapper.fullscreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; border: none; border-radius: 0;
+        }
         
+        .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s; }
+        .color-btn:hover { transform: scale(1.1); }
+        .color-btn.active { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .tool-btn { padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.1); font-size: 1.2rem; }
+        .tool-btn.active { background: #4ade80; color: black; }
+
+        /* Mobil Modal */
+        .mobile-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
+            background: rgba(15, 23, 42, 0.95); display: flex; flex-direction: column;
+        }
+
+        /* Animasyonlar */
         .slide-content { display: none; opacity: 0; transition: opacity 0.5s; }
         .slide-content.active { display: flex; opacity: 1; }
-
-        /* Canvas (Çizim Alanı) */
-        #drawing-board {
-            touch-action: none;
-            cursor: crosshair;
-            background-color: rgba(20, 30, 40, 0.6);
-            border-radius: 1rem;
-        }
-        .tool-active { background-color: #4ade80 !important; color: black !important; border-color: #4ade80 !important; }
+        .pulse-anim { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);} 100% {box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);} }
+        .float-anim { animation: float 4s ease-in-out infinite; }
+        @keyframes float { 0% {transform: translateY(0);} 50% {transform: translateY(-10px);} 100% {transform: translateY(0);} }
 
         /* Layout */
-        .game-layout { display: flex; gap: 1rem; height: 100%; width: 100%; overflow: hidden; }
-        .game-panel { flex: 1; display: flex; flex-direction: column; transition: all 0.3s; }
-        .board-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            background: rgba(0,0,0,0.3); 
-            border: 2px dashed rgba(255,255,255,0.2); 
-            border-radius: 1rem; 
-            padding: 0.5rem;
-            position: relative;
-        }
-
-        @media (max-width: 1024px) {
-            .game-layout { position: relative; }
-            .board-panel { 
-                position: absolute; 
-                top: 0; left: 0; width: 100%; height: 100%; 
-                z-index: 50; 
-                background: rgba(10, 10, 20, 0.95); 
-                display: none; 
-            }
-            .board-panel.show { display: flex; }
-        }
+        .game-grid { display: grid; grid-template-columns: 1fr; height: 100%; gap: 1rem; }
+        @media (min-width: 1024px) { .game-grid { grid-template-columns: 450px 1fr; } } /* PC'de yan yana */
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="h-screen w-screen flex flex-col">
 
     <div class="space-bg"><div class="stars"></div></div>
 
-    <button onclick="toggleFullScreen()" class="absolute top-4 right-4 z-50 p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
+    <!-- Tam Ekran Butonu -->
+    <button onclick="toggleFullScreen()" class="absolute top-4 right-4 z-50 p-2 bg-white/10 rounded-full hover:bg-white/20 transition text-white">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
     </button>
 
-    <!-- MENÜ -->
+    <!-- 1. MENÜ EKRANI -->
     <div id="screen-menu" class="flex-1 flex flex-col items-center justify-center p-6 text-center z-10">
-        <h1 class="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 mb-2">BÖLME</h1>
-        <h2 class="text-3xl md:text-5xl font-light text-white tracking-widest mb-12">AKADEMİSİ</h2>
+        <div class="mb-10 float-anim">
+            <h1 class="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 drop-shadow-lg">
+                BÖLME
+            </h1>
+            <h2 class="text-3xl md:text-5xl font-light text-white tracking-[0.3em] mt-2">AKADEMİSİ</h2>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
             <button onclick="startTutorial()" class="btn-3d glass rounded-2xl p-8 flex flex-col items-center group hover:bg-white/20">
-                <span class="text-6xl mb-4">📚</span>
+                <span class="text-6xl mb-4 group-hover:scale-110 transition">📚</span>
                 <span class="text-2xl font-bold text-cyan-300">Konu Anlatımı</span>
             </button>
             <button onclick="startGame()" class="btn-3d glass rounded-2xl p-8 flex flex-col items-center group hover:bg-white/20 bg-gradient-to-br from-purple-900/50 to-blue-900/50">
-                <span class="text-6xl mb-4">🚀</span>
+                <span class="text-6xl mb-4 group-hover:scale-110 transition">🚀</span>
                 <span class="text-2xl font-bold text-green-300">Göreve Başla</span>
             </button>
         </div>
+        <p class="mt-8 text-gray-400 text-sm">Gelişmiş Çizim & Sonsuz Soru Modu</p>
     </div>
 
-    <!-- KONU ANLATIMI -->
+    <!-- 2. KONU ANLATIMI (Slaytlı Orijinal Versiyon) -->
     <div id="screen-tutorial" class="hidden flex-1 flex-col p-4 md:p-8 max-w-6xl mx-auto w-full z-10 relative">
         <div class="w-full bg-gray-700 h-2 rounded-full mb-6">
-            <div id="progress-bar" class="bg-gradient-to-r from-cyan-400 to-purple-500 h-2 rounded-full transition-all duration-500" style="width: 25%"></div>
+            <div id="progress-bar" class="bg-gradient-to-r from-cyan-400 to-purple-500 h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
         </div>
+        
         <div class="flex-1 glass rounded-3xl p-6 relative overflow-hidden flex flex-col justify-center items-center text-center">
             
+            <!-- SLAYT 1: Giriş -->
             <div id="slide-1" class="slide-content active flex-col items-center">
-                <h2 class="text-4xl font-bold text-yellow-400 mb-6">Bölme Nedir?</h2>
-                <div class="text-xl mb-4">Bir bütünü eş parçalara ayırmaktır.</div>
-                <div class="text-6xl mb-4">🍎🍎🍎🍎</div>
-                <div class="text-2xl">4 Elma ÷ 2 Kişi = <span class="text-green-400 font-bold">2 Elma</span></div>
-            </div>
-            
-            <div id="slide-2" class="slide-content flex-col items-center">
-                <h2 class="text-4xl font-bold text-yellow-400 mb-6">Kalanlı Bölme</h2>
-                <p class="text-xl mb-4">Bazen elmalar tam bölünmez. Artan sayıya <strong>KALAN</strong> denir.</p>
-                <div class="bg-black/40 p-4 rounded-xl text-left font-mono text-2xl inline-block">
-                    <p>13 ÷ 4 = ?</p>
-                    <p class="text-sm text-gray-400 mt-2">13'ün içinde 4, 3 kere var (4, 8, 12).</p>
-                    <p>13 - 12 = <span class="text-red-400 font-bold">1 (Kalan)</span></p>
+                <h2 class="text-4xl md:text-5xl font-bold text-yellow-400 mb-6">Bölme Nedir?</h2>
+                <p class="text-xl md:text-2xl mb-8">Bir bütünü <strong>eş parçalara</strong> ayırmaktır.</p>
+                <div class="bg-black/30 p-6 rounded-xl flex flex-wrap justify-center gap-8 items-center">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🍎🍎🍎🍎</div>
+                        <p class="mt-2 text-gray-400">4 Elma</p>
+                    </div>
+                    <div class="text-4xl text-gray-500">÷</div>
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🧒 👧</div>
+                        <p class="mt-2 text-gray-400">2 Kişi</p>
+                    </div>
+                    <div class="text-4xl text-gray-500">=</div>
+                    <div class="text-center">
+                        <div class="text-5xl font-bold text-green-400">2</div>
+                        <p class="mt-2 text-green-300">Kişi başı düşen</p>
+                    </div>
                 </div>
             </div>
 
+            <!-- SLAYT 2: Terimler -->
+            <div id="slide-2" class="slide-content flex-col items-center w-full">
+                <h2 class="text-4xl font-bold text-yellow-400 mb-8">Terimleri Tanıyalım</h2>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-12">
+                    <div class="tr-division transform scale-125">
+                        <div class="tr-left tr-dividend">20</div>
+                        <div class="tr-right">
+                            <div class="tr-divisor">4</div>
+                            <div class="tr-quotient">5</div>
+                        </div>
+                    </div>
+                    <div class="text-left space-y-4">
+                        <div class="text-blue-300 text-xl">🔵 <strong>Bölünen (20):</strong> Pastanın tamamı.</div>
+                        <div class="text-purple-300 text-xl">🟣 <strong>Bölen (4):</strong> Kaç kişiye paylaştırıyoruz?</div>
+                        <div class="text-green-300 text-xl">🟢 <strong>Bölüm (5):</strong> Sonuç! Kişi başı düşen.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLAYT 3: Kalan -->
             <div id="slide-3" class="slide-content flex-col items-center">
-                <h2 class="text-4xl font-bold text-red-500 mb-6">Altın Kural</h2>
-                <div class="border-4 border-red-500 p-6 rounded-2xl">
-                    <p class="text-3xl font-bold">Kalan < Bölen</p>
-                    <p class="mt-2 text-gray-300">Kalan sayı her zaman bölenden küçük olmalıdır!</p>
+                <h2 class="text-4xl font-bold text-orange-400 mb-4">Kalan Nedir?</h2>
+                <p class="text-xl mb-6">Bazen sayılar tam bölünmez. Artan sayıya <strong class="text-red-400">KALAN</strong> denir.</p>
+                <div class="bg-black/20 p-6 rounded-2xl border border-white/10 inline-block text-left">
+                    <p class="text-2xl font-mono mb-2">13 ÷ 4 = ?</p>
+                    <p class="text-gray-400">• 4, 8, 12... (3 kere var)</p>
+                    <p class="text-gray-400">• 13 - 12 = <span class="text-red-500 font-bold text-2xl">1</span></p>
+                    <p class="mt-2 text-red-400 font-bold">1 sayısı Kalandır!</p>
                 </div>
             </div>
 
+            <!-- SLAYT 4: Altın Kural -->
             <div id="slide-4" class="slide-content flex-col items-center">
-                <h2 class="text-4xl font-bold text-white mb-6">Göreve Hazır Mısın?</h2>
-                <p class="text-lg text-gray-300 mb-6">İşlemleri yapmak için yandaki <strong>Çizim Tahtasını</strong> kullanabilirsin!</p>
+                <div class="animate-pulse text-6xl mb-4">⚠️</div>
+                <h2 class="text-4xl font-bold text-red-500 mb-6">Altın Kural</h2>
+                <div class="border-4 border-red-500 p-8 rounded-3xl bg-red-900/20">
+                    <p class="text-3xl font-bold text-white">Kalan <span class="text-yellow-400"><</span> Bölen</p>
+                    <p class="text-xl text-gray-200 mt-4">Kalan sayı, ASLA bölene eşit veya büyük olamaz!</p>
+                </div>
+            </div>
+
+            <!-- SLAYT 5: Başla -->
+            <div id="slide-5" class="slide-content flex-col items-center">
+                <h2 class="text-5xl font-bold text-white mb-6">Hazır Mısın?</h2>
+                <p class="text-xl text-gray-300 mb-8">
+                    Yan taraftaki <strong>Renkli Kalemleri</strong> kullanarak işlemlerini yapabilirsin.<br>
+                    İstediğin kadar soru çözebilirsin!
+                </p>
                 <button onclick="startGame()" class="btn-3d px-12 py-4 rounded-xl bg-green-600 text-white font-bold text-2xl">BAŞLA 🚀</button>
             </div>
 
+            <!-- Navigasyon -->
             <div class="absolute bottom-6 left-0 w-full px-8 flex justify-between">
                 <button onclick="prevSlide()" class="p-3 rounded-full bg-white/10 hover:bg-white/20">⬅️ Geri</button>
                 <button id="next-btn" onclick="nextSlide()" class="p-3 rounded-full bg-white/10 hover:bg-white/20">İleri ➡️</button>
@@ -174,189 +222,295 @@
         </div>
     </div>
 
-    <!-- OYUN ALANI -->
-    <div id="screen-game" class="hidden flex-1 p-2 md:p-4 overflow-hidden relative">
-        <div class="game-layout">
+    <!-- 3. OYUN EKRANI (Split Screen) -->
+    <div id="screen-game" class="hidden flex-1 w-full h-full p-2 md:p-4 overflow-hidden relative">
+        <div class="game-grid max-w-[1800px] mx-auto">
             
-            <!-- SOL PANEL -->
-            <div class="game-panel">
-                <div class="flex justify-between items-center mb-2 glass p-2 rounded-xl">
-                    <div class="flex items-center gap-4">
-                        <div class="text-yellow-400 font-bold text-lg md:text-xl">PUAN: <span id="score">0</span></div>
-                        <div class="text-blue-300 font-bold text-sm">SEVİYE: <span id="level">1</span></div>
+            <!-- SOL TARA (SORU & TUŞLAR) -->
+            <div class="flex flex-col h-full gap-2 overflow-y-auto pb-20 md:pb-0">
+                <!-- Üst Bilgi -->
+                <div class="flex justify-between items-center glass p-3 rounded-xl">
+                    <div class="flex flex-col">
+                        <span class="text-xs text-gray-400 font-bold">PUAN</span>
+                        <span id="score" class="text-2xl font-bold text-yellow-400">0</span>
                     </div>
-                    <div class="flex text-red-500 text-xl" id="lives">❤️❤️❤️</div>
-                </div>
-
-                <div class="flex-1 glass rounded-2xl flex flex-col items-center justify-center relative bg-gradient-to-b from-slate-800/80 to-slate-900/80 mb-2">
-                    <div id="game-message" class="absolute top-2 text-green-400 text-xs md:text-sm font-bold tracking-widest uppercase">BÖLÜMÜ BUL</div>
-
-                    <div class="tr-division transform scale-125 md:scale-150 mb-6">
-                        <div id="g-dividend" class="tr-left tr-dividend">?</div>
-                        <div class="tr-right">
-                            <div id="g-divisor" class="tr-divisor">?</div>
-                            <div id="g-quotient" class="tr-quotient min-w-[50px] min-h-[40px] border-2 border-dashed border-white/30 rounded flex items-center justify-center text-white bg-white/5">?</div>
-                        </div>
+                    <div class="flex flex-col text-center">
+                        <span class="text-xs text-gray-400 font-bold">SORU</span>
+                        <span id="q-count" class="text-xl font-bold text-blue-300">1</span>
                     </div>
-
-                    <div id="remainder-area" class="flex items-center gap-2 opacity-50 transition-all duration-300">
-                        <span class="text-lg text-gray-400">Kalan:</span>
-                        <div id="g-remainder" class="w-12 h-10 border-2 border-dashed border-red-500/30 rounded flex items-center justify-center text-red-400 font-bold text-xl bg-black/20">?</div>
-                    </div>
-
-                    <div id="feedback" class="absolute bottom-4 text-xl font-bold h-6"></div>
-                    
-                    <button onclick="toggleBoard()" class="lg:hidden absolute top-2 right-2 bg-white/20 hover:bg-white/30 p-2 rounded-lg text-sm flex items-center gap-1">
-                        ✏️ İşlem Yap
+                    <button onclick="endTest()" class="bg-red-600/30 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold border border-red-500 transition">
+                        Testi Bitir 🏁
                     </button>
                 </div>
 
-                <!-- Numpad -->
-                <div class="h-auto max-w-sm mx-auto w-full">
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="inputNum(1)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">1</button>
-                        <button onclick="inputNum(2)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">2</button>
-                        <button onclick="inputNum(3)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">3</button>
-                        <button onclick="inputNum(4)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">4</button>
-                        <button onclick="inputNum(5)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">5</button>
-                        <button onclick="inputNum(6)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">6</button>
-                        <button onclick="inputNum(7)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">7</button>
-                        <button onclick="inputNum(8)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">8</button>
-                        <button onclick="inputNum(9)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">9</button>
-                        <button onclick="clearInput()" class="btn-3d bg-red-600/80 p-3 text-lg font-bold rounded-lg border-b-4 border-red-800">SİL</button>
-                        <button onclick="inputNum(0)" class="btn-3d glass p-3 text-2xl font-bold rounded-lg">0</button>
-                        <button onclick="submitAnswer()" class="btn-3d bg-green-600 p-3 text-lg font-bold rounded-lg border-b-4 border-green-800">OK</button>
+                <!-- Soru Kartı -->
+                <div class="flex-1 glass rounded-2xl flex flex-col items-center justify-center relative min-h-[300px] bg-gradient-to-b from-slate-800/60 to-slate-900/60">
+                    <div id="game-message" class="absolute top-4 text-green-400 text-sm font-bold tracking-widest uppercase animate-pulse">BÖLÜMÜ BUL</div>
+
+                    <!-- Bölme İşlemi -->
+                    <div class="tr-division mb-6 transform scale-110 md:scale-125">
+                        <div id="g-dividend" class="tr-left tr-dividend">?</div>
+                        <div class="tr-right">
+                            <div id="g-divisor" class="tr-divisor">?</div>
+                            <div id="g-quotient" class="tr-quotient min-w-[70px] h-[60px] border-2 border-dashed border-white/30 rounded flex items-center justify-center text-white bg-white/5 cursor-pointer">?</div>
+                        </div>
                     </div>
+
+                    <!-- Kalan Kutusu -->
+                    <div id="remainder-area" class="flex items-center gap-3 opacity-30 transition-all duration-300">
+                        <span class="text-xl text-gray-400 font-bold">Kalan:</span>
+                        <div id="g-remainder" class="w-16 h-14 border-2 border-dashed border-red-500/30 rounded flex items-center justify-center text-red-400 font-bold text-3xl bg-black/20">?</div>
+                    </div>
+
+                    <div id="feedback" class="absolute bottom-4 text-xl font-bold h-8"></div>
+                    
+                    <!-- Mobil İçin Tahta Butonu -->
+                    <button onclick="openMobileBoard()" class="lg:hidden absolute top-2 right-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 z-20">
+                        <span>✏️</span> Tahtayı Aç
+                    </button>
+                </div>
+
+                <!-- Klavye -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="inputNum(1)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">1</button>
+                    <button onclick="inputNum(2)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">2</button>
+                    <button onclick="inputNum(3)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">3</button>
+                    <button onclick="inputNum(4)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">4</button>
+                    <button onclick="inputNum(5)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">5</button>
+                    <button onclick="inputNum(6)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">6</button>
+                    <button onclick="inputNum(7)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">7</button>
+                    <button onclick="inputNum(8)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">8</button>
+                    <button onclick="inputNum(9)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">9</button>
+                    <button onclick="clearInput()" class="btn-3d bg-red-600/80 p-4 text-lg font-bold rounded-xl border-b-4 border-red-800">SİL</button>
+                    <button onclick="inputNum(0)" class="btn-3d glass p-4 text-2xl font-bold rounded-xl">0</button>
+                    <button onclick="submitAnswer()" class="btn-3d bg-green-600 p-4 text-xl font-bold rounded-xl border-b-4 border-green-800">OK</button>
                 </div>
             </div>
 
-            <!-- SAĞ PANEL: Çizim Tahtası -->
-            <div id="board-panel" class="board-panel">
-                <div class="flex justify-between items-center mb-2 bg-black/40 p-2 rounded-lg">
-                    <span class="font-bold text-gray-300">📝 İşlem Alanı</span>
+            <!-- SAĞ TARAF: ÇİZİM ALANI (PC'de görünür, Mobilde gizli) -->
+            <div id="desktop-board" class="hidden lg:flex flex-col h-full bg-slate-900 rounded-2xl border-2 border-slate-700 overflow-hidden relative">
+                <!-- Toolbar -->
+                <div class="flex items-center justify-between p-2 bg-slate-800 border-b border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <button id="tool-pen-d" onclick="setTool('pen')" class="tool-btn active">✏️</button>
+                        <button id="tool-eraser-d" onclick="setTool('eraser')" class="tool-btn">🧼</button>
+                        
+                        <!-- Renkler -->
+                        <div class="flex gap-1 ml-2 border-l border-gray-600 pl-2">
+                            <button onclick="setColor('#ffffff')" class="color-btn bg-white active"></button>
+                            <button onclick="setColor('#facc15')" class="color-btn bg-yellow-400"></button>
+                            <button onclick="setColor('#60a5fa')" class="color-btn bg-blue-400"></button>
+                            <button onclick="setColor('#f472b6')" class="color-btn bg-pink-400"></button>
+                            <button onclick="setColor('#4ade80')" class="color-btn bg-green-400"></button>
+                        </div>
+                    </div>
                     <div class="flex gap-2">
-                        <button id="tool-pen" onclick="setTool('pen')" class="tool-active p-2 rounded bg-gray-700 hover:bg-gray-600 transition">✏️</button>
-                        <button id="tool-eraser" onclick="setTool('eraser')" class="p-2 rounded bg-gray-700 hover:bg-gray-600 transition">🧼</button>
-                        <button onclick="clearCanvas()" class="p-2 rounded bg-red-900/50 hover:bg-red-900 transition text-xs font-bold">TEMİZLE</button>
-                        <button onclick="toggleBoard()" class="lg:hidden p-2 rounded bg-gray-800 text-white font-bold ml-2">❌</button>
+                        <button onclick="clearCanvas()" class="text-xs bg-red-900/50 hover:bg-red-800 px-2 py-1 rounded text-red-200">TEMİZLE</button>
+                        <button id="fullscreen-btn" onclick="toggleCanvasFullscreen()" class="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded font-bold">⛶ BÜYÜT</button>
                     </div>
                 </div>
-                <div class="flex-1 relative w-full h-full bg-gray-800/20 rounded-lg overflow-hidden cursor-crosshair" id="canvas-container">
-                    <canvas id="drawing-board" class="w-full h-full block"></canvas>
+                <!-- Canvas Mount -->
+                <div id="desktop-canvas-mount" class="flex-1 w-full h-full bg-slate-800/30 cursor-crosshair"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MOBİL TAHTA MODAL (Sadece mobilde açılır) -->
+    <div id="mobile-modal" class="hidden mobile-modal">
+        <div class="flex justify-between items-center p-3 bg-slate-800">
+            <div class="flex gap-2">
+                <button onclick="setTool('pen')" class="tool-btn active">✏️</button>
+                <div class="flex gap-1">
+                     <button onclick="setColor('#ffffff')" class="color-btn bg-white w-6 h-6"></button>
+                     <button onclick="setColor('#facc15')" class="color-btn bg-yellow-400 w-6 h-6"></button>
                 </div>
+                <button onclick="setTool('eraser')" class="tool-btn">🧼</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="clearCanvas()" class="bg-red-900 px-3 py-1 rounded text-xs">TEMİZLE</button>
+                <button onclick="closeMobileBoard()" class="bg-blue-600 px-4 py-1 rounded font-bold text-sm">KAPAT</button>
             </div>
         </div>
+        <div id="mobile-canvas-mount" class="flex-1 w-full bg-slate-900 cursor-crosshair"></div>
     </div>
 
     <!-- SONUÇ EKRANI -->
     <div id="screen-end" class="hidden absolute top-0 left-0 w-full h-full bg-black/95 z-50 flex items-center justify-center p-4">
         <div class="glass p-8 rounded-3xl text-center max-w-md w-full border border-white/20">
-            <h2 id="end-title" class="text-4xl font-bold mb-2">Oyun Bitti</h2>
-            <div class="text-8xl my-6">🛸</div>
-            <div class="text-gray-400 mb-2">TOPLAM PUAN</div>
-            <div id="final-score" class="text-6xl font-bold text-yellow-400 mb-8">0</div>
-            <button onclick="location.reload()" class="btn-3d w-full bg-purple-600 py-4 rounded-xl text-xl font-bold">Ana Menüye Dön</button>
+            <h2 class="text-4xl font-bold mb-2">Test Bitti!</h2>
+            <div class="text-8xl my-6 animate-bounce">🛸</div>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-white/10 p-3 rounded-lg">
+                    <span class="text-xs text-gray-400">PUAN</span>
+                    <div id="final-score" class="text-3xl font-bold text-yellow-400">0</div>
+                </div>
+                <div class="bg-white/10 p-3 rounded-lg">
+                    <span class="text-xs text-gray-400">SORU</span>
+                    <div id="final-count" class="text-3xl font-bold text-blue-400">0</div>
+                </div>
+            </div>
+            <button onclick="startGame()" class="btn-3d w-full bg-green-600 py-4 rounded-xl text-xl font-bold mb-3">Yeni Test</button>
+            <button onclick="location.reload()" class="text-gray-400 hover:text-white">Ana Menü</button>
         </div>
     </div>
 
+    <!-- CANVAS ELEMENTİ (Tek bir canvas, JS ile yer değiştirir) -->
+    <canvas id="drawing-board" class="block w-full h-full"></canvas>
+
+    <!-- Konfeti -->
     <canvas id="confetti" class="fixed top-0 left-0 pointer-events-none z-50"></canvas>
 
     <script>
-        // Ses
+        // --- SES SİSTEMİ ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playTone(freq, type, duration) {
+        function playTone(type) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+
+            if(type==='correct') {
+                osc.type='sine'; osc.frequency.setValueAtTime(587, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(1174, audioCtx.currentTime+0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.3);
+                osc.start(); osc.stop(audioCtx.currentTime+0.3);
+            } else if(type==='wrong') {
+                osc.type='sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.3);
+                osc.start(); osc.stop(audioCtx.currentTime+0.3);
+            } else {
+                osc.type='triangle'; osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.02, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.05);
+                osc.start(); osc.stop(audioCtx.currentTime+0.05);
+            }
         }
 
-        // Değişkenler
-        let currentSlide = 1;
-        const totalSlides = 4;
-        let score = 0, lives = 3, level = 1;
-        let qDividend = 0, qDivisor = 0, qQuotient = 0, qRemainder = 0;
-        let inputBuffer = "", inputPhase = "quotient";
-        
-        // SORU GEÇMİŞİ (Unique Question Logic)
-        let questionHistory = []; 
-
-        // Canvas
+        // --- CANVAS YÖNETİMİ ---
         const canvas = document.getElementById('drawing-board');
         const ctx = canvas.getContext('2d');
+        const desktopMount = document.getElementById('desktop-canvas-mount');
+        const mobileMount = document.getElementById('mobile-canvas-mount');
         let isDrawing = false;
-        let currentTool = 'pen'; 
+        let currentTool = 'pen';
+        let currentColor = '#ffffff';
+
+        function initCanvasLocation() {
+            if(window.innerWidth >= 1024) {
+                // PC: Desktop mount içine koy
+                desktopMount.appendChild(canvas);
+                document.getElementById('mobile-modal').classList.add('hidden');
+            } else {
+                // Mobil: Modal mount içine koy
+                mobileMount.appendChild(canvas);
+            }
+            setTimeout(resizeCanvas, 50);
+        }
+        window.addEventListener('resize', initCanvasLocation);
 
         function resizeCanvas() {
-            const container = document.getElementById('canvas-container');
-            if(container) {
-                canvas.width = container.clientWidth;
-                canvas.height = container.clientHeight;
+            const parent = canvas.parentElement;
+            if(parent) {
+                canvas.width = parent.clientWidth;
+                canvas.height = parent.clientHeight;
                 setContextStyles();
             }
         }
-        window.addEventListener('resize', resizeCanvas);
 
         function setContextStyles() {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            if (currentTool === 'pen') {
-                ctx.strokeStyle = '#ffffff';
+            if(currentTool === 'pen') {
+                ctx.strokeStyle = currentColor;
                 ctx.lineWidth = 3;
                 ctx.globalCompositeOperation = 'source-over';
             } else {
-                ctx.lineWidth = 20;
+                ctx.lineWidth = 30;
                 ctx.globalCompositeOperation = 'destination-out';
             }
         }
 
-        function setTool(tool) {
-            currentTool = tool;
-            document.getElementById('tool-pen').classList.toggle('tool-active', tool === 'pen');
-            document.getElementById('tool-eraser').classList.toggle('tool-active', tool === 'eraser');
+        function setTool(t) {
+            currentTool = t;
+            // UI Güncelle
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            // Basit seçim (id ile daha spesifik yapılabilir ama bu da çalışır)
+            if(t==='pen') {
+                if(document.getElementById('tool-pen-d')) document.getElementById('tool-pen-d').classList.add('active');
+            } else {
+                if(document.getElementById('tool-eraser-d')) document.getElementById('tool-eraser-d').classList.add('active');
+            }
             setContextStyles();
         }
 
-        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-
-        function toggleBoard() {
-            const board = document.getElementById('board-panel');
-            board.classList.toggle('show');
-            if(board.classList.contains('show')) setTimeout(resizeCanvas, 50);
+        function setColor(c) {
+            currentColor = c;
+            setTool('pen');
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('onclick').includes(c));
+            });
+            setContextStyles();
         }
 
-        // Draw Events
-        canvas.addEventListener('mousedown', startPosition);
-        canvas.addEventListener('mouseup', finishedPosition);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseleave', finishedPosition);
-        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e.touches[0]); }, {passive: false});
-        canvas.addEventListener('touchend', finishedPosition);
-        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); }, {passive: false});
+        function clearCanvas() { ctx.clearRect(0,0,canvas.width,canvas.height); }
 
-        function getMousePos(evt) {
-            const rect = canvas.getBoundingClientRect();
-            return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+        function toggleCanvasFullscreen() {
+            const wrapper = document.getElementById('desktop-board');
+            wrapper.classList.toggle('fixed');
+            wrapper.classList.toggle('top-0');
+            wrapper.classList.toggle('left-0');
+            wrapper.classList.toggle('w-screen');
+            wrapper.classList.toggle('h-screen');
+            wrapper.classList.toggle('z-50');
+            const btn = document.getElementById('fullscreen-btn');
+            
+            if(wrapper.classList.contains('fixed')) {
+                btn.innerText = "KÜÇÜLT";
+                btn.classList.replace('bg-blue-600', 'bg-red-600');
+            } else {
+                btn.innerText = "⛶ BÜYÜT";
+                btn.classList.replace('bg-red-600', 'bg-blue-600');
+            }
+            setTimeout(resizeCanvas, 50);
         }
-        function startPosition(e) { isDrawing = true; draw(e); }
-        function finishedPosition() { isDrawing = false; ctx.beginPath(); }
+
+        function openMobileBoard() {
+            document.getElementById('mobile-modal').classList.remove('hidden');
+            setTimeout(resizeCanvas, 50);
+        }
+        function closeMobileBoard() {
+            document.getElementById('mobile-modal').classList.add('hidden');
+        }
+
+        // Çizim Eventleri
+        function startDraw(e) { isDrawing=true; draw(e); }
+        function endDraw() { isDrawing=false; ctx.beginPath(); }
         function draw(e) {
-            if (!isDrawing) return;
-            const pos = getMousePos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
+            if(!isDrawing) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            let cx = e.touches ? e.touches[0].clientX : e.clientX;
+            let cy = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = cx - rect.left;
+            const y = cy - rect.top;
+            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
         }
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startDraw, {passive:false});
+        canvas.addEventListener('touchend', endDraw);
+        canvas.addEventListener('touchmove', draw, {passive:false});
 
-        // App Logic
+
+        // --- OYUN MANTIĞI ---
+        let score=0, count=0, level=1;
+        let qDiv=0, qQuot=0, qRem=0, qTotal=0;
+        let input="", phase="quotient";
+        let history=[];
+        let slide=1; const maxSlides=5;
+
         function toggleFullScreen() {
             if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(e=>{});
             else if(document.exitFullscreen) document.exitFullscreen();
@@ -366,199 +520,155 @@
             document.getElementById('screen-menu').classList.add('hidden');
             document.getElementById('screen-tutorial').classList.remove('hidden');
             document.getElementById('screen-tutorial').classList.add('flex');
-            changeSlide(1);
+            showSlide(1);
         }
+
+        function showSlide(n) {
+            slide = n;
+            document.querySelectorAll('.slide-content').forEach(s => s.classList.remove('active'));
+            document.getElementById(`slide-${n}`).classList.add('active');
+            document.getElementById('progress-bar').style.width = `${(n/maxSlides)*100}%`;
+            document.getElementById('next-btn').style.display = n === maxSlides ? 'none' : 'block';
+        }
+        function nextSlide() { if(slide < maxSlides) showSlide(slide + 1); }
+        function prevSlide() { if(slide > 1) showSlide(slide - 1); else location.reload(); }
 
         function startGame() {
             document.getElementById('screen-menu').classList.add('hidden');
             document.getElementById('screen-tutorial').classList.add('hidden');
             document.getElementById('screen-tutorial').classList.remove('flex');
+            document.getElementById('screen-end').classList.add('hidden');
             document.getElementById('screen-game').classList.remove('hidden');
-            document.getElementById('screen-game').classList.add('flex');
-            setTimeout(resizeCanvas, 100);
+            
+            initCanvasLocation();
             setTool('pen');
-            score = 0; lives = 3; level = 1; questionHistory = [];
+            
+            score=0; count=1; level=1; history=[];
             updateUI();
-            generateQuestion();
+            newQuestion();
         }
 
-        function changeSlide(n) {
-            currentSlide = n;
-            document.querySelectorAll('.slide-content').forEach(s => s.classList.remove('active'));
-            document.getElementById(`slide-${n}`).classList.add('active');
-            document.getElementById('progress-bar').style.width = `${(n/totalSlides)*100}%`;
-            document.getElementById('next-btn').style.display = n === totalSlides ? 'none' : 'block';
+        function endTest() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-end').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-count').innerText = count;
         }
-        function nextSlide() { if(currentSlide < totalSlides) changeSlide(currentSlide + 1); }
-        function prevSlide() { if(currentSlide > 1) changeSlide(currentSlide - 1); else location.reload(); }
 
-        // --- GELİŞMİŞ SORU ÜRETME (BENZERSİZ) ---
-        function generateQuestion() {
-            inputBuffer = "";
-            inputPhase = "quotient";
+        function newQuestion() {
+            input=""; phase="quotient";
             
             // UI Reset
-            document.getElementById('g-quotient').textContent = "?";
-            document.getElementById('g-quotient').className = "tr-quotient min-w-[50px] min-h-[40px] border-2 border-dashed border-white rounded flex items-center justify-center text-white bg-white/10 pulse-anim";
-            document.getElementById('g-remainder').textContent = "?";
-            document.getElementById('remainder-area').classList.add('opacity-50');
+            document.getElementById('g-quotient').innerText="?";
+            document.getElementById('g-quotient').className="tr-quotient min-w-[70px] h-[60px] border-2 border-dashed border-white/30 rounded flex items-center justify-center text-white bg-white/5 pulse-anim";
+            
+            document.getElementById('g-remainder').innerText="?";
             document.getElementById('remainder-area').classList.remove('opacity-100');
-            document.getElementById('g-remainder').classList.remove('pulse-anim', 'border-white', 'text-white');
-            document.getElementById('g-remainder').classList.add('border-red-500/30', 'text-red-400');
-            document.getElementById('game-message').textContent = "BÖLÜMÜ BUL";
-            document.getElementById('game-message').className = "absolute top-2 text-green-400 text-xs md:text-sm font-bold tracking-widest uppercase";
-            document.getElementById('feedback').textContent = "";
+            document.getElementById('remainder-area').classList.add('opacity-30');
+            document.getElementById('g-remainder').className="w-16 h-14 border-2 border-dashed border-red-500/30 rounded flex items-center justify-center text-red-400 font-bold text-3xl bg-black/20";
+            
+            document.getElementById('game-message').innerText="BÖLÜMÜ BUL";
+            document.getElementById('game-message').className="absolute top-4 text-green-400 text-sm font-bold tracking-widest uppercase animate-pulse";
+            document.getElementById('feedback').innerText="";
 
-            let attempts = 0;
-            let isUnique = false;
-            let tempDivisor, tempQuotient, tempRemainder, tempDividend, questionKey;
+            let unique=false, attempts=0;
+            let tD, tQ, tR, tTot, key;
 
-            // Benzersiz Soru Bulma Döngüsü
-            do {
+            while(!unique && attempts<50) {
                 attempts++;
-                let minDiv, maxDiv, minQuot, maxQuot;
+                let minD, maxD, minQ, maxQ;
+                // Seviye
+                if(level==1) { minD=2; maxD=5; minQ=2; maxQ=9; }
+                else if(level==2) { minD=4; maxD=9; minQ=3; maxQ=12; }
+                else { minD=5; maxD=15; minQ=4; maxQ=20; }
+
+                tD = Math.floor(Math.random()*(maxD-minD+1))+minD;
+                tQ = Math.floor(Math.random()*(maxQ-minQ+1))+minQ;
+                const rem = Math.random()<0.5;
+                tR = rem ? Math.floor(Math.random()*(tD-1))+1 : 0;
+                tTot = (tD * tQ) + tR;
                 
-                // Genişletilmiş Aralıklar
-                if (level === 1) { minDiv=2; maxDiv=7; minQuot=2; maxQuot=9; } 
-                else if (level === 2) { minDiv=4; maxDiv=12; minQuot=4; maxQuot=12; }
-                else { minDiv=6; maxDiv=15; minQuot=5; maxQuot=20; }
+                key = `${tTot}-${tD}`;
+                if(!history.includes(key)) unique=true;
+            }
+            history.push(key); if(history.length>25) history.shift();
 
-                tempDivisor = Math.floor(Math.random() * (maxDiv - minDiv + 1)) + minDiv;
-                tempQuotient = Math.floor(Math.random() * (maxQuot - minQuot + 1)) + minQuot;
-                
-                const isRemainder = Math.random() < 0.5; 
-                tempRemainder = isRemainder ? Math.floor(Math.random() * (tempDivisor - 1)) + 1 : 0;
-                tempDividend = (tempDivisor * tempQuotient) + tempRemainder;
-                
-                // Soru Anahtarı: "Bölünen-Bölen" (Örn: "13-4")
-                questionKey = `${tempDividend}-${tempDivisor}`;
-
-                // Geçmişte var mı?
-                if (!questionHistory.includes(questionKey)) {
-                    isUnique = true;
-                }
-
-                // Sonsuz döngü koruması (eğer havuz dolarsa)
-                if(attempts > 50) isUnique = true;
-
-            } while (!isUnique);
-
-            // Geçmişe Ekle
-            questionHistory.push(questionKey);
-            if (questionHistory.length > 15) questionHistory.shift(); // Son 15 soruyu tut
-
-            // Değerleri Ata
-            qDivisor = tempDivisor;
-            qQuotient = tempQuotient;
-            qRemainder = tempRemainder;
-            qDividend = tempDividend;
-
-            document.getElementById('g-dividend').textContent = qDividend;
-            document.getElementById('g-divisor').textContent = qDivisor;
+            qDiv=tD; qQuot=tQ; qRem=tR; qTotal=tTot;
+            document.getElementById('g-dividend').innerText = qTotal;
+            document.getElementById('g-divisor').innerText = qDiv;
         }
 
         function inputNum(n) {
-            playTone(400, 'sine', 0.05);
-            if (inputBuffer.length < 3) {
-                inputBuffer += n;
-                updateInputDisplay();
-            }
+            playTone('click');
+            if(input.length<3) { input+=n; updateDisplay(); }
         }
-
-        function clearInput() {
-            playTone(200, 'triangle', 0.1);
-            inputBuffer = "";
-            updateInputDisplay();
-        }
-
-        function updateInputDisplay() {
-            if (inputPhase === "quotient") document.getElementById('g-quotient').textContent = inputBuffer;
-            else document.getElementById('g-remainder').textContent = inputBuffer;
+        function clearInput() { playTone('click'); input=""; updateDisplay(); }
+        
+        function updateDisplay() {
+            if(phase==="quotient") document.getElementById('g-quotient').innerText=input;
+            else document.getElementById('g-remainder').innerText=input;
         }
 
         function submitAnswer() {
-            if(inputBuffer === "") return;
-            const val = parseInt(inputBuffer);
+            if(input==="") return;
+            const val = parseInt(input);
 
-            if (inputPhase === "quotient") {
-                if (val === qQuotient) {
-                    playTone(600, 'sine', 0.1); setTimeout(()=>playTone(800,'sine',0.1),100);
-                    document.getElementById('g-quotient').className = "tr-quotient font-bold text-green-400 text-4xl";
+            if(phase==="quotient") {
+                if(val===qQuot) {
+                    playTone('correct');
+                    document.getElementById('g-quotient').className="tr-quotient font-bold text-green-400 text-4xl";
                     
-                    inputPhase = "remainder";
-                    inputBuffer = "";
-                    document.getElementById('game-message').textContent = "KALANI YAZ";
-                    document.getElementById('game-message').className = "absolute top-2 text-red-400 text-xs md:text-sm font-bold tracking-widest animate-pulse";
-                    document.getElementById('remainder-area').classList.remove('opacity-50');
+                    phase="remainder"; input="";
+                    document.getElementById('game-message').innerText="KALANI BUL";
+                    document.getElementById('game-message').className="absolute top-4 text-red-400 text-sm font-bold tracking-widest uppercase animate-pulse";
+                    
+                    document.getElementById('remainder-area').classList.remove('opacity-30');
                     document.getElementById('remainder-area').classList.add('opacity-100');
-                    
-                    const remBox = document.getElementById('g-remainder');
-                    remBox.classList.remove('border-red-500/30', 'text-red-400');
-                    remBox.classList.add('border-white', 'text-white', 'pulse-anim');
-                    remBox.textContent = "?";
-                } else { wrongAnswer(); }
+                    document.getElementById('g-remainder').className="w-16 h-14 border-2 border-white rounded flex items-center justify-center text-white font-bold text-3xl bg-black/20 pulse-anim";
+                    document.getElementById('g-remainder').innerText="?";
+                } else {
+                    playTone('wrong');
+                    document.getElementById('feedback').innerText="Dikkat!";
+                    setTimeout(()=>{ document.getElementById('feedback').innerText=""; input=""; updateDisplay(); },500);
+                }
             } else {
-                if (val === qRemainder) {
-                    playTone(600, 'square', 0.1); playTone(1000, 'square', 0.2);
-                    document.getElementById('g-remainder').classList.remove('pulse-anim');
-                    document.getElementById('g-remainder').classList.add('text-green-400', 'border-green-400');
+                if(val===qRem) {
+                    playTone('correct');
+                    document.getElementById('g-remainder').className="w-16 h-14 border-2 border-green-400 rounded flex items-center justify-center text-green-400 font-bold text-3xl bg-black/20";
                     
-                    score += 10 + (level * 2);
-                    document.getElementById('feedback').textContent = "HARİKA! 🌟";
-                    document.getElementById('feedback').className = "absolute bottom-4 text-xl font-bold h-6 text-green-400";
-                    if(score % 50 === 0) level++;
+                    score += 10 + (level*2);
+                    count++;
+                    if(score%50===0) level++;
                     updateUI();
-                    startConfettiShort();
-                    setTimeout(generateQuestion, 1500);
-                } else { wrongAnswer(); }
-            }
-        }
-
-        function wrongAnswer() {
-            playTone(150, 'sawtooth', 0.3);
-            lives--;
-            updateUI();
-            const el = inputPhase === "quotient" ? document.getElementById('g-quotient') : document.getElementById('g-remainder');
-            el.style.borderColor = "red";
-            el.style.color = "red";
-            setTimeout(() => {
-                el.style.borderColor = ""; 
-                el.style.color = ""; 
-                inputBuffer = "";
-                updateInputDisplay();
-            }, 500);
-            if (lives <= 0) {
-                document.getElementById('screen-game').classList.add('hidden');
-                document.getElementById('screen-end').classList.remove('hidden');
-                document.getElementById('final-score').textContent = score;
+                    
+                    document.getElementById('feedback').innerText="HARİKA! 🌟";
+                    document.getElementById('feedback').className="absolute bottom-4 text-xl font-bold h-8 text-green-400";
+                    startConfetti();
+                    setTimeout(newQuestion, 1500);
+                } else {
+                    playTone('wrong');
+                    document.getElementById('feedback').innerText="Kalan Yanlış!";
+                    setTimeout(()=>{ document.getElementById('feedback').innerText=""; input=""; updateDisplay(); },500);
+                }
             }
         }
 
         function updateUI() {
-            document.getElementById('score').textContent = score;
-            document.getElementById('level').textContent = level;
-            let hearts = ""; for(let i=0; i<lives; i++) hearts += "❤️";
-            document.getElementById('lives').textContent = hearts;
+            document.getElementById('score').innerText = score;
+            document.getElementById('q-count').innerText = count;
         }
 
-        function startConfettiShort() {
-            const canvasC = document.getElementById('confetti');
-            const ctxC = canvasC.getContext('2d');
-            canvasC.width = window.innerWidth;
-            canvasC.height = window.innerHeight;
-            let particles = [];
-            for(let i=0; i<50; i++) {
-                particles.push({x:Math.random()*canvasC.width, y:Math.random()*canvasC.height-canvasC.height, vy:Math.random()*5+2, color:`hsl(${Math.random()*360},100%,50%)`});
+        function startConfetti() {
+            const c=document.getElementById('confetti'); const cx=c.getContext('2d');
+            c.width=window.innerWidth; c.height=window.innerHeight;
+            let p=[]; for(let i=0;i<50;i++) p.push({x:Math.random()*c.width,y:Math.random()*c.height-c.height,vy:Math.random()*5+2,c:`hsl(${Math.random()*360},100%,50%)`});
+            let f=0;
+            function loop(){
+                cx.clearRect(0,0,c.width,c.height);
+                p.forEach(pt=>{pt.y+=pt.vy; cx.fillStyle=pt.c; cx.fillRect(pt.x,pt.y,6,6);});
+                f++; if(f<100) requestAnimationFrame(loop); else cx.clearRect(0,0,c.width,c.height);
             }
-            let frame = 0;
-            function animate() {
-                ctxC.clearRect(0,0,canvasC.width,canvasC.height);
-                particles.forEach(p => { p.y+=p.vy; ctxC.fillStyle=p.color; ctxC.fillRect(p.x,p.y,6,6); });
-                frame++;
-                if(frame < 100) requestAnimationFrame(animate);
-                else ctxC.clearRect(0,0,canvasC.width,canvasC.height);
-            }
-            animate();
+            loop();
         }
     </script>
 </body>
