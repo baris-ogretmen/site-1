@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihirli Parmaklar Yazı Atölyesi 3.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Konfeti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #f0f9ff;
+            overscroll-behavior: none;
+            touch-action: none;
+        }
+        
+        .canvas-container {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        /* Arka Plan Desenleri */
+        .bg-lined {
+            background-size: 100% 60px;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 58px, #e5e7eb 59px, #e5e7eb 60px);
+        }
+        
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+        }
+
+        .bg-plain {
+            background-image: none;
+        }
+
+        /* Canvas Katmanları */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #guideCanvas {
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #drawingCanvas {
+            z-index: 20;
+        }
+
+        /* İmleçler */
+        .cursor-draw { cursor: crosshair; }
+        .cursor-move { cursor: move; }
+
+        .tool-btn {
+            transition: all 0.2s;
+        }
+        .tool-btn:active {
+            transform: scale(0.95);
+        }
+        .tool-btn.active {
+            background-color: #dbeafe; /* blue-100 */
+            border-color: #3b82f6;
+            color: #1d4ed8;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .pattern-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .color-swatch.active {
+            transform: scale(1.15);
+            border-color: #3b82f6;
+        }
+        
+        .mode-switch {
+            display: flex;
+            background: #f3f4f6;
+            padding: 4px;
+            border-radius: 12px;
+        }
+        .mode-switch button {
+            flex: 1;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .mode-switch button.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col p-2 md:p-4 overflow-hidden select-none bg-blue-50">
+
+    <!-- Üst Panel: Ayarlar ve Modlar -->
+    <header class="flex flex-col gap-3 mb-3 bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-blue-100 z-30">
+        
+        <!-- Üst Satır: Başlık, Kağıt Seçimi ve İndirme -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">✏️</span>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800 hidden md:block">Sihirli Parmaklar</h1>
+                </div>
+                
+                <!-- Mod Seçici -->
+                <div class="mode-switch">
+                    <button onclick="setMode('text')" id="btnModeText" class="active">Yazı</button>
+                    <button onclick="setMode('pattern')" id="btnModePattern">Çizgi</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <!-- Kağıt Tipi Seçici -->
+                <div class="flex bg-gray-100 rounded-lg p-1 gap-1">
+                    <button onclick="setPaper('lined')" class="p-2 rounded hover:bg-white text-gray-600" title="Çizgili"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <button onclick="setPaper('grid')" class="p-2 rounded hover:bg-white text-gray-600" title="Kareli"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16v16H4zM4 12h16M12 4v16"></path></svg></button>
+                    <button onclick="setPaper('plain')" class="p-2 rounded hover:bg-white text-gray-600" title="Düz"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"></rect></svg></button>
+                </div>
+
+                <button onclick="downloadWork()" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 flex items-center gap-1 whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Kaydet
+                </button>
+            </div>
+        </div>
+
+        <!-- Alt Satır: Kontroller -->
+        <div id="controlsArea" class="w-full pt-2 border-t border-gray-100">
+            
+            <!-- Yazı Modu Kontrolleri -->
+            <div id="textControls" class="flex flex-col md:flex-row gap-3 items-center">
+                <div class="flex-1 w-full flex gap-2 relative">
+                    <input type="text" id="textInput" value="Barış eve geldi" 
+                        class="flex-1 pl-4 pr-10 py-2 rounded-xl border-2 border-blue-100 focus:border-blue-400 outline-none text-gray-700 font-medium"
+                        placeholder="Yazı yazın...">
+                </div>
+                
+                <div class="flex items-center gap-3 w-full md:w-auto bg-gray-50 px-4 py-2 rounded-xl justify-between md:justify-start">
+                    <span class="text-sm text-gray-500 whitespace-nowrap mr-2">Boyut:</span>
+                    <input type="range" id="fontSizeSlider" min="40" max="400" value="100" class="flex-1 md:w-32 accent-blue-500" oninput="updateGuide()">
+                </div>
+            </div>
+
+            <!-- Çizgi Çalışması Kontrolleri -->
+            <div id="patternControls" class="hidden flex overflow-x-auto pb-1 w-full gap-2">
+                <button onclick="setPattern('straight')" class="pattern-btn px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-medium whitespace-nowrap">Düz</button>
+                <button onclick="setPattern('zigzag')" class="pattern-btn px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-medium whitespace-nowrap">Zikzak</button>
+                <button onclick="setPattern('wave')" class="pattern-btn px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-medium whitespace-nowrap">Dalga</button>
+                <button onclick="setPattern('square')" class="pattern-btn px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-medium whitespace-nowrap">Kale</button>
+                <button onclick="setPattern('loop')" class="pattern-btn px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm font-medium whitespace-nowrap">İlmek</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Ana Çizim Alanı -->
+    <main class="flex-1 relative w-full h-full min-h-0 flex flex-col px-1">
+        <div class="canvas-container flex-1 w-full border-4 border-white shadow-inner bg-lined" id="canvasWrapper">
+            <!-- Rehber Katmanı -->
+            <canvas id="guideCanvas"></canvas>
+            <!-- Çizim Katmanı -->
+            <canvas id="drawingCanvas"></canvas>
+            
+            <!-- Konum Sıfırlama Butonu (Sadece kılavuz kaydırıldığında görünür yapılabilir ama şimdilik her zaman ulaşılabilir olsun) -->
+            <button onclick="resetPosition()" class="absolute top-2 right-2 bg-white/80 p-2 rounded-full shadow hover:bg-white text-gray-500 z-30" title="Konumu Ortala">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <!-- Alt Araç Çubuğu -->
+    <footer class="mt-3 bg-white p-2 md:p-3 rounded-2xl shadow-lg border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3 z-40">
+        
+        <!-- Renkler (Üstte mobilde) -->
+        <div class="flex items-center gap-3 overflow-x-auto px-1 py-1 scrollbar-hide w-full md:w-auto justify-center md:justify-start">
+            <button class="color-swatch active" style="background: #ef4444;" onclick="setTool('pen', '#ef4444', this)"></button>
+            <button class="color-swatch" style="background: #f97316;" onclick="setTool('pen', '#f97316', this)"></button>
+            <button class="color-swatch" style="background: #eab308;" onclick="setTool('pen', '#eab308', this)"></button>
+            <button class="color-swatch" style="background: #22c55e;" onclick="setTool('pen', '#22c55e', this)"></button>
+            <button class="color-swatch" style="background: #3b82f6;" onclick="setTool('pen', '#3b82f6', this)"></button>
+            <button class="color-swatch" style="background: #000000;" onclick="setTool('pen', '#000000', this)"></button>
+        </div>
+
+        <!-- Araç Butonları -->
+        <div class="flex items-center justify-center gap-2 w-full md:w-auto">
+            
+            <!-- Taşıma Aracı -->
+            <button onclick="setTool('move')" id="btnMove" class="tool-btn bg-gray-100 text-gray-600 p-3 rounded-xl border-2 border-transparent" title="Yazıyı Taşı">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                </svg>
+            </button>
+
+            <div class="w-px h-8 bg-gray-300 mx-1"></div>
+
+            <!-- Kalem Kalınlığı -->
+            <div class="flex flex-col items-center mx-1">
+                <input type="range" id="lineWidth" min="5" max="40" value="15" class="w-20 accent-gray-500 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Silgi -->
+            <button onclick="setTool('eraser')" id="btnEraser" class="tool-btn bg-gray-100 text-gray-600 p-3 rounded-xl border-2 border-transparent" title="Silgi">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                </svg>
+            </button>
+
+            <!-- Temizle -->
+             <button onclick="clearCanvas()" class="tool-btn bg-red-100 hover:bg-red-200 text-red-600 p-3 rounded-xl border-2 border-transparent" title="Hepsini Sil">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+
+            <!-- Kutlama -->
+            <button onclick="celebrate()" class="ml-2 tool-btn bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-xl font-bold shadow-md shadow-green-200 active:scale-95">
+                🎉
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elemanları
+        const guideCanvas = document.getElementById('guideCanvas');
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const ctxGuide = guideCanvas.getContext('2d');
+        const ctxDraw = drawingCanvas.getContext('2d');
+        const container = document.getElementById('canvasWrapper');
+        const textInput = document.getElementById('textInput');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        
+        // Mod ve Araç Durumları
+        let currentMode = 'text'; // 'text', 'pattern'
+        let currentPattern = 'straight';
+        let activeTool = 'pen'; // 'pen', 'move', 'eraser'
+        
+        // Çizim Değişkenleri
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = '#ef4444';
+        
+        // Taşıma (Pan) Değişkenleri
+        let guideOffsetX = 0;
+        let guideOffsetY = 0;
+        let isDraggingGuide = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        
+        // --- BAŞLANGIÇ AYARLARI ---
+
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Eğer boyut değiştiyse, içeriği korumak zor, sıfırlıyoruz.
+            // Profesyonel uygulamalarda bitmap kopyalanır ama burada basitlik esas.
+            guideCanvas.width = rect.width * dpr;
+            guideCanvas.height = rect.height * dpr;
+            drawingCanvas.width = rect.width * dpr;
+            drawingCanvas.height = rect.height * dpr;
+
+            guideCanvas.style.width = rect.width + 'px';
+            guideCanvas.style.height = rect.height + 'px';
+            drawingCanvas.style.width = rect.width + 'px';
+            drawingCanvas.style.height = rect.height + 'px';
+
+            ctxGuide.scale(dpr, dpr);
+            ctxDraw.scale(dpr, dpr);
+
+            ctxDraw.lineCap = 'round';
+            ctxDraw.lineJoin = 'round';
+            
+            updateContent();
+        }
+
+        // --- ARAÇ YÖNETİMİ ---
+
+        function setTool(tool, color, btn) {
+            activeTool = tool;
+            
+            // UI Güncellemeleri
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-blue-500'));
+            
+            if (tool === 'move') {
+                document.getElementById('btnMove').classList.add('active', 'border-blue-500');
+                container.classList.remove('cursor-draw');
+                container.classList.add('cursor-move');
+            } else if (tool === 'eraser') {
+                document.getElementById('btnEraser').classList.add('active', 'border-blue-500');
+                container.classList.add('cursor-draw');
+                container.classList.remove('cursor-move');
+                ctxDraw.globalCompositeOperation = 'destination-out'; // Silgi modu
+            } else if (tool === 'pen') {
+                container.classList.add('cursor-draw');
+                container.classList.remove('cursor-move');
+                ctxDraw.globalCompositeOperation = 'source-over'; // Çizim modu
+                
+                if (color) {
+                    currentColor = color;
+                    document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
+                    if(btn) btn.classList.add('active');
+                }
+            }
+        }
+
+        function setPaper(type) {
+            container.className = 'canvas-container flex-1 w-full border-4 border-white shadow-inner';
+            if(type === 'lined') container.classList.add('bg-lined');
+            else if(type === 'grid') container.classList.add('bg-grid');
+            else container.classList.add('bg-plain');
+        }
+
+        function resetPosition() {
+            guideOffsetX = 0;
+            guideOffsetY = 0;
+            updateContent();
+        }
+
+        function clearCanvas() {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            ctxDraw.clearRect(0, 0, width, height);
+            
+            // Kullanıcıya geri bildirim
+            container.style.opacity = '0.5';
+            setTimeout(() => container.style.opacity = '1', 150);
+        }
+
+        // --- İÇERİK YÖNETİMİ ---
+
+        function setMode(mode) {
+            currentMode = mode;
+            // Mod değişince aracı kaleme çevir ki kafa karışmasın
+            setTool('pen'); 
+            resetPosition(); // Mod değişince konumu sıfırla
+            
+            document.getElementById('btnModeText').className = mode === 'text' ? 'active' : '';
+            document.getElementById('btnModePattern').className = mode === 'pattern' ? 'active' : '';
+            
+            document.getElementById('textControls').className = mode === 'text' ? 'flex flex-col md:flex-row gap-3 items-center' : 'hidden';
+            document.getElementById('patternControls').className = mode === 'pattern' ? 'flex overflow-x-auto pb-1 w-full gap-2' : 'hidden';
+
+            clearCanvas();
+            updateContent();
+        }
+
+        function setPattern(patternType) {
+            currentPattern = patternType;
+            document.querySelectorAll('.pattern-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.textContent.toLowerCase().includes(getPatternNameTR(patternType).toLowerCase())) {
+                    btn.classList.add('active');
+                }
+            });
+            clearCanvas();
+            updateContent();
+        }
+
+        function getPatternNameTR(type) {
+            const names = { straight: 'Düz', zigzag: 'Zikzak', wave: 'Dalga', square: 'Kale', loop: 'İlmek' };
+            return names[type] || '';
+        }
+
+        function updateContent() {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            ctxGuide.clearRect(0, 0, width, height);
+
+            // Koordinat sistemini kaydır (Taşıma işlemi için)
+            ctxGuide.save();
+            ctxGuide.translate(guideOffsetX, guideOffsetY);
+
+            if (currentMode === 'text') {
+                drawTextGuide(width, height);
+            } else {
+                drawPatternGuide(width, height);
+            }
+            
+            ctxGuide.restore();
+        }
+
+        // --- KILAVUZ ÇİZİMLERİ ---
+
+        function drawTextGuide(width, height) {
+            const text = textInput.value;
+            const fontSize = parseInt(fontSizeSlider.value);
+            
+            ctxGuide.font = `bold ${fontSize}px 'Lexend', sans-serif`;
+            ctxGuide.textAlign = 'center';
+            ctxGuide.textBaseline = 'middle';
+            
+            // Merkezi hesaplarken offset'i zaten context transform ile hallettik
+            // O yüzden burası width/2, height/2 kalabilir.
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Dış Çizgi
+            ctxGuide.strokeStyle = '#9ca3af';
+            ctxGuide.lineWidth = 2;
+            ctxGuide.setLineDash([8, 8]);
+            ctxGuide.strokeText(text, centerX, centerY);
+            
+            // İç Dolgu
+            ctxGuide.fillStyle = 'rgba(209, 213, 219, 0.3)';
+            ctxGuide.setLineDash([]); 
+            ctxGuide.fillText(text, centerX, centerY);
+        }
+
+        function drawPatternGuide(width, height) {
+            ctxGuide.strokeStyle = '#9ca3af';
+            ctxGuide.lineWidth = 4;
+            ctxGuide.setLineDash([10, 10]);
+            ctxGuide.lineCap = 'round';
+            ctxGuide.lineJoin = 'round';
+
+            const centerY = height / 2;
+            const amplitude = 60;
+            const frequency = 80;
+            // Çizgi genişliği ekranın 3 katı olsun ki kaydırınca bitmesin
+            const startX = -width; 
+            const endX = width * 2;
+
+            ctxGuide.beginPath();
+            ctxGuide.moveTo(startX, centerY);
+
+            if (currentPattern === 'straight') {
+                ctxGuide.lineTo(endX, centerY);
+            } 
+            else if (currentPattern === 'zigzag') {
+                let y = centerY;
+                // Faz ayarı (phase) eklemedik, basit döngü
+                for (let x = startX; x < endX; x += frequency) {
+                    y = (Math.abs(y - centerY) < 0.1) ? centerY - amplitude : centerY; // Basit toggle
+                    // Daha düzgün zigzag için:
+                    ctxGuide.lineTo(x, centerY - amplitude);
+                    ctxGuide.lineTo(x + frequency/2, centerY + amplitude);
+                }
+            }
+            else if (currentPattern === 'wave') {
+                for (let x = startX; x < endX; x+=5) {
+                    const y = centerY + Math.sin((x) / (frequency / 2)) * amplitude;
+                    ctxGuide.lineTo(x, y);
+                }
+            }
+            else if (currentPattern === 'square') {
+                let x = startX;
+                while (x < endX) {
+                    ctxGuide.lineTo(x, centerY - amplitude);
+                    x += frequency / 2;
+                    ctxGuide.lineTo(x, centerY - amplitude);
+                    ctxGuide.lineTo(x, centerY + amplitude);
+                    x += frequency / 2;
+                    ctxGuide.lineTo(x, centerY + amplitude);
+                }
+            }
+            else if (currentPattern === 'loop') {
+                let x = startX;
+                while(x < endX) {
+                     ctxGuide.bezierCurveTo(
+                         x + frequency/2, centerY - amplitude * 2.5,
+                         x - frequency/4, centerY - amplitude * 2.5,
+                         x + frequency, centerY
+                     );
+                     x += frequency;
+                }
+            }
+            ctxGuide.stroke();
+            ctxGuide.setLineDash([]);
+        }
+
+        // --- ETKİLEŞİM YÖNETİCİSİ (TOUCH/MOUSE) ---
+
+        function getPos(e) {
+            const rect = drawingCanvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handleStart(e) {
+            if (e.cancelable) e.preventDefault(); // Scroll engelle
+            const pos = getPos(e);
+
+            if (activeTool === 'move') {
+                isDraggingGuide = true;
+                dragStartX = pos.x;
+                dragStartY = pos.y;
+            } else {
+                isDrawing = true;
+                lastX = pos.x;
+                lastY = pos.y;
+                handleDraw(e); // Tıklar tıklamaz nokta koy
+            }
+        }
+
+        function handleMove(e) {
+            if (e.cancelable) e.preventDefault();
+            const pos = getPos(e);
+
+            if (activeTool === 'move' && isDraggingGuide) {
+                const dx = pos.x - dragStartX;
+                const dy = pos.y - dragStartY;
+                
+                guideOffsetX += dx;
+                guideOffsetY += dy;
+                
+                dragStartX = pos.x;
+                dragStartY = pos.y;
+                updateContent();
+            } 
+            else if (isDrawing && (activeTool === 'pen' || activeTool === 'eraser')) {
+                ctxDraw.beginPath();
+                ctxDraw.moveTo(lastX, lastY);
+                ctxDraw.lineTo(pos.x, pos.y);
+                
+                ctxDraw.lineWidth = document.getElementById('lineWidth').value;
+                ctxDraw.strokeStyle = currentColor;
+                ctxDraw.stroke();
+
+                lastX = pos.x;
+                lastY = pos.y;
+            }
+        }
+
+        function handleEnd(e) {
+            isDrawing = false;
+            isDraggingGuide = false;
+            ctxDraw.beginPath();
+        }
+
+        // --- DİĞER FONKSİYONLAR ---
+
+        function updateGuide() { updateContent(); }
+
+        function celebrate() {
+            const defaults = { origin: { y: 0.7 } };
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(200 * particleRatio)
+                }));
+            }
+            fire(0.25, { spread: 26, startVelocity: 55, });
+            fire(0.2, { spread: 60, });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45, });
+        }
+        
+        function downloadWork() {
+            const tempCanvas = document.createElement('canvas');
+            const w = drawingCanvas.width;
+            const h = drawingCanvas.height;
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            tCtx.fillStyle = '#ffffff';
+            tCtx.fillRect(0, 0, w, h);
+            
+            // Eğer çizgili kağıtsa çizgileri çizmemiz lazım çünkü CSS backgroundu gelmez
+            // Basit çözüm: Kılavuz ve Çizim yeterli
+            tCtx.drawImage(guideCanvas, 0, 0);
+            tCtx.drawImage(drawingCanvas, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'Calismam.png';
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('resize', resizeCanvas);
+
+        // Mouse
+        drawingCanvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove); // Window dinlemesi drag için daha iyidir
+        window.addEventListener('mouseup', handleEnd);
+
+        // Touch
+        drawingCanvas.addEventListener('touchstart', handleStart, { passive: false });
+        drawingCanvas.addEventListener('touchmove', handleMove, { passive: false });
+        drawingCanvas.addEventListener('touchend', handleEnd);
+
+        // Input
+        textInput.addEventListener('input', updateGuide);
+
+        // Başlat
+        window.onload = () => {
+            resizeCanvas();
+            setPattern('straight');
+            setPaper('lined'); // Varsayılan çizgili
+            setTool('pen', '#ef4444');
+        };
+
+    </script>
+</body>
+</html>
+
+
