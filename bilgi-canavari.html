@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Sınıf Bilgi Yarışması Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: radial-gradient(circle at center, #2b32b2 0%, #1488cc 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #333;
+        }
+        
+        h1, h2, h3, .fun-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Cam Efekti Kartlar */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        /* Animasyonlar */
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes spin-border {
+            0% { border-color: #fca5a5; }
+            25% { border-color: #fcd34d; }
+            50% { border-color: #86efac; }
+            75% { border-color: #93c5fd; }
+            100% { border-color: #c4b5fd; }
+        }
+
+        .animate-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+
+        .option-btn {
+            transition: all 0.1s ease;
+            border-bottom-width: 6px;
+        }
+        .option-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 0px;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .joker-btn {
+            transition: all 0.2s;
+            filter: grayscale(0%);
+        }
+        .joker-btn.used {
+            filter: grayscale(100%);
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .joker-btn:hover:not(.used) {
+            transform: translateY(-5px);
+        }
+
+        /* Kura Çekimi Ekranı */
+        #raffle-overlay {
+            background: rgba(0,0,0,0.85);
+        }
+        .raffle-name {
+            font-size: 5rem;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app" class="container mx-auto px-4 py-4 min-h-screen flex flex-col items-center relative">
+        
+        <!-- ================= GİRİŞ EKRANI ================= -->
+        <div id="setup-screen" class="w-full max-w-5xl glass-panel rounded-3xl p-8 mt-10 animate-pop z-10">
+            <div class="text-center mb-10">
+                <div class="inline-block p-4 rounded-full bg-white shadow-xl mb-4 animate-float">
+                    <i class="fa-solid fa-brain text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"></i>
+                </div>
+                <h1 class="text-6xl font-bold text-gray-800 tracking-tight mb-2">BİLGİ CANAVARI</h1>
+                <p class="text-xl text-blue-600 font-bold">Sınıfın En Bilgisi Kim?</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <!-- Sol Taraf -->
+                <div class="space-y-6">
+                    <div class="bg-white/50 p-4 rounded-2xl border border-blue-100">
+                        <label class="block text-gray-700 font-bold mb-3 text-lg"><i class="fa-solid fa-graduation-cap mr-2 text-indigo-500"></i>Sınıf Seviyesi</label>
+                        <select id="grade-select" class="w-full p-4 rounded-xl border-2 border-indigo-100 focus:border-indigo-500 focus:outline-none text-xl bg-white transition-colors cursor-pointer font-bold text-gray-600">
+                            <option value="0">🧸 Anaokulu</option>
+                            <option value="1">1️⃣ 1. Sınıf</option>
+                            <option value="2">2️⃣ 2. Sınıf</option>
+                            <option value="3">3️⃣ 3. Sınıf</option>
+                            <option value="4">4️⃣ 4. Sınıf</option>
+                            <option value="5">5️⃣ 5. Sınıf</option>
+                            <option value="6">6️⃣ 6. Sınıf</option>
+                            <option value="7">7️⃣ 7. Sınıf</option>
+                            <option value="8">8️⃣ 8. Sınıf (LGS)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-white/50 p-4 rounded-2xl border border-blue-100">
+                        <label class="block text-gray-700 font-bold mb-2 text-lg">
+                            <i class="fa-solid fa-users mr-2 text-pink-500"></i>Öğrenci Listesi
+                            <span class="text-xs font-normal text-gray-500 block mt-1">(2 kişi olsa bile oynanır! Kalanları robotlar doldurur.)</span>
+                        </label>
+                        <textarea id="student-list" rows="5" class="w-full p-4 rounded-xl border-2 border-pink-100 focus:border-pink-500 focus:outline-none bg-white resize-none text-lg" placeholder="Öğrencileri buraya alt alta yaz..."></textarea>
+                        <div class="flex justify-between mt-2">
+                            <button onclick="fillSampleNames()" class="text-sm font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-lg transition">🎲 Örnek Liste</button>
+                            <span id="student-count" class="text-sm font-bold text-gray-500 bg-gray-200 px-3 py-1 rounded-full">0 Kişi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sağ Taraf -->
+                <div class="flex flex-col justify-center gap-6">
+                    <div class="bg-yellow-100 border-2 border-yellow-300 p-6 rounded-2xl text-center relative overflow-hidden">
+                        <i class="fa-solid fa-lightbulb text-yellow-400 text-9xl absolute -right-6 -bottom-6 opacity-20 rotate-12"></i>
+                        <h3 class="text-2xl font-bold text-yellow-800 mb-2">Nasıl Çalışır?</h3>
+                        <ul class="text-left text-yellow-900 font-semibold space-y-2 text-lg">
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> Sistem kura ile 1 kişi seçer.</li>
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> Eksik rakipler yerine robotlar gelir.</li>
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> Jokerlerini akıllıca kullan!</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="prepareGame()" class="group relative w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-black text-3xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all overflow-hidden">
+                        <span class="relative z-10 flex items-center justify-center gap-3">
+                            BAŞLAT <i class="fa-solid fa-rocket group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    </button>
+                    
+                    <button onclick="showLeaderboard()" class="text-white/80 font-bold hover:text-white text-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> Liderlik Tablosunu Gör
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= KURA EKRANI (OVERLAY) ================= -->
+        <div id="raffle-overlay" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center">
+            <h2 class="text-white text-3xl font-bold mb-8 uppercase tracking-widest animate-pulse">Şanslı Yarışmacı Aranıyor...</h2>
+            <div id="raffle-display" class="raffle-name font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-500">
+                ???
+            </div>
+            <div class="mt-12">
+                <i class="fa-solid fa-spinner fa-spin text-5xl text-white/50"></i>
+            </div>
+        </div>
+
+        <!-- ================= OYUN EKRANI ================= -->
+        <div id="game-screen" class="hidden w-full max-w-7xl z-10 flex flex-col h-full">
+            
+            <!-- Üst Bar -->
+            <div class="flex flex-wrap justify-between items-center mb-6 bg-white rounded-2xl p-4 shadow-lg border-b-4 border-gray-200">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold text-xl">
+                        <i class="fa-solid fa-layer-group mr-2"></i><span id="game-grade-display">5. Sınıf</span>
+                    </div>
+                    <div class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl font-bold text-xl">
+                        Soru <span id="q-current" class="text-black">1</span> / <span id="q-total">10</span>
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+                    <div class="relative bg-white rounded-full px-6 py-2 flex items-center gap-2 border-2 border-red-100">
+                        <i class="fa-regular fa-clock text-red-500 text-2xl"></i>
+                        <span id="timer-display" class="font-mono font-black text-4xl text-gray-800 w-16 text-center">30</span>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-100 text-yellow-800 px-6 py-2 rounded-xl font-black text-2xl border-2 border-yellow-300 flex items-center gap-2">
+                    <i class="fa-solid fa-star text-yellow-500"></i> <span id="score-display">0</span>
+                </div>
+            </div>
+
+            <!-- Oyun Alanı Izgarası -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow">
+                
+                <!-- Sol Rakipler -->
+                <div class="md:col-span-2 flex flex-col justify-center gap-4 order-2 md:order-1">
+                    <div class="text-white/80 text-center font-bold text-sm uppercase tracking-widest mb-1">Rakipler</div>
+                    <div id="rivals-left" class="space-y-4"></div>
+                </div>
+
+                <!-- Orta Soru Kartı -->
+                <div class="md:col-span-8 order-1 md:order-2">
+                    <div class="glass-panel p-6 md:p-8 rounded-[2rem] h-full flex flex-col relative overflow-hidden shadow-2xl">
+                        <!-- Jokerler -->
+                        <div class="absolute top-4 right-4 flex gap-2">
+                            <button id="joker-50" onclick="useJoker('50')" class="joker-btn bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-xl font-bold shadow-lg border-b-4 border-blue-700 text-sm flex flex-col items-center">
+                                <i class="fa-solid fa-scissors mb-1"></i> %50
+                            </button>
+                            <button id="joker-pass" onclick="useJoker('pass')" class="joker-btn bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl font-bold shadow-lg border-b-4 border-green-700 text-sm flex flex-col items-center">
+                                <i class="fa-solid fa-forward mb-1"></i> PAS
+                            </button>
+                        </div>
+
+                        <!-- Yarışmacı -->
+                        <div class="flex flex-col items-center mb-6">
+                            <div class="w-24 h-24 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white mb-2 relative">
+                                <i class="fa-solid fa-user text-4xl text-white"></i>
+                                <span class="absolute -bottom-2 bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-1 rounded shadow">SEN</span>
+                            </div>
+                            <h2 id="current-player-name" class="text-3xl font-black text-gray-800 text-center">Öğrenci Adı</h2>
+                            <div class="h-1 w-20 bg-gray-200 mt-2 rounded-full overflow-hidden">
+                                <div id="streak-bar" class="h-full bg-orange-500 w-0 transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Soru -->
+                        <div class="flex-grow flex items-center justify-center py-6">
+                            <p id="question-text" class="text-2xl md:text-4xl font-bold text-center text-gray-700 leading-snug">
+                                Soru Yükleniyor...
+                            </p>
+                        </div>
+
+                        <!-- Şıklar -->
+                        <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto">
+                            <!-- Butonlar JS ile gelecek -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sağ Taraf (1 Rakip + Maskot) -->
+                <div class="md:col-span-2 flex flex-col justify-between items-center order-3 md:order-3 gap-4">
+                    <div class="w-full">
+                         <div class="text-white/80 text-center font-bold text-sm uppercase tracking-widest mb-2">Baş Rakip</div>
+                         <div id="rivals-right" class="space-y-4"></div>
+                    </div>
+                    
+                    <div class="bg-white/90 p-4 rounded-2xl w-full text-center shadow-lg transform rotate-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase block">Seri Durumu</span>
+                        <div id="combo-display" class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">x1</div>
+                        <p id="feedback-text" class="text-sm font-bold text-gray-500 h-5 mt-1">Hadi Bakalım!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SONUÇ EKRANI ================= -->
+        <div id="result-screen" class="hidden w-full max-w-3xl glass-panel p-10 rounded-3xl z-20 text-center animate-pop mt-10">
+            <div class="absolute -top-16 left-1/2 transform -translate-x-1/2">
+                <i class="fa-solid fa-trophy text-8xl text-yellow-400 drop-shadow-2xl animate-float"></i>
+            </div>
+            
+            <h2 class="text-5xl font-black text-gray-800 mt-12 mb-2">Yarışma Bitti!</h2>
+            <p id="end-message" class="text-xl text-gray-600 font-bold mb-8">Harika bir performans!</p>
+
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                    <div class="text-gray-500 font-bold text-sm">PUAN</div>
+                    <div id="final-score" class="text-4xl font-black text-blue-600">0</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-2xl border border-green-100">
+                    <div class="text-gray-500 font-bold text-sm">DOĞRU</div>
+                    <div id="final-correct" class="text-4xl font-black text-green-600">0</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+                    <div class="text-gray-500 font-bold text-sm">YANLIŞ</div>
+                    <div id="final-wrong" class="text-4xl font-black text-red-600">0</div>
+                </div>
+            </div>
+
+            <div class="flex gap-4 justify-center">
+                <button onclick="location.reload()" class="px-8 py-4 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition text-lg">
+                    Yeni Oyun Kur
+                </button>
+                <button onclick="prepareGame()" class="px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-xl transition text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Aynı Kişilerle Tekrar
+                </button>
+            </div>
+        </div>
+        
+        <!-- Liderlik Tablosu (Modal) -->
+        <div id="leaderboard-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center backdrop-blur-sm">
+            <div class="bg-white w-full max-w-2xl rounded-3xl p-8 relative max-h-[90vh] flex flex-col">
+                <button onclick="closeLeaderboard()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+                <h2 class="text-3xl font-black text-gray-800 mb-6 text-center"><i class="fa-solid fa-crown text-yellow-500 mr-2"></i> Şeref Kürsüsü</h2>
+                
+                <div class="flex gap-2 mb-4 justify-center">
+                    <button onclick="renderLeaderboard('all')" class="px-4 py-2 bg-indigo-100 text-indigo-800 rounded-lg font-bold text-sm hover:bg-indigo-200">Tümü</button>
+                    <button onclick="renderLeaderboard('current')" class="px-4 py-2 bg-pink-100 text-pink-800 rounded-lg font-bold text-sm hover:bg-pink-200">Bu Sınıf</button>
+                </div>
+
+                <div class="overflow-y-auto flex-grow custom-scrollbar">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr class="text-gray-500 text-sm">
+                                <th class="p-4 rounded-tl-xl">#</th>
+                                <th class="p-4">İsim</th>
+                                <th class="p-4">Sınıf</th>
+                                <th class="p-4 text-right rounded-tr-xl">Puan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- BOT İSİM HAVUZU ---
+        const botNames = [
+            "🤖 Robo-Can", "⚡ Hızlı Parmak", "🧠 Bay Bilgin", "🔮 Yapay Zeka", 
+            "🚀 Jet", "🎯 Hedef 12", "🎲 Şanslı", "🦉 Bilge Baykuş", 
+            "🦊 Kurnaz Tilki", "🐢 Yavaş Ama Emin"
+        ];
+
+        // --- SORU BANKASI (Öncekilerin Genişletilmiş ve Güncellenmiş Hali) ---
+        const questionBank = {
+            '0': [
+                { q: "Hangi hayvan 'Hav Hav' der?", options: ["Köpek", "Kedi", "Kuş", "Balık"], ans: 0 },
+                { q: "Güneş ne renktir?", options: ["Sarı", "Mavi", "Yeşil", "Mor"], ans: 0 },
+                { q: "Hangisi meyvedir?", options: ["Elma", "Ispanak", "Pırasa", "Soğan"], ans: 0 },
+                { q: "Kaç parmağımız var?", options: ["5", "2", "10", "20"], ans: 2 },
+                { q: "Kışın kardan ne yaparız?", options: ["Kardan Adam", "Kumdan Kale", "Yemek", "Uçurtma"], ans: 0 },
+                { q: "Dişlerimizi ne ile temizleriz?", options: ["Fırça", "Kaşık", "Kalem", "Tarak"], ans: 0 }
+            ],
+            '1': [
+                { q: "Alfabemizin ilk harfi nedir?", options: ["A", "B", "C", "Z"], ans: 0 },
+                { q: "10'dan 5 çıkarsa kaç kalır?", options: ["5", "4", "6", "15"], ans: 0 },
+                { q: "Hangi mevsimde okullar açılır?", options: ["Sonbahar", "Yaz", "Kış", "İlkbahar"], ans: 0 },
+                { q: "Trafik ışığında 'DUR' rengi hangisidir?", options: ["Kırmızı", "Yeşil", "Sarı", "Mavi"], ans: 0 },
+                { q: "Kedinin yavrusuna ne denir?", options: ["Kedi", "Enik", "Kuzu", "Civciv"], ans: 0 }
+            ],
+            '5': [ // Ortaokul Genel Örnek
+                { q: "Hangi gezegenin halkaları vardır?", options: ["Satürn", "Mars", "Venüs", "Merkür"], ans: 0 },
+                { q: "Suyun donma noktası kaç derecedir?", options: ["0", "100", "-10", "10"], ans: 0 },
+                { q: "Türkiye'nin en kalabalık şehri hangisidir?", options: ["İstanbul", "Ankara", "İzmir", "Bursa"], ans: 0 },
+                { q: "İstiklal Marşı'nın yazarı kimdir?", options: ["M. Akif Ersoy", "Ziya Gökalp", "Ömer Seyfettin", "Atatürk"], ans: 0 },
+                { q: "Hangisi bir doğal sayıdır?", options: ["5", "-5", "0.5", "1/2"], ans: 0 }
+            ]
+        };
+        // Diğer sınıflar için veritabanı yoksa 5. sınıfı kullanacağız.
+
+        // --- GLOBAL DEĞİŞKENLER ---
+        let state = {
+            grade: '5',
+            students: [],
+            currentPlayer: '',
+            rivals: [],
+            questions: [],
+            qIndex: 0,
+            score: 0,
+            combo: 1,
+            timer: 30,
+            correctCount: 0,
+            wrongCount: 0,
+            jokers: { fifty: false, pass: false },
+            interval: null
+        };
+
+        // --- UI GÜNCELLEMELERİ ---
+        const el = (id) => document.getElementById(id);
+
+        function fillSampleNames() {
+            el('student-list').value = "Ahmet Yılmaz\nAyşe Demir\nMehmet Öz\nZeynep Kaya\nAli Veli\nFatma Şahin";
+            updateCount();
+        }
+
+        el('student-list').addEventListener('input', updateCount);
+        function updateCount() {
+            const count = el('student-list').value.split('\n').filter(l => l.trim()).length;
+            el('student-count').innerText = `${count} Kişi`;
+        }
+
+        // --- OYUN HAZIRLIK & KURA ---
+        
+        function prepareGame() {
+            // 1. Veri Al
+            const rawList = el('student-list').value.split('\n').filter(l => l.trim());
+            state.grade = el('grade-select').value;
+
+            // KONTROL: En az 1 kişi olmalı (Kalanı botlar halleder)
+            if (rawList.length < 1) {
+                alert("Lütfen en az 1 öğrenci ismi giriniz! Geri kalanları robotlar tamamlar.");
+                return;
+            }
+
+            // 2. Hazırlık
+            state.students = rawList;
+            state.jokers = { fifty: false, pass: false }; // Jokerleri sıfırla
+            resetJokerButtons();
+
+            // 3. Kura Animasyonu Başlat
+            el('setup-screen').classList.add('hidden');
+            el('result-screen').classList.add('hidden');
+            startRaffle();
+        }
+
+        function resetJokerButtons() {
+            ['joker-50', 'joker-pass'].forEach(id => {
+                const btn = el(id);
+                btn.classList.remove('used', 'opacity-50', 'cursor-not-allowed');
+                btn.disabled = false;
+            });
+        }
+
+        function startRaffle() {
+            const overlay = el('raffle-overlay');
+            const display = el('raffle-display');
+            overlay.classList.remove('hidden');
+
+            let pool = [...state.students];
+            let counter = 0;
+            let speed = 50;
+            let rounds = 0;
+            
+            // Dönme Animasyonu
+            const spin = () => {
+                display.innerText = pool[counter % pool.length];
+                counter++;
+                
+                if (rounds > 20 && speed > 300) {
+                    // Kura Bitti
+                    setTimeout(() => {
+                        finalizeSetup(display.innerText);
+                        overlay.classList.add('hidden');
+                    }, 1000);
+                    return;
+                }
+
+                if (rounds > 15) speed += 30; // Yavaşlama
+                
+                rounds++;
+                setTimeout(spin, speed);
+            };
+            spin();
+        }
+
+        function finalizeSetup(winnerName) {
+            // Yarışmacı
+            state.currentPlayer = winnerName;
+            
+            // Rakipleri Belirle (3 Kişi)
+            // Havuzdan yarışmacıyı çıkar
+            let remainingStudents = state.students.filter(s => s !== winnerName).sort(() => Math.random() - 0.5);
+            
+            let rivals = [];
+            // Varsa gerçek öğrenci ekle
+            if (remainingStudents.length > 0) rivals.push(remainingStudents[0]);
+            if (remainingStudents.length > 1) rivals.push(remainingStudents[1]);
+            if (remainingStudents.length > 2) rivals.push(remainingStudents[2]);
+
+            // Eksikleri Robotlarla Tamamla
+            let botIndex = 0;
+            while (rivals.length < 3) {
+                rivals.push(botNames[botIndex % botNames.length]);
+                botIndex++;
+            }
+            
+            state.rivals = rivals.sort(() => Math.random() - 0.5); // Rakipleri karıştır
+            
+            // Soruları Hazırla
+            prepareQuestions();
+            
+            // Oyunu Başlat
+            startGameUI();
+        }
+
+        function prepareQuestions() {
+            // Sınıf seviyesine göre al, yoksa 5. sınıf al
+            let pool = questionBank[state.grade] || questionBank['5'];
+            // Soruları karıştır ve 10 tane al
+            state.questions = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
+            
+            state.qIndex = 0;
+            state.score = 0;
+            state.combo = 1;
+            state.correctCount = 0;
+            state.wrongCount = 0;
+        }
+
+        function startGameUI() {
+            el('game-screen').classList.remove('hidden');
+            el('current-player-name').innerText = state.currentPlayer;
+            el('game-grade-display').innerText = state.grade === '0' ? 'Anaokulu' : state.grade + '. Sınıf';
+            el('q-total').innerText = state.questions.length;
+
+            renderRivals();
+            loadQuestion();
+        }
+
+        function renderRivals() {
+            // Sol (2 Rakip) ve Sağ (1 Baş Rakip) dağıtımı
+            const leftContainer = el('rivals-left');
+            const rightContainer = el('rivals-right');
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
+
+            state.rivals.forEach((rival, idx) => {
+                // Rastgele avatar servisi
+                const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${rival}&backgroundColor=b6e3f4`;
+                
+                const html = `
+                    <div class="bg-white/90 p-3 rounded-xl shadow-md flex items-center gap-3 animate-pop">
+                        <img src="${avatar}" class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300">
+                        <div class="font-bold text-gray-700 truncate text-sm w-24">${rival}</div>
+                    </div>
+                `;
+
+                if (idx < 2) leftContainer.innerHTML += html;
+                else rightContainer.innerHTML += html;
+            });
+        }
+
+        // --- OYUN DÖNGÜSÜ ---
+
+        function loadQuestion() {
+            if (state.qIndex >= state.questions.length) {
+                endGame();
+                return;
+            }
+
+            const q = state.questions[state.qIndex];
+            
+            // UI
+            el('q-current').innerText = state.qIndex + 1;
+            el('question-text').innerText = q.q;
+            el('score-display').innerText = state.score;
+            el('combo-display').innerText = 'x' + state.combo;
+            
+            // Timer
+            clearInterval(state.interval);
+            state.timer = 30;
+            el('timer-display').innerText = state.timer;
+            state.interval = setInterval(tick, 1000);
+
+            // Şıklar
+            const grid = el('options-grid');
+            grid.innerHTML = '';
+            
+            let opts = q.options.map((txt, i) => ({ txt, i }));
+            opts.sort(() => Math.random() - 0.5);
+
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full py-6 px-4 bg-white hover:bg-indigo-50 text-gray-700 font-bold rounded-2xl shadow-lg border-2 border-indigo-100 border-b-indigo-200 text-lg md:text-xl relative overflow-hidden group`;
+                btn.innerHTML = `<span class="relative z-10">${opt.txt}</span>`;
+                btn.dataset.index = opt.i; // Gerçek index
+                btn.onclick = () => checkAnswer(opt.i, btn, q.ans);
+                grid.appendChild(btn);
+            });
+
+            // Geri bildirim sıfırla
+            el('feedback-text').innerText = "Hadi Bakalım!";
+            el('feedback-text').className = "text-sm font-bold text-gray-500 h-5 mt-1";
+        }
+
+        function tick() {
+            state.timer--;
+            el('timer-display').innerText = state.timer;
+            if (state.timer <= 0) {
+                clearInterval(state.interval);
+                handleWrong(null, state.questions[state.qIndex].ans); // Süre bitti
+            }
+        }
+
+        function checkAnswer(selectedIdx, btn, correctIdx) {
+            clearInterval(state.interval);
+            disableButtons();
+
+            if (selectedIdx === correctIdx) {
+                handleCorrect(btn);
+            } else {
+                handleWrong(btn, correctIdx);
+            }
+        }
+
+        function handleCorrect(btn) {
+            state.correctCount++;
+            btn.classList.remove('bg-white', 'hover:bg-indigo-50', 'border-indigo-100');
+            btn.classList.add('bg-green-500', 'text-white', 'border-green-700');
+            
+            // Puan Hesapla: (Taban 100 + (Süre x 10)) x Combo
+            const point = Math.round((100 + (state.timer * 5)) * state.combo);
+            state.score += point;
+            
+            state.combo = Math.min(state.combo + 0.5, 4.0); // Max 4x combo
+
+            el('feedback-text').innerText = "MÜKEMMEL! +" + point;
+            el('feedback-text').className = "text-sm font-black text-green-600 h-5 mt-1 animate-bounce";
+            
+            playSound('correct');
+
+            setTimeout(() => {
+                state.qIndex++;
+                loadQuestion();
+            }, 2000);
+        }
+
+        function handleWrong(btn, correctIdx) {
+            state.wrongCount++;
+            state.combo = 1;
+
+            if (btn) {
+                btn.classList.remove('bg-white');
+                btn.classList.add('bg-red-500', 'text-white', 'border-red-700', 'animate-shake');
+            }
+
+            // Doğruyu Göster
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => {
+                if (parseInt(b.dataset.index) === correctIdx) {
+                    b.classList.add('bg-green-100', 'border-green-400', 'text-green-800');
+                }
+            });
+
+            el('feedback-text').innerText = "EYVAH! Doğrusu buydu...";
+            el('feedback-text').className = "text-sm font-bold text-red-500 h-5 mt-1";
+
+            setTimeout(() => {
+                state.qIndex++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function disableButtons() {
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        }
+
+        // --- JOKERLER ---
+
+        function useJoker(type) {
+            if (state.jokers[type]) return; // Zaten kullanıldı
+
+            const currentQ = state.questions[state.qIndex];
+            const buttons = Array.from(document.querySelectorAll('.option-btn'));
+
+            if (type === '50') {
+                // Yanlış olan 2 şıkkı bul ve gizle
+                let wrongButtons = buttons.filter(b => parseInt(b.dataset.index) !== currentQ.ans);
+                // Rastgele 2 tanesini seç
+                wrongButtons.sort(() => Math.random() - 0.5);
+                
+                // Animasyonla kaybet
+                wrongButtons.slice(0, 2).forEach(b => {
+                    b.style.opacity = '0';
+                    b.disabled = true;
+                });
+                
+                state.jokers.fifty = true;
+                el('joker-50').classList.add('used');
+            }
+
+            if (type === 'pass') {
+                // Pas geç
+                clearInterval(state.interval);
+                el('feedback-text').innerText = "PAS GEÇİLDİ!";
+                el('feedback-text').className = "text-yellow-600 font-bold";
+                
+                state.jokers.pass = true;
+                el('joker-pass').classList.add('used');
+
+                setTimeout(() => {
+                    state.qIndex++;
+                    loadQuestion();
+                }, 1000);
+            }
+        }
+
+        // --- OYUN SONU ---
+
+        function endGame() {
+            el('game-screen').classList.add('hidden');
+            el('result-screen').classList.remove('hidden');
+            
+            el('final-score').innerText = state.score;
+            el('final-correct').innerText = state.correctCount;
+            el('final-wrong').innerText = state.wrongCount;
+
+            saveScore();
+            launchConfetti();
+        }
+
+        // --- YARDIMCI & LİDERLİK ---
+
+        function playSound(type) {
+            // Tarayıcı kısıtlamaları ve tek dosya yapısı nedeniyle ses dosyası yerine görsel efekt kullanıyoruz
+            // Ancak gerçek bir projede burada Audio objesi oluşturulur.
+        }
+
+        function launchConfetti() {
+            // Basit CSS konfeti
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for(let i=0; i<100; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'fixed';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = -10 + 'px';
+                conf.style.width = '10px';
+                conf.style.height = '10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.transition = `top ${Math.random() * 2 + 2}s linear, transform 2s ease`;
+                conf.style.zIndex = '100';
+                document.body.appendChild(conf);
+
+                setTimeout(() => {
+                    conf.style.top = '110vh';
+                    conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+                }, 100);
+                setTimeout(() => conf.remove(), 4000);
+            }
+        }
+
+        function saveScore() {
+            const entry = {
+                name: state.currentPlayer,
+                grade: state.grade,
+                score: state.score,
+                date: new Date().toLocaleDateString()
+            };
+            let lb = JSON.parse(localStorage.getItem('mega_quiz_lb')) || [];
+            lb.push(entry);
+            lb.sort((a,b) => b.score - a.score);
+            localStorage.setItem('mega_quiz_lb', JSON.stringify(lb.slice(0, 50)));
+        }
+
+        function showLeaderboard() { el('leaderboard-modal').classList.remove('hidden'); renderLeaderboard('all'); }
+        function closeLeaderboard() { el('leaderboard-modal').classList.add('hidden'); }
+
+        function renderLeaderboard(filter) {
+            const body = el('leaderboard-body');
+            body.innerHTML = '';
+            let data = JSON.parse(localStorage.getItem('mega_quiz_lb')) || [];
+            
+            if (filter === 'current') {
+                data = data.filter(d => d.grade === el('grade-select').value);
+            }
+
+            if (data.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">Henüz kayıt yok.</td></tr>';
+                return;
+            }
+
+            data.forEach((d, i) => {
+                const row = `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-4 font-bold text-gray-500">${i+1}</td>
+                        <td class="p-4 font-bold text-gray-800">${d.name}</td>
+                        <td class="p-4 text-sm text-gray-500">${d.grade === '0' ? 'Anaokulu' : d.grade + '. Sınıf'}</td>
+                        <td class="p-4 text-right font-black text-indigo-600">${d.score}</td>
+                    </tr>
+                `;
+                body.innerHTML += row;
+            });
+        }
+    </script>
+</body>
+</html>
+
