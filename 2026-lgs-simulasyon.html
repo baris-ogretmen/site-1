@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barış Akademi - LGS 2026 Simülasyonu</title>
+    <!-- Tailwind CSS (Hızlı Stil Kütüphanesi) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans (Okunabilirlik için) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans', sans-serif; }
+        .option-radio:checked + div {
+            background-color: #dbeafe; /* blue-100 */
+            border-color: #3b82f6; /* blue-500 */
+            color: #1e40af; /* blue-800 */
+        }
+        .correct-answer {
+            background-color: #d1fae5 !important; /* green-100 */
+            border-color: #10b981 !important; /* green-500 */
+        }
+        .wrong-answer {
+            background-color: #fee2e2 !important; /* red-100 */
+            border-color: #ef4444 !important; /* red-500 */
+        }
+        /* Akıllı Tahta/Yazıcı için özel ayarlar */
+        @media print {
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header class="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl font-bold tracking-tight">Barış Akademi</span>
+                <span class="hidden sm:inline-block bg-blue-800 text-xs px-2 py-1 rounded">LGS 2026 PROVA</span>
+            </div>
+            <div id="timer-display" class="text-xl font-mono font-bold bg-blue-800 px-4 py-1 rounded hidden">
+                00:00
+            </div>
+        </div>
+    </header>
+
+    <!-- Giriş Ekranı -->
+    <main id="intro-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-4 border-blue-600">
+            <h1 class="text-3xl font-bold mb-2 text-gray-900">2026 LGS Simülasyonu</h1>
+            <p class="text-gray-500 mb-6">Sözel ve Sayısal Bölüm - Genel Tarama</p>
+            
+            <div class="space-y-4 text-left bg-blue-50 p-4 rounded-lg mb-6 text-sm">
+                <p>📌 <strong>Soru Sayısı:</strong> 14 Seçkin Soru</p>
+                <p>⏱️ <strong>Önerilen Süre:</strong> 30 Dakika</p>
+                <p>📱 <strong>Uyumluluk:</strong> Telefon, Tablet, Akıllı Tahta</p>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="student-name" placeholder="Adınız Soyadınız" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            </div>
+
+            <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition transform hover:scale-105">
+                SINAVI BAŞLAT
+            </button>
+        </div>
+    </main>
+
+    <!-- Sınav Alanı -->
+    <main id="exam-screen" class="hidden container mx-auto p-4 max-w-5xl flex-grow">
+        
+        <!-- Bölüm Sekmeleri -->
+        <div class="flex justify-center mb-6 space-x-2">
+            <button onclick="switchTab('sozel')" id="tab-sozel" class="flex-1 py-2 px-4 rounded-lg font-bold bg-blue-600 text-white shadow-md transition">SÖZEL BÖLÜM</button>
+            <button onclick="switchTab('sayisal')" id="tab-sayisal" class="flex-1 py-2 px-4 rounded-lg font-bold bg-gray-200 text-gray-600 hover:bg-gray-300 transition">SAYISAL BÖLÜM</button>
+        </div>
+
+        <!-- Sözel Sorular -->
+        <div id="section-sozel" class="space-y-6">
+            <!-- Sorular JS ile buraya gelecek -->
+        </div>
+
+        <!-- Sayısal Sorular -->
+        <div id="section-sayisal" class="space-y-6 hidden">
+            <!-- Sorular JS ile buraya gelecek -->
+        </div>
+
+        <!-- Bitir Butonu -->
+        <div class="mt-8 text-center pb-8">
+            <button onclick="finishExam()" class="bg-red-600 hover:bg-red-700 text-white text-lg font-bold py-3 px-12 rounded-full shadow-lg transition transform hover:scale-105">
+                SINAVI BİTİR
+            </button>
+        </div>
+    </main>
+
+    <!-- Sonuç Ekranı (Modal) -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-fade-in-up">
+            <div class="bg-blue-900 text-white p-6 text-center">
+                <h2 class="text-3xl font-bold">Sınav Sonucunuz</h2>
+                <p id="result-student-name" class="opacity-80 mt-1"></p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">Doğru</div>
+                        <div id="res-correct" class="text-2xl font-bold text-green-600">0</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">Yanlış</div>
+                        <div id="res-wrong" class="text-2xl font-bold text-red-600">0</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">Boş</div>
+                        <div id="res-empty" class="text-2xl font-bold text-gray-600">0</div>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg border border-blue-200">
+                        <div class="text-sm text-blue-800 font-bold">NET</div>
+                        <div id="res-net" class="text-2xl font-bold text-blue-900">0.00</div>
+                    </div>
+                </div>
+                
+                <div class="text-center text-sm text-gray-500 mb-6">
+                    Cevaplarınızı kontrol etmek için "İncele" butonuna basınız.
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-lg transition">
+                        İncele
+                    </button>
+                    <button onclick="location.reload()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition">
+                        Yeni Sınav
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        // Soru Veritabanı
+        const questions = [
+            // --- SÖZEL ---
+            {
+                id: 1, type: 'sozel', subject: 'Türkçe',
+                text: 'Gazetecilikte "5N1K" kuralı haberin tam olması için gereklidir. Günümüzde "Tık Tuzağı" (Clickbait) başlıklar yaygındır.<br><br>Buna göre, aşağıdakilerden hangisi "Tık Tuzağı" içeren bir başlık <u>değildir</u>?',
+                options: [
+                    'Ünlü futbolcunun yeni takımı herkesi şoke etti!',
+                    'Domatesin faydalarını duyunca inanamayacaksınız.',
+                    'İstanbul\'da baraj doluluk oranları %45 seviyesine geriledi.',
+                    'Bunu yiyen bir daha hastalanmıyor! İşte o mucize...'
+                ],
+                correct: 2 // 0-based index: C şıkkı
+            },
+            {
+                id: 2, type: 'sozel', subject: 'Türkçe (Sözel Mantık)',
+                text: 'Ahmet, Burcu, Can, Deniz ve Elif A, B, C, D, E masalarında oturmaktadır.<br><ul class="list-disc pl-5 mt-2 text-sm"><li>Burcu ve Elif yan yana değildir.</li><li>Can uçtaki masalardan birindedir.</li><li>Deniz, Ahmet\'in sağındadır.</li><li>C masasında Burcu vardır.</li></ul><br>Hangisi <strong>kesinlikle</strong> doğrudur?',
+                options: [
+                    'A masasında Can oturmaktadır.',
+                    'E masasında Elif oturmaktadır.',
+                    'Deniz, D masasında oturmaktadır.',
+                    'Ahmet, B masasında oturmaktadır.'
+                ],
+                correct: 3 // D şıkkı
+            },
+            {
+                id: 3, type: 'sozel', subject: 'Türkçe',
+                text: '"Yazarın son romanı, adeta bir yapbozun parçaları gibi..." ifadesiyle anlatılmak istenen nedir?',
+                options: [
+                    'Romanın karmaşık olduğu',
+                    'Parçaların birleşmesiyle bütünün anlam kazandığı',
+                    'Okuyucuyu yorduğu',
+                    'Sonunun tahmin edilebilir olduğu'
+                ],
+                correct: 1 // B şıkkı
+            },
+            {
+                id: 4, type: 'sozel', subject: 'İnkılap Tarihi',
+                text: 'Mustafa Kemal\'in İstanbul Hükûmeti\'nin sessizliği karşısında Samsun\'a çıkarak Milli Mücadele\'yi başlatması hangi özelliği ile ilişkilidir?',
+                options: [
+                    'Çok yönlülüğü',
+                    'İleri görüşlülüğü',
+                    'Vatanseverliği ve liderliği',
+                    'Eğitimciliği'
+                ],
+                correct: 2 // C şıkkı
+            },
+            {
+                id: 5, type: 'sozel', subject: 'İnkılap Tarihi',
+                text: 'Erzurum Kongresi\'nde "Milli sınırlar içinde vatan bir bütündür, bölünemez" kararı ile hangisine vurgu yapılmıştır?',
+                options: [
+                    'Milli Egemenlik',
+                    'Milli Bağımsızlık ve Toprak Bütünlüğü',
+                    'Çağdaşlaşma',
+                    'Laiklik'
+                ],
+                correct: 1 // B şıkkı
+            },
+            {
+                id: 6, type: 'sozel', subject: 'Din Kültürü',
+                text: '"Kim zerre miktarı hayır yapmışsa onu görür..." (Zilzal Suresi) ayeti kader ile ilgili hangi kavramla ilişkilidir?',
+                options: [
+                    'Ecel ve Ömür',
+                    'Sorumluluk ve Cüzi İrade',
+                    'Rızık ve Emek',
+                    'Tevekkül'
+                ],
+                correct: 1 // B şıkkı
+            },
+            {
+                id: 7, type: 'sozel', subject: 'İngilizce',
+                text: '<strong>Alice:</strong> I\'d love to, but I can\'t. My cousin is coming over...<br>Alice refuses because she ---.',
+                options: [
+                    'dislikes rock music',
+                    'has another plan with her cousin',
+                    'is going to another concert',
+                    'doesn\'t get on well with Jane'
+                ],
+                correct: 1 // B şıkkı
+            },
+            // --- SAYISAL ---
+            {
+                id: 8, type: 'sayisal', subject: 'Matematik',
+                text: '<strong>EBOB Problemi:</strong> 120 cm ve 168 cm\'lik tahtalar eş parçalara ayrılacak. Her kesim 15 saniye. Toplam süre kaç saniyedir?<br><span class="text-xs text-gray-500 italic">(İpucu: Kesim sayısı = Parça sayısı - 1)</span>',
+                options: ['135', '150', '165', '180'],
+                correct: 1 // B şıkkı (10 kesim * 15)
+            },
+            {
+                id: 9, type: 'sayisal', subject: 'Matematik',
+                text: 'Kenarı 4√3 cm olan kareden en büyük daire kesiliyor (π=3). Kalan alan kaç cm² dir?',
+                options: ['12', '16', '24', '36'],
+                correct: 0 // A şıkkı
+            },
+            {
+                id: 10, type: 'sayisal', subject: 'Matematik',
+                text: 'Başlangıçta 2<sup>5</sup> bakteri var. Her saat 2 katına çıkıyor. 8 saat sonra sayı ne olur?',
+                options: ['2<sup>11</sup>', '2<sup>12</sup>', '2<sup>13</sup>', '4<sup>6</sup>'],
+                correct: 2 // C şıkkı
+            },
+            {
+                id: 11, type: 'sayisal', subject: 'Matematik',
+                text: '(2x - 3)<sup>2</sup> ifadesinin özdeşi hangisidir?',
+                options: [
+                    '4x<sup>2</sup> - 9',
+                    '4x<sup>2</sup> - 6x + 9',
+                    '4x<sup>2</sup> - 12x + 9',
+                    '2x<sup>2</sup> - 12x + 9'
+                ],
+                correct: 2 // C şıkkı
+            },
+            {
+                id: 12, type: 'sayisal', subject: 'Fen Bilimleri',
+                text: '<div class="flex justify-center my-4"><svg width="200" height="100" viewBox="0 0 200 100" class="bg-gray-900 rounded-lg"><circle cx="100" cy="50" r="20" fill="yellow" stroke="orange" stroke-width="2"/><text x="100" y="55" font-size="10" text-anchor="middle" fill="black">Güneş</text><circle cx="20" cy="50" r="10" fill="#3b82f6"/><text x="20" y="75" font-size="8" text-anchor="middle" fill="white">L (21 Haz)</text></svg></div>Dünya L konumundayken (21 Haziran) Kuzey Yarım Küre için hangisi <strong>yanlıştır</strong>?',
+                options: [
+                    'En uzun gündüz yaşanır.',
+                    'Güneş ışınları Yengeç Dönencesi\'ne dik düşer.',
+                    'Gündüzler kısalmaya başlar.',
+                    'Gölge boyu en uzundur.'
+                ],
+                correct: 3 // D şıkkı
+            },
+            {
+                id: 13, type: 'sayisal', subject: 'Fen Bilimleri',
+                text: 'Mor (M) baskın, Beyaz (m) çekinik. Yavruların %50\'si beyaz, %50\'si mor çiçekli. Ata genotipler hangisidir?',
+                options: ['MM x mm', 'Mm x Mm', 'Mm x mm', 'mm x mm'],
+                correct: 2 // C şıkkı
+            },
+            {
+                id: 14, type: 'sayisal', subject: 'Fen Bilimleri',
+                text: '<strong>Deney 1:</strong> Tek tuğla yatay.<br><strong>Deney 2:</strong> İki tuğla üst üste.<br>Bağımlı ve Bağımsız değişken hangisidir?',
+                options: [
+                    'Bağımsız: Yüzey / Bağımlı: Basınç',
+                    'Bağımsız: Ağırlık / Bağımlı: Basınç',
+                    'Bağımsız: Basınç / Bağımlı: Ağırlık',
+                    'Bağımsız: Sayı / Bağımlı: Yüzey'
+                ],
+                correct: 1 // B şıkkı
+            }
+        ];
+
+        let timerInterval;
+        let seconds = 30 * 60; // 30 dakika
+
+        function renderQuestions() {
+            const sozelContainer = document.getElementById('section-sozel');
+            const sayisalContainer = document.getElementById('section-sayisal');
+
+            questions.forEach((q, index) => {
+                const qHTML = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden question-card" id="q-${index}">
+                    <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                        <span class="font-bold text-gray-700">${q.subject}</span>
+                        <span class="text-sm text-gray-500">Soru ${q.id}</span>
+                    </div>
+                    <div class="p-5">
+                        <p class="mb-4 text-lg text-gray-800">${q.text}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${q.options.map((opt, optIndex) => `
+                                <label class="cursor-pointer relative group">
+                                    <input type="radio" name="q-${index}" value="${optIndex}" class="option-radio sr-only">
+                                    <div class="p-3 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition flex items-center h-full">
+                                        <span class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full font-bold text-gray-600 mr-3 group-hover:bg-blue-100">${String.fromCharCode(65+optIndex)}</span>
+                                        <span class="text-sm text-gray-700">${opt}</span>
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div class="feedback-msg hidden mt-4 p-3 rounded-lg text-sm font-bold"></div>
+                    </div>
+                </div>`;
+
+                if (q.type === 'sozel') sozelContainer.innerHTML += qHTML;
+                else sayisalContainer.innerHTML += qHTML;
+            });
+        }
+
+        function startExam() {
+            const name = document.getElementById('student-name').value;
+            if (!name) {
+                alert("Lütfen adınızı giriniz.");
+                return;
+            }
+            
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+            document.getElementById('timer-display').classList.remove('hidden');
+            
+            // Render questions once
+            renderQuestions();
+            
+            // Start Timer
+            timerInterval = setInterval(() => {
+                seconds--;
+                const min = Math.floor(seconds / 60);
+                const sec = seconds % 60;
+                document.getElementById('timer-display').innerText = 
+                    `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                
+                if (seconds <= 0) finishExam();
+            }, 1000);
+        }
+
+        function switchTab(tab) {
+            const btnSozel = document.getElementById('tab-sozel');
+            const btnSayisal = document.getElementById('tab-sayisal');
+            const secSozel = document.getElementById('section-sozel');
+            const secSayisal = document.getElementById('section-sayisal');
+
+            if (tab === 'sozel') {
+                secSozel.classList.remove('hidden');
+                secSayisal.classList.add('hidden');
+                btnSozel.classList.remove('bg-gray-200', 'text-gray-600');
+                btnSozel.classList.add('bg-blue-600', 'text-white');
+                btnSayisal.classList.remove('bg-blue-600', 'text-white');
+                btnSayisal.classList.add('bg-gray-200', 'text-gray-600');
+            } else {
+                secSayisal.classList.remove('hidden');
+                secSozel.classList.add('hidden');
+                btnSayisal.classList.remove('bg-gray-200', 'text-gray-600');
+                btnSayisal.classList.add('bg-blue-600', 'text-white');
+                btnSozel.classList.remove('bg-blue-600', 'text-white');
+                btnSozel.classList.add('bg-gray-200', 'text-gray-600');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            let correct = 0, wrong = 0, empty = 0;
+
+            questions.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="q-${index}"]:checked`);
+                const card = document.getElementById(`q-${index}`);
+                const options = card.querySelectorAll('label > div');
+                const feedback = card.querySelector('.feedback-msg');
+
+                // Disable inputs
+                card.querySelectorAll('input').forEach(i => i.disabled = true);
+
+                if (!selected) {
+                    empty++;
+                    feedback.innerHTML = `⚠️ Boş Bıraktınız. Doğru Cevap: ${String.fromCharCode(65 + q.correct)}`;
+                    feedback.className = "feedback-msg block mt-4 p-3 rounded-lg text-sm font-bold bg-yellow-100 text-yellow-800";
+                } else {
+                    const answer = parseInt(selected.value);
+                    if (answer === q.correct) {
+                        correct++;
+                        options[answer].classList.add('correct-answer');
+                    } else {
+                        wrong++;
+                        options[answer].classList.add('wrong-answer');
+                        options[q.correct].classList.add('correct-answer'); // Show correct one
+                    }
+                }
+            });
+
+            const net = correct - (wrong / 3);
+            
+            document.getElementById('res-correct').innerText = correct;
+            document.getElementById('res-wrong').innerText = wrong;
+            document.getElementById('res-empty').innerText = empty;
+            document.getElementById('res-net').innerText = net.toFixed(2);
+            document.getElementById('result-student-name').innerText = document.getElementById('student-name').value;
+            
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+            // Show all questions for review (expand tabs logic could be added but simple scroll is fine)
+            // Just switch to Sozel to start review
+            switchTab('sozel');
+        }
+    </script>
+</body>
+</html>
