@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yüz Ressamı Pro - Tasarla ve Boya</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+
+        :root {
+            --primary: #6366f1;
+            --accent: #f43f5e;
+        }
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #f8fafc;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- Tuval Alanı --- */
+        #canvas-area {
+            background-image: 
+                linear-gradient(rgba(203, 213, 225, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(203, 213, 225, 0.5) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.05);
+        }
+
+        /* --- Sürüklenen Parçalar --- */
+        .draggable-item {
+            position: absolute;
+            cursor: grab;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+            touch-action: none;
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        /* Seçili Öğe Efekti */
+        .selected-item {
+            filter: drop-shadow(0 0 5px #6366f1) !important; /* Mavi parlama */
+            z-index: 1000 !important;
+        }
+        
+        /* Seçim çerçevesi (border yerine outline kullanıyoruz svg bozulmasın diye) */
+        .selected-item::after {
+            content: '';
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 2px dashed #6366f1;
+            border-radius: 8px;
+            pointer-events: none;
+            animation: dash 5s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: 100; }
+        }
+
+        /* --- Renk Paleti --- */
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .color-swatch:active { transform: scale(0.9); }
+        
+        /* Renk seçici input gizleme */
+        #color-picker-input {
+            visibility: hidden;
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+        .rainbow-btn {
+            background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+        }
+
+        /* --- Animasyonlar --- */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: popIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col text-slate-700">
+
+    <!-- ÜST MENÜ: Butonlar -->
+    <header class="bg-white shadow-sm h-14 shrink-0 flex items-center justify-between px-4 z-30">
+        <div class="flex items-center gap-2 font-bold text-indigo-600">
+            <span>🎨 Yüz Ressamı</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="undo()" id="undo-btn" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1 disabled:opacity-50">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                Geri Al
+            </button>
+            <button onclick="clearCanvasPrompt()" class="bg-red-50 text-red-500 px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1 hover:bg-red-100">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                Temizle
+            </button>
+        </div>
+    </header>
+
+    <!-- ORTA ALAN: Tuval -->
+    <main class="flex-1 relative flex overflow-hidden">
+        <div id="canvas-area" class="w-full h-full relative flex items-center justify-center">
+            
+            <!-- TEMEL KAFA (SABİT ARKAPLAN) -->
+            <!-- Artık kulaklar burada YOK. Kulaklar ayrı parça. -->
+            <div id="base-head-wrapper" class="relative pointer-events-none z-0">
+                <svg width="300" height="400" viewBox="0 0 300 400" id="base-head-svg" class="drop-shadow-xl transition-colors duration-300">
+                     <!-- Boyun -->
+                     <path d="M100,320 Q150,380 200,320 L200,400 L100,400 Z" fill="#ffdbac" class="color-target" id="neck-shape"/>
+                     <!-- Kafa -->
+                     <ellipse cx="150" cy="180" rx="130" ry="160" fill="#ffdbac" stroke="#d4a373" stroke-width="2" class="color-target pointer-events-auto cursor-pointer" id="head-shape"/>
+                </svg>
+                <div class="absolute bottom-5 w-full text-center text-xs text-slate-400 opacity-60">Ten rengi için kafaya tıkla!</div>
+            </div>
+
+            <!-- Parçaların gezdiği katman -->
+            <div id="parts-layer" class="absolute inset-0 w-full h-full z-10 overflow-hidden"></div>
+        
+        </div>
+    </main>
+
+    <!-- ALT PANEL: Renkler ve Parçalar -->
+    <div class="bg-white shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-40 flex flex-col h-[45vh] md:h-72 shrink-0 border-t border-slate-200">
+        
+        <!-- Renk Barı (YENİ) -->
+        <div class="h-14 bg-slate-50 border-b border-slate-200 flex items-center px-4 gap-3 overflow-x-auto hide-scrollbar shrink-0">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Boya:</span>
+            
+            <!-- Özel Renk Seçici -->
+            <label class="color-swatch rainbow-btn flex items-center justify-center cursor-pointer transform hover:scale-110">
+                <input type="color" id="color-picker-input" onchange="applyCustomColor(this.value)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </label>
+
+            <!-- Hazır Renkler -->
+            <div class="flex gap-2" id="palette-container">
+                <!-- JS ile doldurulacak -->
+            </div>
+            
+            <div class="ml-auto text-xs text-indigo-500 font-semibold" id="selection-info">
+                Bir parçaya dokun!
+            </div>
+        </div>
+
+        <!-- Kategoriler -->
+        <div class="flex border-b border-slate-100 overflow-x-auto hide-scrollbar p-1 shrink-0 bg-white" id="category-bar">
+            <!-- JS ile doldurulacak -->
+        </div>
+
+        <!-- Parça Listesi -->
+        <div id="parts-grid" class="flex-1 overflow-y-auto p-4 bg-white grid grid-cols-4 md:grid-cols-6 gap-3 content-start">
+            <!-- JS ile doldurulacak -->
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        // --- VERİ ---
+        const colors = [
+            "#ffdbac", "#8d5524", "#333333", "#e11d48", "#2563eb", 
+            "#16a34a", "#facc15", "#9333ea", "#ffffff", "#000000"
+        ];
+
+        const library = {
+            kulak: { label: "Kulak", icon: "👂", items: [
+                // Sol Kulak (YENİ: Ayrı parça)
+                `<svg viewBox="0 0 50 80" class="svg-part"><path d="M45,10 Q5,30 45,70" fill="#ffdbac" stroke="#d4a373" stroke-width="3" class="color-target"/></svg>`, 
+                // Sağ Kulak
+                `<svg viewBox="0 0 50 80" class="svg-part"><path d="M5,10 Q45,30 5,70" fill="#ffdbac" stroke="#d4a373" stroke-width="3" class="color-target"/></svg>`,
+                // Elf Kulağı Sol
+                `<svg viewBox="0 0 60 100" class="svg-part"><path d="M50,90 Q10,50 0,0 Q-10,40 50,80" fill="#ffdbac" stroke="#d4a373" stroke-width="3" class="color-target"/></svg>`,
+                // Kedi Kulağı
+                `<svg viewBox="0 0 60 60" class="svg-part"><path d="M10,50 L30,10 L50,50 Z" fill="#333" stroke="#000" stroke-width="2" class="color-target"/><path d="M20,45 L30,20 L40,45 Z" fill="#pink" opacity="0.6"/></svg>`
+            ]},
+            goz: { label: "Göz", icon: "👁️", items: [
+                `<svg viewBox="0 0 80 40" class="svg-part"><ellipse cx="40" cy="20" rx="30" ry="18" fill="white" stroke="#333" stroke-width="2"/><circle cx="40" cy="20" r="10" fill="#333" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 40" class="svg-part"><path d="M10,20 Q40,5 70,20" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 40" class="svg-part"><circle cx="40" cy="20" r="18" fill="white" stroke="#333"/><circle cx="40" cy="20" r="9" fill="#2563eb" class="color-target"/><circle cx="43" cy="17" r="3" fill="white"/></svg>`
+            ]},
+            kas: { label: "Kaş", icon: "🤨", items: [
+                `<svg viewBox="0 0 80 30" class="svg-part"><path d="M10,20 Q40,5 70,20" fill="none" stroke="#333" stroke-width="5" stroke-linecap="round" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 30" class="svg-part"><path d="M10,10 L70,20" fill="none" stroke="#333" stroke-width="5" stroke-linecap="round" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 30" class="svg-part"><path d="M10,15 Q40,0 70,15 Z" fill="#333" class="color-target"/></svg>`
+            ]},
+            burun: { label: "Burun", icon: "👃", items: [
+                `<svg viewBox="0 0 40 50" class="svg-part"><path d="M20,5 Q5,35 10,45 Q20,55 30,45 Q35,35 20,5" fill="#ffdbac" stroke="#d4a373" stroke-width="2" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 40 50" class="svg-part"><circle cx="20" cy="25" r="12" fill="#ef4444" stroke="#b91c1c" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 40 50" class="svg-part"><path d="M5,40 L20,5 L35,40" fill="none" stroke="#333" stroke-width="3" stroke-linejoin="round" class="color-target"/></svg>`
+            ]},
+            agiz: { label: "Ağız", icon: "👄", items: [
+                `<svg viewBox="0 0 80 40" class="svg-part"><path d="M10,15 Q40,45 70,15" fill="#ff9999" stroke="#ef4444" stroke-width="2" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 40" class="svg-part"><path d="M10,25 Q40,5 70,25" fill="none" stroke="#333" stroke-width="3" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 80 40" class="svg-part"><rect x="15" y="10" width="50" height="20" rx="5" fill="white" stroke="#333"/><line x1="15" y1="20" x2="65" y2="20" stroke="#333"/></svg>`
+            ]},
+            sac: { label: "Saç", icon: "💇", items: [
+                `<svg viewBox="0 0 200 150" class="svg-part"><path d="M20,120 Q20,20 100,20 Q180,20 180,120" fill="#4a3b32" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 200 150" class="svg-part"><path d="M10,100 C10,0 190,0 190,100 L180,100 Q150,40 100,40 Q50,40 20,100 Z" fill="#eab308" class="color-target"/></svg>`,
+                `<svg viewBox="0 0 200 150" class="svg-part"><path d="M100,20 L120,60 L140,30 L160,70 L190,40 L180,100 L20,100 L10,40 L40,70 L60,30 L80,60 Z" fill="#ef4444" class="color-target"/></svg>`
+            ]}
+        };
+
+        // --- GLOBAL DEĞİŞKENLER ---
+        let selectedElement = null;
+        let actionHistory = [];
+        let currentCategory = 'kulak';
+        let zIndexCounter = 100;
+
+        // --- BAŞLATMA ---
+        window.onload = function() {
+            renderPalette();
+            renderCategories();
+            renderGrid(currentCategory);
+            
+            // Kafa tıklandığında seçimi kaldır (boşluğa tıklama efekti)
+            document.getElementById('canvas-area').addEventListener('mousedown', (e) => {
+                if(e.target.id === 'canvas-area') deselectAll();
+            });
+            document.getElementById('canvas-area').addEventListener('touchstart', (e) => {
+                if(e.target.id === 'canvas-area') deselectAll();
+            });
+
+            // Kafa SVG'sine tıklayınca ten rengi seç
+            document.getElementById('head-shape').addEventListener('click', (e) => {
+                e.stopPropagation(); // Boşluk tıklamasını engelle
+                selectBaseHead();
+            });
+        };
+
+        // --- RENDER FONKSİYONLARI ---
+        function renderPalette() {
+            const container = document.getElementById('palette-container');
+            colors.forEach(color => {
+                const btn = document.createElement('div');
+                btn.className = 'color-swatch';
+                btn.style.backgroundColor = color;
+                btn.onclick = () => applyColor(color);
+                container.appendChild(btn);
+            });
+        }
+
+        function renderCategories() {
+            const bar = document.getElementById('category-bar');
+            bar.innerHTML = '';
+            Object.keys(library).forEach(key => {
+                const cat = library[key];
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-2 mx-1 rounded-lg text-sm font-bold whitespace-nowrap border transition ${key === currentCategory ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-600'}`;
+                btn.innerHTML = `${cat.icon} ${cat.label}`;
+                btn.onclick = () => {
+                    currentCategory = key;
+                    renderCategories(); // Aktif sınıfı güncelle
+                    renderGrid(key);
+                };
+                bar.appendChild(btn);
+            });
+        }
+
+        function renderGrid(catKey) {
+            const grid = document.getElementById('parts-grid');
+            grid.innerHTML = '';
+            library[catKey].items.forEach(svgStr => {
+                const div = document.createElement('div');
+                div.className = 'h-20 bg-slate-50 border rounded-lg flex items-center justify-center p-2 cursor-pointer hover:bg-slate-100';
+                div.innerHTML = svgStr;
+                
+                // Gridde düzgün görünüm için SVG boyut ayarı
+                const svg = div.querySelector('svg');
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                
+                div.onclick = () => createPart(svgStr, catKey);
+                grid.appendChild(div);
+            });
+        }
+
+        // --- PARÇA YARATMA ---
+        function createPart(svgStr, type) {
+            const layer = document.getElementById('parts-layer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'draggable-item animate-pop';
+            wrapper.innerHTML = svgStr;
+            
+            // Başlangıç boyutları
+            let w = 80;
+            if(type === 'goz') w = 70;
+            if(type === 'agiz') w = 60;
+            if(type === 'sac') w = 200;
+            if(type === 'kulak') w = 50;
+
+            wrapper.style.width = w + 'px';
+            wrapper.style.zIndex = zIndexCounter++;
+            
+            // Ekranın ortasına koy (Responsive)
+            const cw = layer.clientWidth;
+            const ch = layer.clientHeight;
+            wrapper.style.left = (cw/2 - w/2) + 'px';
+            wrapper.style.top = (ch/2 - w/2) + 'px';
+
+            wrapper.id = 'part_' + Date.now();
+
+            // Etkileşimler
+            makeDraggable(wrapper);
+            
+            // Tıklayınca Seç
+            wrapper.addEventListener('mousedown', (e) => { e.stopPropagation(); selectPart(wrapper); });
+            wrapper.addEventListener('touchstart', (e) => { e.stopPropagation(); selectPart(wrapper); });
+            
+            // Çift Tıklayınca Sil
+            wrapper.addEventListener('dblclick', () => deletePart(wrapper));
+
+            layer.appendChild(wrapper);
+            selectPart(wrapper); // Ekler eklemez seç
+            addToHistory('add', wrapper);
+        }
+
+        // --- SEÇİM & BOYAMA SİSTEMİ (ÖNEMLİ) ---
+        function selectPart(el) {
+            deselectAll();
+            selectedElement = el;
+            el.classList.add('selected-item');
+            
+            // Bilgi mesajı
+            document.getElementById('selection-info').innerText = "Seçili: Parça (Rengini değiştir!)";
+        }
+
+        function selectBaseHead() {
+            deselectAll();
+            selectedElement = document.getElementById('base-head-wrapper'); // Wrapper'ı "seçilmiş" gibi davranıyoruz ama aslında pathleri boyayacağız
+            // Kafa seçili efekti vermeye gerek yok, sadece state'i tutuyoruz
+            document.getElementById('selection-info').innerText = "Seçili: Yüz (Ten Rengi)";
+        }
+
+        function deselectAll() {
+            if (selectedElement && selectedElement.classList) {
+                selectedElement.classList.remove('selected-item');
+            }
+            selectedElement = null;
+            document.getElementById('selection-info').innerText = "Bir parçaya dokun!";
+        }
+
+        function applyColor(color) {
+            if(!selectedElement) return;
+
+            // Eğer seçili olan Kafa ise
+            if(selectedElement.id === 'base-head-wrapper') {
+                document.getElementById('neck-shape').setAttribute('fill', color);
+                document.getElementById('head-shape').setAttribute('fill', color);
+                return;
+            }
+
+            // Eğer normal bir parça ise
+            const svg = selectedElement.querySelector('svg');
+            // 1. Yöntem: .color-target sınıfı olanları boya
+            const targets = svg.querySelectorAll('.color-target');
+            if(targets.length > 0) {
+                targets.forEach(t => t.setAttribute('fill', color));
+            } else {
+                // 2. Yöntem: Sınıf yoksa genel path'leri boya (white olmayanları)
+                const paths = svg.querySelectorAll('path, circle, rect, ellipse');
+                paths.forEach(p => {
+                    const fill = p.getAttribute('fill');
+                    if(fill !== 'white' && fill !== '#fff' && fill !== 'none') {
+                        p.setAttribute('fill', color);
+                    }
+                });
+            }
+        }
+
+        function applyCustomColor(hex) {
+            applyColor(hex);
+        }
+
+        // --- SÜRÜKLEME (AKILLI OFFSET) ---
+        function makeDraggable(el) {
+            let isDragging = false;
+            let startX, startY;
+            
+            const start = (e) => {
+                if (e.type === 'mousedown' && e.button !== 0) return;
+                isDragging = true;
+                
+                // Seçimi güncelle
+                selectPart(el);
+
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                // Elemanın o anki koordinatı ile mouse arasındaki farkı al (Offset)
+                // Bu sayede eleman mouse'un ucuna zıplamaz
+                const rect = el.getBoundingClientRect();
+                const parentRect = el.parentElement.getBoundingClientRect();
+
+                // Mouse'un eleman içindeki konumu
+                const offsetX = clientX - rect.left;
+                const offsetY = clientY - rect.top;
+
+                // Bunu sakla
+                el.dataset.offsetX = offsetX;
+                el.dataset.offsetY = offsetY;
+            };
+
+            const move = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                const parent = el.parentElement;
+                const parentRect = parent.getBoundingClientRect();
+                
+                const offsetX = parseFloat(el.dataset.offsetX);
+                const offsetY = parseFloat(el.dataset.offsetY);
+
+                // Yeni sol/üst değerleri (Parent'a göre)
+                let newLeft = clientX - parentRect.left - offsetX;
+                let newTop = clientY - parentRect.top - offsetY;
+
+                el.style.left = newLeft + 'px';
+                el.style.top = newTop + 'px';
+            };
+
+            const end = () => {
+                isDragging = false;
+            };
+
+            el.addEventListener('mousedown', start);
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+
+            el.addEventListener('touchstart', start, {passive: false});
+            window.addEventListener('touchmove', move, {passive: false});
+            window.addEventListener('touchend', end);
+        }
+
+        // --- YARDIMCI İŞLEVLER ---
+        function deletePart(el) {
+            addToHistory('delete', { html: el.outerHTML, parent: el.parentElement });
+            el.remove();
+            deselectAll();
+        }
+
+        function undo() {
+            if(actionHistory.length === 0) return;
+            const action = actionHistory.pop();
+
+            if(action.type === 'add') {
+                // Ekleneni geri al -> Sil
+                const el = document.getElementById(action.data.id);
+                if(el) el.remove();
+                deselectAll();
+            } 
+            // Basit tutmak için sadece ekleme işlemini geri alıyoruz şimdilik
+            // Boyama işlemleri daha karmaşık bir state gerektirir
+        }
+
+        function addToHistory(type, element) {
+            // Sadece ID ve tip saklıyoruz
+            actionHistory.push({ type: type, data: { id: element.id } });
+        }
+
+        function clearCanvasPrompt() {
+            if(confirm("Tüm resmi silmek istiyor musun?")) {
+                document.getElementById('parts-layer').innerHTML = '';
+                deselectAll();
+                // Kafayı varsayılan renge döndür
+                document.getElementById('neck-shape').setAttribute('fill', '#ffdbac');
+                document.getElementById('head-shape').setAttribute('fill', '#ffdbac');
+            }
+        }
+    </script>
+</body>
+</html>
+
