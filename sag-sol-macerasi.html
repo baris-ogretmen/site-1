@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Barış Akademi - Zamana Karşı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+            background-color: #f0fdf4;
+        }
+
+        /* -- Animasyonlar -- */
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            80% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes combo-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5) rotate(-5deg); color: #f59e0b; }
+            100% { transform: scale(1); }
+        }
+
+        .pop-anim { animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .shake-anim { animation: shake 0.4s ease-in-out; }
+        .pulse-urgent { animation: pulse-red 1s infinite; }
+        .combo-active { animation: combo-pop 0.2s ease-out; }
+
+        /* Oyun Alanı Desenleri */
+        .bg-pattern {
+            background-image: radial-gradient(#cbd5e1 2px, transparent 2px);
+            background-size: 24px 24px;
+        }
+
+        .progress-bar-transition {
+            transition: width 1s linear, background-color 0.5s;
+        }
+    </style>
+</head>
+<body class="bg-pattern h-screen flex flex-col select-none text-slate-800">
+
+    <!-- BAŞLANGIÇ EKRANI -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm transition-opacity duration-500">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl text-center max-w-md w-full mx-4 border-b-8 border-slate-200">
+            <div class="text-7xl mb-4 animate-bounce">⏱️</div>
+            <h1 class="text-3xl font-bold text-indigo-600 mb-1">Barış Akademi</h1>
+            <h2 class="text-xl text-slate-500 mb-6">Zamana Karşı Yarış!</h2>
+            
+            <div class="bg-indigo-50 p-4 rounded-xl mb-6 text-left space-y-2">
+                <p class="text-slate-700 flex items-center gap-2">🎯 <span class="font-bold">60 Saniyen</span> var.</p>
+                <p class="text-slate-700 flex items-center gap-2">🔥 Hızlı ol, <span class="font-bold text-orange-500">KOMBO</span> yap!</p>
+                <p class="text-slate-700 flex items-center gap-2">🏆 Rekor: <span id="high-score-display" class="font-bold text-indigo-600">0</span></p>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-4 rounded-2xl shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[6px] transition-all transform hover:scale-105">
+                BAŞLA ▶
+            </button>
+        </div>
+    </div>
+
+    <!-- OYUN SONU EKRANI -->
+    <div id="game-over-screen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-md w-full mx-4 border-b-8 border-indigo-200 relative overflow-hidden">
+            <!-- Konfeti Efekti -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400"></div>
+            
+            <h2 class="text-4xl font-bold text-slate-800 mb-2">Süre Bitti!</h2>
+            <div class="flex justify-center gap-2 text-5xl my-4" id="final-stars">
+                <span class="opacity-20">⭐</span><span class="opacity-20">⭐</span><span class="opacity-20">⭐</span>
+            </div>
+            
+            <div class="text-6xl font-bold text-indigo-600 mb-2" id="final-score">0</div>
+            <p class="text-slate-500 text-lg mb-6">Toplam Puan</p>
+
+            <button onclick="restartGame()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-bold py-3 rounded-2xl shadow-[0_6px_0_rgb(67,56,202)] active:shadow-none active:translate-y-[6px] transition-all">
+                TEKRAR OYNA 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- HEADER & ZAMAN ÇUBUĞU -->
+    <header class="bg-white shadow-md z-10 border-b-4 border-indigo-100 relative">
+        <div class="flex justify-between items-center p-3 sm:px-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-orange-100 p-2 rounded-lg border-2 border-orange-200">
+                    <span class="text-xl font-bold text-orange-600" id="combo-display">x0</span>
+                </div>
+            </div>
+
+            <!-- Ortada Süre -->
+            <div class="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div class="text-2xl font-bold text-slate-700" id="timer-text">60</div>
+            </div>
+
+            <div class="bg-amber-100 px-4 py-2 rounded-full border-2 border-amber-300 flex items-center gap-2 shadow-sm">
+                <span class="text-amber-500 text-xl">⭐</span>
+                <span id="score" class="text-2xl font-bold text-amber-600">0</span>
+            </div>
+        </div>
+        
+        <!-- Süre Çubuğu -->
+        <div class="w-full h-4 bg-slate-200">
+            <div id="timer-bar" class="h-full bg-green-500 progress-bar-transition w-full origin-left"></div>
+        </div>
+    </header>
+
+    <!-- OYUN ALANI -->
+    <main class="flex-1 flex relative overflow-hidden">
+        <!-- Sol Bölge -->
+        <div id="zone-left" class="flex-1 bg-red-50 relative flex items-center justify-center border-r-4 border-dashed border-slate-300"></div>
+
+        <!-- Sağ Bölge -->
+        <div id="zone-right" class="flex-1 bg-blue-50 relative flex items-center justify-center"></div>
+
+        <!-- Tavşan -->
+        <div id="bunny" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-8xl z-10 transition-transform duration-200 drop-shadow-xl cursor-pointer">
+            🐰
+        </div>
+
+        <!-- Objeler ve Efektler -->
+        <div id="target-container" class="absolute inset-0 pointer-events-none z-20"></div>
+        <div id="feedback-container" class="absolute inset-0 pointer-events-none z-30"></div>
+    </main>
+
+    <!-- KONTROLLER -->
+    <footer class="bg-white p-4 pb-8 sm:p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-20">
+        <div class="flex gap-4 max-w-2xl mx-auto h-24 sm:h-32">
+            <button id="btn-left" onclick="handleInput('left')" class="flex-1 bg-red-500 active:bg-red-600 text-white rounded-2xl shadow-[0_6px_0_rgb(153,27,27)] active:shadow-none active:translate-y-[6px] transition-all flex items-center justify-center gap-3 group relative overflow-hidden">
+                <span class="text-4xl sm:text-5xl group-hover:-translate-x-2 transition-transform">👈</span>
+                <span class="text-2xl sm:text-4xl font-bold">SOL</span>
+            </button>
+
+            <button id="btn-right" onclick="handleInput('right')" class="flex-1 bg-blue-500 active:bg-blue-600 text-white rounded-2xl shadow-[0_6px_0_rgb(30,58,138)] active:shadow-none active:translate-y-[6px] transition-all flex items-center justify-center gap-3 group relative overflow-hidden">
+                <span class="text-2xl sm:text-4xl font-bold">SAĞ</span>
+                <span class="text-4xl sm:text-5xl group-hover:translate-x-2 transition-transform">👉</span>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // -- Ayarlar ve Durum --
+        const GAME_DURATION = 60; // Saniye
+        const MAX_COMBO_TIME = 2000; // ms (Kombo zinciri için süre)
+
+        const state = {
+            score: 0,
+            highScore: localStorage.getItem('barisAkademiHighScore') || 0,
+            timeLeft: GAME_DURATION,
+            isActive: false,
+            activeSide: null,
+            timerInterval: null,
+            combo: 0,
+            lastAnswerTime: 0,
+            items: ['🥕', '🍎', '⭐', '🎈', '🍄', '🥦', '🍕', '🍪', '🐱', '⚽'],
+            audioCtx: null
+        };
+
+        // -- Elementler --
+        const els = {
+            score: document.getElementById('score'),
+            finalScore: document.getElementById('final-score'),
+            highScoreDisplay: document.getElementById('high-score-display'),
+            timerText: document.getElementById('timer-text'),
+            timerBar: document.getElementById('timer-bar'),
+            comboDisplay: document.getElementById('combo-display'),
+            startScreen: document.getElementById('start-screen'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            targetContainer: document.getElementById('target-container'),
+            feedbackContainer: document.getElementById('feedback-container'),
+            bunny: document.getElementById('bunny'),
+            btnLeft: document.getElementById('btn-left'),
+            btnRight: document.getElementById('btn-right')
+        };
+
+        // -- Başlangıç Ayarları --
+        els.highScoreDisplay.textContent = state.highScore;
+
+        // -- Ses Sistemi (Web Audio API) --
+        const Sound = {
+            ctx: null,
+            init: function() {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            },
+            play: function(type) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                const now = this.ctx.currentTime;
+
+                if (type === 'correct') {
+                    // Artan ton (Ding!)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(500, now);
+                    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'wrong') {
+                    // Testere dişi (Hata!)
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'gameover') {
+                    // Bitiş sesi
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 1);
+                    osc.start(now);
+                    osc.stop(now + 1);
+                }
+            }
+        };
+
+        // -- Oyun Döngüsü --
+
+        function startGame() {
+            if (!state.audioCtx) Sound.init();
+            
+            // Sıfırla
+            state.score = 0;
+            state.combo = 0;
+            state.timeLeft = GAME_DURATION;
+            state.isActive = true;
+            state.lastAnswerTime = Date.now();
+            
+            // UI Güncelle
+            els.score.textContent = "0";
+            els.comboDisplay.textContent = "x0";
+            els.timerText.textContent = GAME_DURATION;
+            els.timerBar.style.width = '100%';
+            els.timerBar.className = 'h-full w-full origin-left progress-bar-transition bg-green-500';
+            
+            // Ekranları Yönet
+            els.startScreen.style.display = 'none';
+            els.gameOverScreen.classList.add('hidden');
+            
+            spawnItem();
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                els.timerText.textContent = state.timeLeft;
+                
+                // Bar genişliği
+                const percentage = (state.timeLeft / GAME_DURATION) * 100;
+                els.timerBar.style.width = `${percentage}%`;
+
+                // Renk değişimi (Yeşil -> Sarı -> Kırmızı)
+                if (percentage < 30) {
+                    els.timerBar.classList.remove('bg-yellow-500');
+                    els.timerBar.classList.add('bg-red-500');
+                    els.timerText.classList.add('text-red-600', 'pulse-urgent');
+                } else if (percentage < 60) {
+                    els.timerBar.classList.remove('bg-green-500');
+                    els.timerBar.classList.add('bg-yellow-500');
+                }
+
+                if (state.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            state.isActive = false;
+            clearInterval(state.timerInterval);
+            Sound.play('gameover');
+
+            // High Score Kontrol
+            if (state.score > state.highScore) {
+                state.highScore = state.score;
+                localStorage.setItem('barisAkademiHighScore', state.highScore);
+            }
+
+            // Yıldız Hesaplama
+            let stars = 1;
+            if (state.score > 100) stars = 2;
+            if (state.score > 250) stars = 3;
+
+            // UI Göster
+            els.finalScore.textContent = state.score;
+            els.timerText.classList.remove('pulse-urgent', 'text-red-600');
+            
+            // Yıldız Animasyonu
+            const starSpans = document.getElementById('final-stars').children;
+            for(let i=0; i<3; i++) {
+                starSpans[i].style.opacity = i < stars ? '1' : '0.2';
+                starSpans[i].style.transform = i < stars ? 'scale(1.2)' : 'scale(1)';
+                starSpans[i].style.filter = i < stars ? 'grayscale(0)' : 'grayscale(100%)';
+            }
+
+            els.gameOverScreen.classList.remove('hidden');
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // -- Oyun Mekaniği --
+
+        function spawnItem() {
+            els.targetContainer.innerHTML = '';
+            
+            // Taraf ve Obje
+            state.activeSide = Math.random() < 0.5 ? 'left' : 'right';
+            const item = state.items[Math.floor(Math.random() * state.items.length)];
+            
+            const el = document.createElement('div');
+            el.textContent = item;
+            el.className = 'absolute text-7xl pop-anim drop-shadow-2xl filter';
+            el.style.left = state.activeSide === 'left' ? '25%' : '75%';
+            el.style.top = '40%';
+            el.style.transform = 'translate(-50%, -50%)';
+
+            els.targetContainer.appendChild(el);
+            
+            // Tavşan Yönü
+            els.bunny.style.transform = `translateX(-50%) scaleX(${state.activeSide === 'left' ? '-1' : '1'})`;
+        }
+
+        function handleInput(side) {
+            if (!state.isActive) return;
+
+            if (side === state.activeSide) {
+                // DOĞRU
+                const now = Date.now();
+                if (now - state.lastAnswerTime < MAX_COMBO_TIME) {
+                    state.combo++;
+                } else {
+                    state.combo = 1;
+                }
+                state.lastAnswerTime = now;
+
+                // Puan Hesapla: Baz (10) + Kombo Bonusu
+                const points = 10 + (state.combo > 1 ? state.combo * 2 : 0);
+                state.score += points;
+                
+                updateUI(true);
+                Sound.play('correct');
+                
+                // Efektler
+                createConfetti(state.activeSide === 'left' ? 25 : 75);
+                showFloatingText(`+${points}`, state.activeSide);
+                
+                spawnItem();
+
+            } else {
+                // YANLIŞ
+                state.combo = 0;
+                state.score = Math.max(0, state.score - 5); // Ceza
+                updateUI(false);
+                Sound.play('wrong');
+                
+                // Titret
+                const btn = side === 'left' ? els.btnLeft : els.btnRight;
+                btn.classList.add('shake-anim');
+                btn.style.backgroundColor = '#ef4444';
+                setTimeout(() => {
+                    btn.classList.remove('shake-anim');
+                    btn.style.backgroundColor = '';
+                }, 400);
+
+                showFloatingText('❌', side === 'left' ? 'left' : 'right');
+            }
+        }
+
+        function updateUI(isCorrect) {
+            els.score.textContent = state.score;
+            els.comboDisplay.textContent = `x${state.combo}`;
+            
+            if (state.combo > 1) {
+                els.comboDisplay.parentElement.classList.add('combo-active');
+                setTimeout(() => els.comboDisplay.parentElement.classList.remove('combo-active'), 200);
+            }
+        }
+
+        // -- Görsel Efektler --
+
+        function showFloatingText(text, side) {
+            const el = document.createElement('div');
+            el.textContent = text;
+            el.className = 'absolute text-4xl font-bold text-amber-500 z-50 transition-all duration-700 ease-out pointer-events-none';
+            el.style.left = side === 'left' ? '25%' : '75%';
+            el.style.top = '30%';
+            
+            // Animasyon (JS ile)
+            requestAnimationFrame(() => {
+                el.style.transform = 'translateY(-50px) scale(1.5)';
+                el.style.opacity = '0';
+            });
+
+            els.feedbackContainer.appendChild(el);
+            setTimeout(() => el.remove(), 700);
+        }
+
+        function createConfetti(xPercent) {
+            const colors = ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'];
+            for (let i = 0; i < 15; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'absolute w-3 h-3 rounded-sm';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = `calc(${xPercent}% + ${(Math.random() - 0.5) * 150}px)`;
+                conf.style.top = '40%';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 100;
+                
+                conf.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) rotate(${Math.random()*360}deg) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 600 + Math.random() * 400,
+                    easing: 'cubic-bezier(0, .9, .57, 1)',
+                }).onfinish = () => conf.remove();
+
+                els.feedbackContainer.appendChild(conf);
+            }
+        }
+
+        // -- Klavye Desteği --
+        document.addEventListener('keydown', (e) => {
+            if (!state.isActive) return;
+            if (['ArrowLeft', 'a', 'A'].includes(e.key)) {
+                handleInput('left');
+                els.btnLeft.classList.add('scale-95');
+                setTimeout(() => els.btnLeft.classList.remove('scale-95'), 100);
+            }
+            if (['ArrowRight', 'd', 'D'].includes(e.key)) {
+                handleInput('right');
+                els.btnRight.classList.add('scale-95');
+                setTimeout(() => els.btnRight.classList.remove('scale-95'), 100);
+            }
+        });
+
+    </script>
+</body>
+</html>
+
+
