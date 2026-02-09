@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Barış Akademi - Penaltı Pro Arena</title>
+
+    <!-- Tasarım ve Fontlar -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- TensorFlow.js & MoveNet -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #1a1a1a;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .font-sport { font-family: 'Teko', sans-serif; }
+
+        /* Ayna Modu & Video Ayarları */
+        .mirror-video {
+            transform: scaleX(-1);
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- STADYUM ATMOSFERİ --- */
+        .stadium-overlay {
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+        }
+
+        /* Kale Direkleri */
+        .goal-frame {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            height: 60%;
+            border-top: 12px solid #e2e8f0;
+            border-left: 12px solid #e2e8f0;
+            border-right: 12px solid #e2e8f0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        
+        .goal-net {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* --- OYUN NESNELERİ --- */
+        #ball {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translate(-50%, 0) scale(1);
+            width: 80px; 
+            height: 80px;
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd, #333);
+            border-radius: 50%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            z-index: 30;
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #000 15%, transparent 16%),
+                radial-gradient(circle at 20% 20%, #000 10%, transparent 11%),
+                radial-gradient(circle at 80% 20%, #000 10%, transparent 11%),
+                radial-gradient(circle at 50% 90%, #000 10%, transparent 11%);
+            background-color: #fff;
+        }
+
+        @media (max-width: 640px) {
+            #ball { width: 60px; height: 60px; }
+        }
+
+        #goalkeeper {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(4rem, 15vw, 8rem);
+            transition: all 0.5s ease-out;
+            z-index: 20;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+        }
+
+        /* --- ANİMASYONLAR --- */
+        /* Top Hareketleri */
+        .kick-left { bottom: 55% !important; left: 15% !important; transform: translate(-50%, 0) scale(0.6) rotate(-720deg) !important; }
+        .kick-right { bottom: 55% !important; left: 85% !important; transform: translate(-50%, 0) scale(0.6) rotate(720deg) !important; }
+        .kick-goal-lucky-left { bottom: 60% !important; left: 10% !important; transform: translate(-50%, 0) scale(0.5) rotate(-900deg) !important; }
+        .kick-goal-lucky-right { bottom: 60% !important; left: 90% !important; transform: translate(-50%, 0) scale(0.5) rotate(900deg) !important; }
+
+        /* Kaleci Hareketleri */
+        .dive-left { left: 20% !important; transform: translate(-50%, -20%) rotate(-75deg) !important; }
+        .dive-right { left: 80% !important; transform: translate(-50%, -20%) rotate(75deg) !important; }
+        .dive-short-left { left: 35% !important; transform: translate(-50%, 0%) rotate(-45deg) !important; }
+        .dive-short-right { left: 65% !important; transform: translate(-50%, 0%) rotate(45deg) !important; }
+
+        /* Hedef Bölgeleri (HUD) - Yüzen Kutular */
+        .trigger-zone {
+            position: absolute;
+            bottom: 15%; /* Yerden yukarıda! */
+            width: 20%;
+            height: 25%;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 4px dashed rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            backdrop-filter: blur(2px);
+        }
+        
+        .zone-active {
+            background: rgba(34, 197, 94, 0.4); /* Yeşil yanıp sönme */
+            border-color: #4ade80;
+            border-style: solid;
+            box-shadow: 0 0 40px rgba(74, 222, 128, 0.6);
+            transform: scale(1.1);
+        }
+
+        /* Yükleme Ekranı */
+        .loading-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Konfeti */
+        .confetti {
+            position: absolute;
+            width: 15px; height: 15px;
+            background: #f00;
+            animation: fall 3s linear forwards;
+        }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body class="bg-gray-900">
+
+    <!-- --- OYUN SAHNESİ --- -->
+    <div id="game-container" class="relative w-full h-screen overflow-hidden">
+        
+        <!-- 1. KAMERA KATMANI -->
+        <div class="absolute inset-0 z-0 bg-black">
+            <video id="webcam" class="mirror-video opacity-60" autoplay playsinline muted></video>
+            <canvas id="output-canvas" class="absolute inset-0 w-full h-full mirror-video pointer-events-none opacity-50"></canvas>
+        </div>
+
+        <!-- 2. STADYUM KATMANI -->
+        <div class="absolute inset-0 z-10 stadium-overlay"></div>
+
+        <!-- 3. OYUN NESNELERİ -->
+        <div class="absolute inset-0 z-20 pointer-events-none">
+            <!-- Skor Tablosu -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-black/80 backdrop-blur-md border border-gray-600 rounded-xl p-2 flex justify-between items-center shadow-2xl">
+                <div class="flex flex-col items-center w-24">
+                    <span class="text-xs text-gray-400 font-bold tracking-widest">SÜRE</span>
+                    <span id="timer" class="font-sport text-4xl text-white">60</span>
+                </div>
+                <div class="flex-1 text-center border-l border-r border-gray-700 px-4">
+                    <h1 class="font-sport text-2xl text-green-400 tracking-wider">BARIŞ AKADEMİ</h1>
+                    <div class="text-xs text-gray-400">PENALTI ARENASI</div>
+                </div>
+                <div class="flex flex-col items-center w-24">
+                    <span class="text-xs text-gray-400 font-bold tracking-widest">SKOR</span>
+                    <span id="score" class="font-sport text-4xl text-yellow-400">0</span>
+                </div>
+            </div>
+
+            <!-- Kale ve Oyuncular -->
+            <div class="goal-frame">
+                <div class="goal-net"></div>
+                <div id="goalkeeper">🐰</div>
+            </div>
+
+            <div id="ball"></div>
+
+            <!-- Maç Spikeri -->
+            <div id="commentary-box" class="absolute top-[25%] left-1/2 -translate-x-1/2 w-full text-center opacity-0 transition-all duration-300 transform scale-50">
+                <span id="commentary-text" class="font-sport text-6xl sm:text-8xl text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] stroke-black" style="-webkit-text-stroke: 2px black;">
+                    GOOOOL!
+                </span>
+            </div>
+        </div>
+
+        <!-- 4. KONTROL KATMANI (Hedef Kutuları) -->
+        <div class="absolute inset-0 z-30 pointer-events-none">
+            <!-- Sol Hedef (Yüzen) -->
+            <div id="zone-left" class="trigger-zone left-4 md:left-10">
+                <div class="text-center animate-bounce">
+                    <div class="text-4xl filter drop-shadow-lg">🦶</div>
+                    <span class="font-sport text-xl text-white font-bold tracking-wider drop-shadow-md">SOLA KALDIR</span>
+                </div>
+            </div>
+
+            <!-- Sağ Hedef (Yüzen) -->
+            <div id="zone-right" class="trigger-zone right-4 md:right-10">
+                <div class="text-center animate-bounce">
+                    <div class="text-4xl filter drop-shadow-lg">🦶</div>
+                    <span class="font-sport text-xl text-white font-bold tracking-wider drop-shadow-md">SAĞA KALDIR</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- BAŞLANGIÇ EKRANI --- -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/95 backdrop-blur-lg">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-lg w-full mx-4 border-b-8 border-green-600 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 text-9xl opacity-10 rotate-12">⚽</div>
+            <h1 class="font-sport text-5xl text-gray-800 mb-2">MAÇA HAZIR MISIN?</h1>
+            <p class="text-gray-500 text-lg mb-6">Yeni Kural: Şut çekmek için ayağını kaldır!</p>
+
+            <div class="bg-gray-100 rounded-xl p-4 mb-6 text-left space-y-3">
+                <div class="flex items-center gap-3">
+                    <span class="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">1</span>
+                    <span class="text-gray-700">Kameradan geriye çekil (Ayaklarını görelim).</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</span>
+                    <span class="text-gray-700">Şut çekmek için ayağını <b>KUTULARA DOĞRU KALDIR</b>.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="bg-green-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</span>
+                    <span class="text-gray-700">Tavşan senin vurduğun köşeye atlar! (Şanslıysan gol olur)</span>
+                </div>
+            </div>
+
+            <div id="loading-bar" class="hidden flex-col items-center justify-center py-4 space-y-2">
+                <div class="w-12 h-12 rounded-full border-4 border-gray-200 border-t-green-600 animate-spin"></div>
+                <span class="text-green-600 font-bold animate-pulse text-sm">SAHA HAZIRLANIYOR...</span>
+            </div>
+
+            <button id="btn-start" onclick="initGame()" class="w-full bg-green-600 hover:bg-green-700 text-white font-sport text-3xl py-4 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 loading-pulse">
+                BAŞLAMA DÜDÜĞÜ 🏁
+            </button>
+        </div>
+    </div>
+
+    <!-- --- OYUN SONU EKRANI --- -->
+    <div id="game-over" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl text-center max-w-sm w-full mx-4 border-t-8 border-yellow-500 animate-[bounceIn_0.5s]">
+            <div class="text-6xl mb-4">🏆</div>
+            <h2 class="font-sport text-4xl text-gray-800">MAÇ BİTTİ!</h2>
+            <p class="text-gray-500 mt-2">Toplam Skorun</p>
+            <div class="font-sport text-8xl text-green-600 my-2" id="final-score">0</div>
+            
+            <button onclick="restartGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg mt-4 transition">
+                RÖVANŞ MAÇI 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- --- JAVASCRIPT --- -->
+    <script>
+        // --- AYARLAR ---
+        const CONFIG = {
+            threshold: 0.3,       // Algılama hassasiyeti (daha yüksek = daha emin)
+            cooldown: 2000,       // Şutlar arası bekleme
+            videoWidth: 640,
+            videoHeight: 480,
+            targetRatio: 0.30     // Hedef kutu genişliği (%30)
+        };
+
+        const state = {
+            isActive: false,
+            canShoot: false,
+            score: 0,
+            timer: 60,
+            detector: null,
+            lastShootTime: 0,
+            loopId: null,
+            timerInterval: null
+        };
+
+        const els = {
+            video: document.getElementById('webcam'),
+            canvas: document.getElementById('output-canvas'),
+            startScreen: document.getElementById('start-screen'),
+            loadingBar: document.getElementById('loading-bar'),
+            btnStart: document.getElementById('btn-start'),
+            gameOver: document.getElementById('game-over'),
+            ball: document.getElementById('ball'),
+            goalkeeper: document.getElementById('goalkeeper'),
+            score: document.getElementById('score'),
+            timer: document.getElementById('timer'),
+            commentaryBox: document.getElementById('commentary-box'),
+            commentaryText: document.getElementById('commentary-text'),
+            zoneLeft: document.getElementById('zone-left'),
+            zoneRight: document.getElementById('zone-right'),
+            finalScore: document.getElementById('final-score')
+        };
+
+        // --- SES MOTORU ---
+        const AudioEngine = {
+            ctx: null,
+            init: function() {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            },
+            play: function(type) {
+                if (!this.ctx) return;
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                const now = this.ctx.currentTime;
+
+                switch(type) {
+                    case 'whistle':
+                        osc.frequency.setValueAtTime(2500, now);
+                        osc.frequency.linearRampToValueAtTime(1500, now + 0.1);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                        osc.start(now); osc.stop(now + 0.6);
+                        break;
+                    case 'kick':
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(80, now);
+                        osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
+                        gain.gain.setValueAtTime(0.5, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        osc.start(now); osc.stop(now + 0.15);
+                        break;
+                    case 'goal':
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(440, now);
+                        osc.frequency.setValueAtTime(554, now + 0.1); // C#
+                        osc.frequency.setValueAtTime(659, now + 0.2); // E
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.linearRampToValueAtTime(0, now + 1.5);
+                        osc.start(now); osc.stop(now + 1.5);
+                        break;
+                    case 'miss':
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(200, now);
+                        osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                        osc.start(now); osc.stop(now + 0.3);
+                        break;
+                }
+            }
+        };
+
+        // --- BAŞLATMA ---
+        async function initGame() {
+            els.btnStart.classList.add('hidden');
+            els.loadingBar.classList.remove('hidden');
+            els.loadingBar.classList.add('flex');
+            
+            AudioEngine.init();
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                    audio: false
+                });
+                els.video.srcObject = stream;
+                await new Promise(r => els.video.onloadedmetadata = r);
+                els.video.play();
+
+                els.canvas.width = els.video.videoWidth;
+                els.canvas.height = els.video.videoHeight;
+                CONFIG.videoWidth = els.video.videoWidth;
+                CONFIG.videoHeight = els.video.videoHeight;
+
+                const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+                state.detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+
+                startMatch();
+            } catch (err) {
+                console.error(err);
+                alert("Kamera hatası! Lütfen izin verdiğinizden emin olun.");
+            }
+        }
+
+        function startMatch() {
+            els.startScreen.style.display = 'none';
+            resetGameState();
+            AudioEngine.play('whistle');
+            detectLoop();
+        }
+
+        function restartGame() {
+            els.gameOver.classList.add('hidden');
+            resetGameState();
+            AudioEngine.play('whistle');
+            if (!state.loopId) detectLoop();
+        }
+
+        function resetGameState() {
+            state.score = 0;
+            state.timer = 60;
+            state.isActive = true;
+            state.canShoot = true;
+            els.score.innerText = "0";
+            els.timer.innerText = "60";
+            
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if(!state.isActive) { clearInterval(state.timerInterval); return; }
+                state.timer--;
+                els.timer.innerText = state.timer;
+                if(state.timer <= 0) gameOver();
+            }, 1000);
+        }
+
+        function gameOver() {
+            state.isActive = false;
+            els.gameOver.classList.remove('hidden');
+            els.finalScore.innerText = state.score;
+            AudioEngine.play('whistle');
+            if (state.timerInterval) clearInterval(state.timerInterval);
+        }
+
+        // --- POZ ALGILAMA MANTIĞI ---
+        async function detectLoop() {
+            if (!state.detector) return;
+
+            const poses = await state.detector.estimatePoses(els.video);
+            
+            if (state.isActive && poses.length > 0) {
+                const kp = poses[0].keypoints;
+                const leftAnkle = kp.find(k => k.name === 'left_ankle');
+                const rightAnkle = kp.find(k => k.name === 'right_ankle');
+
+                // Şut kontrolü: İki ayağı da gönderiyoruz
+                if (state.canShoot && leftAnkle && rightAnkle) {
+                    detectKickGesture(leftAnkle, rightAnkle);
+                }
+            }
+
+            state.loopId = requestAnimationFrame(detectLoop);
+        }
+
+        function detectKickGesture(left, right) {
+            // Sadece ayaklar iyi görünüyorsa işlem yap
+            if (left.score < CONFIG.threshold || right.score < CONFIG.threshold) return;
+
+            const height = CONFIG.videoHeight;
+            const width = CONFIG.videoWidth;
+
+            // --- YENİ MANTIK: AYAK KALDIRMA ---
+            // Koordinatlar: 0 en tepe, Height en dip.
+            // Ayak YERDEYKEN Y değeri BÜYÜKTÜR (örn: 0.9 * height)
+            // Ayak HAVADAYKEN Y değeri KÜÇÜKTÜR (örn: 0.6 * height)
+            
+            // Eşikler
+            const groundLevel = height * 0.85; // Buradan aşağısı (büyük Y) "Yerde" kabul edilir
+            const kickLevel = height * 0.80;   // Buradan yukarısı (küçük Y) "Kaldırılmış" kabul edilir
+            
+            // X Ekseni (Ayna Modu olduğu için ters mantık)
+            // Sağ Köşe (Ekranın Sağı) = Kameranın Solu = Küçük X
+            // Sol Köşe (Ekranın Solu) = Kameranın Sağı = Büyük X
+            const zoneSize = width * CONFIG.targetRatio;
+
+            // 1. SOL AYAK KALKTI MI? (Ve sağ ayak yerde mi?)
+            // Sol ayak vuruşu -> Genelde Sol Köşeye (veya çapraz)
+            // Basitlik için: Hangi taraftaki kutuya yakınsa o tarafı seçelim.
+            
+            if (left.y < kickLevel && right.y > groundLevel) {
+                // Sol ayak havada, sağ ayak yerde. Bu bir şut!
+                // Hangi tarafa? X konumuna bak.
+                if (left.x > (width - zoneSize)) { // Ekranın Sol Köşesi
+                    performShoot('left');
+                }
+            }
+            
+            // 2. SAĞ AYAK KALKTI MI? (Ve sol ayak yerde mi?)
+            if (right.y < kickLevel && left.y > groundLevel) {
+                // Sağ ayak havada, sol ayak yerde.
+                if (right.x < zoneSize) { // Ekranın Sağ Köşesi
+                    performShoot('right');
+                }
+            }
+        }
+
+        // --- OYUN FİZİĞİ ---
+        function performShoot(direction) {
+            if (Date.now() - state.lastShootTime < CONFIG.cooldown) return;
+            
+            state.canShoot = false;
+            state.lastShootTime = Date.now();
+            AudioEngine.play('kick');
+
+            // 1. Bölge Efekti
+            const zone = direction === 'left' ? els.zoneLeft : els.zoneRight;
+            zone.classList.add('zone-active');
+            setTimeout(() => zone.classList.remove('zone-active'), 300);
+
+            // 2. Kaleci (Tavşan) Senin Köşene Atlar! (İstediğin özellik)
+            const keeperChoice = direction; 
+            
+            if (keeperChoice === 'left') els.goalkeeper.classList.add('dive-left');
+            else els.goalkeeper.classList.add('dive-right');
+
+            // 3. Şans Faktörü (%35 Gol)
+            // Tavşan doğru yere atlıyor ama belki "yetişemez" veya top çok hızlıdır.
+            const isLuckyGoal = Math.random() < 0.35;
+
+            if (isLuckyGoal) {
+                // Şanslı Gol: Top kaleciyi delip geçer
+                if (direction === 'left') els.ball.classList.add('kick-goal-lucky-left');
+                else els.ball.classList.add('kick-goal-lucky-right');
+                
+                // Kaleciyi biraz kısa düşürelim ki gol olduğu belli olsun
+                if (direction === 'left') {
+                    els.goalkeeper.classList.remove('dive-left');
+                    els.goalkeeper.classList.add('dive-short-left');
+                } else {
+                    els.goalkeeper.classList.remove('dive-right');
+                    els.goalkeeper.classList.add('dive-short-right');
+                }
+            } else {
+                // Kurtarış
+                if (direction === 'left') els.ball.classList.add('kick-left');
+                else els.ball.classList.add('kick-right');
+            }
+
+            // 4. Sonuç
+            setTimeout(() => {
+                if (isLuckyGoal) {
+                    handleGoal();
+                } else {
+                    handleMiss();
+                }
+                setTimeout(resetField, 1200);
+            }, 500);
+        }
+
+        function handleGoal() {
+            state.score++;
+            els.score.innerText = state.score;
+            AudioEngine.play('goal');
+            showCommentary("MÜKEMMEL GOL! ⚽", "text-green-400");
+            createConfetti();
+        }
+
+        function handleMiss() {
+            AudioEngine.play('miss');
+            showCommentary("KURTARDI! 🧤", "text-red-400");
+        }
+
+        function resetField() {
+            els.ball.className = ''; 
+            els.goalkeeper.className = '';
+            state.canShoot = true;
+        }
+
+        function showCommentary(text, colorClass) {
+            els.commentaryText.innerText = text;
+            els.commentaryText.className = `font-sport text-6xl sm:text-8xl drop-shadow-xl ${colorClass}`;
+            els.commentaryBox.classList.remove('opacity-0', 'scale-50');
+            els.commentaryBox.classList.add('opacity-100', 'scale-110');
+            setTimeout(() => {
+                els.commentaryBox.classList.remove('opacity-100', 'scale-110');
+                els.commentaryBox.classList.add('opacity-0', 'scale-50');
+            }, 1000);
+        }
+
+        function createConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#fff'];
+            for(let i=0; i<30; i++) {
+                const div = document.createElement('div');
+                div.className = 'confetti';
+                div.style.left = Math.random() * 100 + 'vw';
+                div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                div.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                document.body.appendChild(div);
+                setTimeout(() => div.remove(), 3000);
+            }
+        }
+    </script>
+</body>
+</html>
+
+
