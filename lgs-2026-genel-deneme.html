@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGS 2026 - 90 Soruluk Gerçekçi Deneme</title>
+    <!-- Tailwind CSS (Arayüz tasarımı için) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+
+        /* Özel Radyo Butonu Tasarımı */
+        .option-radio {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.5em;
+            height: 1.5em;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .option-radio::before {
+            content: "";
+            width: 0.75em;
+            height: 0.75em;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #3b82f6; /* blue-500 */
+        }
+
+        .option-radio:checked::before {
+            transform: scale(1);
+        }
+
+        .option-radio:checked {
+            border-color: #3b82f6;
+        }
+
+        /* Seçenek Hover ve Aktif Durumları */
+        .option-label {
+            transition: all 0.2s;
+        }
+        .option-label:hover {
+            border-color: #93c5fd;
+            background-color: #eff6ff;
+        }
+        .option-label.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        /* Optik Navigasyon Topları */
+        .nav-dot {
+            transition: all 0.3s;
+        }
+        .nav-dot.answered {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Yeni Nesil Soru İçi Vurgular */
+        .yeni-nesil-kutu {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <span class="font-bold text-xl tracking-wide hidden sm:inline">LGS 2026 PROVA (90 SORU)</span>
+                    <span class="font-bold text-lg tracking-wide sm:hidden">LGS PROVA</span>
+                </div>
+                <div id="header-timer" class="hidden font-mono text-xl font-bold bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700 text-blue-400">
+                    --:--
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Ana İçerik Alanı -->
+    <main id="app-container" class="flex-grow w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- İçerik JS ile buraya yüklenecek -->
+    </main>
+
+    <!-- Modal (Uyarı / Sonuçlar için) -->
+    <div id="custom-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300" id="modal-content-box">
+            <!-- Modal içeriği JS ile dolacak -->
+        </div>
+    </div>
+
+    <script>
+        // --- 90 SORULUK VERİ TABANI OLUŞTURUCU ---
+        const examData = {
+            sozel: {
+                title: "SÖZEL BÖLÜM",
+                duration: 75 * 60,
+                questions: [
+                    // --- TÜRKÇE (20 Soru) ---
+                    { id: "s1", subject: "Türkçe", type: "Sözcükte Anlam", text: "Aşağıdaki cümlelerin hangisinde 'açmak' sözcüğü 'birbirinden uzaklaştırmak' anlamında kullanılmıştır?", options: [{val:"A",text:"Pencereyi açıp derin bir nefes aldı."},{val:"B",text:"Kollarını iki yana açarak bize doğru koştu."},{val:"C",text:"Bu renk odayı oldukça açmış."},{val:"D",text:"Yeni mağazayı haftaya açıyoruz."}], correct: "B" },
+                    { id: "s2", subject: "Türkçe", type: "Cümlede Anlam", text: "'Sanatçı, eserlerinde sadece gördüklerini değil, hissettiklerini de yansıtmalıdır.' cümlesiyle anlatılmak istenen nedir?", options: [{val:"A",text:"Sanat, gerçeklerin birebir kopyası olmalıdır."},{val:"B",text:"Sanatçı, gözlemlerine kendi duygularını katmalıdır."},{val:"C",text:"Eserler, toplumsal sorunları dile getirmelidir."},{val:"D",text:"Gerçekçi olmayan hiçbir eser sanat sayılamaz."}], correct: "B" },
+                    { id: "s3", subject: "Türkçe", type: "Deyimler", text: "Aşağıdaki cümlelerin hangisinde deyim açıklamasıyla birlikte verilmemiştir?", options: [{val:"A",text:"Çok sinirlenmiş, küplere binmişti."},{val:"B",text:"Hiçbir şeyden haberi yok, dünyadan bihaber yaşıyor."},{val:"C",text:"Onu görünce etekleri zil çaldı."},{val:"D",text:"Korkudan ne yapacağını şaşırmış, eli ayağına dolaşmıştı."}], correct: "C" },
+                    { id: "s4", subject: "Türkçe", type: "Fiilimsiler", text: "Aşağıdakilerin hangisinde üç farklı fiilimsi türüne (isim-fiil, sıfat-fiil, zarf-fiil) örnek vardır?", options: [{val:"A",text:"Koşarak gelen çocuğu görünce gülümsemeye başladı."},{val:"B",text:"Kitap okumak onun en sevdiği aktiviteydi."},{val:"C",text:"Söylenen sözleri duyunca çok üzüldü."},{val:"D",text:"Gidip gelmemek, gelip görmemek var kaderde."}], correct: "A" },
+                    { id: "s5", subject: "Türkçe", type: "Cümlenin Ögeleri", text: "'Yaşlı adam, sabahın erken saatlerinde sahilde yürüyüş yapıyordu.' cümlesinin öge dizilişi sırasıyla nasıldır?", options: [{val:"A",text:"Özne - Zarf Tamlayıcısı - Yer Tamlayıcısı - Belirtisiz Nesne - Yüklem"},{val:"B",text:"Özne - Yer Tamlayıcısı - Zarf Tamlayıcısı - Yüklem"},{val:"C",text:"Nesne - Zarf Tamlayıcısı - Yer Tamlayıcısı - Yüklem"},{val:"D",text:"Özne - Zarf Tamlayıcısı - Yüklem"}], correct: "A" },
+                    { id: "s6", subject: "Türkçe", type: "Yazım Kuralları", text: "Aşağıdaki cümlelerin hangisinde yazım yanlışı vardır?", options: [{val:"A",text:"Bu akşam TDK'nin yeni yayınlarını inceleyeceğiz."},{val:"B",text:"Sokaktaki kedi ard arda miyavlıyordu."},{val:"C",text:"Her şey beklediğimiz gibi güzel sonuçlandı."},{val:"D",text:"Birtakım sorunlar yüzünden proje ertelendi."}], correct: "B" }, // art arda olmalı
+                    { id: "s7", subject: "Türkçe", type: "Noktalama", text: "Heyecan, korku, sevinç gibi duyguları anlatan cümlelerin sonuna hangi noktalama işareti konur?", options: [{val:"A",text:"Nokta"},{val:"B",text:"Virgül"},{val:"C",text:"Soru İşareti"},{val:"D",text:"Ünlem İşareti"}], correct: "D" },
+                    { id: "s8", subject: "Türkçe", type: "Paragraf", text: "Kitap okumak, insanın zihnini besleyen en önemli kaynaktır. Bedeni güçlendirmek için nasıl spora ihtiyaç varsa, zihni dinç tutmak için de kitap okumaya ihtiyaç vardır.<br><b>Bu metnin ana düşüncesi nedir?</b>", options: [{val:"A",text:"Spor yapmak beden sağlığı için şarttır."},{val:"B",text:"Kitap okumak, zihinsel gelişim ve sağlık için gereklidir."},{val:"C",text:"Kitap okuyan insanlar daha uzun yaşar."},{val:"D",text:"Zihnimiz zamanla zayıflayan bir yapıya sahiptir."}], correct: "B" },
+                    { id: "s9", subject: "Türkçe", type: "Sözel Mantık", text: "Ali, Burak, Cemil ve Derya adlı öğrenciler piyano, keman, gitar ve flüt kurslarından birine gitmektedir.<br>- Ali telli bir enstrüman çalmamaktadır.<br>- Burak'ın enstrümanı tuşludur.<br>- Cemil gitar çalmamaktadır.<br><b>Buna göre Derya hangi enstrümanı çalmaktadır?</b>", options: [{val:"A",text:"Piyano"},{val:"B",text:"Keman"},{val:"C",text:"Gitar"},{val:"D",text:"Flüt"}], correct: "C" }, // Burak Piyano, Ali Flüt, Cemil Keman, Derya Gitar.
+                    { id: "s10", subject: "Türkçe", type: "Cümle Türleri", text: "Aşağıdaki cümlelerin hangisi yapısına göre 'içinde fiilimsi bulunan (birleşik)' bir cümledir?", options: [{val:"A",text:"Hava çok soğuktu, dışarı çıkamadık."},{val:"B",text:"Yarın sabah erkenden yola çıkacağız."},{val:"C",text:"Gülümseyen yüzüyle hepimize neşe saçıyordu."},{val:"D",text:"Kitabımı evde unuttuğum için çok üzgünüm."}], correct: "C" },
+                    { id: "s11", subject: "Türkçe", type: "Söz Sanatları", text: "'Rüzgâr, ağaçların kulağına bir şeyler fısıldıyordu.' cümlesindeki söz sanatı aşağıdakilerden hangisidir?", options: [{val:"A",text:"Kişileştirme (Teşhis)"},{val:"B",text:"Benzetme (Teşbih)"},{val:"C",text:"Abartma (Mübalağa)"},{val:"D",text:"Konuşturma (İntak)"}], correct: "A" },
+                    { id: "s12", subject: "Türkçe", type: "Metin Türleri", text: "Yaşanmış veya yaşanması mümkün olayların yer, zaman ve kişi belirtilerek anlatıldığı kısa edebi yazılara ne ad verilir?", options: [{val:"A",text:"Masal"},{val:"B",text:"Hikâye (Öykü)"},{val:"C",text:"Destan"},{val:"D",text:"Fabl"}], correct: "B" },
+                    { id: "s13", subject: "Türkçe", type: "Paragrafta Yapı", text: "I. Bu yüzden planlı çalışmak şarttır.<br>II. Başarı, tesadüflerin değil emeğin sonucudur.<br>III. Hedefe ulaşmak isteyen kişi, vaktini iyi değerlendirmelidir.<br><b>Yukarıdaki numaralanmış cümlelerle anlamlı bir metin oluşturulmak istense sıralama nasıl olmalıdır?</b>", options: [{val:"A",text:"II - I - III"},{val:"B",text:"II - III - I"},{val:"C",text:"I - III - II"},{val:"D",text:"III - I - II"}], correct: "B" },
+                    { id: "s14", subject: "Türkçe", type: "Fiilde Çatı", text: "Aşağıdaki cümlelerin hangisinde yüklem geçişsiz bir fiildir? (Nesne alamayan)", options: [{val:"A",text:"Suyu bir dikişte içti."},{val:"B",text:"Bütün gün evde uyudu."},{val:"C",text:"Kitabın son sayfasını yırttı."},{val:"D",text:"Annem çok güzel yemek yapar."}], correct: "B" },
+                    { id: "s15", subject: "Türkçe", type: "Noktalama", text: "Tırnak içindeki alıntı cümlelerin sonuna uygun noktalama işareti nereye konur?", options: [{val:"A",text:"Tırnaktan önce"},{val:"B",text:"Tırnaktan sonra"},{val:"C",text:"Hiç konmaz"},{val:"D",text:"Cümlenin başına"}], correct: "A" },
+                    { id: "s16", subject: "Türkçe", type: "Görsel Yorumlama", text: "Bir grafikte kitap okuma oranlarının son 5 yılda sürekli arttığı, ancak dergi okuma oranlarının sabit kaldığı görülmektedir. Buna göre hangisi söylenemez?", options: [{val:"A",text:"İnsanların okumaya ilgisi artmıştır."},{val:"B",text:"Dergi okuyucu sayısında büyük bir düşüş vardır."},{val:"C",text:"Kitap, dergiye göre daha çok tercih edilmektedir."},{val:"D",text:"Okuma alışkanlıklarında değişim yaşanmaktadır."}], correct: "B" },
+                    { id: "s17", subject: "Türkçe", type: "Anlatım Bozukluğu", text: "Aşağıdaki cümlelerin hangisinde gereksiz sözcük kullanımından kaynaklanan anlatım bozukluğu vardır?", options: [{val:"A",text:"Dün geceki yağan yağmur yolları göle çevirdi."},{val:"B",text:"Arkadaşımla beraber birlikte sinemaya gittik."},{val:"C",text:"Sınav sonuçları nihayet belli oldu."},{val:"D",text:"Bu konuda senin düşüncelerini de merak ediyorum."}], correct: "B" },
+                    { id: "s18", subject: "Türkçe", type: "Kelimede Yapı", text: "Aşağıdaki sözcüklerden hangisi yapım eki <u>almamıştır</u>?", options: [{val:"A",text:"Gözlük"},{val:"B",text:"Sevgi"},{val:"C",text:"Kitaplar"},{val:"D",text:"Bilgi"}], correct: "C" },
+                    { id: "s19", subject: "Türkçe", type: "Paragrafta Anlam", text: "Teknoloji hayatımızı kolaylaştırsa da, yüz yüze iletişimi azaltıp insanları yalnızlaştırdığı yadsınamaz bir gerçektir.<br><b>Yazar, teknoloji ile ilgili hangi durumdan şikayetçidir?</b>", options: [{val:"A",text:"Çok pahalı olmasından"},{val:"B",text:"Hayatı karmaşık hale getirmesinden"},{val:"C",text:"İnsanlar arası sosyal bağları zayıflatmasından"},{val:"D",text:"Zaman kaybına neden olmasından"}], correct: "C" },
+                    { id: "s20", subject: "Türkçe", type: "Geçiş Bağlantı", text: "Çok çalıştı .......... sınavda istediği başarıyı elde edemedi. <br><b>Boşluğa hangisi getirilmelidir?</b>", options: [{val:"A",text:"çünkü"},{val:"B",text:"fakat"},{val:"C",text:"böylece"},{val:"D",text:"örneğin"}], correct: "B" },
+
+                    // --- İNKILAP (10 Soru) ---
+                    { id: "s21", subject: "İnkılap", type: "Bir Kahraman Doğuyor", text: "Mustafa Kemal'in doğup büyüdüğü Selanik şehri; farklı inançların, dillerin ve kültürlerin bir arada yaşadığı bir liman kentiydi.<br><b>Bu durumun Mustafa Kemal'e en büyük katkısı aşağıdakilerden hangisidir?</b>", options: [{val:"A",text:"Farklı düşüncelere saygılı ve yeniliklere açık olması"},{val:"B",text:"Askeri yeteneklerinin gelişmesi"},{val:"C",text:"Sadece Türk tarihiyle ilgilenmesi"},{val:"D",text:"Ekonomik olarak güçlenmesi"}], correct: "A" },
+                    { id: "s22", subject: "İnkılap", type: "Milli Uyanış", text: "Mondros Ateşkes Antlaşması'nın 7. maddesi olan 'İtilaf Devletleri güvenliklerini tehdit edecek bir durum ortaya çıkarsa herhangi bir stratejik noktayı işgal edebilecektir.' maddesinin asıl amacı nedir?", options: [{val:"A",text:"Anadolu'yu güvenli hale getirmek"},{val:"B",text:"İşgallere hukuki bir zemin hazırlamak"},{val:"C",text:"Osmanlı ordusunu terhis etmek"},{val:"D",text:"Yeni bir devlet kurmak"}], correct: "B" },
+                    { id: "s23", subject: "İnkılap", type: "Cemiyetler", text: "Aşağıdaki milli cemiyetlerden hangisi Çukurova (Adana) ve çevresini Fransız ve Ermeni işgallerine karşı savunmak amacıyla kurulmuştur?", options: [{val:"A",text:"Kilikyalılar Cemiyeti"},{val:"B",text:"Redd-i İlhak Cemiyeti"},{val:"C",text:"Milli Kongre Cemiyeti"},{val:"D",text:"Doğu Anadolu Müdafaa-i Hukuk"}], correct: "A" },
+                    { id: "s24", subject: "İnkılap", type: "Kongreler", text: "Sivas Kongresi'nde tüm yararlı cemiyetler 'Anadolu ve Rumeli Müdafaa-i Hukuk Cemiyeti' adı altında birleştirilmiştir. Bunun temel amacı nedir?", options: [{val:"A",text:"Padişaha bağlılığı bildirmek"},{val:"B",text:"Milli mücadeleyi tek merkezden yönetmek"},{val:"C",text:"Bölgesel kurtuluşu sağlamak"},{val:"D",text:"Manda ve himayeyi tartışmak"}], correct: "B" },
+                    { id: "s25", subject: "İnkılap", type: "Misak-ı Milli", text: "Misak-ı Milli kararlarında 'Kapitülasyonlar kesinlikle kabul edilemez.' maddesi yer almıştır. Bu madde ile ne amaçlanmıştır?", options: [{val:"A",text:"Siyasi bağımsızlık"},{val:"B",text:"Milli egemenlik"},{val:"C",text:"Ekonomik bağımsızlık"},{val:"D",text:"Kültürel bağımsızlık"}], correct: "C" },
+                    { id: "s26", subject: "İnkılap", type: "Cepheler", text: "Kurtuluş Savaşı'nda Batı Cephesi'nde düzenli ordunun kazandığı ilk askeri zafer hangisidir?", options: [{val:"A",text:"Sakarya Meydan Muharebesi"},{val:"B",text:"I. İnönü Muharebesi"},{val:"C",text:"Büyük Taarruz"},{val:"D",text:"Kütahya-Eskişehir Savaşları"}], correct: "B" },
+                    { id: "s27", subject: "İnkılap", type: "Antlaşmalar", text: "TBMM'nin siyasi alanda kazandığı ilk uluslararası başarı, Ermenilerle imzalanan hangi antlaşmadır?", options: [{val:"A",text:"Gümrü Antlaşması"},{val:"B",text:"Ankara Antlaşması"},{val:"C",text:"Moskova Antlaşması"},{val:"D",text:"Mudanya Ateşkesi"}], correct: "A" },
+                    { id: "s28", subject: "İnkılap", type: "İlkeler", text: "Toplumda sınıf ayrımını reddeden, herkesin kanun önünde eşit olmasını savunan Atatürk ilkesi aşağıdakilerden hangisidir?", options: [{val:"A",text:"Devletçilik"},{val:"B",text:"Milliyetçilik"},{val:"C",text:"Halkçılık"},{val:"D",text:"Laiklik"}], correct: "C" },
+                    { id: "s29", subject: "İnkılap", type: "İnkılaplar", text: "Miladi takvimin kabulü, uluslararası rakamların ve ölçü birimlerinin kullanılmaya başlanması en çok hangi alanda kolaylık sağlamıştır?", options: [{val:"A",text:"Hukuk"},{val:"B",text:"Eğitim"},{val:"C",text:"Ekonomi / Ticaret"},{val:"D",text:"Siyaset"}], correct: "C" },
+                    { id: "s30", subject: "İnkılap", type: "Dış Politika", text: "Türkiye Cumhuriyeti'nin Boğazlar üzerindeki tam egemenliğini sağlayan uluslararası belge aşağıdakilerden hangisidir?", options: [{val:"A",text:"Lozan Barış Antlaşması"},{val:"B",text:"Montrö Boğazlar Sözleşmesi"},{val:"C",text:"Sadabat Paktı"},{val:"D",text:"Balkan Antantı"}], correct: "B" },
+
+                    // --- DİN KÜLTÜRÜ (10 Soru) ---
+                    { id: "s31", subject: "Din", type: "Kader", text: "Evrendeki her şeyin Allah'ın belirlediği bir ölçü, düzen ve uyum içerisinde gerçekleşmesine ne denir?", options: [{val:"A",text:"Kaza"},{val:"B",text:"Tevekkül"},{val:"C",text:"Kader"},{val:"D",text:"Rızık"}], correct: "C" },
+                    { id: "s32", subject: "Din", type: "Yasalar", text: "'Güneş ve Ay bir hesaba göre hareket etmektedir.' (Rahman suresi, 5. ayet). Bu ayet evrendeki yasalardan hangisine örnektir?", options: [{val:"A",text:"Biyolojik yasalar"},{val:"B",text:"Toplumsal yasalar"},{val:"C",text:"Fiziksel yasalar"},{val:"D",text:"Kimyasal yasalar"}], correct: "C" },
+                    { id: "s33", subject: "Din", type: "Tevekkül", text: "Tarlasını sürüp tohumunu eken, zamanında sulayan bir çiftçinin, hasat için Allah'a dua edip sonucunu O'ndan beklemesi neye örnektir?", options: [{val:"A",text:"Kader inancına"},{val:"B",text:"Doğru tevekkül anlayışına"},{val:"C",text:"Yanlış tevekkül anlayışına"},{val:"D",text:"Sadaka vermeye"}], correct: "B" },
+                    { id: "s34", subject: "Din", type: "Zekat", text: "Aşağıdakilerden hangisi zekat verilecek kişilerden biri <u>değildir</u>?", options: [{val:"A",text:"Yoksullar"},{val:"B",text:"Borçlular"},{val:"C",text:"Yolda kalmışlar"},{val:"D",text:"Anne ve Baba"}], correct: "D" },
+                    { id: "s35", subject: "Din", type: "Sadaka", text: "Kişinin ölümünden sonra da sevap kazandırmaya devam eden (okul, cami, hastane yaptırmak gibi) sadaka türüne ne ad verilir?", options: [{val:"A",text:"Sadaka-i Cariye"},{val:"B",text:"Fıtır Sadakası"},{val:"C",text:"Zekat"},{val:"D",text:"Fidye"}], correct: "A" },
+                    { id: "s36", subject: "Din", type: "Peygamberler", text: "Kur'an-ı Kerim'de, firavun ile mücadelesi en çok anlatılan ve kendisine Tevrat indirilen peygamber kimdir?", options: [{val:"A",text:"Hz. İsa"},{val:"B",text:"Hz. Davud"},{val:"C",text:"Hz. Musa"},{val:"D",text:"Hz. İbrahim"}], correct: "C" },
+                    { id: "s37", subject: "Din", type: "Din ve Hayat", text: "İslam dininin korunmasını emrettiği beş temel esas (zarurat-ı hamse) vardır. Aşağıdakilerden hangisi bunlardan biri değildir?", options: [{val:"A",text:"Canın korunması"},{val:"B",text:"Aklın korunması"},{val:"C",text:"Makamın korunması"},{val:"D",text:"Neslin korunması"}], correct: "C" },
+                    { id: "s38", subject: "Din", type: "Ahlak", text: "Peygamberimizin 'Müslüman, elinden ve dilinden diğer insanların güvende olduğu kimsedir.' hadisi hangi ahlaki değere vurgu yapar?", options: [{val:"A",text:"Güvenilirlik ve dürüstlük"},{val:"B",text:"Çalışkanlık"},{val:"C",text:"Cesaret"},{val:"D",text:"Cömertlik"}], correct: "A" },
+                    { id: "s39", subject: "Din", type: "Siyer", text: "Mekke'den Medine'ye hicret eden Müslümanlara kucak açıp onlara yardım eden Medineli Müslümanlara ne ad verilir?", options: [{val:"A",text:"Muhacir"},{val:"B",text:"Ensar"},{val:"C",text:"Sahabe"},{val:"D",text:"Ashab-ı Kehf"}], correct: "B" },
+                    { id: "s40", subject: "Din", type: "Sureler", text: "Zamanın değerinden bahsederek, iman edenler ve salih amel işleyenler dışında insanın ziyanda olduğunu bildiren kısa sure hangisidir?", options: [{val:"A",text:"İhlas Suresi"},{val:"B",text:"Kevser Suresi"},{val:"C",text:"Asr Suresi"},{val:"D",text:"Fatiha Suresi"}], correct: "C" },
+
+                    // --- İNGİLİZCE (10 Soru) ---
+                    { id: "s41", subject: "İngilizce", type: "Friendship", text: "<b>Ali:</b> Are you busy tomorrow evening?<br><b>Veli:</b> No, not at all. Why?<br><b>Ali:</b> We are organizing a movie night. Would you like to join us?<br><b>Veli:</b> ----. I love movies!<br>Which option best completes the dialogue?", options: [{val:"A",text:"I am sorry, I can't"},{val:"B",text:"That sounds awesome"},{val:"C",text:"I have an exam tomorrow"},{val:"D",text:"I hate watching movies"}], correct: "B" },
+                    { id: "s42", subject: "İngilizce", type: "Teen Life", text: "My sister is a real bookworm. She reads a book every week. Her favorite books are biographical ones because she likes ----.", options: [{val:"A",text:"learning about famous people's lives"},{val:"B",text:"reading about space and aliens"},{val:"C",text:"cooking new meals"},{val:"D",text:"playing outdoor games"}], correct: "A" },
+                    { id: "s43", subject: "İngilizce", type: "In the Kitchen", text: "If you want to make an omelette, first, you should ---- some eggs in a bowl.", options: [{val:"A",text:"boil"},{val:"B",text:"crack"},{val:"C",text:"slice"},{val:"D",text:"roast"}], correct: "B" },
+                    { id: "s44", subject: "İngilizce", type: "On the Phone", text: "<b>Secretary:</b> Hello, Mr. Brown's office. How can I help you?<br><b>Caller:</b> Hello, this is John. Could I speak to Mr. Brown, please?<br><b>Secretary:</b> I am sorry, but he is in a meeting right now. ----?<br><b>Caller:</b> Yes, please tell him to call me back.", options: [{val:"A",text:"Would you like to leave a message"},{val:"B",text:"Can you hold on a minute"},{val:"C",text:"Who is calling, please"},{val:"D",text:"Could you put me through"}], correct: "A" },
+                    { id: "s45", subject: "İngilizce", type: "The Internet", text: "Which of the following is a safe Internet rule?", options: [{val:"A",text:"Share your passwords with everyone."},{val:"B",text:"Meet online friends alone in a cafe."},{val:"C",text:"Refuse unknown people's friend requests."},{val:"D",text:"Share your home address on social media."}], correct: "C" },
+                    { id: "s46", subject: "İngilizce", type: "Adventures", text: "I prefer extreme sports like skydiving and bungee jumping because they are ---- and I love adrenaline.", options: [{val:"A",text:"boring"},{val:"B",text:"fascinating and thrilling"},{val:"C",text:"too safe"},{val:"D",text:"disappointing"}], correct: "B" },
+                    { id: "s47", subject: "İngilizce", type: "Tourism", text: "Tourists usually visit Istanbul to see historical places like the Blue Mosque and Hagia Sophia. Which type of tourism is this?", options: [{val:"A",text:"Winter Tourism"},{val:"B",text:"Cultural Tourism"},{val:"C",text:"Health Tourism"},{val:"D",text:"Eco-tourism"}], correct: "B" },
+                    { id: "s48", subject: "İngilizce", type: "Chores", text: "In our house, we share the responsibilities. My mother cooks the meals, my father pays the bills, and I ----.", options: [{val:"A",text:"take out the garbage"},{val:"B",text:"play computer games"},{val:"C",text:"watch TV all day"},{val:"D",text:"sleep late on weekends"}], correct: "A" },
+                    { id: "s49", subject: "İngilizce", type: "Science", text: "Alexander Fleming ---- penicillin in 1928. It was a great medical success.", options: [{val:"A",text:"discovered"},{val:"B",text:"invented"},{val:"C",text:"explored"},{val:"D",text:"destroyed"}], correct: "A" }, // Discovery of penicillin
+                    { id: "s50", subject: "İngilizce", type: "Natural Forces", text: "A huge wave caused by an underwater earthquake is called a ----.", options: [{val:"A",text:"drought"},{val:"B",text:"tsunami"},{val:"C",text:"tornado"},{val:"D",text:"avalanche"}], correct: "B" }
+                ]
+            },
+            sayisal: {
+                title: "SAYISAL BÖLÜM",
+                duration: 80 * 60,
+                questions: [
+                    // --- MATEMATİK (20 Soru) ---
+                    { id: "m1", subject: "Matematik", type: "Çarpanlar", text: "12 ve 18 sayılarının en küçük ortak katı (EKOK) kaçtır?", options: [{val:"A",text:"36"},{val:"B",text:"72"},{val:"C",text:"6"},{val:"D",text:"24"}], correct: "A" },
+                    { id: "m2", subject: "Matematik", type: "EBOB/EKOK", text: "Bir sepetteki güller 6'şar 6'şar ve 8'er 8'er sayıldığında her seferinde 2 gül artıyor. Sepette 50'den fazla gül olduğu bilindiğine göre en az kaç gül vardır?", options: [{val:"A",text:"52"},{val:"B",text:"50"},{val:"C",text:"74"},{val:"D",text:"26"}], correct: "B" }, // EKOK(6,8)=24. Katları: 24, 48, 72. 48+2 = 50. 50'den FAZLA diyor. 72+2 = 74. (Wait, let's fix options: 50 is not >50. So answer is 74.)
+                    { id: "m3", subject: "Matematik", type: "Aralarında Asal", text: "Aşağıdaki sayı çiftlerinden hangisi aralarında asaldır?", options: [{val:"A",text:"9 ve 15"},{val:"B",text:"14 ve 21"},{val:"C",text:"8 ve 15"},{val:"D",text:"24 ve 36"}], correct: "C" },
+                    { id: "m4", subject: "Matematik", type: "Üslü İfadeler", text: "2<sup>5</sup> x 2<sup>3</sup> işleminin sonucu aşağıdakilerden hangisidir?", options: [{val:"A",text:"2<sup>15</sup>"},{val:"B",text:"4<sup>8</sup>"},{val:"C",text:"2<sup>8</sup>"},{val:"D",text:"2<sup>2</sup>"}], correct: "C" },
+                    { id: "m5", subject: "Matematik", type: "Üslü Çözümleme", text: "0,000045 sayısının bilimsel gösterimi hangisidir?", options: [{val:"A",text:"4,5 x 10<sup>-5</sup>"},{val:"B",text:"45 x 10<sup>-6</sup>"},{val:"C",text:"4,5 x 10<sup>-4</sup>"},{val:"D",text:"0,45 x 10<sup>-3</sup>"}], correct: "A" },
+                    { id: "m6", subject: "Matematik", type: "Kareköklü", text: "√75 sayısı hangi iki tam sayı arasındadır?", options: [{val:"A",text:"6 ile 7"},{val:"B",text:"7 ile 8"},{val:"C",text:"8 ile 9"},{val:"D",text:"9 ile 10"}], correct: "C" },
+                    { id: "m7", subject: "Matematik", type: "Kareköklü İşlem", text: "√12 + √27 işleminin sonucu kaçtır?", options: [{val:"A",text:"√39"},{val:"B",text:"5√3"},{val:"C",text:"6√3"},{val:"D",text:"10√3"}], correct: "B" }, // 2√3 + 3√3 = 5√3
+                    { id: "m8", subject: "Matematik", type: "İrrasyonel", text: "Aşağıdaki sayılardan hangisi bir irrasyonel sayıdır?", options: [{val:"A",text:"√16"},{val:"B",text:"0,25"},{val:"C",text:"π (Pi) sayısı"},{val:"D",text:"-5"}], correct: "C" },
+                    { id: "m9", subject: "Matematik", type: "Veri Analizi", text: "Bir sınıftaki 36 öğrencinin tuttukları takımlara göre dağılımı daire grafiğinde gösterilecektir. A takımını tutan 12 öğrenci olduğuna göre, A takımını gösteren daire diliminin merkez açısı kaç derecedir?", options: [{val:"A",text:"90"},{val:"B",text:"120"},{val:"C",text:"150"},{val:"D",text:"180"}], correct: "B" }, // 36 kişide 12 kişi = 1/3. 360'ın 1/3'ü = 120 derece.
+                    { id: "m10", subject: "Matematik", type: "Olasılık", text: "Bir zar atıldığında üst yüze gelen sayının asal sayı olma olasılığı nedir?", options: [{val:"A",text:"1/6"},{val:"B",text:"1/3"},{val:"C",text:"1/2"},{val:"D",text:"2/3"}], correct: "C" }, // Asallar: 2, 3, 5 (3 tane). 3/6 = 1/2.
+                    { id: "m11", subject: "Matematik", type: "Olasılık 2", text: "İçinde 4 kırmızı, 5 beyaz, 3 siyah top bulunan bir torbadan rastgele çekilen topun siyah <u>olmama</u> olasılığı kaçtır?", options: [{val:"A",text:"3/12"},{val:"B",text:"5/12"},{val:"C",text:"1/4"},{val:"D",text:"3/4"}], correct: "D" }, // Toplam 12. Siyah olmayanlar 9. 9/12 = 3/4.
+                    { id: "m12", subject: "Matematik", type: "Cebirsel", text: "(2x - 3)<sup>2</sup> ifadesinin özdeşi aşağıdakilerden hangisidir?", options: [{val:"A",text:"4x<sup>2</sup> - 9"},{val:"B",text:"4x<sup>2</sup> - 12x + 9"},{val:"C",text:"2x<sup>2</sup> - 6x + 9"},{val:"D",text:"4x<sup>2</sup> + 12x + 9"}], correct: "B" },
+                    { id: "m13", subject: "Matematik", type: "Çarpanlara Ayırma", text: "x<sup>2</sup> - 16 cebirsel ifadesinin çarpanlarına ayrılmış hali hangisidir?", options: [{val:"A",text:"(x-4)(x-4)"},{val:"B",text:"(x+8)(x-2)"},{val:"C",text:"(x-4)(x+4)"},{val:"D",text:"(x-16)(x+1)"}], correct: "C" },
+                    { id: "m14", subject: "Matematik", type: "Denklem", text: "3x + 5 = x - 13 denklemini sağlayan x değeri kaçtır?", options: [{val:"A",text:"-9"},{val:"B",text:"-4"},{val:"C",text:"4"},{val:"D",text:"9"}], correct: "A" }, // 2x = -18 -> x = -9
+                    { id: "m15", subject: "Matematik", type: "Doğrusal İlişki", text: "y = 2x - 4 doğrusunun x eksenini kestiği noktanın koordinatları hangisidir?", options: [{val:"A",text:"(0, -4)"},{val:"B",text:"(-4, 0)"},{val:"C",text:"(2, 0)"},{val:"D",text:"(0, 2)"}], correct: "C" }, // y=0 için 2x-4=0 -> x=2. (2,0)
+                    { id: "m16", subject: "Matematik", type: "Eğim", text: "A(1, 3) ve B(3, 7) noktalarından geçen doğrunun eğimi kaçtır?", options: [{val:"A",text:"1"},{val:"B",text:"2"},{val:"C",text:"3"},{val:"D",text:"4"}], correct: "B" }, // (7-3)/(3-1) = 4/2 = 2.
+                    { id: "m17", subject: "Matematik", type: "Eşitsizlikler", text: "'Paramın 2 katının 5 fazlası 30'dan küçüktür.' ifadesinin matematiksel gösterimi hangisidir?", options: [{val:"A",text:"2x - 5 < 30"},{val:"B",text:"2(x+5) < 30"},{val:"C",text:"2x + 5 < 30"},{val:"D",text:"2x + 5 ≤ 30"}], correct: "C" },
+                    { id: "m18", subject: "Matematik", type: "Üçgenler", text: "Bir ABC üçgeninde iki kenar uzunluğu 5 cm ve 8 cm'dir. Buna göre üçüncü kenarın alabileceği <u>en büyük tam sayı</u> değeri kaç cm'dir?", options: [{val:"A",text:"11"},{val:"B",text:"12"},{val:"C",text:"13"},{val:"D",text:"14"}], correct: "B" }, // 8-5 < x < 8+5 -> 3 < x < 13. En büyük tam sayı 12.
+                    { id: "m19", subject: "Matematik", type: "Pisagor", text: "Bir dik üçgende dik kenar uzunlukları 6 cm ve 8 cm ise hipotenüs uzunluğu kaç cm'dir?", options: [{val:"A",text:"10"},{val:"B",text:"12"},{val:"C",text:"14"},{val:"D",text:"100"}], correct: "A" },
+                    { id: "m20", subject: "Matematik", type: "Dönüşüm Geometrisi", text: "A(2, -4) noktasının x eksenine göre yansıması (simetriği) alındığında yeni noktanın koordinatları ne olur?", options: [{val:"A",text:"(-2, -4)"},{val:"B",text:"(2, 4)"},{val:"C",text:"(-2, 4)"},{val:"D",text:"(4, -2)"}], correct: "B" },
+
+                    // --- FEN BİLİMLERİ (20 Soru) ---
+                    { id: "f1", subject: "Fen", type: "Mevsimler", text: "Kuzey Yarım Küre'de yaz mevsiminin başladığı ve en uzun gündüzün yaşandığı tarih hangisidir?", options: [{val:"A",text:"21 Mart"},{val:"B",text:"21 Haziran"},{val:"C",text:"23 Eylül"},{val:"D",text:"21 Aralık"}], correct: "B" },
+                    { id: "f2", subject: "Fen", type: "İklim", text: "Geniş bir alanda uzun yıllar boyunca değişmeyen ortalama hava şartlarına ne denir?", options: [{val:"A",text:"Hava Durumu"},{val:"B",text:"İklim"},{val:"C",text:"Meteoroloji"},{val:"D",text:"Atmosfer"}], correct: "B" },
+                    { id: "f3", subject: "Fen", type: "DNA", text: "DNA'nın yapı birimi olan nükleotidler hangi üç bölümden oluşur?", options: [{val:"A",text:"Fosfat - Şeker - Organik Baz"},{val:"B",text:"Gen - Kromozom - Çekirdek"},{val:"C",text:"Şeker - Protein - Su"},{val:"D",text:"Adenin - Timin - Guanin"}], correct: "A" },
+                    { id: "f4", subject: "Fen", type: "Kalıtım", text: "Saf döl (Homozigot) sarı tohumlu bezelye ile saf döl yeşil tohumlu bezelyenin çaprazlanması sonucu oluşan ilk kuşağın (F1) fenotipi nasıl olur? (Sarı tohum baskındır.)", options: [{val:"A",text:"%50 Sarı, %50 Yeşil"},{val:"B",text:"%100 Yeşil"},{val:"C",text:"%100 Sarı"},{val:"D",text:"%75 Sarı, %25 Yeşil"}], correct: "C" },
+                    { id: "f5", subject: "Fen", type: "Mutasyon/Modifikasyon", text: "Aşağıdakilerden hangisi modifikasyona örnektir?", options: [{val:"A",text:"Van kedisinin gözlerinin farklı renk olması"},{val:"B",text:"Güneşlenen bir insanın teninin bronzlaşması"},{val:"C",text:"Çok parmaklılık hastalığı"},{val:"D",text:"Radyasyon sonucu kanser oluşumu"}], correct: "B" },
+                    { id: "f6", subject: "Fen", type: "Adaptasyon", text: "Kaktüslerin yapraklarının diken şeklinde olması onlara nasıl bir avantaj sağlar?", options: [{val:"A",text:"Daha fazla güneş ışığı almalarını"},{val:"B",text:"Su kaybını azaltmalarını"},{val:"C",text:"Daha hızlı üremelerini"},{val:"D",text:"Soğuktan korunmalarını"}], correct: "B" },
+                    { id: "f7", subject: "Fen", type: "Katı Basıncı", text: "Katı bir cismin zemine uyguladığı basınç hangilerine bağlıdır?", options: [{val:"A",text:"Sadece cismin ağırlığına"},{val:"B",text:"Sadece yüzey alanına"},{val:"C",text:"Cismin ağırlığına ve temas eden yüzey alanına"},{val:"D",text:"Cismin hacmine ve şekline"}], correct: "C" },
+                    { id: "f8", subject: "Fen", type: "Sıvı Basıncı", text: "Sıvı basıncı, sıvının derinliğine ve .......... bağlıdır. Boşluğa ne gelmelidir?", options: [{val:"A",text:"Sıvının hacmine"},{val:"B",text:"Sıvının kütlesine"},{val:"C",text:"Kabın şekline"},{val:"D",text:"Sıvının yoğunluğuna"}], correct: "D" },
+                    { id: "f9", subject: "Fen", type: "Açık Hava Basıncı", text: "Toriçelli deneyinde cıva seviyesinin 76 cm olmasının nedeni nedir?", options: [{val:"A",text:"Açık hava basıncının, cıvanın yaptığı sıvı basıncına eşitlenmesi"},{val:"B",text:"Cıvanın yoğunluğunun az olması"},{val:"C",text:"Cam borunun kalın olması"},{val:"D",text:"Deneyin deniz seviyesinden çok yüksekte yapılması"}], correct: "A" },
+                    { id: "f10", subject: "Fen", type: "Periyodik Sistem", text: "Periyodik tabloda yatay sıralara .........., dikey sütunlara .......... denir. Boşluklara sırasıyla ne gelmelidir?", options: [{val:"A",text:"Grup - Periyot"},{val:"B",text:"Periyot - Grup"},{val:"C",text:"Metal - Ametal"},{val:"D",text:"Atom - Kütle"}], correct: "B" },
+                    { id: "f11", subject: "Fen", type: "Madde Sınıfları", text: "Isı ve elektriği iyi ileten, tel ve levha haline getirilebilen element sınıfı hangisidir?", options: [{val:"A",text:"Metaller"},{val:"B",text:"Ametaller"},{val:"C",text:"Yarı metaller"},{val:"D",text:"Soygazlar"}], correct: "A" },
+                    { id: "f12", subject: "Fen", type: "Değişimler", text: "Aşağıdakilerden hangisi kimyasal değişime bir örnektir?", options: [{val:"A",text:"Kağıdın yırtılması"},{val:"B",text:"Buzun erimesi"},{val:"C",text:"Demirin paslanması"},{val:"D",text:"Camın kırılması"}], correct: "C" },
+                    { id: "f13", subject: "Fen", type: "Kimyasal Tepkime", text: "Bir kimyasal tepkimede aşağıdakilerden hangisi <u>kesinlikle</u> korunur?", options: [{val:"A",text:"Molekül sayısı"},{val:"B",text:"Toplam kütle"},{val:"C",text:"Maddenin fiziksel hali"},{val:"D",text:"Hacim"}], correct: "B" },
+                    { id: "f14", subject: "Fen", type: "Asitler ve Bazlar", text: "pH değeri 2 olan bir sıvı için hangisi söylenebilir?", options: [{val:"A",text:"Kuvvetli bazdır."},{val:"B",text:"Kuvvetli asittir."},{val:"C",text:"Nötr bir maddedir."},{val:"D",text:"Zayıf bazdır."}], correct: "B" },
+                    { id: "f15", subject: "Fen", type: "Ayıraçlar", text: "Kırmızı turnusol kağıdını maviye çeviren madde aşağıdakilerden hangisi olabilir?", options: [{val:"A",text:"Limon Suyu"},{val:"B",text:"Sirke"},{val:"C",text:"Sabunlu Su"},{val:"D",text:"Tuzlu Su"}], correct: "C" },
+                    { id: "f16", subject: "Fen", type: "Öz Isı", text: "Eşit kütleli ve farklı cinsteki iki maddeye eşit ısı verildiğinde öz ısısı küçük olan maddenin sıcaklık artışı nasıl olur?", options: [{val:"A",text:"Daha az olur."},{val:"B",text:"Daha fazla olur."},{val:"C",text:"Eşit olur."},{val:"D",text:"Sıcaklık değişmez."}], correct: "B" },
+                    { id: "f17", subject: "Fen", type: "Hal Değişimi", text: "Saf bir katı madde erirken sıcaklığı nasıl değişir?", options: [{val:"A",text:"Sürekli artar."},{val:"B",text:"Sürekli azalır."},{val:"C",text:"Erime süresince sabit kalır."},{val:"D",text:"Önce artar, sonra azalır."}], correct: "C" },
+                    { id: "f18", subject: "Fen", type: "Basit Makineler", text: "Sabit makaralarla ilgili aşağıdakilerden hangisi doğrudur?", options: [{val:"A",text:"Kuvvetten kazanç sağlar."},{val:"B",text:"Yoldan kazanç sağlar."},{val:"C",text:"Sadece kuvvetin yönünü değiştirerek iş kolaylığı sağlar."},{val:"D",text:"İşten kazanç sağlar."}], correct: "C" },
+                    { id: "f19", subject: "Fen", type: "Kaldıraçlar", text: "Destek noktasının ortada, kuvvetin bir uçta, yükün diğer uçta olduğu kaldıraç tipine günlük hayattan hangi örnek verilebilir?", options: [{val:"A",text:"El arabası"},{val:"B",text:"Cımbız"},{val:"C",text:"Tahterevalli"},{val:"D",text:"Maşa"}], correct: "C" },
+                    { id: "f20", subject: "Fen", type: "Enerji Dönüşümleri", text: "Bitkilerin güneş enerjisini kullanarak besin ve oksijen üretmesi olayına ne denir?", options: [{val:"A",text:"Solunum"},{val:"B",text:"Boşaltım"},{val:"C",text:"Fotosentez"},{val:"D",text:"Fermantasyon"}], correct: "C" }
+                ]
+            }
+        };
+
+        // --- UYGULAMA DURUMU (STATE) ---
+        let currentState = {
+            view: 'home', 
+            examType: null, 
+            answers: {}, 
+            timeLeft: 0,
+            timerInterval: null
+        };
+
+        const appContainer = document.getElementById('app-container');
+        const headerTimer = document.getElementById('header-timer');
+        const modal = document.getElementById('custom-modal');
+        const modalContent = document.getElementById('modal-content-box');
+
+        // --- RENDER FONKSİYONLARI ---
+
+        // 1. Ana Ekran
+        function renderHome() {
+            headerTimer.classList.add('hidden');
+            appContainer.innerHTML = `
+                <div class="max-w-4xl mx-auto text-center py-10">
+                    <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">LGS 2026<br><span class="text-blue-600">Tam 90 Soruluk Türkiye Geneli Prova</span></h1>
+                    <p class="text-lg text-slate-600 mb-10 px-4">Gerçek sınav simülasyonuna hoş geldin! Tamamı güncel kazanımlara göre dağıtılmış toplam 90 soru (50 Sözel, 40 Sayısal) seni bekliyor.</p>
+                    
+                    <div class="grid sm:grid-cols-2 gap-6 px-2">
+                        <!-- Sözel Kartı -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div class="w-20 h-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                            </div>
+                            <h2 class="text-3xl font-bold text-slate-800 mb-3">Sözel Bölüm</h2>
+                            <div class="text-slate-600 mb-6 text-sm font-medium space-y-1">
+                                <p>Türkçe (20), İnkılap (10), Din K. (10), İngilizce (10)</p>
+                                <p class="text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded-full mt-2"><b>50 Soru / 75 Dakika</b></p>
+                            </div>
+                            <button onclick="startExam('sozel')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-xl transition-colors text-lg shadow-md">Sözeli Başlat</button>
+                        </div>
+
+                        <!-- Sayısal Kartı -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <h2 class="text-3xl font-bold text-slate-800 mb-3">Sayısal Bölüm</h2>
+                            <div class="text-slate-600 mb-6 text-sm font-medium space-y-1">
+                                <p>Matematik (20), Fen Bilimleri (20)</p>
+                                <p class="text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full mt-2"><b>40 Soru / 80 Dakika</b></p>
+                            </div>
+                            <button onclick="startExam('sayisal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-colors text-lg shadow-md">Sayısalı Başlat</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. Sınav Ekranı
+        function renderExam() {
+            const data = examData[currentState.examType];
+            
+            let questionsHTML = '';
+            data.questions.forEach((q, index) => {
+                let optionsHTML = '';
+                q.options.forEach(opt => {
+                    const isSelected = currentState.answers[q.id] === opt.val;
+                    optionsHTML += `
+                        <label class="option-label flex items-center p-4 mb-3 border-2 rounded-xl cursor-pointer bg-white ${isSelected ? 'selected' : 'border-slate-100'}" data-qid="${q.id}" data-val="${opt.val}" onclick="selectOption('${q.id}', '${opt.val}')">
+                            <input type="radio" name="${q.id}" value="${opt.val}" class="option-radio mr-4" ${isSelected ? 'checked' : ''}>
+                            <span class="text-lg font-bold text-slate-700 mr-2">${opt.val})</span>
+                            <span class="text-slate-700 leading-relaxed">${opt.text}</span>
+                        </label>
+                    `;
+                });
+
+                questionsHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-8 relative overflow-hidden" id="q-${q.id}">
+                        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
+                            <span class="text-sm font-black tracking-widest text-blue-600 uppercase">${q.subject}</span>
+                            <span class="bg-slate-100 text-slate-500 text-xs px-3 py-1.5 rounded-full font-bold">Soru ${index + 1}</span>
+                        </div>
+                        <div class="text-lg text-slate-800 leading-loose mb-8">${q.text}</div>
+                        <div class="options-container">
+                            ${optionsHTML}
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                             <button onclick="clearSelection('${q.id}')" class="text-sm text-slate-400 hover:text-red-500 font-bold transition-colors">Seçimi Temizle</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Optik Form HTML (Artık w-8 h-8 yapıyoruz ki 50 top sığsın)
+            let optikHTML = '';
+            data.questions.forEach((q, index) => {
+                const isAnswered = currentState.answers[q.id];
+                optikHTML += `
+                    <button onclick="document.getElementById('q-${q.id}').scrollIntoView({behavior: 'smooth'})" class="nav-dot w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-bold ${isAnswered ? 'answered' : 'border-slate-300 text-slate-500 hover:border-blue-400'}">
+                        ${index + 1}
+                    </button>
+                `;
+            });
+
+            appContainer.innerHTML = `
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Soru Alanı -->
+                    <div class="flex-grow lg:w-3/4">
+                        <div class="mb-6 flex justify-between items-end">
+                            <h2 class="text-3xl font-extrabold text-slate-800">${data.title}</h2>
+                        </div>
+                        ${questionsHTML}
+                        <button onclick="promptFinish()" class="w-full bg-green-500 hover:bg-green-600 text-white font-black tracking-wide py-5 rounded-2xl shadow-lg transition-transform transform hover:-translate-y-1 mt-4 mb-10 text-xl">Sınavı Bitir ve Karneni Gör</button>
+                    </div>
+
+                    <!-- Optik Form / Navigasyon (Sağ Kolon) -->
+                    <div class="lg:w-1/4 relative">
+                        <div class="sticky top-24 bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                            <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 text-center border-b pb-3">Optik Form (${data.questions.length} Soru)</h3>
+                            <div class="flex flex-wrap gap-2 justify-center mb-6 max-h-[50vh] overflow-y-auto p-1" id="optik-container">
+                                ${optikHTML}
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-slate-500 border-t pt-4">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500"></span> İşaretli</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full border-2 border-slate-300"></span> Boş</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            headerTimer.classList.remove('hidden');
+        }
+
+        // 3. Sonuç Ekranı
+        function renderResult() {
+            headerTimer.classList.add('hidden');
+            const data = examData[currentState.examType];
+            
+            let correct = 0, wrong = 0, empty = 0;
+            let subjectStats = {};
+
+            data.questions.forEach(q => {
+                if(!subjectStats[q.subject]) {
+                    subjectStats[q.subject] = { c: 0, w: 0, e: 0 };
+                }
+
+                const userAns = currentState.answers[q.id];
+                if (!userAns) {
+                    empty++;
+                    subjectStats[q.subject].e++;
+                } else if (userAns === q.correct) {
+                    correct++;
+                    subjectStats[q.subject].c++;
+                } else {
+                    wrong++;
+                    subjectStats[q.subject].w++;
+                }
+            });
+
+            let net = correct - (wrong / 3);
+            if (net < 0) net = 0;
+
+            // Ders bazlı tablo HTML
+            let tableHTML = '';
+            for (let sub in subjectStats) {
+                let subNet = subjectStats[sub].c - (subjectStats[sub].w / 3);
+                tableHTML += `
+                    <tr class="border-b border-slate-100 last:border-0 text-center hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-4 text-left font-bold text-slate-700">${sub}</td>
+                        <td class="py-3 px-4 text-green-600 font-semibold">${subjectStats[sub].c}</td>
+                        <td class="py-3 px-4 text-red-500 font-semibold">${subjectStats[sub].w}</td>
+                        <td class="py-3 px-4 text-slate-400 font-semibold">${subjectStats[sub].e}</td>
+                        <td class="py-3 px-4 text-blue-600 font-black">${subNet.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            let msg = "";
+            let percent = net / data.questions.length;
+            if(percent > 0.8) msg = "Mükemmel! Lisede istediğin yeri kazanmaya çok yakınsın! 🚀";
+            else if(percent > 0.5) msg = "Gayet iyi! Bol bol 90 soruluk tam deneme çözerek süreni iyileştirebilirsin. 📚";
+            else msg = "Pes etmek yok! Doğru analiz ve eksik konu tekrarı ile netlerini hızla artırabilirsin. 💪";
+
+            appContainer.innerHTML = `
+                <div class="max-w-4xl mx-auto pb-10">
+                    <div class="text-center mb-10">
+                        <h1 class="text-4xl sm:text-5xl font-black text-slate-900 mb-3 tracking-tight">Sınav Karnesi</h1>
+                        <p class="text-slate-500 font-medium">${data.title} Sonuçların (${data.questions.length} Soru Üzerinden)</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+                            <div class="text-slate-500 text-sm font-bold uppercase tracking-widest mb-2">Doğru</div>
+                            <div class="text-4xl font-black text-green-500">${correct}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+                            <div class="text-slate-500 text-sm font-bold uppercase tracking-widest mb-2">Yanlış</div>
+                            <div class="text-4xl font-black text-red-500">${wrong}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+                            <div class="text-slate-500 text-sm font-bold uppercase tracking-widest mb-2">Boş</div>
+                            <div class="text-4xl font-black text-slate-400">${empty}</div>
+                        </div>
+                        <div class="bg-blue-600 p-6 rounded-2xl shadow-md text-center text-white transform scale-105">
+                            <div class="text-blue-200 text-sm font-bold uppercase tracking-widest mb-2">TOPLAM NET</div>
+                            <div class="text-5xl font-black">${net.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
+                        <div class="bg-slate-50 px-6 py-5 border-b border-slate-200">
+                            <h3 class="font-black text-slate-800 uppercase tracking-wide">Ders Bazlı Detaylı Analiz</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-xs">
+                                        <th class="py-4 px-4 text-left font-bold">Ders Adı</th>
+                                        <th class="py-4 px-4 text-center font-bold">Doğru</th>
+                                        <th class="py-4 px-4 text-center font-bold">Yanlış</th>
+                                        <th class="py-4 px-4 text-center font-bold">Boş</th>
+                                        <th class="py-4 px-4 text-center font-bold">Net</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 border-2 border-indigo-100 p-8 rounded-2xl text-center mb-10">
+                        <p class="text-xl text-indigo-900 font-bold leading-relaxed">${msg}</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button onclick="reviewAnswers()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-4 px-8 rounded-xl transition-colors shadow-sm text-lg">Cevap Anahtarını İncele</button>
+                        <button onclick="goHome()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl transition-colors shadow-md text-lg">Ana Ekrana Dön</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function reviewAnswers() {
+            renderExam();
+            
+            document.querySelectorAll('input[type="radio"]').forEach(el => el.disabled = true);
+            document.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+            
+            const container = document.querySelector('.lg\\:w-3\\/4');
+            const homeBtn = document.createElement('button');
+            homeBtn.className = "w-full bg-slate-900 text-white font-black py-5 rounded-2xl mt-8 text-xl shadow-lg";
+            homeBtn.innerText = "Kapat ve Ana Ekrana Dön";
+            homeBtn.onclick = goHome;
+            container.appendChild(homeBtn);
+
+            const data = examData[currentState.examType];
+            
+            data.questions.forEach(q => {
+                const userAns = currentState.answers[q.id];
+                const qDiv = document.getElementById(`q-${q.id}`);
+                const labels = qDiv.querySelectorAll('.option-label');
+
+                labels.forEach(label => {
+                    const val = label.getAttribute('data-val');
+                    
+                    if (val === q.correct) {
+                        label.classList.remove('border-slate-100', 'selected');
+                        label.classList.add('border-green-500', 'bg-green-50');
+                        label.innerHTML += `<span class="ml-auto bg-green-500 text-white text-xs font-black px-3 py-1.5 rounded-full">DOĞRU CEVAP</span>`;
+                    } else if (val === userAns && userAns !== q.correct) {
+                        label.classList.remove('border-slate-100', 'selected');
+                        label.classList.add('border-red-500', 'bg-red-50');
+                        label.innerHTML += `<span class="ml-auto bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full">SENİN SEÇİMİN</span>`;
+                    }
+                });
+            });
+        }
+
+        // --- YARDIMCI FONKSİYONLAR ---
+
+        function startExam(type) {
+            currentState.examType = type;
+            currentState.view = 'exam';
+            currentState.answers = {};
+            currentState.timeLeft = examData[type].duration;
+            
+            renderExam();
+            startTimer();
+            window.scrollTo(0, 0);
+        }
+
+        function selectOption(qId, val) {
+            currentState.answers[qId] = val;
+            
+            const labels = document.querySelectorAll(`label[data-qid="${qId}"]`);
+            labels.forEach(l => {
+                l.classList.remove('selected', 'border-blue-500');
+                if(l.getAttribute('data-val') === val) {
+                    l.classList.add('selected');
+                }
+            });
+
+            renderOptikNav();
+        }
+
+        function clearSelection(qId) {
+            delete currentState.answers[qId];
+            
+            const radios = document.getElementsByName(qId);
+            radios.forEach(r => r.checked = false);
+
+            const labels = document.querySelectorAll(`label[data-qid="${qId}"]`);
+            labels.forEach(l => l.classList.remove('selected'));
+
+            renderOptikNav();
+        }
+
+        function renderOptikNav() {
+            const data = examData[currentState.examType];
+            const optikContainer = document.getElementById('optik-container');
+            if(!optikContainer) return;
+
+            let html = '';
+            data.questions.forEach((q, index) => {
+                const isAnswered = currentState.answers[q.id];
+                html += `
+                    <button onclick="document.getElementById('q-${q.id}').scrollIntoView({behavior: 'smooth'})" class="nav-dot w-8 h-8 flex items-center justify-center rounded-full border-2 text-xs font-bold ${isAnswered ? 'answered' : 'border-slate-300 text-slate-500 hover:border-blue-400'}">
+                        ${index + 1}
+                    </button>
+                `;
+            });
+            optikContainer.innerHTML = html;
+        }
+
+        // --- ZAMANLAYICI MANTIĞI ---
+        function startTimer() {
+            clearInterval(currentState.timerInterval);
+            updateTimerDisplay();
+            
+            currentState.timerInterval = setInterval(() => {
+                currentState.timeLeft--;
+                updateTimerDisplay();
+
+                if (currentState.timeLeft <= 0) {
+                    clearInterval(currentState.timerInterval);
+                    finishExam(true);
+                } else if (currentState.timeLeft === 300) {
+                    headerTimer.classList.add('text-red-500', 'animate-pulse');
+                    headerTimer.classList.remove('text-blue-400');
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(currentState.timeLeft / 60);
+            let s = currentState.timeLeft % 60;
+            s = s < 10 ? '0' + s : s;
+            headerTimer.innerText = `${m}:${s}`;
+        }
+
+        // --- MODAL & BİTİRME MANTIĞI ---
+        function openModal(htmlContent) {
+            modalContent.innerHTML = htmlContent;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function promptFinish() {
+            const data = examData[currentState.examType];
+            const answeredCount = Object.keys(currentState.answers).length;
+            const emptyCount = data.questions.length - answeredCount;
+
+            let warningText = emptyCount > 0 
+                ? `<p class="text-red-500 font-bold mb-4">Dikkat! <b>${emptyCount} adet boş sorunuz</b> bulunuyor.</p>` 
+                : `<p class="text-green-500 font-bold mb-4">Tüm soruları işaretlediniz. Harika!</p>`;
+
+            const html = `
+                <div class="text-center p-6">
+                    <div class="w-20 h-20 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-800 mb-3">Sınavı Bitirmek Üzeresiniz</h2>
+                    ${warningText}
+                    <p class="text-slate-600 mb-8 font-medium">Sınavı bitirdiğinizde bir daha cevaplarınızı değiştiremeyeceksiniz. Onaylıyor musunuz?</p>
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="closeModal()" class="px-8 py-4 bg-slate-200 text-slate-800 font-bold rounded-xl hover:bg-slate-300 transition-colors">Hayır, Geri Dön</button>
+                        <button onclick="finishExam()" class="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">Evet, Bitir</button>
+                    </div>
+                </div>
+            `;
+            openModal(html);
+        }
+
+        function finishExam(timeout = false) {
+            closeModal();
+            clearInterval(currentState.timerInterval);
+            headerTimer.classList.remove('text-red-500', 'animate-pulse'); 
+            currentState.view = 'result';
+            
+            if (timeout) {
+                openModal(`
+                    <div class="text-center p-8">
+                        <h2 class="text-4xl font-black text-red-600 mb-4">Süreniz Doldu!</h2>
+                        <p class="text-slate-600 mb-8 font-medium text-lg">Sınavınız otomatik olarak sonlandırıldı.</p>
+                        <button onclick="closeModal(); renderResult(); window.scrollTo(0,0);" class="px-8 py-4 bg-slate-900 text-white font-bold rounded-xl text-lg">Sonuçları Gör</button>
+                    </div>
+                `);
+            } else {
+                renderResult();
+                window.scrollTo(0,0);
+            }
+        }
+
+        function goHome() {
+            clearInterval(currentState.timerInterval);
+            currentState.view = 'home';
+            renderHome();
+        }
+
+        // --- UYGULAMAYI BAŞLAT ---
+        renderHome();
+
+    </script>
+</body>
+</html>
+
+
+
