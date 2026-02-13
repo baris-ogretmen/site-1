@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Matematik Uzay İstasyonu 🚀</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            light: '#a5f3fc', // cyan-200
+                            DEFAULT: '#0891b2', // cyan-600
+                            dark: '#164e63', // cyan-900
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f0fdfa; /* Teal-50 */
+            background-image: 
+                radial-gradient(#99f6e4 2px, transparent 2px), 
+                radial-gradient(#ccfbf1 2px, transparent 2px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Özel Animasyonlar */
+        .float-anim { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .pop-anim { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .shake-anim { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        /* Tab Buton Stili */
+        .nav-btn.active {
+            background: #0891b2; /* brand DEFAULT */
+            color: white;
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Konfeti */
+        .confetti {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: #f00;
+            animation: confetti-fall 2.5s linear forwards;
+            z-index: 100;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .xp-bar-fill {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-700 pb-24 relative overflow-x-hidden">
+
+    <!-- Profil & Üst Bar -->
+    <header class="fixed top-0 w-full z-40 px-4 py-3">
+        <div class="max-w-3xl mx-auto glass-panel rounded-2xl p-3 flex justify-between items-center shadow-lg">
+            
+            <!-- Kullanıcı Bilgisi -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="editProfile()">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-2xl border-2 border-indigo-300 shadow-sm" id="avatar">
+                    👨‍🚀
+                </div>
+                <div class="leading-tight">
+                    <h2 class="font-bold text-gray-800 text-lg" id="username">Öğrenci</h2>
+                    <div class="text-xs text-brand font-bold">Seviye <span id="user-level">1</span></div>
+                </div>
+            </div>
+
+            <!-- XP Bar -->
+            <div class="flex-1 mx-4 hidden sm:block">
+                <div class="flex justify-between text-xs font-bold mb-1 text-gray-500">
+                    <span>XP</span>
+                    <span id="xp-text">0 / 100</span>
+                </div>
+                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="xp-bar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 xp-bar-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Toplam Puan -->
+            <div class="bg-yellow-50 px-3 py-1 rounded-xl border border-yellow-200 flex flex-col items-center">
+                <i class="fas fa-star text-yellow-500 text-sm"></i>
+                <span class="font-bold text-yellow-700 text-sm" id="total-score">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Ana İçerik Alanı -->
+    <main class="pt-28 px-4 max-w-3xl mx-auto min-h-[80vh]">
+        
+        <!-- BÖLÜM 1: AKADEMİ (Konu Anlatımı) -->
+        <section id="section-learn" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade">
+            
+            <!-- Toplama -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border-b-4 border-blue-500 hover:scale-[1.02] transition-transform cursor-pointer group" onclick="showDemo('+')">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center text-blue-600 text-2xl font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        +
+                    </div>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Temel</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Toplama</h3>
+                <p class="text-sm text-gray-500">Sayıları birleştirip çoğaltırız. Artma işlemidir.</p>
+                <div class="mt-4 bg-blue-50 p-2 rounded-lg text-center text-sm font-bold text-blue-800">
+                    Örnek görmek için tıkla 👇
+                </div>
+            </div>
+
+            <!-- Çıkarma -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border-b-4 border-red-500 hover:scale-[1.02] transition-transform cursor-pointer group" onclick="showDemo('-')">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="bg-red-100 w-12 h-12 rounded-xl flex items-center justify-center text-red-600 text-2xl font-black group-hover:bg-red-600 group-hover:text-white transition-colors">
+                        -
+                    </div>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Temel</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Çıkarma</h3>
+                <p class="text-sm text-gray-500">Bir bütünden parça ayırırız. Azalma işlemidir.</p>
+                <div class="mt-4 bg-red-50 p-2 rounded-lg text-center text-sm font-bold text-red-800">
+                    Örnek görmek için tıkla 👇
+                </div>
+            </div>
+
+            <!-- Çarpma -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border-b-4 border-purple-500 hover:scale-[1.02] transition-transform cursor-pointer group" onclick="showDemo('*')">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="bg-purple-100 w-12 h-12 rounded-xl flex items-center justify-center text-purple-600 text-2xl font-black group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        ×
+                    </div>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">İleri</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Çarpma</h3>
+                <p class="text-sm text-gray-500">Hızlı toplamadır. Gruplar halinde sayarız.</p>
+                <div class="mt-4 bg-purple-50 p-2 rounded-lg text-center text-sm font-bold text-purple-800">
+                    Örnek görmek için tıkla 👇
+                </div>
+            </div>
+
+            <!-- Bölme -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border-b-4 border-green-500 hover:scale-[1.02] transition-transform cursor-pointer group" onclick="showDemo('/')">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center text-green-600 text-2xl font-black group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        ÷
+                    </div>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">İleri</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Bölme</h3>
+                <p class="text-sm text-gray-500">Eşit paylaştırırız. Gruplara ayırma işlemidir.</p>
+                <div class="mt-4 bg-green-50 p-2 rounded-lg text-center text-sm font-bold text-green-800">
+                    Örnek görmek için tıkla 👇
+                </div>
+            </div>
+            
+            <!-- Demo Alanı (Başlangıçta gizli) -->
+            <div id="demo-area" class="col-span-1 md:col-span-2 hidden bg-white rounded-2xl p-6 border-2 border-dashed border-gray-300 text-center relative">
+                <button onclick="document.getElementById('demo-area').classList.add('hidden')" class="absolute top-2 right-2 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                <h4 id="demo-title" class="text-lg font-bold mb-4 text-brand"></h4>
+                <div id="demo-content" class="text-3xl flex justify-center flex-wrap gap-2 items-center min-h-[60px]"></div>
+                <p id="demo-desc" class="mt-4 text-gray-600 font-medium"></p>
+            </div>
+        </section>
+
+
+        <!-- BÖLÜM 2: ANTRENMAN (Pekiştirme) -->
+        <section id="section-practice" class="tab-content hidden flex-col gap-6">
+            
+            <!-- Mod Seçimi -->
+            <div class="flex p-1 bg-white rounded-xl shadow-sm">
+                <button onclick="setPracticeMode('operator')" id="pm-operator" class="flex-1 py-2 rounded-lg text-sm font-bold bg-indigo-100 text-indigo-700 transition">İşaret Bulmaca</button>
+                <button onclick="setPracticeMode('visual')" id="pm-visual" class="flex-1 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 transition">Görsel Sayma</button>
+            </div>
+
+            <!-- Antrenman Kartı -->
+            <div class="bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-gray-100 relative overflow-hidden text-center">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-400 to-orange-400"></div>
+                
+                <h2 class="text-2xl font-bold text-gray-700 mb-6" id="practice-title">Soru İşareti Yerine Ne Gelmeli?</h2>
+
+                <!-- İşaret Bulmaca Modu -->
+                <div id="practice-operator-ui">
+                    <div class="flex justify-center items-center gap-2 md:gap-4 text-4xl md:text-6xl font-black text-gray-800 mb-10 select-none">
+                        <span id="p-num1">0</span>
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-orange-500 border-2 border-dashed border-orange-300 animate-pulse">?</div>
+                        <span id="p-num2">0</span>
+                        <span class="text-gray-400">=</span>
+                        <span id="p-result" class="text-brand">0</span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-3 md:gap-6">
+                        <button onclick="checkPracticeOp('+')" class="h-16 rounded-2xl bg-blue-50 text-blue-600 text-3xl font-black hover:bg-blue-500 hover:text-white transition shadow-sm border-b-4 border-blue-200 active:border-b-0 active:translate-y-1">+</button>
+                        <button onclick="checkPracticeOp('-')" class="h-16 rounded-2xl bg-red-50 text-red-600 text-3xl font-black hover:bg-red-500 hover:text-white transition shadow-sm border-b-4 border-red-200 active:border-b-0 active:translate-y-1">-</button>
+                        <button onclick="checkPracticeOp('*')" class="h-16 rounded-2xl bg-purple-50 text-purple-600 text-3xl font-black hover:bg-purple-500 hover:text-white transition shadow-sm border-b-4 border-purple-200 active:border-b-0 active:translate-y-1">×</button>
+                        <button onclick="checkPracticeOp('/')" class="h-16 rounded-2xl bg-green-50 text-green-600 text-3xl font-black hover:bg-green-500 hover:text-white transition shadow-sm border-b-4 border-green-200 active:border-b-0 active:translate-y-1">÷</button>
+                    </div>
+                </div>
+
+                <!-- Görsel Mod UI (Gizli başlar) -->
+                <div id="practice-visual-ui" class="hidden">
+                    <div class="flex justify-center flex-wrap gap-2 mb-8 min-h-[80px]" id="visual-container"></div>
+                    <div class="text-gray-400 text-xl font-bold mb-6">Toplam Kaç Tane?</div>
+                    <div class="grid grid-cols-3 gap-4" id="visual-options"></div>
+                </div>
+
+                <div id="practice-feedback" class="mt-6 h-6 font-bold text-lg"></div>
+            </div>
+        </section>
+
+
+        <!-- BÖLÜM 3: SONSUZ TEST MOTORU -->
+        <section id="section-test" class="tab-content hidden flex-col items-center">
+            
+            <!-- Zorluk Ayarı -->
+            <div class="glass-panel w-full max-w-md rounded-full p-1 flex mb-6 shadow-sm">
+                <button onclick="setDifficulty('easy')" id="diff-easy" class="flex-1 py-2 rounded-full text-sm font-bold transition bg-green-500 text-white shadow-md">Kolay</button>
+                <button onclick="setDifficulty('medium')" id="diff-medium" class="flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition hover:bg-gray-100">Orta</button>
+                <button onclick="setDifficulty('hard')" id="diff-hard" class="flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition hover:bg-gray-100">Zor</button>
+            </div>
+
+            <!-- Soru Kartı -->
+            <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8 border-4 border-white relative overflow-hidden">
+                <!-- Arka Plan Süsü -->
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-100 rounded-full opacity-50 blur-xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-100 rounded-full opacity-50 blur-xl"></div>
+
+                <!-- İstatistikler -->
+                <div class="flex justify-between items-center mb-8 relative z-10">
+                    <div class="bg-gray-50 px-3 py-1 rounded-lg text-xs font-bold text-gray-400">
+                        Seri: <span id="streak-count" class="text-orange-500 text-base ml-1">0</span> 🔥
+                    </div>
+                    <div class="text-xs font-bold text-gray-400">Sonsuz Mod</div>
+                </div>
+
+                <!-- Soru -->
+                <div class="flex flex-col items-center mb-10 relative z-10">
+                    <div class="flex items-center gap-4 text-6xl md:text-7xl font-black text-gray-800 tracking-tight">
+                        <span id="t-num1" class="pop-anim">0</span>
+                        <span id="t-op" class="text-brand pop-anim">+</span>
+                        <span id="t-num2" class="pop-anim">0</span>
+                    </div>
+                    <div class="mt-4 w-16 h-1 bg-gray-200 rounded-full"></div>
+                </div>
+
+                <!-- Seçenekler -->
+                <div class="grid grid-cols-2 gap-4 relative z-10" id="test-options">
+                    <!-- JS ile doldurulacak -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ALT NAVİGASYON (MOBİL DOSTU) -->
+    <nav class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md glass-panel rounded-2xl p-2 flex justify-between shadow-2xl z-50">
+        <button onclick="switchTab('learn')" id="nav-learn" class="nav-btn active flex-1 py-3 rounded-xl flex flex-col items-center justify-center text-gray-500 transition-all duration-300">
+            <i class="fas fa-graduation-cap text-xl mb-1"></i>
+            <span class="text-xs font-bold">Akademi</span>
+        </button>
+        <button onclick="switchTab('practice')" id="nav-practice" class="nav-btn flex-1 py-3 rounded-xl flex flex-col items-center justify-center text-gray-500 transition-all duration-300">
+            <i class="fas fa-dumbbell text-xl mb-1"></i>
+            <span class="text-xs font-bold">Antrenman</span>
+        </button>
+        <button onclick="switchTab('test')" id="nav-test" class="nav-btn flex-1 py-3 rounded-xl flex flex-col items-center justify-center text-gray-500 transition-all duration-300">
+            <i class="fas fa-rocket text-xl mb-1"></i>
+            <span class="text-xs font-bold">Sonsuz Test</span>
+        </button>
+    </nav>
+
+    <!-- Konfeti Konteyner -->
+    <div id="confetti-container" class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-[100]"></div>
+
+    <!-- JS MANTIĞI -->
+    <script>
+        // --- 1. SİSTEM DEĞİŞKENLERİ ---
+        const GameState = {
+            user: {
+                name: "Öğrenci",
+                xp: 0,
+                level: 1,
+                totalScore: 0
+            },
+            settings: {
+                difficulty: 'easy', // easy, medium, hard
+                sound: true
+            },
+            currentTab: 'learn',
+            streak: 0,
+            practiceOp: '+',
+            testAnswer: 0
+        };
+
+        // LocalStorage Yükleme
+        function loadProgress() {
+            const saved = localStorage.getItem('mathSpaceSave');
+            if(saved) {
+                const parsed = JSON.parse(saved);
+                GameState.user = parsed;
+                updateProfileUI();
+            }
+        }
+        function saveProgress() {
+            localStorage.setItem('mathSpaceSave', JSON.stringify(GameState.user));
+            updateProfileUI();
+        }
+
+        // --- 2. SES MOTORU (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(effect) {
+            if(!GameState.settings.sound) return;
+            
+            if(effect === 'correct') {
+                playTone(523.25, 'sine', 0.1); // Do
+                setTimeout(() => playTone(659.25, 'sine', 0.1), 100); // Mi
+                setTimeout(() => playTone(783.99, 'sine', 0.2), 200); // Sol
+            } else if (effect === 'wrong') {
+                playTone(150, 'sawtooth', 0.3);
+            } else if (effect === 'click') {
+                playTone(800, 'triangle', 0.05);
+            } else if (effect === 'levelup') {
+                // Fanfare
+                [440, 554, 659, 880].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.3), i*150));
+            }
+        }
+
+        // --- 3. UI FONKSİYONLARI ---
+        function switchTab(tabId) {
+            playSound('click');
+            GameState.currentTab = tabId;
+            
+            // Nav butonlarını güncelle
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'text-white'));
+            document.querySelectorAll('.nav-btn i').forEach(i => i.classList.remove('text-white'));
+            
+            const activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-gray-500');
+            
+            // İçerikleri değiştir
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('grid', 'flex'));
+            
+            const section = document.getElementById('section-' + tabId);
+            section.classList.remove('hidden');
+            
+            if(tabId === 'learn') section.classList.add('grid');
+            else section.classList.add('flex');
+
+            // Mod'a göre başlatma
+            if(tabId === 'practice') initPractice();
+            if(tabId === 'test') generateTestQuestion();
+        }
+
+        function updateProfileUI() {
+            document.getElementById('username').innerText = GameState.user.name;
+            document.getElementById('user-level').innerText = GameState.user.level;
+            document.getElementById('total-score').innerText = GameState.user.totalScore;
+            
+            // XP Mantığı (Seviye başına 100 XP)
+            const xpNeeded = GameState.user.level * 100;
+            const currentXP = GameState.user.xp;
+            const percent = Math.min(100, (currentXP / xpNeeded) * 100);
+            
+            document.getElementById('xp-bar').style.width = percent + "%";
+            document.getElementById('xp-text').innerText = `${currentXP} / ${xpNeeded}`;
+        }
+
+        function addXP(amount) {
+            GameState.user.xp += amount;
+            GameState.user.totalScore += amount;
+            
+            const xpNeeded = GameState.user.level * 100;
+            if(GameState.user.xp >= xpNeeded) {
+                GameState.user.xp -= xpNeeded;
+                GameState.user.level++;
+                playSound('levelup');
+                fireConfetti();
+                alert(`Harika! Seviye ${GameState.user.level} oldun! 🚀`);
+            }
+            saveProgress();
+        }
+
+        function editProfile() {
+            const newName = prompt("Adın ne?", GameState.user.name);
+            if(newName && newName.length > 0) {
+                GameState.user.name = newName;
+                saveProgress();
+            }
+        }
+
+        function fireConfetti() {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#0891b2', '#f59e0b', '#ef4444', '#8b5cf6'];
+            
+            for(let i=0; i<30; i++) {
+                const conf = document.createElement('div');
+                conf.classList.add('confetti');
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                container.appendChild(conf);
+                
+                setTimeout(() => conf.remove(), 4000);
+            }
+        }
+
+        // --- 4. AKADEMİ MODÜLÜ ---
+        function showDemo(op) {
+            const area = document.getElementById('demo-area');
+            const title = document.getElementById('demo-title');
+            const content = document.getElementById('demo-content');
+            const desc = document.getElementById('demo-desc');
+            
+            area.classList.remove('hidden');
+            playSound('click');
+
+            if(op === '+') {
+                title.innerText = "Toplama (3 + 2 = 5)";
+                content.innerHTML = "🍎🍎🍎 <span class='text-blue-500 mx-2'>+</span> 🍏🍏 <span class='text-gray-400 mx-2'>=</span> 🍎🍎🍎🍏🍏";
+                desc.innerText = "Elmalar bir araya geldi ve çoğaldı!";
+            } else if (op === '-') {
+                title.innerText = "Çıkarma (5 - 2 = 3)";
+                content.innerHTML = "⭐⭐⭐⭐⭐ <span class='text-red-500 mx-2'>➜</span> ⭐⭐❌ <span class='text-gray-400 mx-2'>=</span> ⭐⭐⭐";
+                desc.innerText = "5 yıldızdan 2 tanesi kayboldu, geriye 3 kaldı.";
+            } else if (op === '*') {
+                title.innerText = "Çarpma (2 x 3 = 6)";
+                content.innerHTML = "📦📦 <span class='text-purple-500 mx-2'>+</span> 📦📦 <span class='text-purple-500 mx-2'>+</span> 📦📦 <span class='text-gray-400 mx-2'>=</span> 📦📦📦📦📦📦";
+                desc.innerText = "3 tane 2'li kutu, toplam 6 kutu eder.";
+            } else if (op === '/') {
+                title.innerText = "Bölme (6 ÷ 2 = 3)";
+                content.innerHTML = "🍪🍪🍪🍪🍪🍪 <span class='text-green-500 mx-2'>➜</span> 👦(🍪🍪🍪) 👧(🍪🍪🍪)";
+                desc.innerText = "6 kurabiyeyi 2 çocuğa eşit paylaştırdık.";
+            }
+        }
+
+        // --- 5. ANTRENMAN MODÜLÜ ---
+        let currentPracticeMode = 'operator';
+
+        function setPracticeMode(mode) {
+            currentPracticeMode = mode;
+            document.getElementById('pm-operator').className = mode === 'operator' ? 
+                "flex-1 py-2 rounded-lg text-sm font-bold bg-indigo-100 text-indigo-700 transition" : 
+                "flex-1 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 transition";
+            
+            document.getElementById('pm-visual').className = mode === 'visual' ? 
+                "flex-1 py-2 rounded-lg text-sm font-bold bg-indigo-100 text-indigo-700 transition" : 
+                "flex-1 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 transition";
+
+            if(mode === 'operator') {
+                document.getElementById('practice-operator-ui').classList.remove('hidden');
+                document.getElementById('practice-visual-ui').classList.add('hidden');
+                document.getElementById('practice-title').innerText = "Soru İşareti Yerine Ne Gelmeli?";
+                initPractice();
+            } else {
+                document.getElementById('practice-operator-ui').classList.add('hidden');
+                document.getElementById('practice-visual-ui').classList.remove('hidden');
+                document.getElementById('practice-title').innerText = "Resimleri Say!";
+                generateVisualPractice();
+            }
+        }
+
+        function initPractice() {
+            if(currentPracticeMode === 'visual') return generateVisualPractice();
+
+            const ops = ['+', '-', '*', '/'];
+            GameState.practiceOp = ops[Math.floor(Math.random() * 4)];
+            
+            // Basit sayılar (1-10)
+            let n1 = Math.floor(Math.random() * 10) + 1;
+            let n2 = Math.floor(Math.random() * 10) + 1;
+
+            if(GameState.practiceOp === '/') n1 = n1 * n2;
+            if(GameState.practiceOp === '-' && n2 > n1) [n1, n2] = [n2, n1];
+
+            let res = Math.floor(eval(`${n1} ${GameState.practiceOp} ${n2}`));
+
+            document.getElementById('p-num1').innerText = n1;
+            document.getElementById('p-num2').innerText = n2;
+            document.getElementById('p-result').innerText = res;
+            document.getElementById('practice-feedback').innerText = "";
+        }
+
+        function checkPracticeOp(selected) {
+            const fb = document.getElementById('practice-feedback');
+            if(selected === GameState.practiceOp) {
+                fb.innerHTML = "<span class='text-green-500'>Doğru! Süpersin 🎉</span>";
+                playSound('correct');
+                addXP(5);
+                setTimeout(initPractice, 1000);
+            } else {
+                fb.innerHTML = "<span class='text-red-400'>Hata, tekrar dene 🤔</span>";
+                playSound('wrong');
+            }
+        }
+
+        // Görsel Mod Mantığı
+        function generateVisualPractice() {
+            const container = document.getElementById('visual-container');
+            const optionsDiv = document.getElementById('visual-options');
+            container.innerHTML = '';
+            optionsDiv.innerHTML = '';
+
+            const count = Math.floor(Math.random() * 9) + 1; // 1-9 arası
+            const emojis = ['🍎', '🚗', '⭐', '🐱', 'ball'];
+            const selectedEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+            // Görselleri çiz
+            for(let i=0; i<count; i++) {
+                const span = document.createElement('span');
+                span.className = "text-4xl animate-pop";
+                if(selectedEmoji === 'ball') span.innerHTML = '⚽';
+                else span.innerHTML = selectedEmoji;
+                container.appendChild(span);
+            }
+
+            // Seçenekleri hazırla (1 doğru, 2 yanlış)
+            let answers = new Set([count]);
+            while(answers.size < 3) {
+                let fake = Math.floor(Math.random() * 10) + 1;
+                if(fake !== count) answers.add(fake);
+            }
+            
+            Array.from(answers).sort(() => Math.random() - 0.5).forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = "py-3 rounded-xl bg-gray-50 text-xl font-bold text-gray-700 border-b-4 border-gray-200 hover:bg-blue-50 active:border-b-0 active:translate-y-1 transition";
+                btn.innerText = ans;
+                btn.onclick = () => {
+                    if(ans === count) {
+                        playSound('correct');
+                        addXP(5);
+                        btn.className = "py-3 rounded-xl bg-green-500 text-white font-bold border-b-4 border-green-700";
+                        setTimeout(generateVisualPractice, 1000);
+                    } else {
+                        playSound('wrong');
+                        btn.className = "py-3 rounded-xl bg-red-100 text-red-500 font-bold shake-anim";
+                    }
+                }
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        // --- 6. SONSUZ TEST MOTORU ---
+        function setDifficulty(lvl) {
+            GameState.settings.difficulty = lvl;
+            playSound('click');
+            
+            // UI Güncelle
+            ['easy', 'medium', 'hard'].forEach(l => {
+                const btn = document.getElementById('diff-'+l);
+                if(l === lvl) {
+                    btn.className = "flex-1 py-2 rounded-full text-sm font-bold transition bg-green-500 text-white shadow-md transform scale-105";
+                    if(l==='medium') btn.classList.replace('bg-green-500', 'bg-yellow-500');
+                    if(l==='hard') btn.classList.replace('bg-green-500', 'bg-red-500');
+                } else {
+                    btn.className = "flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition hover:bg-gray-100";
+                }
+            });
+            GameState.streak = 0;
+            updateStreakUI();
+            generateTestQuestion();
+        }
+
+        function generateTestQuestion() {
+            const diff = GameState.settings.difficulty;
+            const ops = ['+', '-', '*', '/'];
+            
+            // Zorluğa göre işlem seçimi ağırlığı
+            let op = '+';
+            if(diff === 'easy') op = Math.random() > 0.3 ? (Math.random() > 0.5 ? '+' : '-') : '+'; // Genelde toplama/çıkarma
+            else op = ops[Math.floor(Math.random() * 4)];
+
+            let max = 10;
+            if(diff === 'medium') max = 20;
+            if(diff === 'hard') max = 50;
+
+            let n1 = Math.floor(Math.random() * max) + 1;
+            let n2 = Math.floor(Math.random() * max) + 1;
+
+            // Mantıksal düzenlemeler
+            if(op === '/') {
+                if(diff === 'easy') max = 10; // Kolayda bölme sayıları küçük olsun
+                n2 = Math.floor(Math.random() * (diff === 'easy' ? 5 : 10)) + 1; 
+                n1 = n2 * (Math.floor(Math.random() * 5) + 1); // Tam bölünür
+            } else if (op === '*') {
+                if(diff === 'easy') { n1 = Math.floor(Math.random() * 5); n2 = Math.floor(Math.random() * 5); }
+                else if (diff === 'medium') { n1 = Math.floor(Math.random() * 10); n2 = Math.floor(Math.random() * 10); }
+            } else if (op === '-') {
+                if(n2 > n1) [n1, n2] = [n2, n1];
+            }
+
+            GameState.testAnswer = Math.floor(eval(`${n1} ${op} ${n2}`));
+
+            // UI Bas
+            const num1El = document.getElementById('t-num1');
+            const num2El = document.getElementById('t-num2');
+            
+            // Animasyon reset
+            num1El.classList.remove('pop-anim');
+            void num1El.offsetWidth; 
+            num1El.classList.add('pop-anim');
+
+            document.getElementById('t-num1').innerText = n1;
+            document.getElementById('t-num2').innerText = n2;
+            
+            let displayOp = op;
+            if(op === '*') displayOp = '×';
+            if(op === '/') displayOp = '÷';
+            document.getElementById('t-op').innerText = displayOp;
+
+            generateTestOptions();
+        }
+
+        function generateTestOptions() {
+            const container = document.getElementById('test-options');
+            container.innerHTML = '';
+            
+            let answers = new Set([GameState.testAnswer]);
+            while(answers.size < 4) {
+                let offset = Math.floor(Math.random() * 10) - 5;
+                let fake = GameState.testAnswer + offset;
+                if(fake >= 0 && fake !== GameState.testAnswer) answers.add(fake);
+            }
+
+            Array.from(answers).sort(() => Math.random() - 0.5).forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = "py-4 rounded-xl bg-gray-50 text-2xl font-bold text-gray-700 border-2 border-transparent hover:border-blue-200 hover:bg-blue-50 transition active:scale-95";
+                btn.innerText = ans;
+                btn.onclick = () => checkTestAnswer(ans, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkTestAnswer(ans, btn) {
+            // Tıklamaları engelle
+            const allBtns = document.getElementById('test-options').children;
+            for(let b of allBtns) b.disabled = true;
+
+            if(ans === GameState.testAnswer) {
+                btn.classList.add('bg-green-500', '!text-white', 'border-green-600', 'shadow-lg');
+                btn.innerText += " ✔";
+                playSound('correct');
+                
+                // Puan hesapla
+                let pts = GameState.settings.difficulty === 'easy' ? 10 : (GameState.settings.difficulty === 'medium' ? 20 : 30);
+                addXP(pts);
+                
+                GameState.streak++;
+                if(GameState.streak % 5 === 0) fireConfetti();
+                
+                setTimeout(generateTestQuestion, 1200);
+            } else {
+                btn.classList.add('bg-red-500', '!text-white', 'shake-anim');
+                playSound('wrong');
+                GameState.streak = 0;
+                
+                // Doğruyu göster
+                for(let b of allBtns) {
+                    if(parseInt(b.innerText) === GameState.testAnswer) {
+                        b.classList.add('bg-green-100', 'text-green-700', 'border-green-300');
+                    }
+                }
+                setTimeout(generateTestQuestion, 2000);
+            }
+            updateStreakUI();
+        }
+
+        function updateStreakUI() {
+            document.getElementById('streak-count').innerText = GameState.streak;
+        }
+
+        // --- BAŞLATMA ---
+        window.onload = function() {
+            loadProgress();
+            switchTab('learn'); // Varsayılan sekme
+        };
+
+    </script>
+</body>
+</html>
+
