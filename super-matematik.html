@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Süper Matematik Paketi</title>
+    
+    <!-- Tailwind CSS (Görsellik için) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome (İkonlar için) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Özel Animasyonlar ve Tailwind Ayarları -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'bounce-slight': 'bounceSlight 1s infinite'
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-2px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(4px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(6px, 0, 0)' }
+                        },
+                        bounceSlight: {
+                            '0%, 100%': { transform: 'translateY(-5%)', animationTimingFunction: 'cubic-bezier(0.8,0,1,1)' },
+                            '50%': { transform: 'none', animationTimingFunction: 'cubic-bezier(0,0,0.2,1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Engellemeler ve Dokunmatik Yüzey Optimizasyonları */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; /* Mobilde aşağı çekerken sayfa yenilemeyi engeller */
+        }
+        .touch-none-area {
+            touch-action: none; /* Yılan oyununda kaydırma yaparken sayfanın kaymasını engeller */
+        }
+        .hide { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans selection:bg-indigo-500 overflow-x-hidden touch-manipulation min-h-screen flex flex-col">
+
+    <!-- ÜST BİLGİ (HEADER) -->
+    <header class="bg-slate-800 border-b border-slate-700 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-2 md:p-3 rounded-xl shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    <i class="fa-solid fa-calculator text-white text-xl md:text-2xl"></i>
+                </div>
+                <h1 class="text-xl md:text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 drop-shadow-sm truncate">
+                    Süper Matematik
+                </h1>
+            </div>
+            <button id="btn-back-menu" onclick="showView('menu')" class="hide flex items-center gap-2 px-3 py-2 md:px-6 md:py-3 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 rounded-xl transition-all shadow-md text-sm md:text-lg font-bold">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span class="hidden sm:inline">Ana Menü</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ANA İÇERİK ALANI -->
+    <main class="max-w-7xl mx-auto p-4 md:p-8 flex-1 w-full relative">
+
+        <!-- 1. ANA MENÜ -->
+        <div id="view-menu" class="flex flex-col items-center justify-center py-6 md:py-10 space-y-10 animate-[fadeIn_0.5s_ease-out]">
+            <div class="text-center space-y-4 px-2">
+                <h2 class="text-4xl md:text-6xl font-black text-white tracking-tight drop-shadow-lg leading-tight">
+                    Matematik <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Macerası</span> Başlıyor!
+                </h2>
+                <p class="text-slate-400 text-base md:text-xl max-w-3xl mx-auto font-medium">
+                    Ön becerilerden hızlı işlemlere kadar her yaşa uygun bir oyun var. Eğlenerek öğrenmeye hazır mısın?
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full px-2">
+                <!-- Ön Beceri -->
+                <button onclick="showView('premath')" class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-amber-500 hover:shadow-[0_0_40px_-10px_rgba(245,158,11,0.6)] transition-all duration-300 text-center overflow-hidden transform hover:-translate-y-2">
+                    <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-amber-500/20 p-5 rounded-2xl mb-4 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
+                        <i class="fa-solid fa-shapes text-4xl md:text-5xl text-amber-400"></i>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black text-white mb-3">Minik Dahiler</h3>
+                    <p class="text-slate-400 text-sm md:text-base">Nesne sayma, miktar karşılaştırma! Okul öncesi ve 1. sınıflar için.</p>
+                </button>
+
+                <!-- Sıralama -->
+                <button onclick="showView('sorting')" class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-pink-500 hover:shadow-[0_0_40px_-10px_rgba(236,72,153,0.6)] transition-all duration-300 text-center overflow-hidden transform hover:-translate-y-2">
+                    <div class="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-pink-500/20 p-5 rounded-2xl mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                        <i class="fa-solid fa-list-ol text-4xl md:text-5xl text-pink-400"></i>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black text-white mb-3">Sayı Dedektifi</h3>
+                    <p class="text-slate-400 text-sm md:text-base">Küçükten büyüğe diz, gizli ortanca sayıyı ve en büyük sayıyı bul.</p>
+                </button>
+
+                <!-- Yılan -->
+                <button onclick="showView('snake')" class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-emerald-500 hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.6)] transition-all duration-300 text-center overflow-hidden transform hover:-translate-y-2">
+                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-emerald-500/20 p-5 rounded-2xl mb-4 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                        <i class="fa-solid fa-gamepad text-4xl md:text-5xl text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black text-white mb-3">Sonsuz Yılan</h3>
+                    <p class="text-slate-400 text-sm md:text-base">Telefonda kaydırarak oyna! Dört işlem yeteneğini test et.</p>
+                </button>
+
+                <!-- Neon Kutular -->
+                <button onclick="showView('flash')" class="group relative flex flex-col items-center p-6 md:p-8 bg-slate-800 rounded-3xl border-2 border-slate-700 hover:border-cyan-500 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.6)] transition-all duration-300 text-center overflow-hidden transform hover:-translate-y-2">
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-cyan-500/20 p-5 rounded-2xl mb-4 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                        <i class="fa-solid fa-bolt text-4xl md:text-5xl text-cyan-400"></i>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black text-white mb-3">Neon Kutular</h3>
+                    <p class="text-slate-400 text-sm md:text-base">Zamanla yarış! Doğru cevabı en hızlı sen bul, rekoru kır.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. MİNİK DAHİLER (ÖN BECERİ) -->
+        <div id="view-premath" class="hide max-w-4xl mx-auto flex flex-col items-center animate-[fadeIn_0.5s_ease-out]">
+            <div class="w-full bg-slate-800 border-2 border-slate-700 rounded-3xl p-4 md:p-6 mb-8 flex flex-wrap items-center justify-between shadow-xl gap-4">
+                <div class="flex items-center gap-2 md:gap-4 bg-amber-500/20 px-4 py-2 rounded-2xl border border-amber-500/50">
+                    <i class="fa-solid fa-star text-amber-400 text-xl"></i>
+                    <span id="premath-score-el" class="text-white font-black text-2xl">0 Puan</span>
+                </div>
+                <h2 id="premath-question-text" class="flex-1 text-center text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 drop-shadow-md">
+                    Soru Hazırlanıyor...
+                </h2>
+            </div>
+
+            <div class="w-full bg-slate-800 border-4 border-slate-700 rounded-3xl p-6 md:p-12 shadow-2xl relative overflow-hidden">
+                <!-- Efekt Katmanları -->
+                <div id="premath-effect-correct" class="hide absolute inset-0 bg-emerald-500/20 z-10 flex items-center justify-center backdrop-blur-sm">
+                    <i class="fa-solid fa-face-smile text-emerald-400 text-8xl md:text-[9rem] animate-bounce-slight"></i>
+                </div>
+                <div id="premath-effect-wrong" class="hide absolute inset-0 bg-rose-500/20 z-10 flex items-center justify-center">
+                    <i class="fa-solid fa-times-circle text-rose-500 text-8xl md:text-[9rem] animate-shake"></i>
+                </div>
+
+                <div id="premath-content" class="w-full">
+                    <!-- Dinamik İçerik Buraya Gelecek -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. SAYI DEDEKTİFİ (SIRALAMA) -->
+        <div id="view-sorting" class="hide max-w-5xl mx-auto flex flex-col items-center animate-[fadeIn_0.5s_ease-out]">
+            <div class="w-full bg-slate-800 border-2 border-slate-700 rounded-3xl p-4 md:p-6 mb-8 flex flex-wrap items-center justify-between shadow-xl gap-4">
+                <div class="bg-pink-500/20 p-3 md:p-4 rounded-2xl border border-pink-500/50 flex items-center">
+                    <span class="text-pink-300 font-bold text-sm md:text-xl">Seviye:</span>
+                    <span id="sort-level-el" class="text-white font-black text-xl md:text-3xl ml-2">1</span>
+                </div>
+                <div class="flex-1 text-center bg-slate-900 border-2 border-slate-600 rounded-2xl py-3 px-4 shadow-inner min-w-[250px]">
+                    <span id="sort-message-el" class="text-lg md:text-2xl font-black text-white leading-tight">Yükleniyor...</span>
+                </div>
+                <div class="bg-amber-500/20 p-3 md:p-4 rounded-2xl border border-amber-500/50 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400 text-xl md:text-2xl"></i>
+                    <span id="sort-score-el" class="text-white font-black text-xl md:text-3xl">0</span>
+                </div>
+            </div>
+
+            <div id="sort-board" class="flex flex-wrap justify-center gap-3 md:gap-8 w-full py-4 md:py-10">
+                <!-- Sayı Kutuları -->
+            </div>
+            
+            <div id="sort-success-screen" class="hide flex flex-col items-center justify-center bg-emerald-500/10 border-4 border-emerald-500 rounded-3xl p-8 md:p-10 w-full max-w-2xl text-center">
+                <i class="fa-solid fa-star text-amber-400 text-7xl mb-6 animate-spin-slow"></i>
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">Harika İş Çıkardın!</h2>
+                <button onclick="sortNextLevel()" class="bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-full font-black text-xl md:text-2xl flex items-center gap-4 transition-transform hover:scale-110 shadow-[0_0_40px_rgba(16,185,129,0.6)] mt-4">
+                    Sıradaki Seviye <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. SONSUZ YILAN -->
+        <div id="view-snake" class="hide max-w-4xl mx-auto flex flex-col items-center animate-[fadeIn_0.5s_ease-out]">
+            <div class="w-full bg-slate-800 border-2 border-slate-700 rounded-3xl p-4 mb-4 flex flex-wrap items-center justify-between shadow-xl gap-2 md:gap-4">
+                <div class="flex gap-2 md:gap-4">
+                    <div class="bg-slate-900 p-2 md:p-3 rounded-2xl flex items-center gap-2 border border-slate-700">
+                        <span class="text-slate-400 font-bold uppercase text-[10px] md:text-sm">Seviye</span>
+                        <span id="snake-level-el" class="text-white font-black text-lg md:text-xl">1</span>
+                    </div>
+                    <div class="bg-slate-900 p-2 md:p-3 rounded-2xl flex items-center gap-2 border border-slate-700">
+                        <i class="fa-solid fa-trophy text-amber-400"></i>
+                        <span id="snake-score-el" class="text-white font-black text-lg md:text-xl">0</span>
+                    </div>
+                </div>
+                
+                <div id="snake-question-container" class="hide flex-1 text-center bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-2 border-emerald-500/50 rounded-2xl py-2 px-4 shadow-[0_0_20px_rgba(16,185,129,0.3)] min-w-[150px]">
+                    <span class="text-emerald-200 text-[10px] md:text-xs font-bold uppercase tracking-wider block mb-0.5">İşlemi Çöz, Doğruyu Ye</span>
+                    <span id="snake-question-text" class="text-2xl md:text-4xl font-black text-white drop-shadow-md"></span>
+                </div>
+            </div>
+
+            <div class="relative bg-slate-900 border-8 border-slate-800 rounded-2xl shadow-2xl touch-none-area select-none" id="snake-touch-area">
+                <div id="snake-grid" class="grid" style="grid-template-columns: repeat(15, 1fr); width: min(92vw, 450px); height: min(92vw, 450px);">
+                    <!-- 15x15 = 225 Hücre -->
+                </div>
+
+                <!-- Başlangıç Ekranı -->
+                <div id="snake-start-screen" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-20">
+                    <i class="fa-solid fa-gamepad text-emerald-400 text-6xl mb-4 opacity-50"></i>
+                    <button onclick="startSnakeGame()" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white px-8 py-4 rounded-full font-black text-2xl flex items-center gap-3 transition-transform hover:scale-110 shadow-[0_0_40px_rgba(16,185,129,0.5)]">
+                        <i class="fa-solid fa-play"></i> Başla
+                    </button>
+                    <p class="mt-6 text-slate-300 text-sm md:text-base font-bold text-center px-4">
+                        📱 Mobilde oynamak için ekranı <span class="text-emerald-400">kaydır (swipe)</span>.
+                    </p>
+                </div>
+
+                <!-- Oyun Bitti Ekranı -->
+                <div id="snake-gameover-screen" class="hide absolute inset-0 bg-rose-950/90 backdrop-blur-md flex flex-col items-center justify-center rounded-xl text-white p-6 text-center z-20">
+                    <h3 class="text-4xl md:text-5xl font-black mb-4 text-rose-400 drop-shadow-[0_0_15px_rgba(225,29,72,0.8)]">YANDIN!</h3>
+                    <p class="text-xl md:text-2xl mb-2">Seviye: <span id="snake-final-level" class="font-bold text-white"></span></p>
+                    <p class="text-lg md:text-xl mb-8 text-slate-300">Skor: <span id="snake-final-score" class="font-bold text-white"></span></p>
+                    <button onclick="startSnakeGame()" class="bg-white text-rose-900 px-6 py-3 rounded-full font-black text-lg md:text-xl flex items-center gap-3 hover:bg-slate-200 transition-colors shadow-xl hover:scale-105">
+                        <i class="fa-solid fa-rotate-left"></i> Yeniden Dene
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. NEON KUTULAR -->
+        <div id="view-flash" class="hide max-w-3xl mx-auto flex flex-col items-center animate-[fadeIn_0.5s_ease-out]">
+            
+            <!-- Hazır Ekranı -->
+            <div id="flash-ready-screen" class="text-center bg-slate-800 p-8 md:p-16 rounded-3xl border-4 border-cyan-500/50 shadow-[0_0_50px_rgba(6,182,212,0.3)] w-full mx-2">
+                <i class="fa-solid fa-bolt text-cyan-400 text-6xl md:text-8xl mx-auto mb-6 animate-pulse"></i>
+                <h2 class="text-3xl md:text-6xl font-black text-white mb-4">Neon Kutular</h2>
+                <p class="text-lg md:text-xl text-slate-300 mb-8 md:mb-10">60 saniyen var. Işıklı kutular arasında doğru cevabı bul, en yüksek skoru yap! Yanlış cevap süreden düşer.</p>
+                <button onclick="startFlashGame()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-10 py-5 rounded-full font-black text-2xl md:text-3xl transition-transform hover:scale-110 shadow-[0_0_40px_rgba(6,182,212,0.6)]">
+                    Başla!
+                </button>
+            </div>
+
+            <!-- Oyun Ekranı -->
+            <div id="flash-playing-screen" class="hide w-full">
+                <div class="flex justify-between items-center mb-6 bg-slate-800 p-4 md:p-6 rounded-3xl border-2 border-slate-700 shadow-xl mx-2">
+                    <div class="text-center">
+                        <span class="block text-slate-400 font-bold uppercase mb-1 text-xs md:text-sm">Kalan Süre</span>
+                        <span id="flash-time-el" class="text-3xl md:text-4xl font-black text-cyan-400">60s</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block text-slate-400 font-bold uppercase mb-1 text-xs md:text-sm">Skor</span>
+                        <span id="flash-score-el" class="text-3xl md:text-4xl font-black text-amber-400">0</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-4 border-cyan-500/30 p-6 md:p-12 rounded-3xl shadow-[0_0_30px_rgba(6,182,212,0.2)] flex flex-col items-center mx-2">
+                    <h3 id="flash-question-el" class="text-4xl md:text-7xl font-black text-white mb-8 md:mb-12 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] tracking-widest">
+                        --
+                    </h3>
+
+                    <div id="flash-options-container" class="grid grid-cols-2 gap-3 md:gap-8 w-full max-w-lg">
+                        <!-- Şıklar -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oyun Bitti Ekranı -->
+            <div id="flash-gameover-screen" class="hide text-center bg-slate-800 p-8 md:p-16 rounded-3xl border-4 border-rose-500/50 shadow-[0_0_50px_rgba(225,29,72,0.3)] w-full mx-2">
+                <i class="fa-solid fa-trophy text-amber-400 text-6xl md:text-8xl mx-auto mb-6"></i>
+                <h2 class="text-4xl md:text-6xl font-black text-white mb-4">Süre Doldu!</h2>
+                <p class="text-xl md:text-2xl text-slate-300 mb-2">Harika yarıştın.</p>
+                <p class="text-3xl md:text-4xl text-cyan-400 font-black mb-8 md:mb-10">Toplam Skor: <span id="flash-final-score"></span></p>
+                <button onclick="startFlashGame()" class="bg-white hover:bg-slate-200 text-slate-900 px-8 py-4 rounded-full font-black text-xl md:text-2xl transition-transform hover:scale-105 shadow-xl flex items-center justify-center gap-3 mx-auto">
+                    <i class="fa-solid fa-rotate-left"></i> Tekrar Oyna
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- GENEL UYGULAMA MANTIĞI -->
+    <script>
+        // --- GÖRÜNÜM (VIEW) YÖNETİMİ ---
+        const views = ['menu', 'premath', 'sorting', 'snake', 'flash'];
+        let currentView = 'menu';
+
+        function showView(viewId) {
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if(el) {
+                    if(v === viewId) el.classList.remove('hide');
+                    else el.classList.add('hide');
+                }
+            });
+            currentView = viewId;
+            
+            // Header Butonu Durumu
+            const backBtn = document.getElementById('btn-back-menu');
+            if(viewId === 'menu') backBtn.classList.add('hide');
+            else backBtn.classList.remove('hide');
+
+            // Oyunlardan çıkılıyorsa temizlik yap
+            if(viewId !== 'snake') stopSnakeGame();
+            if(viewId !== 'flash') stopFlashGame();
+
+            // Yeni oyuna giriliyorsa başlat
+            if(viewId === 'premath') initPremath();
+            if(viewId === 'sorting') initSorting();
+            // Snake ve Flash, kendi menülerindeki Başla butonunu bekler
+        }
+
+
+        // ==========================================
+        // 1. MİNİK DAHİLER (ÖN BECERİ) MANTIĞI
+        // ==========================================
+        const EMOJIS = ['🍎', '🍌', '🍓', '🎈', '🧸', '🚗', '🐶', '⚽', '⭐'];
+        let pmScore = 0;
+        let pmLevel = 1;
+        let pmMode = 'count';
+        let pmData = null;
+        let pmIsAnimating = false;
+
+        function initPremath() {
+            pmScore = 0;
+            pmLevel = 1;
+            updatePmUI();
+            generatePmQuestion();
+        }
+
+        function updatePmUI() {
+            document.getElementById('premath-score-el').innerText = `${pmScore} Puan`;
+        }
+
+        function generatePmQuestion() {
+            pmIsAnimating = false;
+            pmMode = pmLevel < 3 ? 'count' : (Math.random() > 0.5 ? 'count' : 'compare');
+            const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+            if (pmMode === 'count') {
+                const count = Math.floor(Math.random() * 9) + 1; // 1-9
+                let opts = [count];
+                while(opts.length < 3) {
+                    let wrong = count + (Math.floor(Math.random() * 5) - 2);
+                    if (wrong !== count && wrong > 0 && wrong <= 12 && !opts.includes(wrong)) {
+                        opts.push(wrong);
+                    }
+                }
+                pmData = {
+                    emoji, count,
+                    options: opts.sort(() => Math.random() - 0.5),
+                    text: "Ekranda kaç tane var?"
+                };
+            } else {
+                let c1 = Math.floor(Math.random() * 8) + 1;
+                let c2 = Math.floor(Math.random() * 8) + 1;
+                while (c1 === c2) c2 = Math.floor(Math.random() * 8) + 1;
+                
+                const askMore = Math.random() > 0.5;
+                const correctIdx = askMore ? (c1 > c2 ? 0 : 1) : (c1 < c2 ? 0 : 1);
+                
+                pmData = {
+                    emoji, boxes: [c1, c2], askMore, correctIdx,
+                    text: askMore ? "Hangi kutuda daha ÇOK var?" : "Hangi kutuda daha AZ var?"
+                };
+            }
+            renderPmBoard();
+        }
+
+        function renderPmBoard() {
+            document.getElementById('premath-question-text').innerText = pmData.text;
+            const container = document.getElementById('premath-content');
+            let html = '';
+
+            if (pmMode === 'count') {
+                html += `<div class="flex flex-col items-center">
+                    <div class="flex flex-wrap justify-center gap-4 mb-12 min-h-[150px]">`;
+                for(let i=0; i<pmData.count; i++) {
+                    html += `<div class="text-6xl md:text-8xl">${pmData.emoji}</div>`;
+                }
+                html += `</div><div class="flex gap-6 w-full justify-center">`;
+                pmData.options.forEach((opt, idx) => {
+                    html += `<button onclick="handlePmAnswer(${opt === pmData.count})" class="w-24 h-24 md:w-32 md:h-32 bg-slate-700 hover:bg-slate-600 active:bg-amber-500 text-white rounded-3xl text-4xl md:text-6xl font-black border-b-8 border-slate-900 active:border-b-0 active:translate-y-2 transition-all shadow-lg">${opt}</button>`;
+                });
+                html += `</div></div>`;
+            } else {
+                html += `<div class="flex flex-col md:flex-row gap-8 justify-center items-stretch w-full">`;
+                pmData.boxes.forEach((count, idx) => {
+                    html += `<button onclick="handlePmAnswer(${idx === pmData.correctIdx})" class="flex-1 bg-slate-700 hover:bg-slate-600 active:bg-amber-500 rounded-3xl p-6 border-b-8 border-slate-900 active:border-b-0 active:translate-y-2 transition-all flex flex-col items-center justify-center min-h-[200px] shadow-lg">
+                        <div class="flex flex-wrap justify-center gap-2">`;
+                    for(let i=0; i<count; i++) html += `<span class="text-4xl md:text-6xl">${pmData.emoji}</span>`;
+                    html += `</div></button>`;
+                });
+                html += `</div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function handlePmAnswer(isCorrect) {
+            if(pmIsAnimating) return;
+            pmIsAnimating = true;
+
+            const efxCorrect = document.getElementById('premath-effect-correct');
+            const efxWrong = document.getElementById('premath-effect-wrong');
+
+            if (isCorrect) {
+                efxCorrect.classList.remove('hide');
+                pmScore += 10;
+                pmLevel = Math.floor(pmScore / 40) + 1;
+                updatePmUI();
+                setTimeout(() => {
+                    efxCorrect.classList.add('hide');
+                    generatePmQuestion();
+                }, 1200);
+            } else {
+                efxWrong.classList.remove('hide');
+                setTimeout(() => {
+                    efxWrong.classList.add('hide');
+                    pmIsAnimating = false;
+                }, 800);
+            }
+        }
+
+
+        // ==========================================
+        // 3. SAYI DEDEKTİFİ (SIRALAMA) MANTIĞI
+        // ==========================================
+        let sortLevel = 1;
+        let sortScore = 0;
+        let sortNumbers = [];
+        let sortTargetOrder = [];
+        let sortPhase = 'sort'; // sort, median, max, success
+        let sortCurrentIndex = 0;
+        let sortIsAnimating = false;
+
+        function initSorting() {
+            sortLevel = 1;
+            sortScore = 0;
+            generateSortLevel(1);
+        }
+
+        function updateSortUI() {
+            document.getElementById('sort-level-el').innerText = sortLevel;
+            document.getElementById('sort-score-el').innerText = sortScore;
+        }
+
+        function setSortMessage(msg) {
+            document.getElementById('sort-message-el').innerText = msg;
+        }
+
+        function generateSortLevel(lvl) {
+            let count = 5;
+            if (lvl > 3) count = 7;
+            if (lvl > 7) count = 9;
+
+            let newNums = [];
+            for (let i = 0; i < count; i++) {
+                let num;
+                if (lvl <= 2) num = Math.floor(Math.random() * 50) + 1;
+                else if (lvl <= 5) num = Math.floor(Math.random() * 100) - 30;
+                else num = parseFloat((Math.random() * 100 - 50).toFixed(1));
+                
+                while (newNums.includes(num)) num += 1;
+                newNums.push(num);
+            }
+
+            newNums.sort(() => Math.random() - 0.5);
+            
+            sortNumbers = newNums.map((n, i) => ({ id: i, value: n, state: 'idle' }));
+            sortTargetOrder = [...newNums].sort((a, b) => a - b);
+            sortCurrentIndex = 0;
+            sortPhase = 'sort';
+            
+            document.getElementById('sort-board').classList.remove('hide');
+            document.getElementById('sort-success-screen').classList.add('hide');
+            
+            setSortMessage('Sayıları KÜÇÜKTEN BÜYÜĞE doğru sırayla seç!');
+            updateSortUI();
+            renderSortBoard();
+        }
+
+        function renderSortBoard() {
+            const board = document.getElementById('sort-board');
+            let html = '';
+            sortNumbers.forEach((item, idx) => {
+                let classes = "relative flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 md:w-36 md:h-36 rounded-2xl md:rounded-3xl text-2xl sm:text-3xl md:text-5xl font-black transition-all duration-300 transform ";
+                let iconHtml = '';
+
+                if (item.state === 'idle') {
+                    classes += "bg-slate-700 hover:bg-slate-600 text-white border-b-[6px] md:border-b-8 border-slate-900 hover:-translate-y-1 cursor-pointer";
+                } else if (item.state === 'correct') {
+                    classes += "bg-emerald-500 text-white border-b-0 translate-y-2 shadow-[0_0_30px_rgba(16,185,129,0.8)]";
+                    iconHtml = '<i class="fa-solid fa-check-circle absolute top-1 right-1 md:top-2 md:right-2 text-emerald-200 text-lg"></i>';
+                } else if (item.state === 'wrong') {
+                    classes += "bg-rose-500 text-white border-b-0 animate-shake shadow-[0_0_30px_rgba(225,29,72,0.8)]";
+                    iconHtml = '<i class="fa-solid fa-times-circle absolute top-1 right-1 md:top-2 md:right-2 text-rose-200 text-lg"></i>';
+                }
+
+                html += `<button onclick="handleSortClick(${idx})" class="${classes}">${item.value}${iconHtml}</button>`;
+            });
+            board.innerHTML = html;
+        }
+
+        function handleSortClick(index) {
+            if (sortIsAnimating) return;
+            const item = sortNumbers[index];
+            if (item.state === 'correct') return;
+
+            if (sortPhase === 'sort') {
+                if (item.value === sortTargetOrder[sortCurrentIndex]) {
+                    processSortCorrect(index, () => {
+                        if (sortCurrentIndex + 1 === sortTargetOrder.length) {
+                            setTimeout(() => {
+                                sortPhase = 'median';
+                                setSortMessage('Harika! Şimdi dizinin ORTANCA sayısına tıkla.');
+                                resetSortBoardToIdle(true); // sorted order
+                            }, 1000);
+                        } else {
+                            sortCurrentIndex++;
+                        }
+                    });
+                } else processSortWrong(index);
+            } 
+            else if (sortPhase === 'median') {
+                const medianValue = sortTargetOrder[Math.floor(sortTargetOrder.length / 2)];
+                if (item.value === medianValue) {
+                    processSortCorrect(index, () => {
+                        setTimeout(() => {
+                            sortPhase = 'max';
+                            setSortMessage('Süper! Son olarak EN BÜYÜK sayıyı seç.');
+                            resetSortBoardToIdle(true);
+                        }, 1200);
+                    }, 20);
+                } else processSortWrong(index);
+            }
+            else if (sortPhase === 'max') {
+                const maxValue = sortTargetOrder[sortTargetOrder.length - 1];
+                if (item.value === maxValue) {
+                    processSortCorrect(index, () => {
+                        setTimeout(() => {
+                            sortPhase = 'success';
+                            document.getElementById('sort-board').classList.add('hide');
+                            document.getElementById('sort-success-screen').classList.remove('hide');
+                        }, 1000);
+                    }, 20);
+                } else processSortWrong(index);
+            }
+        }
+
+        function processSortCorrect(index, callback, pts=10) {
+            sortIsAnimating = true;
+            sortNumbers[index].state = 'correct';
+            sortScore += pts;
+            updateSortUI();
+            renderSortBoard();
+            setTimeout(() => {
+                sortIsAnimating = false;
+                if(callback) callback();
+            }, 300);
+        }
+
+        function processSortWrong(index) {
+            sortIsAnimating = true;
+            sortNumbers[index].state = 'wrong';
+            sortScore = Math.max(0, sortScore - 5);
+            updateSortUI();
+            renderSortBoard();
+            setTimeout(() => {
+                if(sortNumbers[index].state !== 'correct') sortNumbers[index].state = 'idle';
+                renderSortBoard();
+                sortIsAnimating = false;
+            }, 500);
+        }
+
+        function resetSortBoardToIdle(useSortedOrder = false) {
+            if (useSortedOrder) {
+                sortNumbers = sortTargetOrder.map((n, i) => ({ id: i, value: n, state: 'idle' }));
+            } else {
+                sortNumbers.forEach(n => n.state = 'idle');
+            }
+            renderSortBoard();
+        }
+
+        function sortNextLevel() {
+            sortLevel++;
+            generateSortLevel(sortLevel);
+        }
+
+
+        // ==========================================
+        // 4. SONSUZ YILAN MANTIĞI
+        // ==========================================
+        const GRID_SIZE = 15;
+        let snkArr = [];
+        let snkDir = {x: 0, y: -1};
+        let snkNextDir = {x: 0, y: -1};
+        let snkFoods = [];
+        let snkQuestion = {};
+        let snkScore = 0;
+        let snkLevel = 1;
+        let snkSpeed = 250;
+        let snkTimer = null;
+        let snkIsPlaying = false;
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Grid oluştur (bir kere)
+        const snkGridEl = document.getElementById('snake-grid');
+        for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
+            const cell = document.createElement('div');
+            cell.className = "w-full h-full border border-slate-800/30 flex items-center justify-center relative transition-colors";
+            cell.id = `sc-${i}`;
+            snkGridEl.appendChild(cell);
+        }
+
+        function stopSnakeGame() {
+            clearInterval(snkTimer);
+            snkIsPlaying = false;
+        }
+
+        function startSnakeGame() {
+            document.getElementById('snake-start-screen').classList.add('hide');
+            document.getElementById('snake-gameover-screen').classList.add('hide');
+            document.getElementById('snake-question-container').classList.remove('hide');
+            
+            snkArr = [{ x: 7, y: 7 }, { x: 7, y: 8 }];
+            snkDir = {x: 0, y: -1};
+            snkNextDir = {x: 0, y: -1};
+            snkScore = 0;
+            snkLevel = 1;
+            snkSpeed = 250;
+            snkIsPlaying = true;
+            
+            generateSnkLevel();
+            updateSnkUI();
+            
+            clearInterval(snkTimer);
+            snkTimer = setInterval(snkTick, snkSpeed);
+        }
+
+        function generateSnkLevel() {
+            const ops = ['+'];
+            if(snkLevel > 2) ops.push('-');
+            if(snkLevel > 4) ops.push('*');
+            if(snkLevel > 6) ops.push('/');
+            
+            const op = ops[Math.floor(Math.random()*ops.length)];
+            let n1, n2, ans;
+            
+            if(op==='+'){ n1=R(1,10+snkLevel*2); n2=R(1,10+snkLevel*2); ans=n1+n2; }
+            else if(op==='-'){ n2=R(1,10+snkLevel*2); ans=R(1,10+snkLevel*2); n1=n2+ans; }
+            else if(op==='*'){ n1=R(1,5+snkLevel); n2=R(1,10); ans=n1*n2; }
+            else if(op==='/'){ n2=R(1,10); ans=R(1,5+snkLevel); n1=n2*ans; }
+
+            snkQuestion = { text: `${n1} ${op} ${n2} = ?`, ans };
+            document.getElementById('snake-question-text').innerText = snkQuestion.text;
+
+            let w1 = ans + R(1,5);
+            let w2 = ans - R(1,5);
+            if(w2 === ans) w2 += 2;
+
+            let opts = [
+                {v: ans, c: true},
+                {v: w1, c: false},
+                {v: w2, c: false}
+            ];
+
+            snkFoods = [];
+            opts.forEach(o => {
+                let pos;
+                while(true) {
+                    pos = {x: R(0,GRID_SIZE-1), y: R(0,GRID_SIZE-1)};
+                    let onSnk = snkArr.some(s => s.x===pos.x && s.y===pos.y);
+                    let onFd = snkFoods.some(f => f.x===pos.x && f.y===pos.y);
+                    if(!onSnk && !onFd) break;
+                }
+                snkFoods.push({...pos, ...o});
+            });
+            drawSnkBoard();
+        }
+
+        function snkTick() {
+            if(!snkIsPlaying) return;
+            snkDir = {...snkNextDir};
+            
+            let head = {...snkArr[0]};
+            head.x += snkDir.x;
+            head.y += snkDir.y;
+
+            // Sonsuz Duvar
+            if(head.x < 0) head.x = GRID_SIZE-1; else if(head.x >= GRID_SIZE) head.x = 0;
+            if(head.y < 0) head.y = GRID_SIZE-1; else if(head.y >= GRID_SIZE) head.y = 0;
+
+            // Kendine Çarpma
+            if(snkArr.some(s => s.x===head.x && s.y===head.y)) {
+                return snkGameOver();
+            }
+
+            let newArr = [head, ...snkArr];
+            let eatenIdx = snkFoods.findIndex(f => f.x===head.x && f.y===head.y);
+
+            if(eatenIdx !== -1) {
+                if(snkFoods[eatenIdx].c) {
+                    snkScore += 10;
+                    snkLevel = Math.floor(snkScore/50) + 1;
+                    snkSpeed = Math.max(100, snkSpeed - 3);
+                    updateSnkUI();
+                    generateSnkLevel();
+                    clearInterval(snkTimer);
+                    snkTimer = setInterval(snkTick, snkSpeed);
+                } else {
+                    return snkGameOver();
+                }
+            } else {
+                newArr.pop();
+            }
+
+            snkArr = newArr;
+            drawSnkBoard();
+        }
+
+        function drawSnkBoard() {
+            for(let i=0; i<GRID_SIZE*GRID_SIZE; i++) {
+                const cell = document.getElementById(`sc-${i}`);
+                cell.className = "w-full h-full border border-slate-800/30 flex items-center justify-center relative";
+                cell.innerHTML = '';
+                
+                const x = i % GRID_SIZE;
+                const y = Math.floor(i / GRID_SIZE);
+
+                const isHead = snkArr[0].x === x && snkArr[0].y === y;
+                const isBody = snkArr.some(s => s.x === x && s.y === y) && !isHead;
+                const fd = snkFoods.find(f => f.x === x && f.y === y);
+
+                if(isHead) cell.className += " bg-emerald-400 rounded-sm z-10 scale-110 shadow-[0_0_10px_rgba(52,211,153,1)]";
+                else if(isBody) cell.className += " bg-emerald-600 rounded-sm";
+
+                if(fd && !isHead && !isBody) {
+                    cell.innerHTML = `<div class="absolute w-[85%] h-[85%] bg-gradient-to-br from-rose-400 to-rose-600 rounded-md flex items-center justify-center shadow-[0_0_10px_rgba(225,29,72,0.8)] animate-pulse">
+                        <span class="text-white font-black text-xs md:text-sm drop-shadow-md">${fd.v}</span>
+                    </div>`;
+                }
+            }
+        }
+
+        function snkGameOver() {
+            snkIsPlaying = false;
+            clearInterval(snkTimer);
+            document.getElementById('snake-gameover-screen').classList.remove('hide');
+            document.getElementById('snake-question-container').classList.add('hide');
+            document.getElementById('snake-final-level').innerText = snkLevel;
+            document.getElementById('snake-final-score').innerText = snkScore;
+        }
+
+        function updateSnkUI() {
+            document.getElementById('snake-level-el').innerText = snkLevel;
+            document.getElementById('snake-score-el').innerText = snkScore;
+        }
+
+        function setSnkDir(x, y) {
+            if(snkDir.x !== 0 && x === -snkDir.x) return;
+            if(snkDir.y !== 0 && y === -snkDir.y) return;
+            snkNextDir = {x, y};
+        }
+
+        // Klavye Kontrolleri
+        window.addEventListener('keydown', e => {
+            if(currentView !== 'snake' || !snkIsPlaying) return;
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) e.preventDefault();
+            
+            if(e.key==='ArrowUp' || e.key.toLowerCase()==='w') setSnkDir(0,-1);
+            if(e.key==='ArrowDown' || e.key.toLowerCase()==='s') setSnkDir(0,1);
+            if(e.key==='ArrowLeft' || e.key.toLowerCase()==='a') setSnkDir(-1,0);
+            if(e.key==='ArrowRight' || e.key.toLowerCase()==='d') setSnkDir(1,0);
+        }, {passive: false});
+
+        // Swipe (Dokunmatik) Kontrolleri
+        const tArea = document.getElementById('snake-touch-area');
+        tArea.addEventListener('touchstart', e => {
+            if(!snkIsPlaying) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, {passive: false});
+        
+        tArea.addEventListener('touchmove', e => {
+            if(snkIsPlaying) e.preventDefault(); // Kaymayı engelle
+        }, {passive: false});
+
+        tArea.addEventListener('touchend', e => {
+            if(!snkIsPlaying || !touchStartX) return;
+            let dX = e.changedTouches[0].clientX - touchStartX;
+            let dY = e.changedTouches[0].clientY - touchStartY;
+
+            if(Math.abs(dX)>30 || Math.abs(dY)>30) {
+                if(Math.abs(dX) > Math.abs(dY)) {
+                    if(dX>0) setSnkDir(1,0); else setSnkDir(-1,0);
+                } else {
+                    if(dY>0) setSnkDir(0,1); else setSnkDir(0,-1);
+                }
+            }
+            touchStartX = 0;
+        }, {passive: false});
+
+
+        // ==========================================
+        // 5. NEON KUTULAR (HIZLI MATEMATİK) MANTIĞI
+        // ==========================================
+        let flScore = 0;
+        let flTime = 0;
+        let flTimer = null;
+        let flIsPlaying = false;
+        let flData = {};
+
+        function stopFlashGame() {
+            clearInterval(flTimer);
+            flIsPlaying = false;
+        }
+
+        function startFlashGame() {
+            document.getElementById('flash-ready-screen').classList.add('hide');
+            document.getElementById('flash-gameover-screen').classList.add('hide');
+            document.getElementById('flash-playing-screen').classList.remove('hide');
+
+            flScore = 0;
+            flTime = 60;
+            flIsPlaying = true;
+            updateFlUI();
+            generateFlQuestion();
+
+            clearInterval(flTimer);
+            flTimer = setInterval(() => {
+                flTime--;
+                updateFlUI();
+                if(flTime <= 0) flGameOver();
+            }, 1000);
+        }
+
+        function generateFlQuestion() {
+            if(!flIsPlaying) return;
+            const ops = ['+', '-', '*', '/'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            let n1, n2, ans;
+
+            if(op==='+'){ n1=R(1,50); n2=R(1,50); ans=n1+n2; }
+            else if(op==='-'){ n2=R(1,50); ans=R(1,50); n1=n2+ans; }
+            else if(op==='*'){ n1=R(2,12); n2=R(2,12); ans=n1*n2; }
+            else if(op==='/'){ n2=R(2,10); ans=R(1,12); n1=n2*ans; }
+
+            let opts = [ans];
+            while(opts.length < 4) {
+                let w = ans + R(-10, 10);
+                if(w !== ans && w >= 0 && !opts.includes(w)) opts.push(w);
+            }
+            
+            flData = {
+                text: `${n1} ${op} ${n2}`,
+                ans: ans,
+                opts: opts.sort(() => Math.random() - 0.5).map((v,id) => ({id, v, state: 'idle'}))
+            };
+            
+            document.getElementById('flash-question-el').innerText = flData.text + " = ?";
+            renderFlOptions();
+        }
+
+        function renderFlOptions() {
+            const cont = document.getElementById('flash-options-container');
+            let html = '';
+            flData.opts.forEach((o, i) => {
+                let c = "h-20 md:h-32 text-2xl md:text-5xl font-black rounded-2xl border-b-8 transition-all duration-200 transform ";
+                if(o.state === 'idle') c += "bg-slate-800 border-slate-900 text-cyan-100 hover:bg-slate-700 hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]";
+                else if(o.state === 'correct') c += "bg-emerald-500 border-emerald-700 text-white shadow-[0_0_40px_rgba(16,185,129,0.8)] scale-105";
+                else if(o.state === 'wrong') c += "bg-rose-600 border-rose-800 text-white shadow-[0_0_40px_rgba(225,29,72,0.8)] animate-shake";
+                
+                html += `<button onclick="handleFlClick(${i})" class="${c}">${o.v}</button>`;
+            });
+            cont.innerHTML = html;
+        }
+
+        function handleFlClick(idx) {
+            if(!flIsPlaying) return;
+            const opt = flData.opts[idx];
+            if(opt.state !== 'idle') return;
+
+            if(opt.v === flData.ans) {
+                opt.state = 'correct';
+                flScore += 5;
+                renderFlOptions();
+                updateFlUI();
+                setTimeout(generateFlQuestion, 300);
+            } else {
+                opt.state = 'wrong';
+                flTime = Math.max(0, flTime - 3);
+                renderFlOptions();
+                updateFlUI();
+                setTimeout(() => {
+                    opt.state = 'idle';
+                    renderFlOptions();
+                }, 500);
+            }
+        }
+
+        function updateFlUI() {
+            const tEl = document.getElementById('flash-time-el');
+            tEl.innerText = `${flTime}s`;
+            if(flTime <= 10) { tEl.classList.add('text-rose-500', 'animate-pulse'); tEl.classList.remove('text-cyan-400'); }
+            else { tEl.classList.remove('text-rose-500', 'animate-pulse'); tEl.classList.add('text-cyan-400'); }
+            document.getElementById('flash-score-el').innerText = flScore;
+        }
+
+        function flGameOver() {
+            flIsPlaying = false;
+            clearInterval(flTimer);
+            document.getElementById('flash-playing-screen').classList.add('hide');
+            document.getElementById('flash-gameover-screen').classList.remove('hide');
+            document.getElementById('flash-final-score').innerText = flScore;
+        }
+
+        // --- YARDIMCI FONKSİYONLAR ---
+        function R(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+    </script>
+</body>
+</html>
+
