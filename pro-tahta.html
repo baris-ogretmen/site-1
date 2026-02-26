@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    
+    <!-- iPHONE ANA EKRANA EKLEME (PWA) VE TAM EKRAN AYARLARI -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pro Tahta">
+    
+    <!-- Ana Ekran İkonu (Otomatik oluşur) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231e293b'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='%23f59e0b'>✎</text></svg>">
+    
+    <title>Pro Ders Anlatım ve Ekran Çizim Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            user-select: none;
+            -webkit-user-select: none;
+            /* ÖNEMLİ: touch-action: none body'den kaldırıldı, sadece canvas'a eklendi ki slider çalışsın! */
+        }
+
+        /* ARKA PLAN ZEMİNLERİ (Öğretmen Modları) */
+        #bgContainer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+        .board-black { background-color: #0f172a; }
+        .board-white { background-color: #ffffff; }
+        .board-grid { 
+            background-color: #ffffff;
+            background-image: linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .board-lined {
+            background-color: #ffffff;
+            background-image: linear-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 100% 40px;
+        }
+        
+        #bgVideo, #bgImage { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 5; pointer-events: none; 
+        }
+        #bgImage { display: none; }
+        
+        #canvas { 
+            position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; 
+            touch-action: none; /* Çizim yaparken ekranın kaymasını SADECE canvas üzerinde engeller */
+        }
+
+        /* Lazer İşaretleyici */
+        #laserDot {
+            position: absolute; width: 20px; height: 20px; background-color: #ff0000;
+            border-radius: 50%; box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.6);
+            pointer-events: none; z-index: 999; display: none;
+            transform: translate(-50%, -50%); transition: opacity 0.1s;
+        }
+
+        /* iPhone Pro Max için Alt Araç Çubuğu */
+        .toolbar { 
+            z-index: 100; transition: all 0.3s ease;
+            padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+            touch-action: manipulation; /* Menüde tıklamaların rahat çalışması için */
+        }
+        
+        .scrollable-menu {
+            display: flex; gap: 0.5rem; overflow-x: auto; -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; padding-bottom: 4px; pointer-events: auto;
+        }
+        .scrollable-menu::-webkit-scrollbar { display: none; }
+        
+        .color-circle { 
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
+            border: 2px solid rgba(255,255,255,0.3); transition: all 0.2s; 
+        }
+        .color-circle.active-color { transform: scale(1.2); border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        
+        .tool-btn {
+            flex-shrink: 0; padding: 0.5rem 0.6rem; border-radius: 0.75rem; background-color: #334155;
+            transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center;
+            justify-content: center; gap: 0.25rem; font-size: 0.875rem; color: white;
+        }
+        .active-tool { background-color: #1e293b !important; border-color: #3b82f6 !important; }
+
+        /* KALINLIK AYARI (SLIDER) DÜZELTMESİ */
+        input[type=range] { 
+            -webkit-appearance: none; background: transparent; pointer-events: auto; touch-action: pan-x; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; /* Top büyütüldü */
+            background: #f59e0b; cursor: pointer; margin-top: -10px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; background: #475569; border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ARKA PLAN ZEMİNİ (Öğretmen Tahtaları İçin) -->
+    <div id="bgContainer" class="board-black"></div>
+
+    <!-- ARKA PLAN MEDYA KATMANLARI -->
+    <video id="bgVideo" autoplay playsinline muted></video>
+    <img id="bgImage" alt="Arka Plan Resmi">
+    
+    <!-- ÇİZİM KATMANI VE LAZER -->
+    <canvas id="canvas"></canvas>
+    <div id="laserDot"></div>
+
+    <!-- ARAÇ ÇUBUĞU -->
+    <div class="toolbar fixed bottom-0 left-0 w-full bg-slate-800/95 backdrop-blur-xl border-t border-slate-600 shadow-2xl flex flex-col gap-2 p-3">
+        
+        <!-- Üst Satır: Araçlar ve Zeminler -->
+        <div class="scrollable-menu items-center w-full">
+            
+            <!-- Temel Araçlar -->
+            <button onclick="undo()" class="tool-btn bg-slate-700" title="Geri Al">↩️</button>
+            <div class="w-px h-6 bg-slate-600 mx-1 flex-shrink-0"></div>
+            
+            <button onclick="setMode('pen')" id="penBtn" class="tool-btn active-tool">✏️ Kalem</button>
+            <button onclick="setMode('highlighter')" id="highlighterBtn" class="tool-btn">🖍️ Fosfor</button>
+            <button onclick="setMode('eraser')" id="eraserBtn" class="tool-btn">🧽 Silgi</button>
+            <button onclick="setMode('laser')" id="laserBtn" class="tool-btn bg-red-900/50 hover:bg-red-800/50">🔴 Lazer</button>
+            
+            <div class="w-px h-6 bg-slate-600 mx-1 flex-shrink-0"></div>
+            
+            <!-- Öğretmen Zeminleri -->
+            <button onclick="setBoard('black')" class="tool-btn" title="Siyah Tahta">⬛</button>
+            <button onclick="setBoard('white')" class="tool-btn" title="Beyaz Tahta">⬜</button>
+            <button onclick="setBoard('grid')" class="tool-btn" title="Kareli Defter">▦</button>
+            <button onclick="setBoard('lined')" class="tool-btn" title="Çizgili Defter">▤</button>
+            
+            <div class="w-px h-6 bg-slate-600 mx-1 flex-shrink-0"></div>
+
+            <!-- Medya ve Kayıt -->
+            <button onclick="pasteFromClipboard()" class="tool-btn bg-indigo-600 hover:bg-indigo-500 font-medium whitespace-nowrap">📋 Yapıştır</button>
+            <input type="file" id="imageInput" accept="image/*" class="hidden">
+            <button onclick="document.getElementById('imageInput').click()" class="tool-btn bg-slate-700">🖼️</button>
+            
+            <div class="flex gap-2 ml-2 pl-2 border-l border-slate-600">
+                <button onclick="clearDrawings()" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-xl text-lg flex items-center shadow-lg">🗑️</button>
+                <button onclick="saveSnapshot()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-lg flex items-center shadow-lg">💾</button>
+            </div>
+        </div>
+
+        <!-- Alt Satır: Renkler ve Kalınlık (SLIDER) -->
+        <div class="scrollable-menu items-center w-full mt-1">
+            <div class="flex items-center gap-2 pr-4 border-r border-slate-600">
+                <div class="color-circle active-color" style="background: #ffff00;" onclick="setColor('#ffff00', this)"></div>
+                <div class="color-circle" style="background: #ff3333;" onclick="setColor('#ff3333', this)"></div>
+                <div class="color-circle" style="background: #33ff33;" onclick="setColor('#33ff33', this)"></div>
+                <div class="color-circle" style="background: #3388ff;" onclick="setColor('#3388ff', this)"></div>
+                <div class="color-circle" style="background: #ff9900;" onclick="setColor('#ff9900', this)"></div>
+                <div class="color-circle" style="background: #ff00ff;" onclick="setColor('#ff00ff', this)"></div>
+                <div class="color-circle" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div>
+                <div class="color-circle" style="background: #000000;" onclick="setColor('#000000', this)"></div>
+            </div>
+            
+            <!-- Kalınlık Slider (Düzeltildi) -->
+            <div class="flex items-center gap-3 pl-2 w-full max-w-[250px]">
+                <span class="text-xs text-slate-300 font-medium tracking-wide">Kalınlık</span>
+                <input type="range" id="sizeSlider" min="2" max="60" value="6" class="flex-grow">
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const bgImg = document.getElementById('bgImage');
+        const bgContainer = document.getElementById('bgContainer');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const laserDot = document.getElementById('laserDot');
+        
+        let drawing = false;
+        let mode = 'pen'; 
+        let activeColor = '#ffff00';
+        let currentBoard = 'black'; // black, white, grid, lined
+        let lastX = 0; let lastY = 0;
+
+        // GERİ ALMA (UNDO)
+        let undoStack = [];
+        const MAX_UNDO = 20;
+
+        function saveState() {
+            if (undoStack.length >= MAX_UNDO) undoStack.shift();
+            undoStack.push(canvas.toDataURL());
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                undoStack.pop(); 
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
+                if (undoStack.length > 0) {
+                    let img = new Image();
+                    img.src = undoStack[undoStack.length - 1];
+                    img.onload = () => {
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.drawImage(img, 0, 0);
+                    };
+                }
+            }
+        }
+
+        // EKRAN BOYUTLANDIRMA
+        function resizeCanvas() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+            tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        saveState();
+
+        // ARAÇ VE RENK YÖNETİMİ
+        function setColor(color, element) { 
+            activeColor = color; 
+            if(mode === 'eraser' || mode === 'laser') setMode('pen'); 
+            document.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active-color'));
+            if(element) element.classList.add('active-color');
+            
+            // Eğer siyah seçilirse ve tahta siyahsa kullanıcıyı uyar
+            if(color === '#000000' && currentBoard === 'black' && bgImg.style.display === 'none') {
+                setBoard('white');
+            }
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('penBtn').classList.toggle('active-tool', mode === 'pen');
+            document.getElementById('highlighterBtn').classList.toggle('active-tool', mode === 'highlighter');
+            document.getElementById('eraserBtn').classList.toggle('active-tool', mode === 'eraser');
+            document.getElementById('laserBtn').classList.toggle('active-tool', mode === 'laser');
+            
+            if(mode !== 'laser') laserDot.style.display = 'none';
+        }
+
+        // ÖĞRETMEN ZEMİNLERİ
+        function setBoard(type) {
+            currentBoard = type;
+            bgImg.style.display = 'none'; // Resmi gizle
+            bgImg.src = '';
+            
+            bgContainer.className = `board-${type}`;
+            
+            // Eğer beyaz tahtaya geçiliyorsa ve renk beyazsa kalemi siyaha al
+            if((type === 'white' || type === 'grid' || type === 'lined') && activeColor === '#ffffff') {
+                setColor('#000000', document.querySelectorAll('.color-circle')[7]);
+            }
+        }
+
+        // MEDYA YÜKLEME VE YAPIŞTIRMA
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                bgImg.src = event.target.result;
+                bgImg.style.display = 'block';
+                bgContainer.className = 'board-black'; // Resim açılınca arkayı siyah yap
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function pasteFromClipboard() {
+            try {
+                const clipboardItems = await navigator.clipboard.read();
+                for (const clipboardItem of clipboardItems) {
+                    const imageTypes = clipboardItem.types.filter(type => type.startsWith('image/'));
+                    for (const imageType of imageTypes) {
+                        const blob = await clipboardItem.getType(imageType);
+                        bgImg.src = URL.createObjectURL(blob);
+                        bgImg.style.display = 'block';
+                        bgContainer.className = 'board-black';
+                        return; 
+                    }
+                }
+                alert("Panoda resim bulunamadı. Önce bir dokümandan veya Risale-i Nur uygulamasından ekran görüntüsü kopyalayın.");
+            } catch (err) {
+                alert("Panoya erişim reddedildi. Sayfada bir yere dokunup tekrar deneyin.");
+            }
+        }
+
+        function clearDrawings() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            undoStack = [];
+            saveState();
+        }
+
+        // ÇİZİM VE LAZER MANTIĞI
+        function getCoords(e) {
+            let clientX = e.clientX; let clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+            }
+            return { x: clientX, y: clientY };
+        }
+
+        function setupBrush() {
+            // Slider değeri numaraya çevriliyor
+            let thickness = parseInt(sizeSlider.value);
+            
+            if (mode === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.fillStyle = 'rgba(0,0,0,1)';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+                ctx.lineWidth = thickness * 2.5; // Silgi çok daha kalın
+            } else if (mode === 'highlighter') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = hexToRgba(activeColor, 0.4);
+                ctx.strokeStyle = hexToRgba(activeColor, 0.4);
+                ctx.lineWidth = thickness * 1.5;
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = activeColor;
+                ctx.strokeStyle = activeColor;
+                ctx.lineWidth = thickness;
+            }
+        }
+
+        function startDrawing(e) { 
+            // Sadece canvasa dokunulduğunda çalışır, menüyü etkilemez
+            if (e.target !== canvas) return;
+            e.preventDefault(); 
+            
+            const coords = getCoords(e);
+            
+            if(mode === 'laser') {
+                drawing = true;
+                laserDot.style.display = 'block';
+                laserDot.style.left = coords.x + 'px';
+                laserDot.style.top = coords.y + 'px';
+                return;
+            }
+
+            drawing = true; 
+            lastX = coords.x; lastY = coords.y;
+            
+            ctx.beginPath();
+            setupBrush();
+            ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath(); 
+        }
+        
+        function stopDrawing(e) { 
+            if (!drawing) return;
+            drawing = false; 
+            if(mode === 'laser') {
+                laserDot.style.display = 'none';
+                return;
+            }
+            ctx.beginPath(); 
+            saveState(); 
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            e.preventDefault();
+            const coords = getCoords(e);
+
+            if(mode === 'laser') {
+                laserDot.style.left = coords.x + 'px';
+                laserDot.style.top = coords.y + 'px';
+                return;
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            setupBrush();
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+
+            lastX = coords.x; lastY = coords.y;
+        }
+
+        function hexToRgba(hex, alpha) {
+            let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // AKILLI KAYDETME (Arka Planlarla Beraber)
+        function saveSnapshot() {
+            const exportCanvas = document.createElement('canvas');
+            const w = canvas.width; const h = canvas.height;
+            exportCanvas.width = w; exportCanvas.height = h;
+            const eCtx = exportCanvas.getContext('2d');
+
+            // 1. Zemin rengini veya desenini çiz
+            if (bgImg.style.display !== 'none' && bgImg.src) {
+                eCtx.fillStyle = '#0f172a'; // Resim varsa arka siyah
+                eCtx.fillRect(0, 0, w, h);
+                const scale = Math.min(w / bgImg.naturalWidth, h / bgImg.naturalHeight);
+                const iw = bgImg.naturalWidth * scale; const ih = bgImg.naturalHeight * scale;
+                eCtx.drawImage(bgImg, (w - iw) / 2, (h - ih) / 2, iw, ih);
+            } else {
+                if (currentBoard === 'black') {
+                    eCtx.fillStyle = '#0f172a'; eCtx.fillRect(0, 0, w, h);
+                } else {
+                    eCtx.fillStyle = '#ffffff'; eCtx.fillRect(0, 0, w, h);
+                    
+                    if (currentBoard === 'grid') {
+                        eCtx.strokeStyle = '#cbd5e1'; eCtx.lineWidth = 1;
+                        for(let i=0; i<w; i+=30) { eCtx.beginPath(); eCtx.moveTo(i,0); eCtx.lineTo(i,h); eCtx.stroke(); }
+                        for(let i=0; i<h; i+=30) { eCtx.beginPath(); eCtx.moveTo(0,i); eCtx.lineTo(w,i); eCtx.stroke(); }
+                    } else if (currentBoard === 'lined') {
+                        eCtx.strokeStyle = '#cbd5e1'; eCtx.lineWidth = 1;
+                        for(let i=0; i<h; i+=40) { eCtx.beginPath(); eCtx.moveTo(0,i); eCtx.lineTo(w,i); eCtx.stroke(); }
+                    }
+                }
+            }
+
+            // 2. Kullanıcının Çizimlerini Ekle
+            eCtx.drawImage(canvas, 0, 0);
+
+            // 3. İndir
+            const link = document.createElement('a');
+            link.download = `Ders-Notu-${new Date().getTime()}.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // EVENT LISTENER'LAR
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        // Dokunmatik olaylarda passive: false bırakıldı çünkü çizim sırasında scroll engellenmeli
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        window.addEventListener('touchend', stopDrawing, { passive: false });
+
+    </script>
+</body>
+</html>
+
+
