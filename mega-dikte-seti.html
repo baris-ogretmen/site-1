@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihirli Kelimeler - Mega Dikte Seti</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Comic Neue', cursive;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#86efac 2px, transparent 2px);
+            background-size: 30px 30px;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        /* Ortak Kutu Stilleri */
+        .letter-box {
+            width: 60px; height: 70px;
+            font-size: 2.2rem;
+            display: flex; align-items: center; justify-content: center;
+            background-color: white;
+            border: 4px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-transform: uppercase; font-weight: bold; color: #1e293b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @media (max-width: 600px) {
+            .letter-box { width: 45px; height: 55px; font-size: 1.6rem; border-width: 3px; }
+        }
+        .letter-box.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            animation: pulse-border 1.5s infinite;
+        }
+        .letter-box.correct {
+            background-color: #4ade80; border-color: #16a34a; color: white;
+            transform: scale(1.1) rotate(3deg);
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
+        }
+
+        /* Çengel Bulmaca Stilleri */
+        .cw-grid { display: grid; gap: 4px; padding: 10px; }
+        .cw-cell { width: 50px; height: 50px; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; transition: all 0.2s; }
+        @media (max-width: 600px) { .cw-cell { width: 40px; height: 40px; font-size: 1.4rem; } }
+        .cw-empty { background: transparent; }
+        .cw-letter { background: white; border: 3px solid #cbd5e1; color: #1e293b; }
+        .cw-letter.active-word { background: #fef3c7; border-color: #f59e0b; }
+        .cw-letter.active-cell { border-color: #f97316; box-shadow: 0 0 12px rgba(249,115,22,0.6); animation: pulse-border 1s infinite; }
+        .cw-letter.correct { background: #4ade80; border-color: #16a34a; color: white; transform: scale(1.1); }
+
+        /* Alfabetik Klavye */
+        .key-btn {
+            background: white; border: 2px solid #e2e8f0; border-radius: 8px;
+            padding: 10px 0; font-size: 1.4rem; font-weight: bold; color: #334155;
+            box-shadow: 0 4px 0 #cbd5e1; transition: all 0.1s; cursor: pointer; flex: 1; max-width: 55px;
+        }
+        @media (max-width: 600px) { .key-btn { padding: 8px 0; font-size: 1.2rem; max-width: 42px; } }
+        .key-btn:active, .key-btn.pressed { transform: translateY(4px); box-shadow: 0 0 0 #cbd5e1; background: #f1f5f9; }
+
+        /* Animasyonlar */
+        @keyframes shake { 0%,100%{transform:translateX(0);} 20%,60%{transform:translateX(-5px);} 40%,80%{transform:translateX(5px);} }
+        .wrong-anim { background-color: #fca5a5 !important; border-color: #dc2626 !important; color: white !important; animation: shake 0.4s ease-in-out; }
+        @keyframes pulse-border { 0%{border-color:#cbd5e1;} 50%{border-color:#3b82f6;} 100%{border-color:#cbd5e1;} }
+        @keyframes popIn { 0%{transform:scale(0);opacity:0;} 80%{transform:scale(1.1);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .hidden-screen { display: none !important; }
+
+        /* Tren Modu */
+        #train-wrapper { transition: transform 2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .wagon-wheels::after { content: 'OO'; position: absolute; bottom: -20px; left: 0; width: 100%; text-align: center; font-size: 1rem; color: #334155; letter-spacing: 15px; }
+
+        /* Gizli Yapboz Modu */
+        .puzzle-cover { transition: opacity 0.8s ease, transform 0.8s ease; }
+        .puzzle-cover.hidden-piece { opacity: 0; transform: scale(1.2) rotate(10deg); pointer-events: none; }
+
+        /* Konfeti */
+        .confetti { position: fixed; width: 10px; height: 10px; z-index: 1000; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+        .menu-card { transition: all 0.3s; }
+        .menu-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-2">
+
+    <!-- 1. ANA MENÜ -->
+    <div id="screen-menu" class="flex flex-col items-center justify-center w-full max-w-5xl z-10 py-10">
+        <h1 class="text-5xl md:text-7xl font-bold text-green-600 mb-2 drop-shadow-md text-center">Sihirli Kelimeler</h1>
+        <p class="text-xl md:text-2xl text-gray-700 mb-8 font-bold bg-white/50 px-6 py-2 rounded-full">Ne Oynamak İstersin?</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4">
+            <button onclick="startGame('classic')" class="menu-card bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl p-6 text-white text-center border-b-8 border-blue-800 flex flex-col items-center">
+                <span class="text-7xl mb-4">🎯</span>
+                <h2 class="text-3xl font-bold mb-2">Klasik Dikte</h2>
+                <p class="text-blue-100">Kutuları harflerle doldur!</p>
+            </button>
+
+            <button onclick="startGame('crossword')" class="menu-card bg-gradient-to-br from-purple-400 to-purple-600 rounded-3xl p-6 text-white text-center border-b-8 border-purple-800 flex flex-col items-center">
+                <span class="text-7xl mb-4">🧩</span>
+                <h2 class="text-3xl font-bold mb-2">Çengel Bulmaca</h2>
+                <p class="text-purple-100">Kelimeleri kesiştir!</p>
+            </button>
+
+            <button onclick="startGame('house')" class="menu-card bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-6 text-white text-center border-b-8 border-orange-700 flex flex-col items-center">
+                <span class="text-7xl mb-4">🏠</span>
+                <h2 class="text-3xl font-bold mb-2">Ev İnşaatı</h2>
+                <p class="text-orange-100">Yazarak kendi evini kur!</p>
+            </button>
+
+            <button onclick="startGame('puzzle')" class="menu-card bg-gradient-to-br from-pink-400 to-rose-600 rounded-3xl p-6 text-white text-center border-b-8 border-rose-800 flex flex-col items-center lg:col-span-1 md:col-span-2">
+                <span class="text-7xl mb-4">🖼️</span>
+                <h2 class="text-3xl font-bold mb-2">Gizli Resim</h2>
+                <p class="text-pink-100">Kutuları aç, resmi bul!</p>
+            </button>
+
+            <button onclick="startGame('train')" class="menu-card bg-gradient-to-br from-teal-400 to-emerald-600 rounded-3xl p-6 text-white text-center border-b-8 border-emerald-800 flex flex-col items-center lg:col-span-1 md:col-span-2">
+                <span class="text-7xl mb-4">🚂</span>
+                <h2 class="text-3xl font-bold mb-2">Kelime Treni</h2>
+                <p class="text-teal-100">Vagonlara harfleri yükle!</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- ORTAK OYUN EKRANI BAŞLIĞI (Tüm modlar için) -->
+    <div id="game-header" class="hidden-screen w-full max-w-4xl flex justify-between items-center mb-4 mt-2 px-4 z-10">
+        <button onclick="showMenu()" class="bg-white hover:bg-gray-100 text-gray-800 border-2 border-gray-300 py-2 px-4 rounded-xl font-bold shadow-sm flex items-center gap-2 transition active:scale-95">
+            <i class="fas fa-arrow-left"></i> Geri Dön
+        </button>
+        <div class="bg-white border-2 border-yellow-400 text-yellow-600 px-4 py-2 rounded-xl font-bold text-lg shadow-sm">
+            <i class="fas fa-star text-yellow-500"></i> Puan: <span id="global-score">0</span>
+        </div>
+    </div>
+
+    <!-- 2. KLASİK MOD EKRANI -->
+    <div id="screen-classic" class="hidden-screen w-full max-w-3xl bg-white/80 backdrop-blur rounded-3xl shadow-xl p-6 flex-col items-center border-4 border-blue-200 z-10">
+        <div class="flex flex-col items-center mb-6 w-full">
+            <div id="classic-emoji" class="text-9xl mb-6 drop-shadow-xl select-none pop-in">🐶</div>
+            <button onclick="speakTarget()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-md flex items-center gap-3 transition active:scale-95 text-xl">
+                <i class="fas fa-volume-up"></i> Dinle
+            </button>
+        </div>
+        <div id="classic-boxes" class="flex flex-wrap justify-center gap-3 w-full min-h-[80px] mb-4"></div>
+    </div>
+
+    <!-- 3. ÇENGEL BULMACA EKRANI -->
+    <div id="screen-crossword" class="hidden-screen w-full max-w-4xl bg-white/80 backdrop-blur rounded-3xl shadow-xl p-4 md:p-8 flex-col items-center border-4 border-purple-200 z-10">
+        <div class="flex flex-col md:flex-row w-full gap-6">
+            <div class="flex md:flex-col justify-center gap-3 flex-wrap" id="cw-clues"></div>
+            <div class="flex-1 flex justify-center items-center overflow-auto bg-purple-50 rounded-2xl p-4 border-2 border-purple-100">
+                <div id="cw-grid" class="cw-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. EV İNŞAATI EKRANI -->
+    <div id="screen-house" class="hidden-screen w-full max-w-3xl bg-white/80 backdrop-blur rounded-3xl shadow-xl p-6 flex-col items-center border-4 border-orange-200 z-10">
+        <div class="w-full flex justify-between items-center mb-2 px-4 text-orange-600 font-bold text-lg">
+            <span>Hedef: Evini Tamamla!</span>
+            <span>Parça: <span id="house-progress">0</span>/7</span>
+        </div>
+        
+        <!-- Ev Görsel Alanı -->
+        <div class="relative w-full max-w-[300px] h-[300px] bg-sky-100 rounded-3xl border-4 border-sky-300 mb-6 overflow-hidden">
+            <div id="h-sun" class="absolute top-2 right-2 text-6xl hidden pop-in">☀️</div>
+            <div id="h-bird" class="absolute top-8 left-4 text-4xl hidden pop-in">🦅</div>
+            <div id="h-tree" class="absolute bottom-2 right-2 text-7xl hidden pop-in z-20">🌳</div>
+            <div id="h-grass" class="absolute bottom-0 left-0 w-full h-8 bg-green-500 hidden pop-in z-10"></div>
+            
+            <div id="h-walls" class="absolute bottom-8 left-1/2 -translate-x-1/2 w-32 h-28 bg-[#d97706] hidden pop-in z-20 border-2 border-[#b45309]">
+                <div id="h-door" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-16 bg-[#78350f] hidden pop-in border-t-2 border-r-2 border-l-2 border-black">
+                    <div class="absolute right-1 top-1/2 w-2 h-2 bg-yellow-400 rounded-full"></div>
+                </div>
+                <div id="h-win1" class="absolute top-2 left-2 text-3xl hidden pop-in bg-blue-200 rounded-md border-2 border-white">🪟</div>
+                <div id="h-win2" class="absolute top-2 right-2 text-3xl hidden pop-in bg-blue-200 rounded-md border-2 border-white">🪟</div>
+            </div>
+            <div id="h-roof" class="absolute bottom-36 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[70px] border-l-transparent border-r-[70px] border-r-transparent border-b-[60px] border-b-red-600 hidden pop-in z-20"></div>
+        </div>
+
+        <!-- Dikte Alanı -->
+        <div class="flex items-center gap-4 bg-orange-50 p-4 rounded-2xl w-full">
+            <div id="house-emoji" class="text-6xl cursor-pointer hover:scale-110 transition" onclick="speakTarget()">🧱</div>
+            <div id="house-boxes" class="flex flex-wrap justify-center gap-2 flex-1"></div>
+        </div>
+    </div>
+
+    <!-- 5. GİZLİ RESİM (YAPBOZ) EKRANI -->
+    <div id="screen-puzzle" class="hidden-screen w-full max-w-3xl bg-white/80 backdrop-blur rounded-3xl shadow-xl p-6 flex-col items-center border-4 border-rose-200 z-10">
+        <!-- Resim Alanı -->
+        <div class="relative w-[250px] h-[250px] bg-yellow-100 rounded-2xl border-4 border-rose-300 mb-6 flex items-center justify-center overflow-hidden">
+            <div id="puzzle-secret" class="text-[150px]">🦁</div>
+            
+            <!-- Kapaklar (Grid) -->
+            <div class="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-1 z-10">
+                <div id="puz-cover-0" class="puzzle-cover bg-rose-400 rounded-lg flex items-center justify-center text-white text-2xl font-bold shadow-inner">1</div>
+                <div id="puz-cover-1" class="puzzle-cover bg-blue-400 rounded-lg flex items-center justify-center text-white text-2xl font-bold shadow-inner">2</div>
+                <div id="puz-cover-2" class="puzzle-cover bg-green-400 rounded-lg flex items-center justify-center text-white text-2xl font-bold shadow-inner">3</div>
+                <div id="puz-cover-3" class="puzzle-cover bg-purple-400 rounded-lg flex items-center justify-center text-white text-2xl font-bold shadow-inner">4</div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-rose-50 p-4 rounded-2xl w-full">
+            <div id="puzzle-emoji" class="text-6xl cursor-pointer hover:scale-110 transition" onclick="speakTarget()">❓</div>
+            <div id="puzzle-boxes" class="flex flex-wrap justify-center gap-2 flex-1"></div>
+        </div>
+    </div>
+
+    <!-- 6. KELİME TRENİ EKRANI -->
+    <div id="screen-train" class="hidden-screen w-full max-w-3xl bg-white/80 backdrop-blur rounded-3xl shadow-xl p-6 flex-col items-center border-4 border-teal-200 z-10 overflow-hidden">
+        
+        <div class="w-full flex justify-between items-center mb-10 px-4">
+            <button onclick="speakTarget()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-full shadow-md flex items-center gap-2 transition active:scale-95 text-lg">
+                <i class="fas fa-bullhorn"></i> Düdük Çal (Dinle)
+            </button>
+            <div id="train-emoji" class="text-6xl pop-in">🍎</div>
+        </div>
+
+        <!-- Tren Yolu ve Tren -->
+        <div class="relative w-full h-32 border-b-8 border-gray-400 flex items-end pb-2">
+            <div class="absolute bottom-[-16px] w-full h-4 bg-gray-600 rounded-full border-t border-dashed border-gray-300"></div> <!-- Ray -->
+            
+            <div id="train-wrapper" class="flex items-end gap-1">
+                <div class="text-7xl mb-1 drop-shadow-lg z-10 relative">🚂<div class="absolute -top-6 left-2 text-2xl animate-pulse">💨</div></div>
+                <div id="train-boxes" class="flex gap-2">
+                    <!-- Vagonlar buraya -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORTAK ALFABETİK KLAVYE -->
+    <!-- Öğrencinizin aradığı harfi çok hızlı bulması için mükemmel alfabetik dizilim. -->
+    <div id="keyboard-container" class="hidden-screen w-full max-w-3xl flex-col gap-2 mt-4 z-20 px-2 pb-6">
+        <!-- Satır 1 -->
+        <div class="flex justify-center gap-1 md:gap-2 w-full">
+            <button class="key-btn" onclick="handleInput('A')">A</button>
+            <button class="key-btn" onclick="handleInput('B')">B</button>
+            <button class="key-btn" onclick="handleInput('C')">C</button>
+            <button class="key-btn" onclick="handleInput('Ç')">Ç</button>
+            <button class="key-btn" onclick="handleInput('D')">D</button>
+            <button class="key-btn" onclick="handleInput('E')">E</button>
+            <button class="key-btn" onclick="handleInput('F')">F</button>
+        </div>
+        <!-- Satır 2 -->
+        <div class="flex justify-center gap-1 md:gap-2 w-full">
+            <button class="key-btn" onclick="handleInput('G')">G</button>
+            <button class="key-btn" onclick="handleInput('Ğ')">Ğ</button>
+            <button class="key-btn" onclick="handleInput('H')">H</button>
+            <button class="key-btn" onclick="handleInput('I')">I</button>
+            <button class="key-btn" onclick="handleInput('İ')">İ</button>
+            <button class="key-btn" onclick="handleInput('J')">J</button>
+            <button class="key-btn" onclick="handleInput('K')">K</button>
+        </div>
+        <!-- Satır 3 -->
+        <div class="flex justify-center gap-1 md:gap-2 w-full">
+            <button class="key-btn" onclick="handleInput('L')">L</button>
+            <button class="key-btn" onclick="handleInput('M')">M</button>
+            <button class="key-btn" onclick="handleInput('N')">N</button>
+            <button class="key-btn" onclick="handleInput('O')">O</button>
+            <button class="key-btn" onclick="handleInput('Ö')">Ö</button>
+            <button class="key-btn" onclick="handleInput('P')">P</button>
+            <button class="key-btn" onclick="handleInput('R')">R</button>
+        </div>
+        <!-- Satır 4 -->
+        <div class="flex justify-center gap-1 md:gap-2 w-full px-4 md:px-10">
+            <button class="key-btn" onclick="handleInput('S')">S</button>
+            <button class="key-btn" onclick="handleInput('Ş')">Ş</button>
+            <button class="key-btn" onclick="handleInput('T')">T</button>
+            <button class="key-btn" onclick="handleInput('U')">U</button>
+            <button class="key-btn" onclick="handleInput('Ü')">Ü</button>
+            <button class="key-btn" onclick="handleInput('V')">V</button>
+        </div>
+        <!-- Satır 5 -->
+        <div class="flex justify-center gap-1 md:gap-2 w-full px-16 md:px-32">
+            <button class="key-btn bg-yellow-100 border-yellow-300 shadow-yellow-200" onclick="handleInput('Y')">Y</button>
+            <button class="key-btn" onclick="handleInput('Z')">Z</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // GENEL SİSTEM: SESLER, VERİLER, KONTROLLER
+        // ==========================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let globalScore = 0;
+        let currentMode = 'menu';
+        
+        // Aktif kelime verileri (Tüm tekli modlar için ortak)
+        let targetWordStr = "";
+        let currentLetterIdx = 0;
+        let isWordComplete = false;
+
+        // Kelime Havuzu
+        const wordPool = [
+            { word: "KEDİ", emoji: "🐱" }, { word: "KUŞ", emoji: "🐦" },
+            { word: "ELMA", emoji: "🍎" }, { word: "AYI", emoji: "🐻" },
+            { word: "BAL", emoji: "🍯" }, { word: "MUZ", emoji: "🍌" },
+            { word: "TOP", emoji: "⚽" }, { word: "ARABA", emoji: "🚗" },
+            { word: "GÜNEŞ", emoji: "☀️" }, { word: "AĞAÇ", emoji: "🌳" },
+            { word: "ÇİÇEK", emoji: "🌸" }, { word: "KALEM", emoji: "✏️" },
+            { word: "KÖPEK", emoji: "🐶" }, { word: "MASA", emoji: "🪑" }
+        ];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, type, duration) {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccessSound() { playTone(600, 'sine', 0.1); setTimeout(() => playTone(800, 'sine', 0.2), 100); }
+        function playErrorSound() { playTone(200, 'triangle', 0.3); }
+        function playWinSound() {
+            let delay = 0; [440, 554, 659, 880].forEach(freq => { setTimeout(() => playTone(freq, 'sine', 0.15), delay); delay += 150; });
+        }
+        function playTrainWhistle() { playTone(600, 'square', 0.4); setTimeout(() => playTone(700, 'square', 0.6), 400); }
+
+        function speakTarget() {
+            if (!('speechSynthesis' in window) || !targetWordStr) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(targetWordStr.toLowerCase());
+            utterance.lang = 'tr-TR'; utterance.rate = 0.85; utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function fireConfetti() {
+            const colors = ['#fde047', '#4ade80', '#60a5fa', '#f87171', '#c084fc'];
+            for (let i = 0; i < 70; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                confetti.style.width = confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function shuffle(array) { array.sort(() => Math.random() - 0.5); return array; }
+        function getRandomWord() { return wordPool[Math.floor(Math.random() * wordPool.length)]; }
+
+        // ==========================================
+        // EKRAN VE MOD YÖNETİMİ
+        // ==========================================
+        const screens = ['menu', 'classic', 'crossword', 'house', 'puzzle', 'train'];
+
+        function showMenu() {
+            currentMode = 'menu';
+            screens.forEach(s => document.getElementById(`screen-${s}`)?.classList.add('hidden-screen'));
+            document.getElementById('screen-menu').classList.remove('hidden-screen');
+            document.getElementById('game-header').classList.add('hidden-screen');
+            document.getElementById('keyboard-container').classList.add('hidden-screen');
+            document.getElementById('keyboard-container').classList.remove('flex');
+        }
+
+        function startGame(mode) {
+            initAudio();
+            currentMode = mode;
+            screens.forEach(s => document.getElementById(`screen-${s}`)?.classList.add('hidden-screen'));
+            document.getElementById(`screen-${mode}`).classList.remove('hidden-screen');
+            document.getElementById(`screen-${mode}`).classList.add('flex');
+            document.getElementById('game-header').classList.remove('hidden-screen');
+            document.getElementById('game-header').classList.add('flex');
+            document.getElementById('keyboard-container').classList.remove('hidden-screen');
+            document.getElementById('keyboard-container').classList.add('flex');
+            
+            enableKeyboard();
+
+            // Mod Başlatıcıları
+            if (mode === 'classic') initClassic();
+            else if (mode === 'crossword') initCrossword();
+            else if (mode === 'house') initHouse();
+            else if (mode === 'puzzle') initPuzzle();
+            else if (mode === 'train') initTrain();
+        }
+
+        function updateGlobalScore() {
+            globalScore += 10;
+            document.getElementById('global-score').innerText = globalScore;
+        }
+
+        function enableKeyboard() {
+            document.getElementById('keyboard-container').style.opacity = '1';
+            document.getElementById('keyboard-container').style.pointerEvents = 'auto';
+        }
+        function disableKeyboard() {
+            document.getElementById('keyboard-container').style.opacity = '0.5';
+            document.getElementById('keyboard-container').style.pointerEvents = 'none';
+        }
+
+        // --- KLAVYE GİRİŞİ YÖNLENDİRİCİ ---
+        function handleInput(letter) {
+            animateKey(letter);
+            if(isWordComplete && currentMode !== 'crossword') return; // Tekli modlarda bitince engelle
+
+            if (currentMode === 'crossword') handleCrosswordInput(letter);
+            else handleSingleWordInput(letter); // Diğer 4 mod ortak mantık kullanır
+        }
+
+        function animateKey(letter) {
+            document.querySelectorAll('.key-btn').forEach(btn => {
+                if (btn.innerText === letter) {
+                    btn.classList.add('pressed');
+                    setTimeout(() => btn.classList.remove('pressed'), 150);
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (currentMode === 'menu') return;
+            const validKeys = /^[a-zA-ZğüşıöçĞÜŞİÖÇ]$/;
+            if (validKeys.test(e.key)) handleInput(e.key.toLocaleUpperCase('tr-TR'));
+        });
+
+        // ==========================================
+        // ORTAK TEKLİ KELİME MANTIĞI (Klasik, Ev, Puzzle, Tren)
+        // ==========================================
+        function setupBoxes(containerId, word, extraClass = '') {
+            targetWordStr = word;
+            currentLetterIdx = 0;
+            isWordComplete = false;
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let i = 0; i < word.length; i++) {
+                const box = document.createElement('div');
+                box.className = `letter-box ${extraClass} ${i === 0 ? 'active' : ''}`;
+                box.id = `box-${i}`;
+                container.appendChild(box);
+            }
+            setTimeout(speakTarget, 500);
+            enableKeyboard();
+        }
+
+        function handleSingleWordInput(letter) {
+            const expected = targetWordStr[currentLetterIdx];
+            const box = document.getElementById(`box-${currentLetterIdx}`);
+
+            if (letter === expected) {
+                // DOĞRU
+                box.innerText = letter;
+                box.classList.remove('active', 'wrong-anim');
+                box.classList.add('correct');
+                playSuccessSound();
+                currentLetterIdx++;
+
+                if (currentLetterIdx < targetWordStr.length) {
+                    document.getElementById(`box-${currentLetterIdx}`).classList.add('active');
+                } else {
+                    // KELİME BİTTİ
+                    isWordComplete = true;
+                    updateGlobalScore();
+                    disableKeyboard();
+                    
+                    // Modlara özel bitiş efektleri
+                    if (currentMode === 'classic') completeClassic();
+                    else if (currentMode === 'house') completeHouseWord();
+                    else if (currentMode === 'puzzle') completePuzzleWord();
+                    else if (currentMode === 'train') completeTrainWord();
+                }
+            } else {
+                // YANLIŞ
+                box.innerText = letter;
+                box.classList.add('wrong-anim');
+                playErrorSound();
+                setTimeout(() => { if(!box.classList.contains('correct')) { box.innerText = ''; box.classList.remove('wrong-anim'); } }, 500);
+            }
+        }
+
+        // ==========================================
+        // MOD 1: KLASİK
+        // ==========================================
+        function initClassic() {
+            const w = getRandomWord();
+            document.getElementById('classic-emoji').innerText = w.emoji;
+            document.getElementById('classic-emoji').classList.remove('pop-in');
+            void document.getElementById('classic-emoji').offsetWidth;
+            document.getElementById('classic-emoji').classList.add('pop-in');
+            setupBoxes('classic-boxes', w.word);
+        }
+
+        function completeClassic() {
+            playWinSound(); fireConfetti(); speakTarget();
+            setTimeout(initClassic, 2000); // 2 saniye sonra yeni kelime
+        }
+
+        // ==========================================
+        // MOD 3: EV İNŞAATI
+        // ==========================================
+        const houseStages = ['h-grass', 'h-walls', 'h-door', 'h-win1', 'h-win2', 'h-roof', 'h-tree', 'h-sun'];
+        let houseProgress = 0;
+
+        function initHouse() {
+            houseProgress = 0;
+            document.getElementById('house-progress').innerText = houseProgress;
+            houseStages.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('hidden'); el.classList.remove('pop-in');
+            });
+            nextHouseWord();
+        }
+
+        function nextHouseWord() {
+            const w = getRandomWord();
+            document.getElementById('house-emoji').innerText = w.emoji;
+            setupBoxes('house-boxes', w.word);
+        }
+
+        function completeHouseWord() {
+            playWinSound(); speakTarget();
+            
+            // Evi inşa et
+            const partId = houseStages[houseProgress];
+            const partEl = document.getElementById(partId);
+            partEl.classList.remove('hidden');
+            
+            houseProgress++;
+            document.getElementById('house-progress').innerText = houseProgress;
+
+            if (houseProgress >= houseStages.length) {
+                // Ev bitti!
+                setTimeout(() => { playWinSound(); fireConfetti(); }, 500);
+                setTimeout(initHouse, 4000); // 4 sn sonra evi sıfırla
+            } else {
+                setTimeout(nextHouseWord, 1500);
+            }
+        }
+
+        // ==========================================
+        // MOD 4: GİZLİ RESİM (YAPBOZ)
+        // ==========================================
+        const secretEmojis = ['🦁', '🦄', '🦖', '🦋', '🐠', '🚀'];
+        let puzzleProgress = 0;
+
+        function initPuzzle() {
+            puzzleProgress = 0;
+            document.getElementById('puzzle-secret').innerText = secretEmojis[Math.floor(Math.random() * secretEmojis.length)];
+            for(let i=0; i<4; i++) {
+                document.getElementById(`puz-cover-${i}`).classList.remove('hidden-piece');
+            }
+            nextPuzzleWord();
+        }
+
+        function nextPuzzleWord() {
+            const w = getRandomWord();
+            document.getElementById('puzzle-emoji').innerText = w.emoji;
+            setupBoxes('puzzle-boxes', w.word);
+        }
+
+        function completePuzzleWord() {
+            playWinSound(); speakTarget();
+            
+            // Kapağı kaldır
+            document.getElementById(`puz-cover-${puzzleProgress}`).classList.add('hidden-piece');
+            puzzleProgress++;
+
+            if (puzzleProgress >= 4) {
+                // Yapboz bitti!
+                setTimeout(() => { 
+                    playWinSound(); fireConfetti(); 
+                    document.getElementById('puzzle-secret').classList.add('pop-in');
+                }, 500);
+                setTimeout(initPuzzle, 3500);
+            } else {
+                setTimeout(nextPuzzleWord, 1500);
+            }
+        }
+
+        // ==========================================
+        // MOD 5: KELİME TRENİ
+        // ==========================================
+        function initTrain() {
+            const trainWrapper = document.getElementById('train-wrapper');
+            trainWrapper.style.transform = 'translateX(0)'; // Treni sola al
+            
+            const w = getRandomWord();
+            document.getElementById('train-emoji').innerText = w.emoji;
+            setupBoxes('train-boxes', w.word, 'wagon-wheels bg-blue-100 border-blue-400');
+        }
+
+        function completeTrainWord() {
+            playWinSound(); speakTarget();
+            setTimeout(playTrainWhistle, 500);
+            
+            // Treni hareket ettir
+            setTimeout(() => {
+                document.getElementById('train-wrapper').style.transform = 'translateX(120vw)';
+            }, 1000);
+
+            // Yeni kelime
+            setTimeout(initTrain, 3000);
+        }
+
+        // ==========================================
+        // MOD 2: ÇENGEL BULMACA (Ayrı Mantık)
+        // ==========================================
+        const puzzles = [
+            { id: 1, cols: 5, rows: 5, words: [{ id: 1, word: "KEDİ", emoji: "🐱", dir: "V", row: 0, col: 1 }, { id: 2, word: "ELMA", emoji: "🍎", dir: "H", row: 1, col: 1 }, { id: 3, word: "AYI",  emoji: "🐻", dir: "H", row: 4, col: 2 }] },
+            { id: 2, cols: 5, rows: 4, words: [{ id: 1, word: "KÖPEK", emoji: "🐶", dir: "H", row: 0, col: 0 }, { id: 2, word: "KUŞ", emoji: "🐦", dir: "V", row: 0, col: 0 }, { id: 3, word: "ŞİŞE", emoji: "🍼", dir: "H", row: 2, col: 0 }] }
+        ];
+
+        let cwIndex = 0; let cwGrid = []; let cwActiveWordId = null; let cwCurrentLetterIdx = 0; let isCwComplete = false;
+
+        function initCrossword() {
+            if (cwIndex >= puzzles.length) cwIndex = 0;
+            const puzzle = puzzles[cwIndex];
+            isCwComplete = false; cwActiveWordId = null;
+            cwGrid = Array(puzzle.rows).fill(null).map(() => Array(puzzle.cols).fill(null));
+            
+            puzzle.words.forEach(w => {
+                for(let i=0; i<w.word.length; i++) {
+                    let r = w.dir === 'H' ? w.row : w.row + i; let c = w.dir === 'V' ? w.col : w.col + i;
+                    if(!cwGrid[r][c]) cwGrid[r][c] = { letter: w.word[i], words: [w.id], isFilled: false };
+                    else cwGrid[r][c].words.push(w.id);
+                }
+            });
+
+            renderCrossword(puzzle); renderClues(puzzle); selectCwWord(puzzle.words[0].id);
+        }
+
+        function renderCrossword(puzzle) {
+            const container = document.getElementById('cw-grid');
+            container.style.gridTemplateColumns = `repeat(${puzzle.cols}, 1fr)`;
+            container.innerHTML = '';
+            for(let r=0; r<puzzle.rows; r++) {
+                for(let c=0; c<puzzle.cols; c++) {
+                    const div = document.createElement('div');
+                    if (!cwGrid[r][c]) { div.className = 'cw-cell cw-empty'; } 
+                    else {
+                        div.className = 'cw-cell cw-letter'; div.id = `cw-cell-${r}-${c}`;
+                        div.onclick = () => selectCwWord(cwGrid[r][c].words[0]); 
+                    }
+                    container.appendChild(div);
+                }
+            }
+        }
+
+        function renderClues(puzzle) {
+            const container = document.getElementById('cw-clues'); container.innerHTML = '';
+            puzzle.words.forEach(w => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-white border-2 border-purple-200 rounded-2xl p-3 text-4xl shadow-sm hover:scale-105 transition';
+                btn.id = `cw-clue-${w.id}`; btn.innerHTML = w.emoji;
+                btn.onclick = () => selectCwWord(w.id);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCwWord(wordId) {
+            if (isCwComplete) return;
+            const puzzle = puzzles[cwIndex]; const word = puzzle.words.find(w => w.id === wordId);
+            
+            document.querySelectorAll('.cw-letter').forEach(el => el.classList.remove('active-word', 'active-cell'));
+            document.querySelectorAll('#cw-clues button').forEach(b => b.classList.remove('border-purple-500', 'bg-purple-100'));
+
+            cwActiveWordId = wordId; cwCurrentLetterIdx = 0;
+            document.getElementById(`cw-clue-${wordId}`).classList.add('border-purple-500', 'bg-purple-100');
+
+            let firstEmptyIdx = -1;
+            for(let i=0; i<word.word.length; i++) {
+                let r = word.dir === 'H' ? word.row : word.row + i; let c = word.dir === 'V' ? word.col : word.col + i;
+                document.getElementById(`cw-cell-${r}-${c}`).classList.add('active-word');
+                if (!cwGrid[r][c].isFilled && firstEmptyIdx === -1) firstEmptyIdx = i;
+            }
+
+            if (firstEmptyIdx !== -1) { cwCurrentLetterIdx = firstEmptyIdx; highlightCwCell(); }
+            
+            targetWordStr = word.word; speakTarget();
+        }
+
+        function highlightCwCell() {
+            if (!cwActiveWordId) return;
+            const word = puzzles[cwIndex].words.find(w => w.id === cwActiveWordId);
+            document.querySelectorAll('.cw-letter').forEach(el => el.classList.remove('active-cell'));
+            let r = word.dir === 'H' ? word.row : word.row + cwCurrentLetterIdx;
+            let c = word.dir === 'V' ? word.col : word.col + cwCurrentLetterIdx;
+            document.getElementById(`cw-cell-${r}-${c}`).classList.add('active-cell');
+        }
+
+        function handleCrosswordInput(letter) {
+            if (isCwComplete || !cwActiveWordId) return;
+            const word = puzzles[cwIndex].words.find(w => w.id === cwActiveWordId);
+            let r = word.dir === 'H' ? word.row : word.row + cwCurrentLetterIdx;
+            let c = word.dir === 'V' ? word.col : word.col + cwCurrentLetterIdx;
+            const cellData = cwGrid[r][c]; const cellEl = document.getElementById(`cw-cell-${r}-${c}`);
+
+            if(cellData.isFilled) return;
+
+            if (letter === cellData.letter) {
+                cellEl.innerText = letter; cellData.isFilled = true;
+                cellEl.classList.remove('active-cell', 'active-word', 'wrong-anim'); cellEl.classList.add('correct');
+                playSuccessSound(); updateGlobalScore();
+                
+                cwCurrentLetterIdx++; let foundEmpty = false;
+                while (cwCurrentLetterIdx < word.word.length) {
+                    let nr = word.dir === 'H' ? word.row : word.row + cwCurrentLetterIdx;
+                    let nc = word.dir === 'V' ? word.col : word.col + cwCurrentLetterIdx;
+                    if (!cwGrid[nr][nc].isFilled) { foundEmpty = true; break; }
+                    cwCurrentLetterIdx++;
+                }
+
+                if (foundEmpty) highlightCwCell();
+                else {
+                    document.getElementById(`cw-clue-${cwActiveWordId}`).classList.add('opacity-50');
+                    checkCwCompletion();
+                }
+            } else {
+                cellEl.innerText = letter; cellEl.classList.add('wrong-anim'); playErrorSound();
+                setTimeout(() => { if(!cellData.isFilled) { cellEl.innerText=''; cellEl.classList.remove('wrong-anim'); } }, 500);
+            }
+        }
+
+        function checkCwCompletion() {
+            let allFilled = true; const puzzle = puzzles[cwIndex];
+            for(let r=0; r<puzzle.rows; r++) {
+                for(let c=0; c<puzzle.cols; c++) {
+                    if (cwGrid[r][c] && !cwGrid[r][c].isFilled) { allFilled = false; break; }
+                }
+            }
+            if (allFilled) {
+                isCwComplete = true; playWinSound(); fireConfetti(); disableKeyboard();
+                setTimeout(() => { cwIndex++; initCrossword(); }, 3000);
+            } else {
+                // Sonraki boş kelimeye geç
+                const nextWord = puzzle.words.find(w => {
+                    for(let i=0; i<w.word.length; i++) {
+                        let r = w.dir === 'H' ? w.row : w.row + i; let c = w.dir === 'V' ? w.col : w.col + i;
+                        if (!cwGrid[r][c].isFilled) return true;
+                    } return false;
+                });
+                if (nextWord) setTimeout(() => selectCwWord(nextWord.id), 500);
+            }
+        }
+    </script>
+</body>
+</html>
+
