@@ -102,7 +102,7 @@
                                         <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                                     </div>
                                     <p class="text-sm font-bold">Dokun ve Seç</p>
-                                    <p class="text-[10px] mt-1 text-slate-400">Video donmaz, anti-çökme motoru aktiftir.</p>
+                                    <p class="text-[10px] mt-1 text-slate-400">Görüntü optimizasyonu ve Anti-Çökme devrede.</p>
                                 </div>
                                 
                                 <!-- Dynamic Progress Overlay -->
@@ -164,10 +164,10 @@
 
             <!-- PAGE 2: LOADING -->
             <main id="page-loading" class="hidden h-full flex flex-col items-center justify-center text-center py-20">
-                <div class="glass-card p-12 flex flex-col items-center justify-center w-full">
+                <div class="glass-card p-12 flex flex-col items-center justify-center w-full shadow-2xl">
                     <div class="loader mb-6"></div>
                     <h3 class="text-2xl font-black text-slate-800 tracking-tight">Klinik Konsey Değerlendiriyor...</h3>
-                    <p class="text-sm text-slate-500 mt-2 font-bold max-w-sm">Veriler taranıyor, akademik makalelerle karşılaştırılıyor ve spesifik teşhisler araştırılıyor. Lütfen bekleyin.</p>
+                    <p class="text-sm text-slate-500 mt-2 font-bold max-w-sm">Veriler optimize ediliyor, akademik makalelerle karşılaştırılıyor ve spesifik teşhisler araştırılıyor. Lütfen bekleyin.</p>
                 </div>
             </main>
 
@@ -267,7 +267,7 @@
                     </div>
                 </div>
 
-                <!-- 6. Bilimsel & Akademik Dayanak (YENİ!) -->
+                <!-- 6. Bilimsel & Akademik Dayanak -->
                 <div class="glass-card overflow-hidden print-break-inside-avoid">
                     <div class="bg-slate-100 p-4 border-b border-slate-300 flex items-center print:bg-white print:border-b-2 print:border-black">
                         <span class="bg-slate-700 text-white p-2 rounded-lg mr-3 shadow-md print:hidden">
@@ -304,7 +304,7 @@
                         Sistem Ayarları
                     </h3>
                     <p class="text-xs text-slate-600 mb-5 font-bold p-3 bg-red-50 text-red-700 rounded-lg border border-red-200">
-                        DİKKAT: Model ismini veya API anahtarını yanlış girerseniz sistem bağlantı kuramaz. Lütfen doğru şekilde doldurunuz.
+                        DİKKAT: Model ismini veya API anahtarını yanlış girerseniz sistem analiz yapamaz. Lütfen doğru şekilde doldurunuz.
                     </p>
                     <div class="space-y-4 mb-6">
                         <div>
@@ -344,7 +344,7 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 text-sm font-bold flex items-center min-w-max border border-slate-700">
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3.5 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 text-sm font-bold flex items-center min-w-max max-w-[90vw] text-center border border-slate-700">
         <span id="toastMsg"></span>
     </div>
 
@@ -378,15 +378,13 @@
             }
         };
 
-        // --- NAVIGATION ENGINE (APP FEEL) ---
+        // --- NAVIGATION ENGINE ---
         function navTo(pageId) {
-            // Hide all pages
             ['home', 'loading', 'result', 'archive', 'settings'].forEach(p => {
                 document.getElementById('page-' + p).classList.add('hidden');
                 document.getElementById('page-' + p).classList.remove('block');
             });
             
-            // Reset nav colors
             ['home', 'archive', 'settings'].forEach(p => {
                 const navBtn = document.getElementById('nav-' + p);
                 if(navBtn) {
@@ -395,20 +393,17 @@
                 }
             });
 
-            // Show target page
             document.getElementById('page-' + pageId).classList.remove('hidden');
             document.getElementById('page-' + pageId).classList.add('block');
             
-            // Active nav color
             if(pageId === 'home' || pageId === 'settings') {
                 document.getElementById('nav-' + pageId).classList.remove('text-slate-400');
                 document.getElementById('nav-' + pageId).classList.add('text-blue-600');
             } else if (pageId === 'archive') {
-                renderDatabaseList(); // Render before showing
+                renderDatabaseList(); 
                 document.getElementById('nav-' + pageId).classList.remove('text-slate-400');
                 document.getElementById('nav-' + pageId).classList.add('text-indigo-600');
             }
-            
             window.scrollTo(0,0);
         }
 
@@ -426,11 +421,11 @@
             navTo('home');
         }
 
-        function showToast(msg) {
+        function showToast(msg, duration = 3500) {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').textContent = msg;
             t.classList.remove('opacity-0', '-translate-y-4');
-            setTimeout(() => t.classList.add('opacity-0', '-translate-y-4'), 3000);
+            setTimeout(() => t.classList.add('opacity-0', '-translate-y-4'), duration);
         }
         
         function addTag(text) {
@@ -452,7 +447,38 @@
             document.getElementById('micBtn').innerHTML = `🎤 Sesle Yaz`;
         }
 
-        // --- ANTI-FREEZE MEDIA ENGINE ---
+        // --- IMAGE OPTIMIZATION (CRITICAL FIX FOR CRASHES) ---
+        function compressImage(base64Str, maxWidth = 1024, maxHeight = 1024) {
+            return new Promise((resolve, reject) => {
+                let img = new Image();
+                img.onload = () => {
+                    let canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round(height * maxWidth / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round(width * maxHeight / height);
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8)); // Reduce quality/size for API safety
+                };
+                img.onerror = reject;
+                img.src = base64Str;
+            });
+        }
+
+        // --- MEDIA ENGINE ---
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
@@ -493,16 +519,28 @@
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onprogress = (e) => {
-                    if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 100), "Fotoğraf okunuyor...");
+                    if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 50), "Fotoğraf okunuyor...");
                 };
-                reader.onload = (e) => {
-                    updateProgress(100, "Tamamlandı");
-                    currentMediaData = { mimeType: file.type, data: e.target.result.split(',')[1] };
-                    setTimeout(() => hideProgressAndShowSuccess("Fotoğraf"), 300);
+                reader.onload = async (e) => {
+                    updateProgress(70, "Boyut optimize ediliyor (Çökmeyi önlemek için)...");
+                    try {
+                        const compressedBase64 = await compressImage(e.target.result);
+                        currentMediaData = { mimeType: 'image/jpeg', data: compressedBase64.split(',')[1] };
+                        updateProgress(100, "Tamamlandı");
+                        setTimeout(() => hideProgressAndShowSuccess("Fotoğraf"), 300);
+                    } catch (err) {
+                        showToast("Fotoğraf işlenemedi.");
+                        clearMedia();
+                    }
                 };
                 reader.readAsDataURL(file);
             } 
             else if (file.type.startsWith('audio/')) {
+                if(file.size > 5 * 1024 * 1024) {
+                    showToast("Ses dosyası çok büyük (Max 5MB). Lütfen daha kısa bir ses kaydedin.", 4000);
+                    clearMedia();
+                    return;
+                }
                 updateProgress(20, "Ses dosyası yükleniyor...");
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -529,7 +567,7 @@
                         showToast("Video okunamadı. Lütfen metin ile devam edin.");
                         clearMedia();
                     }
-                }, 7000);
+                }, 7000); 
 
                 videoPreview.onloadedmetadata = () => {
                     updateProgress(50, "Meta veriler alındı...");
@@ -612,9 +650,19 @@
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => null);
+                        const errorMsg = errData && errData.error ? errData.error.message : `HTTP ${response.status}`;
+                        const error = new Error(errorMsg);
+                        error.status = response.status;
+                        throw error;
+                    }
                     return await response.json();
                 } catch (err) {
+                    // Kullanıcı hatasıysa (Örn 400 eksik api key, 404 yanlış model) tekrar deneme, anında hatayı ver!
+                    if (err.status >= 400 && err.status < 500) {
+                        throw err;
+                    }
                     if (i === retries - 1) throw err;
                     await new Promise(res => setTimeout(res, 2000));
                 }
@@ -656,7 +704,7 @@ DİKKAT ETMEN GEREKEN 3 KURAL:
 2) "uzman_onerileri": İl il belirterek (İstanbul, Ankara, İzmir vs) SPESİFİK HASTANE İSİMLERİ (Çapa Tıp, Hacettepe vb.) listele.
 3) "bilimsel_dayanak": Yaptığın bu teşhis ve önerilerin dayandığı 2-3 adet GERÇEK bilimsel makale, kitap veya DSM-5 gibi akademik kaynakların adını ve kısa özetini ekle. Bu kısım veliyi ikna etmek içindir.
 
-SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇBİR AÇIKLAMA VEYA TIK (\`\`\`) KOYMA:
+SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇBİR AÇIKLAMA VEYA İŞARET KOYMA:
 {
   "durum_ozeti": "Klinik özet...",
   "risk_skoru": 70,
@@ -685,16 +733,17 @@ SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇ
                     })
                 });
 
-                if (!response.candidates) throw new Error("API boş yanıt verdi.");
+                if (!response.candidates) throw new Error("Yapay zeka boş yanıt verdi.");
 
                 let resText = response.candidates[0].content.parts[0].text;
                 
-                // ROBUST JSON EXTRACTION (Anti-Çökme)
+                // MÜKEMMEL JSON AYIKLAYICI (Anti-Çökme)
+                resText = resText.replace(/```json/gi, '').replace(/```/g, '').trim();
                 const startIdx = resText.indexOf('{');
                 const endIdx = resText.lastIndexOf('}');
                 
                 if(startIdx === -1 || endIdx === -1) {
-                    throw new Error("Yapay zeka geçerli bir format (JSON) oluşturamadı.");
+                    throw new Error("JSON_FORMAT_ERROR");
                 }
                 
                 const cleanJsonStr = resText.substring(startIdx, endIdx + 1);
@@ -705,15 +754,20 @@ SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇ
 
             } catch (error) {
                 console.error("Detaylı Hata:", error);
-                let errMsg = "Analiz başarısız.";
                 
-                if(error.message.includes("404")) errMsg = "Hata 404: Model adını yanlış yazdınız. Ayarları kontrol edin.";
-                else if (error.message.includes("400")) errMsg = "Hata 400: API Anahtarınız geçersiz veya eksik.";
-                else if (error.message.includes("JSON")) errMsg = "Yapay zeka format hatası yaptı. Tekrar deneyin.";
-                else errMsg = "Bağlantı veya model hatası. Ayarları kontrol edin.";
+                let errMsg = "Analiz yapılamadı.";
+                if (error.status === 404 || (error.message && error.message.includes("not found"))) {
+                    errMsg = "HATA: Model bulunamadı. Lütfen Ayarlar kısmına model adını (örn: gemini-2.5-flash) doğru yazın.";
+                } else if (error.status === 400 || (error.message && error.message.includes("API_KEY_INVALID"))) {
+                    errMsg = "HATA: API Anahtarınız geçersiz. Lütfen Ayarlar kısmından düzeltin.";
+                } else if (error.message === "JSON_FORMAT_ERROR" || error.name === "SyntaxError") {
+                    errMsg = "HATA: Yapay zeka geçerli bir format oluşturamadı. Lütfen 'Analizi Başlat' butonuna tekrar basın.";
+                } else {
+                    errMsg = "Bağlantı Hatası: Lütfen internetinizi kontrol edip tekrar deneyin. (" + (error.message || "") + ")";
+                }
                 
-                showToast(errMsg);
-                navTo('home'); // Go back to input so user isn't stuck
+                showToast(errMsg, 6000); // 6 saniye boyunca hatayı göster
+                navTo('home'); // Kullanıcıyı sıkışıp kalmaması için ana menüye at
             }
         }
 
@@ -750,7 +804,7 @@ SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇ
             renderList('resDoctors', data.uzman_onerileri, 'bg-purple-500');
             renderList('resTeacher', data.ogretmen_stratejileri, 'bg-emerald-500');
             renderList('resParent', data.veli_onerileri, 'bg-orange-500');
-            renderList('resScience', data.bilimsel_dayanak, 'bg-slate-700'); // Yeni Bilimsel Kısım
+            renderList('resScience', data.bilimsel_dayanak, 'bg-slate-700'); 
         }
 
         function resetApp() {
@@ -768,9 +822,9 @@ SADECE VE SADECE AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA VE SONUNA HİÇ
             let docs = []; document.querySelectorAll('#resDoctors li span:last-child').forEach(el => docs.push("- " + el.textContent));
             let teacher = []; document.querySelectorAll('#resTeacher li span:last-child').forEach(el => teacher.push("- " + el.textContent));
             let parent = []; document.querySelectorAll('#resParent li span:last-child').forEach(el => parent.push("- " + el.textContent));
-            let science = []; document.querySelectorAll('#resScience li span:last-child').forEach(el => science.push("- " + el.textContent)); // Bilimsel Referanslar eklendi
+            let science = []; document.querySelectorAll('#resScience li span:last-child').forEach(el => science.push("- " + el.textContent));
 
-            const report = `📋 KLİNİK KONSEY RAPORU\n👤 ${student}\n\n📝 KLİNİK ÖZET:\n${summary}\n\n🏷️ TESPİTLER: ${tags.join(', ')}\n\n💊 İLAÇ VE MEDİKAL YÖNLENDİRME:\n${medical}\n\n🏥 HASTANE & UZMAN ÖNERİLERİ:\n${docs.join('\n')}\n\n🏫 ÖĞRETMEN STRATEJİLERİ:\n${teacher.join('\n')}\n\n🏡 VELİ ÖNERİLERİ:\n${parent.join('\n')}\n\n📚 BİLİMSEL VE AKADEMİK REFERANSLAR:\n${science.join('\n')}`;
+            const report = `📋 KLİNİK KONSEY RAPORU\n👤 ${student}\n\n📝 KLİNİK ÖZET:\n${summary}\n\n🏷️ TESPİTLER: ${tags.join(', ')}\n\n💊 İLAÇ VE MEDİKAL YÖNLENDİRME:\n${medical}\n\n🏥 HASTANE & UZMAN ÖNERİLERİ:\n${docs.join('\n')}\n\n🏫 ÖĞRETMEN STRATEJİLERİ:\n${teacher.join('\n')}\n\n🏡 VELİ ÖNERİLERİ:\n${parent.join('\n')}\n\n📚 BİLİMSEL REFERANSLAR:\n${science.join('\n')}`;
 
             navigator.clipboard.writeText(report).then(() => showToast("Panoya kopyalandı! ✅")).catch(() => showToast("Kopyalama engellendi."));
         }
