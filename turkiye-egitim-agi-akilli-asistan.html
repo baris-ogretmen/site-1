@@ -7,174 +7,777 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Nunito', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
         .hidden { display: none !important; }
-        .slide-up { animation: slideUp 0.5s ease forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .bg-animated { background-size: 200% 200%; animation: gradientMove 15s ease infinite; }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .student-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .student-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15); border-color: #c084fc; }
+        .btn-press { transition: transform 0.1s; }
+        .btn-press:active { transform: scale(0.95); }
         .bg-hero { background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%); }
+        .progress-bar-fill { transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .cat-radio:checked + div { transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-width: 2px; }
+        .cat-info:checked + div { border-color: #3b82f6; background-color: #eff6ff; color: #1d4ed8;}
+        .cat-success:checked + div { border-color: #10b981; background-color: #ecfdf5; color: #047857;}
+        .cat-warning:checked + div { border-color: #f59e0b; background-color: #fffbeb; color: #b45309;}
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @media print {
+            body { background: white !important; }
+            body * { visibility: hidden; }
+            #student-detail-view, #student-detail-view * { visibility: visible; }
+            #student-detail-view { position: absolute; left: 0; top: 0; width: 100%; }
+            .print-hide { display: none !important; }
+        }
     </style>
 </head>
-<body class="text-slate-800 h-screen flex flex-col bg-slate-50">
+<body class="text-slate-800 h-screen overflow-hidden flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50/30 to-fuchsia-50/30">
 
-    <header class="bg-white/80 backdrop-blur-md border-b border-fuchsia-100 sticky top-0 z-40 hidden" id="navbar">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="showView('dashboard')">
-                <div class="bg-indigo-600 p-2 rounded-lg text-white font-bold shadow-lg">🇹🇷</div>
+    <header class="bg-white/70 backdrop-blur-xl border-b border-fuchsia-100 sticky top-0 z-40 hidden print-hide shadow-sm" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer group btn-press" onclick="window.showView('dashboard')">
+                <div class="bg-gradient-to-br from-indigo-600 to-pink-500 p-2.5 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform">
+                    <span class="text-xl leading-none">🇹🇷</span>
+                </div>
                 <div class="flex flex-col">
-                    <span class="text-[9px] font-black text-indigo-600 tracking-widest uppercase">TEA TÜRKİYE</span>
-                    <span id="nav-kurum-name" class="font-bold text-xs text-slate-800">Yükleniyor...</span>
+                    <span class="text-[10px] font-black text-indigo-600 tracking-[0.2em] uppercase leading-none">TEA TÜRKİYE</span>
+                    <span id="nav-kurum-name" class="font-extrabold text-xs text-slate-800 tracking-tight line-clamp-1 mt-1">Yükleniyor...</span>
                 </div>
             </div>
-            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition-colors">Çıkış Yap</button>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="window.openAdminSettings()" class="btn-press text-slate-500 hover:text-indigo-600 bg-white hover:bg-indigo-50 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow-sm border border-slate-100 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                    <span class="hidden md:inline text-xs uppercase tracking-widest">Yönetim</span>
+                </button>
+                <div class="hidden sm:flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-inner">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white flex items-center justify-center font-black text-xs shadow-md" id="nav-teacher-initial">?</div>
+                    <span id="nav-teacher-name" class="font-black text-sm text-slate-600 italic">...</span>
+                </div>
+                <button onclick="window.logout()" class="btn-press text-slate-400 hover:text-rose-600 bg-white p-2.5 rounded-2xl border border-slate-100 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto" id="main-scroll">
-        <div id="login-view" class="min-h-full w-full flex flex-col lg:flex-row hidden">
-            <div class="w-full lg:w-1/2 bg-hero p-10 text-white flex flex-col justify-center items-center text-center">
-                <div class="text-7xl mb-6 bg-white/20 p-6 rounded-[2.5rem] backdrop-blur-xl">🇹🇷</div>
-                <h1 class="text-5xl font-black uppercase mb-2 leading-none">TÜRKİYE</h1>
-                <h1 class="text-4xl font-black uppercase mb-8">EĞİTİM AĞI</h1>
-                <div class="bg-white/10 p-6 rounded-3xl border border-white/20 max-w-sm">
-                    <p class="text-sm font-bold leading-relaxed">🔒 Verileriniz izoledir. Zümreleriniz dışındakiler erişemez.</p>
+    <main class="flex-1 overflow-y-auto relative w-full" id="main-scroll">
+        
+        <!-- Yükleme Ekranı -->
+        <div id="loading-view" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md transition-opacity duration-500">
+            <div class="relative w-28 h-28 mb-6">
+                <div class="absolute inset-0 rounded-3xl border-t-4 border-indigo-500 animate-spin"></div>
+                <div class="absolute inset-2 rounded-3xl border-r-4 border-fuchsia-400 animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-3xl animate-pulse">🇹🇷</div>
+            </div>
+            <p class="text-indigo-600 font-black tracking-[0.3em] uppercase animate-pulse text-[10px]">Ağ Sistemi Hazırlanıyor...</p>
+        </div>
+
+        <!-- Giriş ve Kayıt Ekranı -->
+        <div id="login-view" class="min-h-full w-full flex flex-col lg:flex-row hidden fade-in">
+            <div class="w-full lg:w-1/2 bg-hero bg-animated text-white flex flex-col justify-center p-8 lg:p-16 relative overflow-hidden shrink-0 lg:min-h-full">
+                <div class="relative z-10 flex flex-col gap-6 slide-up text-center sm:text-left">
+                    <div class="text-6xl bg-white/20 p-6 rounded-[2.5rem] backdrop-blur-xl border border-white/30 shadow-2xl w-fit mx-auto sm:mx-0 transition-transform hover:rotate-6">🇹🇷</div>
+                    <h1 class="text-5xl lg:text-7xl font-black uppercase tracking-tighter text-white leading-none italic drop-shadow-lg">Türkiye <br> Eğitim Ağı</h1>
+                    
+                    <div class="mt-8 bg-white/10 p-8 rounded-[3rem] backdrop-blur-md border border-white/20 shadow-2xl max-w-lg mx-auto sm:mx-0">
+                        <h3 class="font-black text-xl text-yellow-300 mb-6 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Akıllı Sistem Özellikleri
+                        </h3>
+                        <ul class="text-xs sm:text-sm space-y-4 text-indigo-50 font-bold leading-relaxed">
+                            <li class="flex items-center gap-4"><span class="bg-fuchsia-500/30 p-2 rounded-xl">🏥</span> <b>Rehabilitasyon:</b> Tanı ve beceri odaklı formlar.</li>
+                            <li class="flex items-center gap-4"><span class="bg-emerald-500/30 p-2 rounded-xl">🏫</span> <b>Kolej & Okul:</b> Sınıf gelişim araçları.</li>
+                            <li class="flex items-center gap-4"><span class="bg-blue-500/30 p-2 rounded-xl">🎯</span> <b>Kurslar:</b> Hedef sınav ve başarı odaklı notlar.</li>
+                            <li class="flex items-center gap-4"><span class="bg-orange-500/30 p-2 rounded-xl">🧸</span> <b>Kreşler:</b> Yaş grubu ve günlük takip.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Bilgi / Uyarı Kartları -->
+                    <div class="mt-8 space-y-3 max-w-lg mx-auto sm:mx-0">
+                        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-2xl flex items-start gap-3 shadow-md">
+                            <span class="text-2xl">🔒</span>
+                            <p class="text-xs font-bold text-white/90 leading-relaxed">Bilgilerinizi zümreleriniz dışında kimse okuyamaz. Verileriniz tamamen izoledir ve sadece yetkilendirdiğiniz alanda paylaşılır.</p>
+                        </div>
+                        <div class="bg-yellow-400/20 backdrop-blur-sm border border-yellow-400/30 p-4 rounded-2xl flex items-start gap-3 shadow-md">
+                            <span class="text-2xl">🤝</span>
+                            <p class="text-xs font-bold text-yellow-100 leading-relaxed">Meslektaşlarınızla verileri paylaşabilmek için kayıt olurken <span class="underline text-white font-black">aynı okul/kurum adını</span> tam olarak yazdığınızdan emin olun. <strong>İsterseniz bireysel de kullanabilirsiniz.</strong></p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="w-full lg:w-1/2 p-6 flex items-center justify-center">
-                <div class="w-full max-w-md bg-white p-8 sm:p-12 rounded-[3.5rem] shadow-2xl border border-slate-50">
-                    <div class="flex gap-2 mb-8 bg-slate-50 p-2 rounded-3xl shadow-inner">
-                        <button onclick="setAuthMode('login')" id="tab-login" class="flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all">Giriş</button>
-                        <button onclick="setAuthMode('register')" id="tab-register" class="flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all">Kayıt</button>
+            <div class="w-full lg:w-1/2 flex items-center justify-center p-6 relative">
+                <div class="w-full max-w-md bg-white p-8 sm:p-12 rounded-[3.5rem] shadow-2xl border border-slate-100 transition-all">
+                    <div class="text-center mb-10">
+                        <h2 class="text-4xl font-black text-slate-800 tracking-tighter italic">Giriş Yap</h2>
+                        <p class="text-slate-400 font-bold text-sm">Zümrenizle senkronize olun.</p>
                     </div>
 
-                    <form id="auth-form" class="space-y-5">
-                        <input type="text" id="auth-name" required placeholder="Adınız Soyadınız" class="w-full p-5 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-bold text-lg shadow-sm focus:bg-white focus:border-indigo-500 transition-all">
-                        <input type="password" id="auth-password" required placeholder="Şifreniz" class="w-full p-5 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-bold text-lg shadow-sm focus:bg-white focus:border-indigo-500 transition-all">
+                    <div class="flex gap-2 mb-8 bg-slate-50 p-2 rounded-3xl shadow-inner">
+                        <button type="button" onclick="window.setAuthMode('login')" id="tab-login" class="flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all">Giriş</button>
+                        <button type="button" onclick="window.setAuthMode('register')" id="tab-register" class="flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all">Yeni Kayıt</button>
+                    </div>
+
+                    <form id="auth-form" class="space-y-4" onsubmit="window.handleAuth(event)">
+                        <input type="text" id="auth-name" required placeholder="Adınız Soyadınız" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none font-bold text-lg shadow-sm transition-all">
+                        <input type="password" id="auth-password" required placeholder="Şifreniz" class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-500 outline-none font-bold text-lg shadow-sm transition-all">
                         
-                        <div id="register-fields" class="hidden space-y-4 pt-6 border-t border-slate-100 slide-up">
-                            <div class="bg-indigo-50 p-3 rounded-2xl text-center">
-                                <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest italic">İsteyenler bireysel de kullanabilir.</p>
-                            </div>
-                            <select id="auth-kurum-turu" class="w-full p-4 rounded-xl bg-white border border-slate-200 font-bold text-sm shadow-sm appearance-none cursor-pointer">
+                        <div id="register-fields" class="space-y-4 hidden slide-up bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100">
+                            <select id="auth-kurum-turu" class="w-full px-5 py-4 rounded-2xl bg-white border border-slate-200 font-bold text-sm outline-none shadow-sm cursor-pointer" onchange="window.handleKurumTypeChange()">
                                 <option value="Rehabilitasyon Merkezi">Rehabilitasyon Merkezi</option>
                                 <option value="Kolej / Özel Okul">Kolej / Özel Okul</option>
+                                <option value="Özel Öğretim Kursu">Özel Öğretim Kursu</option>
                                 <option value="Kreş / Anaokulu">Kreş / Anaokulu</option>
-                                <option value="Bireysel Eğitmen / Kendim İçin">Bireysel / Kendim İçin</option>
+                                <option value="Bireysel Eğitmen">Bireysel Eğitmen</option>
+                                <option value="Diğer">Diğer Kurum</option>
                             </select>
-                            <div class="grid grid-cols-2 gap-3">
-                                <select id="auth-il" class="p-4 rounded-xl border border-slate-200 font-bold text-sm focus:border-indigo-500 outline-none"><option value="">İl Seçin</option></select>
-                                <select id="auth-ilce" class="p-4 rounded-xl border border-slate-200 font-bold text-sm focus:border-indigo-500 outline-none"><option value="">İlçe Seçin</option></select>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="auth-il" class="w-full px-4 py-4 rounded-2xl bg-white border border-slate-200 font-bold text-sm outline-none shadow-sm cursor-pointer" onchange="window.handleIlChange()"><option value="" disabled selected>İl Seçin</option></select>
+                                <select id="auth-ilce" class="w-full px-4 py-4 rounded-2xl bg-white border border-slate-200 font-bold text-sm outline-none shadow-sm cursor-pointer"><option value="" disabled selected>İlçe</option></select>
                             </div>
-                            <input type="text" id="auth-kurum" placeholder="Kurum veya Grup Adı" class="w-full p-4 rounded-xl border border-slate-200 font-bold text-sm shadow-sm">
+                            <div id="auth-kurum-container">
+                                <input type="text" id="auth-kurum" placeholder="Kurumunuzun Tam Adı" class="w-full px-5 py-4 rounded-2xl bg-white border border-slate-200 font-bold text-sm outline-none shadow-sm transition-all">
+                                <p class="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-2 text-center">Zümre eşleşmesi için kurum adını aynı yazın.</p>
+                            </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white py-5 rounded-[2rem] font-black text-xl shadow-2xl transform active:scale-95 transition-all mt-4">Sisteme Bağlan</button>
+                        <button type="submit" id="auth-submit-btn" class="btn-press w-full bg-slate-900 text-white font-black text-lg py-5 rounded-[2.5rem] mt-4 shadow-xl active:scale-95 italic transition-all hover:bg-black">Sistemi Başlat</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div id="dashboard-view" class="p-6 max-w-7xl mx-auto hidden slide-up">
-            <div class="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-xl shadow-indigo-50/50 mb-10">
-                <h2 id="dash-kurum-title" class="text-4xl font-black text-slate-900 tracking-tighter">Okul Panosu</h2>
-                <p class="text-slate-400 font-bold mt-2 uppercase tracking-widest text-[10px]" id="dash-kurum-info">Kurum Bilgileri</p>
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 hidden pb-24">
+            <div class="bg-white border border-slate-100 p-8 sm:p-12 rounded-[4rem] shadow-xl relative overflow-hidden mb-10 slide-up">
+                <div class="absolute -right-20 -top-20 w-64 h-64 bg-gradient-to-br from-indigo-100 to-fuchsia-100 rounded-full blur-[80px] opacity-50"></div>
+                <div class="text-center md:text-left relative z-10">
+                    <span id="dash-kurum-turu" class="bg-indigo-600 text-white px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest inline-block mb-4 italic shadow-lg shadow-indigo-100">KURUM</span>
+                    <h2 class="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter" id="dash-kurum-title">...</h2>
+                    <p class="text-xs font-black text-slate-400 mt-2 uppercase tracking-widest italic" id="dash-kurum-loc">...</p>
+                </div>
+                <div class="mt-10 flex gap-6 relative z-10">
+                    <div class="flex-1 bg-slate-50/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-slate-100 shadow-inner text-center sm:text-left hover:-translate-y-1 transition-transform">
+                        <p class="text-[10px] font-black opacity-40 uppercase mb-1 tracking-widest italic">Öğrenci Sayısı</p>
+                        <p class="text-5xl font-black text-indigo-600 tabular-nums" id="stat-students">0</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-slate-100 shadow-inner text-center sm:text-left hover:-translate-y-1 transition-transform">
+                        <p class="text-[10px] font-black opacity-40 uppercase mb-1 tracking-widest italic">Gözlem Sayısı</p>
+                        <p class="text-5xl font-black text-fuchsia-600 tabular-nums" id="stat-notes">0</p>
+                    </div>
+                </div>
             </div>
-            <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+
+            <div class="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] border border-white shadow-xl flex flex-col sm:flex-row gap-3 mb-10 sticky top-20 z-30 slide-up transition-all">
+                <input type="text" id="search-student" oninput="window.filterStudents()" placeholder="Öğrencilerde ara..." class="flex-1 px-10 py-5 rounded-full bg-slate-50 border-0 outline-none font-bold text-xl shadow-inner focus:bg-white transition-all">
+                <button onclick="window.openStudentModalForAdd()" class="btn-press bg-indigo-600 text-white px-12 py-5 rounded-full font-black text-lg shadow-2xl shadow-indigo-100 italic transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95">+ Yeni Kayıt</button>
+            </div>
+
+            <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+            <div id="no-students-msg" class="text-center py-32 hidden bg-white rounded-[4rem] border-dashed border-4 border-slate-50 slide-up">
+                <div class="text-6xl mb-4 animate-bounce">🎈</div>
+                <p class="text-slate-400 font-black text-xl italic uppercase tracking-widest">Henüz Kayıt Bulunmuyor</p>
+            </div>
+        </div>
+
+        <!-- Student Detail View -->
+        <div id="student-detail-view" class="max-w-6xl mx-auto px-4 py-8 hidden pb-32">
+            <div class="flex items-center justify-between mb-8 print-hide">
+                <button onclick="window.showView('dashboard')" class="btn-press bg-white text-slate-600 px-6 py-4 rounded-3xl font-black border border-slate-100 shadow-sm hover:bg-slate-50 transition-all italic">Geri Dön</button>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="bg-white text-indigo-600 px-6 py-4 rounded-3xl font-black border border-indigo-50 shadow-sm italic transition-all hover:bg-indigo-50">Rapor Al</button>
+                    <div id="student-actions" class="hidden">
+                        <button onclick="window.deleteStudent()" class="bg-rose-50 text-rose-500 px-6 py-4 rounded-3xl ml-2 shadow-sm border border-rose-100 font-black transition-all hover:bg-rose-600 hover:text-white italic">Sil</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
+                <div class="lg:col-span-3 bg-white rounded-[4rem] p-8 sm:p-12 border border-slate-100 shadow-2xl relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row gap-12 items-center relative z-10">
+                        <div class="h-40 w-40 rounded-[3.5rem] text-white text-7xl font-black flex items-center justify-center shadow-2xl shadow-indigo-100 transform hover:rotate-6 transition-all duration-300" id="detail-student-initial">?</div>
+                        <div class="text-center sm:text-left flex-1">
+                            <h2 class="text-5xl sm:text-6xl font-black text-slate-900 tracking-tighter italic leading-none mb-4" id="detail-student-name">...</h2>
+                            <span class="bg-indigo-600 text-white px-6 py-2 rounded-2xl font-black text-lg shadow-lg shadow-indigo-100" id="detail-student-age">... Yaş</span>
+                            <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6 text-left">
+                                <div class="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner"><p class="text-[10px] font-black opacity-30 uppercase mb-2 tracking-widest italic" id="detail-dynamic-label">Tanı / Sınıf</p><p id="detail-student-diagnosis" class="font-black text-slate-700 text-xl italic">...</p></div>
+                                <div id="detail-extra-box" class="bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner hidden"><p class="text-[10px] font-black opacity-30 uppercase mb-2 tracking-widest italic" id="detail-extra-label">Bilgi</p><p id="detail-student-extra" class="font-black text-slate-700 text-xl italic">...</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 bg-slate-900 rounded-[4rem] p-10 text-white flex flex-col justify-center shadow-2xl">
+                    <h4 class="text-xs font-black text-indigo-400 uppercase tracking-[0.4em] mb-10 border-b border-white/5 pb-4 italic">Zümre Analiz</h4>
+                    <div class="space-y-8" id="analytics-bars">
+                        <div class="space-y-2"><div class="flex justify-between text-[10px] font-black uppercase opacity-60"><span>Başarı</span><span id="stat-success-pct">0%</span></div><div class="h-2 w-full bg-white/10 rounded-full overflow-hidden shadow-inner"><div id="bar-success" class="h-full bg-emerald-400 progress-bar-fill" style="width: 0%"></div></div></div>
+                        <div class="space-y-2"><div class="flex justify-between text-[10px] font-black uppercase opacity-60"><span>Genel</span><span id="stat-info-pct">0%</span></div><div class="h-2 w-full bg-white/10 rounded-full overflow-hidden shadow-inner"><div id="bar-info" class="h-full bg-blue-400 progress-bar-fill" style="width: 0%"></div></div></div>
+                        <div class="space-y-2"><div class="flex justify-between text-[10px] font-black uppercase opacity-60"><span>Dikkat</span><span id="stat-warning-pct">0%</span></div><div class="h-2 w-full bg-white/10 rounded-full overflow-hidden shadow-inner"><div id="bar-warning" class="h-full bg-amber-400 progress-bar-fill" style="width: 0%"></div></div></div>
+                    </div>
+                    <p class="text-[11px] text-center mt-12 opacity-30 uppercase font-black italic tracking-[0.2em]">Toplam <span id="stat-total-badge" class="text-white">0</span> Gözlem</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div class="lg:col-span-2 space-y-8" id="notes-container"></div>
+                <div class="lg:col-span-1 print-hide">
+                    <div class="bg-white rounded-[4rem] p-10 border border-slate-100 shadow-2xl sticky top-24 transform transition-all hover:shadow-indigo-50">
+                        <h3 class="text-3xl font-black italic mb-10 tracking-tighter">Yeni Gözlem</h3>
+                        <div class="space-y-4 mb-10">
+                            <label class="cursor-pointer group"><input type="radio" name="note-type" value="info" checked class="hidden cat-radio cat-info"><div class="p-5 bg-slate-50 rounded-3xl font-black text-xs uppercase text-slate-400 group-hover:bg-white shadow-sm border border-slate-100 transition-all italic tracking-widest">📘 Genel İzlem</div></label>
+                            <label class="cursor-pointer group"><input type="radio" name="note-type" value="success" class="hidden cat-radio cat-success"><div class="p-5 bg-slate-50 rounded-3xl font-black text-xs uppercase text-slate-400 group-hover:bg-white shadow-sm border border-slate-100 transition-all italic tracking-widest">⭐ Başarı & İlerleme</div></label>
+                            <label class="cursor-pointer group"><input type="radio" name="note-type" value="warning" class="hidden cat-radio cat-warning"><div class="p-5 bg-slate-50 rounded-3xl font-black text-xs uppercase text-slate-400 group-hover:bg-white shadow-sm border border-slate-100 transition-all italic tracking-widest">⚠️ Dikkat Edilmeli</div></label>
+                        </div>
+                        <div id="dynamic-quick-notes" class="flex flex-wrap gap-2 mb-8"></div>
+                        <textarea id="new-note-content" rows="6" placeholder="Detaylar..." class="w-full p-8 rounded-[3rem] bg-slate-50 outline-none font-bold text-slate-700 shadow-inner mb-10 border border-slate-100 focus:bg-white focus:border-indigo-500 transition-all"></textarea>
+                        <button onclick="window.addNote()" class="btn-press w-full bg-slate-900 text-white py-6 rounded-[3rem] font-black italic text-xl shadow-2xl hover:bg-black transition-all">Sisteme İşle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-view" class="max-w-7xl mx-auto px-4 py-12 hidden pb-24">
+            <div class="flex items-center justify-between mb-12 border-b border-slate-100 pb-12 flex-wrap gap-6 text-slate-900">
+                <div>
+                    <h2 class="text-5xl font-black italic tracking-tighter">Yönetim Paneli</h2>
+                    <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mt-2 italic">Türkiye Geneli Veri Denetim Havuzu</p>
+                </div>
+                <button onclick="window.logoutAdmin()" class="bg-rose-50 text-rose-600 px-10 py-5 rounded-3xl font-black text-xs uppercase shadow-sm border border-rose-100 italic transition-all hover:bg-rose-600 hover:text-white">Kapat</button>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-16 slide-up">
+                <div class="bg-indigo-600 p-10 rounded-[3.5rem] text-white shadow-2xl transform hover:scale-105 transition-all"><p class="text-[11px] opacity-60 font-black mb-1 italic tracking-widest">KURUM</p><p class="text-6xl font-black tabular-nums" id="admin-stat-kurum">0</p></div>
+                <div class="bg-fuchsia-600 p-10 rounded-[3.5rem] text-white shadow-2xl transform hover:scale-105 transition-all"><p class="text-[11px] opacity-60 font-black mb-1 italic tracking-widest">EĞİTMEN</p><p class="text-6xl font-black tabular-nums" id="admin-stat-teacher">0</p></div>
+                <div class="bg-emerald-500 p-10 rounded-[3.5rem] text-white shadow-2xl transform hover:scale-105 transition-all"><p class="text-[11px] opacity-60 font-black mb-1 italic tracking-widest">ÖĞRENCİ</p><p class="text-6xl font-black tabular-nums" id="admin-stat-student">0</p></div>
+                <div class="bg-slate-900 p-10 rounded-[3.5rem] text-white shadow-2xl transform hover:scale-105 transition-all"><p class="text-[11px] opacity-60 font-black mb-1 italic tracking-widest">GÖZLEM</p><p class="text-6xl font-black tabular-nums" id="admin-stat-note">0</p></div>
+            </div>
+            <div class="flex gap-4 mb-12 bg-white p-3 rounded-[3rem] border border-slate-100 w-fit mx-auto sm:mx-0 shadow-xl slide-up">
+                <button onclick="window.setAdminTab('students')" id="admin-tab-students" class="px-10 py-4 rounded-[2rem] font-black text-xs uppercase bg-slate-900 text-white shadow-2xl transition-all italic tracking-widest">Öğrenciler</button>
+                <button onclick="window.setAdminTab('users')" id="admin-tab-users" class="px-10 py-4 rounded-[2rem] font-black text-xs uppercase text-slate-400 hover:text-slate-600 transition-all italic tracking-widest">Eğitmenler</button>
+            </div>
+            <div class="relative group slide-up">
+                <input type="text" id="admin-search" oninput="window.renderAdminData()" placeholder="Genel arşivde arama yapın..." class="w-full px-10 py-7 rounded-[3rem] border border-slate-100 mb-12 font-bold text-2xl shadow-2xl outline-none focus:border-indigo-500 focus:bg-white bg-slate-50/50 transition-all italic">
+            </div>
+            <div class="bg-white rounded-[4rem] shadow-2xl overflow-hidden border border-slate-100 slide-up"><div class="overflow-x-auto"><table class="w-full text-left border-collapse font-bold"><thead id="admin-table-head" class="bg-slate-50 border-b border-slate-100 text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]"></thead><tbody id="admin-data-list" class="divide-y divide-slate-50 text-slate-700"></tbody></table></div></div>
         </div>
     </main>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Modals -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[4rem] max-w-sm w-full p-12 text-center shadow-2xl border border-white/20">
+            <div class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-4xl shadow-inner">🔐</div>
+            <h3 class="text-4xl font-black italic mb-2 tracking-tighter">Yönetim</h3>
+            <p class="text-slate-400 font-bold text-[10px] uppercase tracking-[0.4em] mb-10 italic">TEA Sistem Yetkilisi</p>
+            <form id="admin-auth-form" onsubmit="window.submitAdminAuth(event)">
+                <input type="email" id="admin-auth-email" required placeholder="Yetkili E-Posta" class="w-full px-8 py-5 rounded-3xl bg-slate-50 border font-bold outline-none focus:bg-white focus:border-indigo-500 shadow-sm mb-3">
+                <input type="password" id="admin-auth-pass" required placeholder="Şifre" class="w-full px-8 py-5 rounded-3xl bg-slate-50 border font-bold text-center tracking-[0.5em] outline-none focus:bg-white focus:border-indigo-500 shadow-sm mb-8">
+                <button type="submit" class="btn-press w-full bg-indigo-600 text-white py-6 rounded-[2rem] font-black text-lg shadow-2xl shadow-indigo-100 italic transition-all hover:bg-indigo-700">Panele Bağlan</button>
+                <button type="button" onclick="window.closeAdminLoginModal()" class="text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-rose-500 transition-colors mt-6 block w-full italic">Vazgeç</button>
+            </form>
+        </div>
+    </div>
 
-        // Firebase Yapılandırması (Görsel 3-4-5-6 ile tam uyumlu)
-        const firebaseConfig = { apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU", authDomain: "shaped-totem-481514-c5.firebaseapp.com", projectId: "shaped-totem-481514-c5", appId: "1:519295049418:web:7d04e18c4ea36bc088de33" };
+    <div id="student-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xl z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-500">
+        <div class="bg-white rounded-[4rem] max-w-xl w-full p-12 shadow-2xl relative overflow-hidden" id="student-modal-content">
+            <h3 class="text-5xl font-black italic mb-10 tracking-tighter" id="modal-title">Kayıt Ekranı</h3>
+            <form id="student-form" class="space-y-8" onsubmit="window.handleStudentSubmit(event)">
+                <input type="hidden" id="edit-student-id" value="">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-300 ml-6 mb-2 block tracking-widest italic">Öğrenci Adı Soyadı</label>
+                    <input type="text" id="student-name" required placeholder="İsim Soyisim" class="w-full px-10 py-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 font-black text-xl italic shadow-inner outline-none focus:bg-white focus:border-indigo-500 transition-all">
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-300 ml-6 mb-2 block tracking-widest italic">Yaşı</label>
+                        <input type="number" id="student-age" required placeholder="0" class="w-full px-10 py-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 font-black text-xl italic shadow-inner outline-none focus:bg-white focus:border-indigo-500 transition-all">
+                    </div>
+                    <div>
+                        <label id="label-student-diagnosis" class="text-[10px] font-black uppercase text-slate-300 ml-6 mb-2 block tracking-widest italic">Durum / Sınıf</label>
+                        <input type="text" id="student-diagnosis" required placeholder="..." class="w-full px-10 py-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 font-black text-xl italic shadow-inner outline-none focus:bg-white focus:border-indigo-500 transition-all">
+                    </div>
+                </div>
+                <div id="student-extra-container" class="hidden">
+                    <label id="label-student-extra" class="text-[10px] font-black uppercase text-indigo-400 ml-6 mb-2 block tracking-widest italic">Ek Bilgi (Zümre İçin)</label>
+                    <input type="text" id="student-extra" placeholder="Detaylar..." class="w-full px-10 py-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 font-black text-xl italic shadow-inner outline-none focus:bg-white focus:border-indigo-500 transition-all">
+                </div>
+                <div class="flex gap-6 pt-8">
+                    <button type="button" onclick="window.closeModal('student-modal')" class="btn-press flex-1 py-6 bg-slate-50 text-slate-400 rounded-[2.5rem] font-black italic border border-slate-100 uppercase text-xs tracking-widest hover:bg-slate-100 transition-all">İptal</button>
+                    <button type="submit" class="btn-press flex-1 bg-slate-900 text-white rounded-[2.5rem] font-black text-xl italic shadow-2xl hover:bg-black transition-all tracking-tighter">Arşive Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-2xl z-[60] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[4rem] max-w-sm w-full p-12 text-center shadow-2xl border border-rose-100">
+            <div class="w-28 h-28 bg-rose-50 text-rose-600 rounded-[3rem] flex items-center justify-center mx-auto mb-10 text-5xl shadow-inner animate-pulse">⚠️</div>
+            <h3 class="text-4xl font-black italic mb-4 tracking-tighter">İmha İşlemi</h3>
+            <p class="text-slate-400 font-bold text-xs uppercase mb-12 italic tracking-widest leading-relaxed">Bu işlem veritabanından kalıcı bir temizlik yapacaktır.</p>
+            <div class="flex gap-6">
+                <button onclick="window.closeConfirmModal()" class="btn-press flex-1 py-6 bg-slate-50 rounded-[2rem] font-black italic uppercase text-xs tracking-widest border border-slate-100">Vazgeç</button>
+                <button id="confirm-action-btn" class="btn-press flex-1 py-6 bg-rose-600 text-white rounded-[2rem] font-black italic uppercase text-xs tracking-widest shadow-2xl shadow-rose-200">Evet, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-12 py-6 rounded-full shadow-2xl translate-y-40 opacity-0 transition-all duration-500 z-[100] font-black text-sm uppercase italic border border-white/10 backdrop-blur-xl">
+        <span id="toast-icon" class="mr-3">✨</span><span id="toast-message">...</span>
+    </div>
+
+    <script type="module">
+        import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // *** FIREBASE AYARLARI (Birebir Korundu) ***
+        const userFirebaseConfig = { apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU", authDomain: "shaped-totem-481514-c5.firebaseapp.com", projectId: "shaped-totem-481514-c5", storageBucket: "shaped-totem-481514-c5.firebasestorage.app", messagingSenderId: "519295049418", appId: "1:519295049418:web:7d04e18c4ea36bc088de33", measurementId: "G-10ENZQDXK1" };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tea-live-system-v1';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 81 İL LİSTESİ (KODUN İÇİNDE - BOŞ KALMAZ!)
-        const ILDATA = { "Adana": ["Seyhan", "Çukurova", "Sarıçam", "Yüreğir"], "Ankara": ["Çankaya", "Keçiören", "Mamak", "Yenimahalle"], "Antalya": ["Muratpaşa", "Kepez", "Konyaaltı"], "Bursa": ["Nilüfer", "Osmangazi", "Yıldırım"], "Gaziantep": ["Şahinbey", "Şehitkamil"], "İstanbul": ["Beşiktaş", "Kadıköy", "Şişli", "Üsküdar", "Fatih", "Sarıyer", "Zeytinburnu"], "İzmir": ["Bornova", "Buca", "Karşıyaka", "Konak"], "Kayseri": ["Melikgazi", "Kocasinan"], "Kocaeli": ["İzmit", "Gebze"], "Konya": ["Selçuklu", "Meram"], "Mersin": ["Yenişehir", "Mezitli"], "Samsun": ["Atakum", "İlkadım"] };
+        // Path Helpers (RULE 1)
+        const getPubCollection = (n) => collection(db, 'artifacts', appId, 'public', 'data', n);
+        const getPubDoc = (n, id) => doc(db, 'artifacts', appId, 'public', 'data', n, id);
 
-        const ilSelect = document.getElementById('auth-il'), ilceSelect = document.getElementById('auth-ilce');
-        Object.keys(ILDATA).sort((a,b)=>a.localeCompare(b,'tr')).forEach(il => { const o = document.createElement('option'); o.value = il; o.innerText = il; ilSelect.appendChild(o); });
-        ilSelect.onchange = (e) => {
-            ilceSelect.innerHTML = '<option value="">İlçe Seçin</option>';
-            (ILDATA[e.target.value] || []).forEach(d => { const o = document.createElement('option'); o.value = d; o.innerText = d; ilceSelect.appendChild(o); });
+        const TURKEY_LOCATIONS = { "Adana":["Seyhan","Çukurova","Sarıçam","Yüreğir","Kozan"],"Ankara":["Çankaya","Keçiören","Mamak","Etimesgut","Yenimahalle"],"İstanbul":["Kadıköy","Beşiktaş","Şişli","Üsküdar","Fatih","Beyoğlu","Maltepe","Kartal","Ataşehir"],"İzmir":["Konak","Bornova","Karşıyaka","Buca","Çiğli"],"Bursa":["Nilüfer","Osmangazi","Yıldırım"],"Antalya":["Muratpaşa","Kepez","Konyaaltı"] };
+
+        let currentUser = null, currentTeacher = null, currentStudentId = null, authModeState = 'login', isAdminActive = false, adminActiveTab = 'students';
+        let allTeachers = [], allStudents = [], allNotes = [];
+
+        // --- GLOBAL EXPOSE (Tüm butonların çalışması için zaruri) ---
+        window.showView = (v) => {
+            ['login', 'dashboard', 'student-detail', 'admin'].forEach(x => { document.getElementById(x + '-view')?.classList.add('hidden'); });
+            document.getElementById('navbar')?.classList.toggle('hidden', v==='login' || v==='admin');
+            const view = document.getElementById(v + '-view');
+            if(view) { view.classList.remove('hidden'); view.classList.add('slide-up'); }
+            if(v === 'dashboard') window.renderStudents();
+            document.getElementById('main-scroll')?.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        let allTeachers = [], currentTeacher = null;
+        window.setAuthMode = (m) => {
+            authModeState = m;
+            const isL = m === 'login';
+            document.getElementById('register-fields')?.classList.toggle('hidden', isL);
+            document.getElementById('tab-login').className = isL ? "flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all" : "flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all";
+            document.getElementById('tab-register').className = !isL ? "flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all" : "flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all";
+            
+            if(isL) document.getElementById('auth-submit-btn').innerText = "Sisteme Giriş Yap";
+            else document.getElementById('auth-submit-btn').innerText = "Ağa Katıl";
+        };
 
-        // VERİLERİ DİNLE VE OTOMATİK GİRİŞ YAP
+        window.handleKurumTypeChange = () => {
+            const turu = document.getElementById('auth-kurum-turu').value;
+            const kContainer = document.getElementById('auth-kurum-container');
+            if(turu === 'Bireysel Eğitmen') {
+                kContainer.classList.add('hidden');
+                document.getElementById('auth-kurum').value = "Bireysel Eğitim";
+            } else {
+                kContainer.classList.remove('hidden');
+                document.getElementById('auth-kurum').value = "";
+            }
+        };
+
+        window.handleIlChange = () => {
+            const il = document.getElementById('auth-il').value;
+            const dS = document.getElementById('auth-ilce');
+            dS.innerHTML = '<option value="" disabled selected>İlçe Seçin</option>'; 
+            (TURKEY_LOCATIONS[il] || []).sort().forEach(d => {
+                const o = document.createElement('option'); o.value = d; o.innerText = d; dS.appendChild(o);
+            });
+        };
+
+        window.handleAuth = async (e) => {
+            e.preventDefault();
+            const nInput = document.getElementById('auth-name').value.trim();
+            const pInput = document.getElementById('auth-password').value.trim();
+            
+            // Asenkron veri garantisi: Kullanıcılar çekilmediyse manuel çek (Canvas fix)
+            if(allTeachers.length === 0) {
+                try {
+                    const qs = await getDocs(getPubCollection('teachers_tr'));
+                    allTeachers = qs.docs.map(d => ({ id: d.id, ...d.data() }));
+                } catch(e) { console.error(e); }
+            }
+
+            const teacher = allTeachers.find(it => it.name.toLowerCase() === nInput.toLowerCase());
+
+            if(authModeState === 'login') {
+                if(teacher && teacher.password === pInput) {
+                    currentTeacher = teacher;
+                    sessionStorage.setItem('rehab_teacher_id', teacher.id);
+                    window.updateUI();
+                    window.showView('dashboard');
+                    window.showToast("Başarıyla giriş yapıldı.");
+                } else {
+                    window.showToast("Kullanıcı adı veya şifre hatalı.", "error");
+                }
+            } else {
+                if(teacher) return window.showToast("Bu isimle bir kayıt zaten mevcut.", "error");
+                const il = document.getElementById('auth-il').value, ilce = document.getElementById('auth-ilce').value, turu = document.getElementById('auth-kurum-turu').value;
+                let kurum = document.getElementById('auth-kurum').value.trim();
+                if(turu==='Bireysel Eğitmen') kurum = nInput + " Bireysel";
+                if(!il || !ilce || !kurum) return window.showToast("Lütfen il, ilçe ve kurum adını doldurun.", "error");
+                
+                const kKey = `${il}-${ilce}-${turu}-${kurum}`.toLowerCase().replace(/\s+/g, '-');
+                try {
+                    const newT = doc(getPubCollection('teachers_tr'));
+                    const data = { name: nInput, password: pInput, kurumTuru: turu, il, ilce, kurum, kurumKey: kKey, createdAt: serverTimestamp() };
+                    await setDoc(newT, data);
+                    currentTeacher = { id: newT.id, ...data };
+                    sessionStorage.setItem('rehab_teacher_id', newT.id);
+                    window.updateUI();
+                    window.showView('dashboard');
+                    window.showToast("Kayıt tamamlandı, TEA ağına katıldınız.");
+                } catch(err) { window.showToast("Kayıt oluşturulurken bir hata meydana geldi.", "error"); }
+            }
+        };
+
+        window.openAdminSettings = () => {
+            document.getElementById('admin-login-modal')?.classList.remove('hidden');
+            setTimeout(()=>document.getElementById('admin-login-modal')?.classList.remove('opacity-0'),10);
+        };
+
+        window.closeAdminLoginModal = () => {
+            document.getElementById('admin-login-modal')?.classList.add('opacity-0');
+            setTimeout(()=>document.getElementById('admin-login-modal')?.classList.add('hidden'),300);
+        };
+
+        window.submitAdminAuth = (e) => {
+            e.preventDefault();
+            signInWithEmailAndPassword(auth, document.getElementById('admin-auth-email').value, document.getElementById('admin-auth-pass').value)
+                .then(() => window.showToast("Yönetici girişi onaylandı."))
+                .catch(() => window.showToast("Yetkili girişi başarısız.", "error"));
+        };
+
+        window.logout = () => {
+            sessionStorage.removeItem('rehab_teacher_id');
+            signOut(auth).then(()=> location.reload());
+        };
+
+        window.logoutAdmin = () => signOut(auth).then(()=> location.reload());
+
+        window.setAdminTab = (t) => {
+            adminActiveTab = t;
+            document.getElementById('admin-tab-students').className = t === 'students' ? "px-10 py-4 rounded-[2rem] font-black text-xs uppercase bg-slate-900 text-white shadow-2xl italic tracking-widest transition-all" : "px-10 py-4 rounded-[2rem] font-black text-xs uppercase text-slate-400 hover:text-slate-600 italic tracking-widest transition-all";
+            document.getElementById('admin-tab-users').className = t === 'users' ? "px-10 py-4 rounded-[2rem] font-black text-xs uppercase bg-slate-900 text-white shadow-2xl italic tracking-widest transition-all" : "px-10 py-4 rounded-[2rem] font-black text-xs uppercase text-slate-400 hover:text-slate-600 italic tracking-widest transition-all";
+            window.renderAdminData();
+        };
+
+        window.openStudentModalForAdd = () => {
+            document.getElementById('edit-student-id').value = "";
+            document.getElementById('modal-title').innerText = "Kayıt Ekranı";
+            document.getElementById('student-extra-container')?.classList.remove('hidden');
+            
+            const dL = document.getElementById('label-student-diagnosis'), eL = document.getElementById('label-student-extra');
+            if(currentTeacher.kurumTuru.includes('Rehabilitasyon')) { dL.innerText = "Tanı Durumu"; eL.innerText = "Destek İhtiyacı"; }
+            else if(currentTeacher.kurumTuru.includes('Okul')) { dL.innerText = "Sınıf / Şube"; eL.innerText = "Kulüp / Alan"; }
+            else { dL.innerText = "Seviye / Bilgi"; document.getElementById('student-extra-container')?.classList.add('hidden'); }
+            
+            window.openModal('student-modal');
+        };
+
+        window.openModal = (id) => {
+            const m = document.getElementById(id), c = document.getElementById(id + '-content');
+            m?.classList.remove('hidden'); setTimeout(()=> { m?.classList.remove('opacity-0'); c?.classList.remove('scale-95'); }, 10);
+            if(id === 'student-modal' && !document.getElementById('edit-student-id').value) document.getElementById('student-form').reset();
+        };
+
+        window.closeModal = (id) => {
+            const m = document.getElementById(id), c = document.getElementById(id + '-content');
+            m?.classList.add('opacity-0'); c?.classList.add('scale-95');
+            setTimeout(()=> { m?.classList.add('hidden'); if(id==='student-modal') document.getElementById('edit-student-id').value=""; }, 300);
+        };
+
+        window.handleStudentSubmit = async (e) => {
+            e.preventDefault();
+            const eid = document.getElementById('edit-student-id').value;
+            const data = { 
+                name: document.getElementById('student-name').value.trim(), 
+                age: document.getElementById('student-age').value, 
+                diagnosis: document.getElementById('student-diagnosis').value.trim(), 
+                extra: document.getElementById('student-extra').value.trim(), 
+                il: currentTeacher.il, ilce: currentTeacher.ilce, kurum: currentTeacher.kurum, kurumKey: currentTeacher.kurumKey, 
+                updatedAt: serverTimestamp() 
+            };
+            try {
+                if(eid) {
+                    await updateDoc(getPubDoc('students_tr', eid), data);
+                    window.showToast("Kayıt güncellendi.");
+                } else {
+                    data.addedBy = currentTeacher.name; data.addedById = currentTeacher.id; data.createdAt = serverTimestamp();
+                    await addDoc(getPubCollection('students_tr'), data);
+                    window.shootConfetti();
+                    window.showToast("Kayıt başarıyla arşive işlendi.");
+                }
+                window.closeModal('student-modal');
+            } catch(e) { window.showToast("Kayıt sırasında hata oluştu.", "error"); }
+        };
+
+        window.addNote = async () => {
+            const c = document.getElementById('new-note-content').value.trim();
+            const checkedRadio = document.querySelector('input[name="note-type"]:checked');
+            if(!checkedRadio) return window.showToast("Lütfen not türü seçin.", "error");
+            const t = checkedRadio.value;
+            
+            if(!c) return window.showToast("Not içeriği boş bırakılamaz.", "error");
+            try {
+                await addDoc(getPubCollection('notes_tr'), { studentId: currentStudentId, teacherId: currentTeacher.id, teacherName: currentTeacher.name, content: c, type: t, kurumKey: currentTeacher.kurumKey, createdAt: serverTimestamp() });
+                document.getElementById('new-note-content').value = "";
+                window.showToast("Gözlem paylaşıldı.");
+                if(t==='success') window.shootConfetti();
+            } catch(e) { window.showToast("Not eklenemedi.", "error"); }
+        };
+
+        window.deleteStudent = () => window.showConfirm("İmha Ediliyor", "Bu öğrenciyi ve bağlı tüm verileri silmek üzeresiniz.", async () => {
+            const ns = allNotes.filter(n => n.studentId === currentStudentId);
+            for(let n of ns) await deleteDoc(getPubDoc('notes_tr', n.id));
+            await deleteDoc(getPubDoc('students_tr', currentStudentId));
+            window.showToast("Kayıt başarıyla silindi.");
+            window.showView('dashboard');
+        });
+
+        window.deleteNote = (id) => window.showConfirm("", "Bu gözlemi silmek istediğinize emin misiniz?", async () => { await deleteDoc(getPubDoc('notes_tr', id)); window.showToast("Gözlem silindi."); });
+        
+        window.deleteStudentAdmin = (id) => window.showConfirm("Veri İmhası", "Kayıt ve bağlı veriler tamamen silinecektir.", async () => {
+            const ns = allNotes.filter(n => n.studentId === id);
+            for(let n of ns) await deleteDoc(getPubDoc('notes_tr', n.id));
+            await deleteDoc(getPubDoc('students_tr', id));
+            window.showToast("Öğrenci silindi.");
+        });
+
+        window.deleteUserAdmin = (uid) => window.showConfirm("Hesap Kapatma", "EĞİTMEN VE ONA BAĞLI TÜM KURUMLARDAKİ ÖĞRENCİLER/NOTLAR SİLİNECEKTİR!", async () => {
+            const t = allTeachers.find(it => it.id === uid);
+            const stu = allStudents.filter(s => s.kurumKey === t.kurumKey);
+            for(let s of stu) {
+                const ns = allNotes.filter(n => n.studentId === s.id);
+                for(let n of ns) await deleteDoc(getPubDoc('notes_tr', n.id));
+                await deleteDoc(getPubDoc('students_tr', s.id));
+            }
+            await deleteDoc(getPubDoc('teachers_tr', uid));
+            window.showToast("Hesap imha edildi.");
+        });
+
+        window.filterStudents = () => window.renderStudents(document.getElementById('search-student').value.toLowerCase());
+        window.appendNote = (t) => { const a = document.getElementById('new-note-content'); if(a) { a.value = a.value ? a.value + " " + t : t; a.focus(); } };
+
+        window.renderAdminData = () => {
+            const list = document.getElementById('admin-data-list'), head = document.getElementById('admin-table-head'), term = document.getElementById('admin-search').value.toLowerCase();
+            if(!list) return; list.innerHTML = "";
+            if(adminActiveTab === 'students') {
+                head.innerHTML = `<tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]"><th class="p-8">Öğrenci</th><th class="p-8">Kurum</th><th class="p-8">Eğitmen</th><th class="p-8 text-right">Eylem</th></tr>`;
+                allStudents.filter(s => s.name.toLowerCase().includes(term) || s.kurum.toLowerCase().includes(term)).slice(0, 50).forEach(s => {
+                    const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50 transition-all group";
+                    tr.innerHTML = `<td class="p-8 text-slate-800 italic">${s.name}</td><td class="p-8 text-indigo-600">${s.kurum}</td><td class="p-8 text-slate-400">${s.addedBy}</td><td class="p-8 text-right"><button onclick="window.deleteStudentAdmin('${s.id}')" class="text-rose-500 font-black text-[10px] uppercase transition-all hover:scale-110 opacity-0 group-hover:opacity-100 italic tracking-widest">Sil</button></td>`;
+                    list.appendChild(tr);
+                });
+            } else {
+                head.innerHTML = `<tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]"><th class="p-8">Eğitmen</th><th class="p-8">Kurum Bilgisi</th><th class="p-8 text-center">Öğrenci Sayısı</th><th class="p-8 text-right">Eylem</th></tr>`;
+                allTeachers.filter(t => t.name.toLowerCase().includes(term) || t.kurum.toLowerCase().includes(term)).forEach(t => {
+                    const sCount = allStudents.filter(s => s.kurumKey === t.kurumKey).length;
+                    const tr = document.createElement('tr'); tr.className = "hover:bg-slate-50 transition-all group";
+                    tr.innerHTML = `<td class="p-8 text-slate-800 italic">${t.name}</td><td class="p-8 text-fuchsia-600 uppercase text-xs italic tracking-widest">${t.kurum}</td><td class="p-8 text-center text-slate-400 font-black">${sCount} Kayıt</td><td class="p-8 text-right"><button onclick="window.deleteUserAdmin('${t.id}')" class="text-rose-600 font-black text-[10px] uppercase transition-all hover:scale-110 opacity-0 group-hover:opacity-100 italic tracking-widest">Kapat</button></td>`;
+                    list.appendChild(tr);
+                });
+            }
+        };
+
+        // --- YARDIMCI GÖRSEL FONKSİYONLAR ---
+        const gradients=['linear-gradient(135deg, #6366f1, #a855f7)','linear-gradient(135deg, #f43f5e, #f97316)','linear-gradient(135deg, #10b981, #3b82f6)','linear-gradient(135deg, #8b5cf6, #ec4899)','linear-gradient(135deg, #f59e0b, #ef4444)'];
+        window.getGradientForName = (n) => { let s=0; for(let i=0;i<n.length;i++) s+=n.charCodeAt(i); return gradients[s%gradients.length]; };
+        window.timeAgo = (d) => { const s=Math.floor((new Date()-d)/1000); if(s<60) return "Az Önce"; if(s<3600) return Math.floor(s/60)+" dk önce"; if(s<86400) return Math.floor(s/3600)+" saat önce"; return Math.floor(s/86400)+" gün önce"; };
+        window.getGreeting = () => { const h = new Date().getHours(); return h<12 ? "Günaydın" : (h<18 ? "İyi Günler" : "İyi Akşamlar"); };
+
+        window.updateUI = () => {
+            if(currentTeacher) {
+                document.getElementById('nav-teacher-name').innerText = `${window.getGreeting()}, ${currentTeacher.name.split(' ')[0]}`;
+                document.getElementById('nav-teacher-initial').innerText = currentTeacher.name[0].toUpperCase();
+                document.getElementById('nav-kurum-name').innerText = currentTeacher.kurum;
+                document.getElementById('dash-kurum-title').innerText = currentTeacher.kurum;
+                document.getElementById('dash-kurum-loc').innerText = `${currentTeacher.il} / ${currentTeacher.ilce}`;
+                document.getElementById('dash-kurum-turu').innerText = currentTeacher.kurumTuru;
+            }
+        };
+
+        window.renderStudents = (t = "") => {
+            const g = document.getElementById('students-grid'), msg = document.getElementById('no-students-msg');
+            if(!g) return; g.innerHTML = "";
+            let list = allStudents.filter(s => s.kurumKey === currentTeacher.kurumKey);
+            if(t) list = list.filter(s => s.name.toLowerCase().includes(t) || s.diagnosis.toLowerCase().includes(t));
+            if(list.length === 0) { g.classList.add('hidden'); msg?.classList.remove('hidden'); }
+            else {
+                g.classList.remove('hidden'); msg?.classList.add('hidden');
+                list.forEach((s, i) => {
+                    const nL = allNotes.filter(n => n.studentId === s.id).length;
+                    const c = document.createElement('div');
+                    c.className = "stagger-item student-card bg-white rounded-[3rem] p-8 cursor-pointer relative overflow-hidden group shadow-sm shadow-slate-100";
+                    c.style.animationDelay = `${i*0.05}s`;
+                    c.onclick = () => window.openStudentDetail(s);
+                    c.innerHTML = `
+                        <div class="absolute top-0 right-0 h-1.5 ${nL>0?'bg-emerald-400':'bg-slate-100'} progress-bar-fill" style="width: ${Math.min(nL*10, 100)}%"></div>
+                        <div class="flex items-center gap-6 mb-8">
+                            <div class="w-16 h-16 rounded-[1.5rem] text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-indigo-100 transform group-hover:rotate-12 transition-all duration-500" style="background: ${window.getGradientForName(s.name)}">${s.name[0].toUpperCase()}</div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-black text-slate-800 text-xl truncate group-hover:text-indigo-600 transition-all italic">${s.name}</h3>
+                                <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1 italic">${s.age} Yaş • ${nL} Gözlem</p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 px-4 py-3 rounded-2xl text-[11px] font-black text-slate-500 uppercase truncate border border-slate-50 italic group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shadow-inner">${s.diagnosis}</div>
+                        <div class="pt-8 mt-8 border-t border-slate-50 flex justify-between items-center italic">
+                            <span class="text-[10px] font-black text-slate-300 uppercase tracking-tighter">${s.updatedAt ? window.timeAgo(s.updatedAt.toDate()) : 'Yeni'}</span>
+                            <span class="text-indigo-600 text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 italic tracking-widest">Dosya &rarr;</span>
+                        </div>
+                    `;
+                    g.appendChild(c);
+                });
+            }
+        };
+
+        window.openStudentDetail = (s, up = false) => {
+            currentStudentId = s.id;
+            document.getElementById('detail-student-name').innerText = s.name;
+            document.getElementById('detail-student-age').innerText = s.age + " Yaş";
+            document.getElementById('detail-student-diagnosis').innerText = s.diagnosis;
+            const exB = document.getElementById('detail-extra-box');
+            if(s.extra) { exB?.classList.remove('hidden'); document.getElementById('detail-student-extra').innerText = s.extra; } else exB?.classList.add('hidden');
+            const initE = document.getElementById('detail-student-initial');
+            if(initE) { initE.innerText = s.name[0].toUpperCase(); initE.style.background = window.getGradientForName(s.name); }
+            document.getElementById('student-actions')?.classList.toggle('hidden', s.addedById !== currentTeacher.id);
+            if(!up) { document.getElementById('new-note-content').value = ""; window.loadQuickNotes(); window.showView('student-detail'); }
+            window.renderNotes();
+            window.updateAnalytics(s.id);
+        };
+
+        window.updateAnalytics = (sid) => {
+            const ns = allNotes.filter(n => n.studentId === sid), tot = ns.length;
+            document.getElementById('stat-total-badge').innerText = tot;
+            if(tot === 0) { ['success','info','warning'].forEach(t => { document.getElementById(`bar-${t}`).style.width='0%'; document.getElementById(`stat-${t}-pct`).innerText='0%'; }); return; }
+            ['success','info','warning'].forEach(t => {
+                const p = Math.round((ns.filter(n => n.type === t).length / tot) * 100);
+                document.getElementById(`bar-${t}`).style.width = p + '%';
+                document.getElementById(`stat-${t}-pct`).innerText = p + '%';
+            });
+        };
+
+        window.renderNotes = () => {
+            const cont = document.getElementById('notes-container'); if(!cont) return; cont.innerHTML = "";
+            allNotes.filter(n => n.studentId === currentStudentId).forEach((n, i) => {
+                const isMe = n.teacherId === currentTeacher.id;
+                let cls = n.type==='success' ? "border-emerald-100 bg-emerald-50/20" : (n.type==='warning' ? "border-amber-100 bg-amber-50/20" : "border-slate-50 bg-white");
+                const el = document.createElement('div'); el.className = `stagger-item bg-white rounded-[3rem] p-10 border ${cls} shadow-sm relative group`;
+                el.style.animationDelay = `${i*0.1}s`;
+                el.innerHTML = `
+                    <div class="flex justify-between items-start mb-8 italic">
+                        <div class="flex items-center gap-5">
+                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black ${isMe?'bg-indigo-600 text-white shadow-lg':'bg-slate-100 text-slate-400 shadow-inner'}">${n.teacherName[0].toUpperCase()}</div>
+                            <div><h4 class="font-black text-slate-800 text-lg leading-none mb-1">${n.teacherName}</h4><span class="text-[10px] text-slate-300 font-black uppercase tracking-widest italic">${n.createdAt ? window.timeAgo(n.createdAt.toDate()) : '...'}</span></div>
+                        </div>
+                        ${isMe ? `<button onclick="window.deleteNote('${n.id}')" class="text-slate-200 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
+                    </div>
+                    <p class="text-slate-700 font-bold leading-relaxed italic text-xl border-l-4 border-indigo-100 pl-6 shadow-sm">"${window.escapeHtml(n.content)}"</p>
+                `;
+                cont.appendChild(el);
+            });
+        };
+
+        window.loadQuickNotes = () => {
+            const cont = document.getElementById('dynamic-quick-notes'), turu = currentTeacher.kurumTuru;
+            const tags = turu.includes('Rehabilitasyon') ? ["Motor Beceri Gelişimi 📈", "Göz Teması Arttı 👀", "Yönergelere Uydu ✅", "Huzursuzluk Gözlendi ⚠️"] : ["Katılım Aktif ✋", "Ödev Başarılı 📚", "Odaklanma Harika 🎯", "Ders Takibi Eksik 📝"];
+            cont.innerHTML = tags.map(t => `<button onclick="window.appendNote('${t}')" class="px-4 py-2 bg-slate-50 text-slate-400 text-[10px] font-black uppercase rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm italic border border-slate-50">${t}</button>`).join('');
+        };
+
+        // --- INIT & FIREBASE LISTENERS ---
         onAuthStateChanged(auth, user => {
             if (user) {
-                // Not: appId 'tea-genel-sistem' olarak TEA projelerinle tam uyumlu hale getirildi.
-                onSnapshot(collection(db, 'artifacts', 'tea-genel-sistem', 'public', 'data', 'teachers_tr'), snap => {
-                    allTeachers = []; snap.forEach(d => allTeachers.push({id: d.id, ...d.data()}));
-                    const savedId = sessionStorage.getItem('rehab_teacher_id');
-                    if(savedId) {
-                        const found = allTeachers.find(i => i.id === savedId);
-                        if(found) { currentTeacher = found; updateUI(); showView('dashboard'); }
+                currentUser = user;
+                if(user.email) { isAdminActive=true; window.closeAdminLoginModal(); window.showView('admin'); }
+                
+                onSnapshot(getPubCollection('teachers_tr'), s => { 
+                    allTeachers = []; s.forEach(d => allTeachers.push({ id: d.id, ...d.data() })); 
+                    if(isAdminActive) {
+                        document.getElementById('admin-stat-teacher').innerText = allTeachers.length;
+                        document.getElementById('admin-stat-kurum').innerText = new Set(allTeachers.map(t=>t.kurumKey)).size;
+                        window.renderAdminData(); 
                     }
                 });
+                onSnapshot(getPubCollection('students_tr'), s => { 
+                    allStudents = []; s.forEach(d => allStudents.push({ id: d.id, ...d.data() })); 
+                    allStudents.sort((a,b) => (b.updatedAt?.toMillis()||0) - (a.updatedAt?.toMillis()||0));
+                    if(isAdminActive) { document.getElementById('admin-stat-student').innerText = allStudents.length; window.renderAdminData(); }
+                    if(currentTeacher) {
+                        document.getElementById('stat-students').innerText = allStudents.filter(st=>st.kurumKey === currentTeacher.kurumKey).length;
+                        window.renderStudents(); 
+                    }
+                });
+                onSnapshot(getPubCollection('notes_tr'), s => { 
+                    allNotes = []; s.forEach(d => allNotes.push({ id: d.id, ...d.data() })); 
+                    allNotes.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
+                    if(isAdminActive) { document.getElementById('admin-stat-note').innerText = allNotes.length; }
+                    if(currentTeacher) {
+                        const myIds = allStudents.filter(st=>st.kurumKey === currentTeacher.kurumKey).map(st=>st.id);
+                        document.getElementById('stat-notes').innerText = allNotes.filter(n=>myIds.includes(n.studentId)).length;
+                    }
+                    if(currentStudentId) { window.renderNotes(); window.updateAnalytics(currentStudentId); } 
+                });
+                
+                // Hide loading strictly AFTER initial load trigger
+                setTimeout(() => document.getElementById('loading-view')?.classList.add('hidden'), 1000);
             }
         });
 
-        function updateUI() {
-            if(currentTeacher) {
-                document.getElementById('nav-kurum-name').innerText = currentTeacher.kurum;
-                document.getElementById('dash-kurum-title').innerText = currentTeacher.kurum;
-                document.getElementById('dash-kurum-info').innerText = `${currentTeacher.il} / ${currentTeacher.ilce} • ${currentTeacher.kurumTuru}`;
+        async function init() {
+            try { 
+                await signInAnonymously(auth); 
+                const savedId = sessionStorage.getItem('rehab_teacher_id');
+                if(savedId) {
+                    // Session recovery check
+                    const tDoc = await getDoc(getPubDoc('teachers_tr', savedId));
+                    if(tDoc.exists()) {
+                        currentTeacher = {id: tDoc.id, ...tDoc.data()};
+                        window.updateUI();
+                        window.showView('dashboard');
+                    } else {
+                        sessionStorage.removeItem('rehab_teacher_id');
+                        window.showView('login');
+                    }
+                } else {
+                    window.showView('login');
+                }
+                
+                // Populate location dropdown
+                const pS = document.getElementById('auth-il');
+                Object.keys(TURKEY_LOCATIONS).sort().forEach(p => { const o=document.createElement('option'); o.value=p; o.innerText=p; pS?.appendChild(o); });
+            } catch (error) { 
+                console.error(error);
+                window.showView('login'); 
+                document.getElementById('loading-view')?.classList.add('hidden'); 
             }
         }
+        init();
 
-        window.setAuthMode = m => {
-            const isL = m === 'login';
-            document.getElementById('register-fields').classList.toggle('hidden', isL);
-            document.getElementById('tab-login').className = isL ? "flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all" : "flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all";
-            document.getElementById('tab-register').className = !isL ? "flex-1 py-4 rounded-2xl bg-white shadow-lg font-black text-indigo-600 transition-all" : "flex-1 py-4 rounded-2xl font-bold text-slate-400 transition-all";
-        };
+        let delAction = null;
+        window.closeConfirmModal = () => document.getElementById('confirm-modal')?.classList.add('hidden');
+        window.showConfirm = (t, msg, act) => { document.getElementById('confirm-modal')?.classList.remove('hidden'); setTimeout(()=>document.getElementById('confirm-modal')?.classList.remove('opacity-0'),10); delAction = act; }
+        document.getElementById('confirm-action-btn')?.addEventListener('click', async () => { if(delAction) await delAction(); window.closeConfirmModal(); });
 
-        document.getElementById('auth-form').onsubmit = async e => {
-            e.preventDefault();
-            const n = document.getElementById('auth-name').value.trim();
-            const p = document.getElementById('auth-password').value.trim();
-            const found = allTeachers.find(t => t.name.toLowerCase() === n.toLowerCase());
+        window.shootConfetti = () => { const ems = ['🎉', '✨', '👏', '🌟', '🏆']; for(let i=0; i<30; i++) { const e = document.createElement('div'); e.innerText = ems[Math.floor(Math.random()*ems.length)]; e.style.cssText = `position:fixed; left:${Math.random()*100}vw; top:-50px; font-size:28px; z-index:9999; pointer-events:none; transition:all 2s ease-in`; document.body.appendChild(e); setTimeout(()=> { e.style.top = '100vh'; e.style.transform = `translateX(${(Math.random()-0.5)*200}px) rotate(${Math.random()*360}deg)`; }, 50); setTimeout(()=> e.remove(), 2000); } }
 
-            if(authModeState === 'login') {
-                if(found) {
-                    if(found.password === p) {
-                        currentTeacher = found; sessionStorage.setItem('rehab_teacher_id', found.id); showView('dashboard');
-                    } else alert("❌ Hatalı şifre!");
-                } else alert("⚠️ Kayıt bulunamadı! 'Yeni Kayıt' sekmesine geçin.");
-            } else {
-                if(found) return alert("❌ Bu isimle bir kayıt zaten var!");
-                const il = document.getElementById('auth-il').value, ilc = document.getElementById('auth-ilce').value, tu = document.getElementById('auth-kurum-turu').value;
-                let ku = document.getElementById('auth-kurum').value.trim();
-                if(!il || !ilc || !ku) return alert("❌ Lütfen tüm alanları doldurun.");
-                
-                try {
-                    const docRef = doc(collection(db, 'artifacts', 'tea-genel-sistem', 'public', 'data', 'teachers_tr'));
-                    const data = { name: n, password: p, kurumTuru: tu, il, ilce: ilc, kurum: ku, kurumKey: `${il}-${ilc}-${ku}`.toLowerCase().replace(/\s+/g,'-'), createdAt: serverTimestamp() };
-                    await setDoc(docRef, data);
-                    currentTeacher = { id: docRef.id, ...data };
-                    sessionStorage.setItem('rehab_teacher_id', docRef.id);
-                    showView('dashboard');
-                } catch (err) { alert("Sistem Hatası: Veritabanı izni kapalı olabilir."); }
-            }
-        };
-
-        window.showView = v => {
-            ['login', 'dashboard'].forEach(id => document.getElementById(id + '-view')?.classList.add('hidden'));
-            document.getElementById(v + '-view').classList.remove('hidden');
-            document.getElementById('navbar').classList.toggle('hidden', v === 'login');
-            document.getElementById('loading-view').classList.add('hidden');
-        };
-
-        window.logout = () => { sessionStorage.clear(); location.reload(); };
-
-        signInAnonymously(auth);
+        let tOut; window.showToast = (m, t='success') => {
+            const toast = document.getElementById('toast'); if(!toast) return; document.getElementById('toast-message').innerText = m;
+            document.getElementById('toast-icon').innerText = t==='success'?'🚀':'⚠️';
+            toast.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-12 py-6 rounded-full shadow-2xl z-[100] font-black text-sm uppercase italic border border-white/10 backdrop-blur-xl ${t==='success'?'bg-slate-900 text-white':'bg-rose-600 text-white'}`;
+            void toast.offsetWidth; toast.classList.remove('translate-y-40', 'opacity-0');
+            clearTimeout(tOut); tOut = setTimeout(()=> { toast.classList.add('translate-y-40', 'opacity-0'); }, 4000);
+        }
+        window.escapeHtml = (u) => { return u.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
     </script>
 </body>
 </html>
+
+
