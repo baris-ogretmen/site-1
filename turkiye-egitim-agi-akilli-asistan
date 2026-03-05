@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Türkiye Eğitim Ağı (TEA) - Akıllı Sistem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Nunito', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
+        .hidden { display: none !important; }
+        
+        /* Animasyonlar */
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .stagger-item { opacity: 0; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.90); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Dinamik Arka Plan */
+        .bg-animated { background-size: 200% 200%; animation: gradientMove 15s ease infinite; }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* Kaydırma Çubuğu */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+        /* Form ve Seçim Elemanları */
+        .cat-radio:checked + div { transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-width: 2px; }
+        .cat-info:checked + div { border-color: #3b82f6; background-color: #eff6ff; color: #1d4ed8;}
+        .cat-success:checked + div { border-color: #10b981; background-color: #ecfdf5; color: #047857;}
+        .cat-warning:checked + div { border-color: #f59e0b; background-color: #fffbeb; color: #b45309;}
+        
+        /* Etkileşimli Kartlar */
+        .student-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .student-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 40px -5px rgba(236, 72, 153, 0.15); border-color: #fbcfe8; }
+        .btn-press { transition: transform 0.1s; }
+        .btn-press:active { transform: scale(0.95); }
+
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ec4899; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .bg-hero { background: linear-gradient(135deg, #4f46e5 0%, #db2777 50%, #f97316 100%); }
+
+        @media print {
+            body { background: white !important; }
+            body * { visibility: hidden; }
+            #student-detail-view, #student-detail-view * { visibility: visible; }
+            #student-detail-view { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+            button, .print-hide, #navbar, .cat-radio, #quick-notes-area { display: none !important; }
+            .bg-slate-50 { background-color: #fff !important; }
+            .print-border { border: 1px solid #e2e8f0 !important; margin-bottom: 20px; page-break-inside: avoid; }
+            .student-card { break-inside: avoid; }
+            #notes-container { padding-top: 20px; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen overflow-hidden flex flex-col bg-gradient-to-br from-indigo-50 via-fuchsia-50 to-pink-50">
+
+    <header class="bg-white/80 backdrop-blur-md border-b border-fuchsia-100 sticky top-0 z-40 hidden print-hide shadow-sm transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer group btn-press" onclick="showView('dashboard')">
+                <div class="bg-gradient-to-br from-violet-600 to-pink-500 p-2.5 rounded-xl text-white shadow-md shadow-pink-200 group-hover:scale-110 transition-transform duration-300">
+                    <span class="text-xl leading-none">🇹🇷</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-fuchsia-600 tracking-widest uppercase">TÜRKİYE EĞİTİM AĞI</span>
+                    <span id="nav-kurum-name" class="font-extrabold text-sm text-slate-800 tracking-tight line-clamp-1 transition-colors group-hover:text-fuchsia-700">Kurum Yükleniyor...</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 sm:gap-5">
+                <button onclick="openAdminSettings()" class="btn-press text-slate-500 hover:text-fuchsia-600 bg-white hover:bg-fuchsia-50 px-3 py-2 rounded-xl transition-all font-bold flex items-center gap-2 shadow-sm border border-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <span class="hidden md:inline text-sm">Sistem Ayarları</span>
+                </button>
+
+                <div class="hidden sm:flex items-center gap-2 bg-white px-4 py-1.5 rounded-full border border-fuchsia-100 shadow-sm transition-all hover:shadow-md">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white flex items-center justify-center font-bold text-xs shadow-inner" id="nav-teacher-initial">A</div>
+                    <span id="nav-teacher-name" class="font-bold text-sm text-slate-700">Öğretmen</span>
+                </div>
+                
+                <button onclick="logout()" class="btn-press text-slate-400 hover:text-rose-600 bg-white hover:bg-rose-50 p-2.5 rounded-xl transition-all shadow-sm border border-slate-200" title="Çıkış Yap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto relative w-full" id="main-scroll">
+        
+        <div id="loading-view" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-md transition-opacity duration-500">
+            <div class="relative w-24 h-24 mb-6">
+                <div class="absolute inset-0 rounded-full border-t-4 border-fuchsia-500 animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-r-4 border-pink-400 animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+                <div class="absolute inset-4 rounded-full border-b-4 border-violet-500 animate-spin" style="animation-duration: 2s;"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">🇹🇷</div>
+            </div>
+            <p class="text-fuchsia-600 font-black tracking-widest uppercase animate-pulse text-sm">Türkiye Ağına Bağlanıyor...</p>
+        </div>
+
+        <div id="login-view" class="min-h-full w-full flex flex-col lg:flex-row hidden fade-in bg-slate-50">
+            
+            <div class="w-full lg:w-1/2 bg-hero bg-animated text-white flex flex-col justify-center p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-2xl z-10 shrink-0 lg:min-h-full">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3 pointer-events-none transition-transform duration-1000 hover:scale-110"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-yellow-400 opacity-20 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+                
+                <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5 slide-up text-center sm:text-left mt-4 lg:mt-0">
+                    <div class="text-5xl bg-white/20 p-5 rounded-[2rem] backdrop-blur-md border border-white/30 shadow-xl transform -rotate-3 mb-2 sm:mb-0 hover:rotate-0 transition-transform duration-300">🇹🇷</div>
+                    <div>
+                        <h1 class="text-4xl lg:text-5xl font-black uppercase tracking-tight drop-shadow-lg text-white leading-none">Türkiye Eğitim Ağı</h1>
+                        <p class="text-pink-200 font-bold tracking-widest text-sm mt-2 uppercase">Akıllı Öğrenci Asistanı</p>
+                    </div>
+                </div>
+
+                <div class="relative z-10 my-10 lg:my-auto slide-up" style="animation-delay: 0.15s;">
+                    <div class="bg-white/10 p-6 rounded-[2rem] backdrop-blur-md border border-white/20 shadow-lg hover:bg-white/20 transition-colors duration-300">
+                        <h3 class="font-black text-xl text-yellow-300 mb-4 flex items-center gap-2 justify-center sm:justify-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Akıllı Sistem Özellikleri
+                        </h3>
+                        <ul class="text-sm sm:text-base space-y-3 text-indigo-50 font-bold">
+                            <li class="flex items-center gap-3 transform hover:translate-x-2 transition-transform"><span class="bg-fuchsia-500/20 p-1.5 rounded-lg text-fuchsia-300">✔️</span> <b>Rehabilitasyonlar:</b> Tanı ve beceri odaklı özel formlar.</li>
+                            <li class="flex items-center gap-3 transform hover:translate-x-2 transition-transform"><span class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-400">✔️</span> <b>Kolej ve Okullar:</b> Sınıf, şube ve akademik takip araçları.</li>
+                            <li class="flex items-center gap-3 transform hover:translate-x-2 transition-transform"><span class="bg-blue-500/20 p-1.5 rounded-lg text-blue-300">✔️</span> <b>Öğretim Kursları:</b> Hedef sınav ve net odaklı hızlı notlar.</li>
+                            <li class="flex items-center gap-3 transform hover:translate-x-2 transition-transform"><span class="bg-orange-500/20 p-1.5 rounded-lg text-orange-300">✔️</span> <b>Kreşler:</b> Yaş grubu ve günlük uyku/yemek takipleri.</li>
+                            <li class="flex items-center gap-3 transform hover:translate-x-2 transition-transform"><span class="bg-pink-500/20 p-1.5 rounded-lg text-pink-300">✔️</span> <b>Tam Güvenlik:</b> Sadece kurucu Firebase hesabından erişilen Admin Paneli.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="relative z-10 text-indigo-200/80 text-xs sm:text-sm font-bold text-center sm:text-left mb-4 lg:mb-0 slide-up" style="animation-delay: 0.3s;">
+                    Tam İzolasyon • Firebase Güvencesi • Yapay Zeka Mantığı
+                </div>
+            </div>
+
+            <div class="w-full lg:w-1/2 flex items-start sm:items-center justify-center p-4 sm:p-12 relative z-0">
+                <div class="w-full max-w-md pop-in bg-white p-6 sm:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/80 border border-slate-100 -mt-10 sm:-mt-0 relative z-20 transition-all duration-300 hover:shadow-indigo-200/80">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Ağa Katılın</h2>
+                        <p class="text-slate-500 mt-2 font-bold text-sm">Giriş yapın veya yeni bir kurum profili oluşturun.</p>
+                    </div>
+
+                    <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl relative shadow-inner">
+                        <button type="button" onclick="setAuthMode('login')" id="tab-login" class="flex-1 py-3 rounded-xl bg-white shadow-md font-black text-fuchsia-600 transition-all text-sm uppercase tracking-wide btn-press">Giriş Yap</button>
+                        <button type="button" onclick="setAuthMode('register')" id="tab-register" class="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-800 transition-all text-sm uppercase tracking-wide btn-press">Yeni Kayıt</button>
+                    </div>
+
+                    <form id="auth-form" class="space-y-4">
+                        <div class="group">
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5 ml-1 transition-colors group-focus-within:text-fuchsia-600">Adınız Soyadınız</label>
+                            <input type="text" id="auth-name" required placeholder="Örn: Ahmet Yılmaz" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold text-base shadow-sm">
+                        </div>
+                        <div class="group">
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5 ml-1 transition-colors group-focus-within:text-fuchsia-600">Şifreniz</label>
+                            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold text-base shadow-sm">
+                        </div>
+                        
+                        <div id="register-fields" class="space-y-4 hidden slide-up bg-fuchsia-50/50 p-5 sm:p-6 rounded-3xl border border-fuchsia-100 mt-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-fuchsia-600 text-lg">🏫</span>
+                                <h4 class="font-black text-fuchsia-800 text-sm uppercase tracking-wider">Kurum Bilgileri</h4>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Kurum Türü (Sistem buna göre değişir)</label>
+                                <select id="auth-kurum-turu" class="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold appearance-none cursor-pointer shadow-sm text-sm">
+                                    <option value="Rehabilitasyon Merkezi">Rehabilitasyon Merkezi</option>
+                                    <option value="Kolej / Özel Okul">Kolej / Özel Okul</option>
+                                    <option value="Devlet Okulu">Devlet Okulu</option>
+                                    <option value="Özel Öğretim Kursu">Özel Öğretim Kursu</option>
+                                    <option value="Kreş / Anaokulu">Kreş / Anaokulu</option>
+                                    <option value="Bireysel Eğitmen">Bireysel Eğitmen</option>
+                                    <option value="Diğer">Diğer</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3" id="auth-location-grid">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">İl</label>
+                                    <select id="auth-il" class="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold appearance-none cursor-pointer shadow-sm text-sm">
+                                        <option value="" disabled selected>İl Seçin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">İlçe</label>
+                                    <select id="auth-ilce" class="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold appearance-none cursor-pointer shadow-sm text-sm">
+                                        <option value="" disabled selected>Önce İl</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="auth-kurum-container">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Okul / Kurum Adı</label>
+                                <input type="text" id="auth-kurum" placeholder="Örn: Atatürk İlkokulu" class="w-full px-4 py-3.5 rounded-xl bg-white border border-slate-200 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none transition-all text-slate-800 font-bold shadow-sm text-sm">
+                            </div>
+                        </div>
+
+                        <div id="auth-error-box" class="hidden slide-up bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm font-bold text-center mt-2">
+                            Hata Mesajı
+                        </div>
+
+                        <button type="submit" id="auth-submit-btn" class="btn-press w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-black text-lg py-4 rounded-2xl transition-all shadow-xl shadow-fuchsia-200 mt-6 h-14 flex items-center justify-center gap-2 transform hover:-translate-y-1">
+                            Giriş Yap
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden pb-24">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white border border-slate-200 p-6 sm:p-8 rounded-[2rem] shadow-sm relative overflow-hidden slide-up">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-br from-fuchsia-100 to-pink-100 rounded-full blur-3xl opacity-60"></div>
+                <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-gradient-to-tr from-violet-100 to-indigo-100 rounded-full blur-3xl opacity-60"></div>
+                
+                <div class="text-center md:text-left relative z-10">
+                    <span id="dash-kurum-turu" class="bg-fuchsia-100 text-fuchsia-700 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border border-fuchsia-200 shadow-sm inline-block transform hover:scale-105 transition-transform cursor-default">Kurum Türü</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-800 mt-4 tracking-tight" id="dash-kurum-title">Okul Adı</h2>
+                    <p class="text-sm font-bold text-slate-500 flex items-center justify-center md:justify-start gap-1.5 mt-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <span id="dash-kurum-loc">İl / İlçe</span>
+                    </p>
+                </div>
+                <div class="mt-8 md:mt-0 flex gap-4 text-center relative z-10 w-full md:w-auto">
+                    <div class="flex-1 md:flex-none bg-white/80 backdrop-blur-md px-6 py-5 rounded-2xl border border-slate-200 shadow-sm transform hover:-translate-y-1 transition-transform">
+                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Öğrenci</p>
+                        <p class="text-4xl font-black text-violet-600" id="stat-students">0</p>
+                    </div>
+                    <div class="flex-1 md:flex-none bg-white/80 backdrop-blur-md px-6 py-5 rounded-2xl border border-slate-200 shadow-sm transform hover:-translate-y-1 transition-transform" style="animation-delay: 0.1s;">
+                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Gözlem</p>
+                        <p class="text-4xl font-black text-pink-600" id="stat-notes">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-2.5 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 mb-8 sticky top-20 z-30 slide-up" style="animation-delay: 0.1s;">
+                <div class="relative flex-1 group">
+                    <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-focus-within:text-fuchsia-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <input type="text" id="search-student" oninput="filterStudents()" placeholder="Öğrencilerde ara..." class="w-full pl-16 pr-6 py-4 rounded-full bg-slate-50 border-0 focus:ring-0 focus:bg-slate-100 outline-none font-bold text-lg text-slate-800 placeholder-slate-400 transition-all">
+                </div>
+                <button onclick="openStudentModalForAdd()" class="btn-press bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-8 py-4 rounded-full font-black transition-transform transform hover:-translate-y-0.5 shadow-lg shadow-fuchsia-200 flex items-center justify-center gap-2 sm:w-auto w-full text-lg">
+                    <span class="text-2xl leading-none -mt-1">+</span> <span id="btn-add-text">Öğrenci Ekle</span>
+                </button>
+            </div>
+
+            <div id="students-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            
+            <div id="no-students-msg" class="text-center py-24 hidden bg-white rounded-3xl border border-slate-200 border-dashed slide-up">
+                <div class="bg-fuchsia-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl animate-bounce" style="animation-duration: 2s;">🎈</div>
+                <h3 class="text-2xl font-black text-slate-700">Arşiviniz Boş</h3>
+                <p class="text-slate-500 mt-2 font-bold text-lg">İlk öğrencinizi ekleyerek sınıfınızı oluşturun.</p>
+                <button onclick="openStudentModalForAdd()" class="mt-6 text-fuchsia-600 font-bold hover:underline">Hemen Ekle &rarr;</button>
+            </div>
+        </div>
+
+        <div id="student-detail-view" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 hidden pb-32">
+            <div class="flex items-center justify-between mb-6 print-hide flex-wrap gap-4 slide-up">
+                <button onclick="showView('dashboard')" class="btn-press bg-white hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-sm border border-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>
+                    Sınıfa Dön
+                </button>
+                
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="btn-press text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 px-5 py-3 rounded-full shadow-sm border border-fuchsia-100 font-bold flex items-center gap-2 transition-colors" title="Raporu Yazdır / PDF İndir">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                        <span class="hidden sm:inline">Rapor Çıktısı</span>
+                    </button>
+
+                    <div id="student-actions" class="flex gap-2 hidden">
+                        <button onclick="openEditStudentModal()" class="btn-press text-slate-500 hover:text-indigo-600 bg-white p-3 rounded-full shadow-sm border border-slate-200 transition-colors" title="Düzenle">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button onclick="deleteStudent()" class="btn-press text-slate-500 hover:text-rose-600 bg-white p-3 rounded-full shadow-sm border border-slate-200 transition-colors" title="Sil">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 print-border p-6 sm:p-10 mb-8 relative overflow-hidden slide-up" style="animation-delay: 0.1s;">
+                <div class="hidden print:block text-center mb-8 border-b-2 border-slate-200 pb-4">
+                    <h1 class="text-3xl font-black text-slate-800 uppercase tracking-widest" id="print-kurum-name">Kurum Adı</h1>
+                    <p class="text-lg font-bold text-slate-500 mt-1">Öğrenci Gelişim ve Gözlem Raporu</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-8 relative z-10 text-center sm:text-left">
+                    <div class="h-32 w-32 rounded-[2.5rem] flex items-center justify-center text-white text-6xl font-black shadow-lg print:border-4 print:border-slate-800 transform hover:-rotate-6 hover:scale-105 transition-all duration-300 cursor-default" id="detail-student-initial">A</div>
+                    <div class="flex-1 pt-2 w-full">
+                        <h2 class="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight" id="detail-student-name">Öğrenci Adı</h2>
+                        <div class="flex flex-wrap justify-center sm:justify-start gap-3 mt-6 print:justify-start print:gap-6">
+                            <div class="bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl flex flex-col items-center sm:items-start min-w-[100px] print:bg-white print:px-0 print:border-none transition-colors hover:bg-slate-100">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Yaş</span>
+                                <span class="font-black text-slate-700 text-xl" id="detail-student-age">-</span>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl flex flex-col items-center sm:items-start min-w-[150px] flex-1 print:bg-white print:px-0 print:border-none transition-colors hover:bg-slate-100">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="detail-dynamic-label">Bilgi</span>
+                                <span class="font-black text-slate-700 text-xl line-clamp-2" id="detail-student-diagnosis">-</span>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl flex flex-col items-center sm:items-start min-w-[150px] flex-1 print:bg-white print:px-0 print:border-none hidden transition-colors hover:bg-slate-100" id="detail-extra-box">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="detail-extra-label">Ek Bilgi</span>
+                                <span class="font-black text-slate-700 text-xl line-clamp-2" id="detail-student-extra">-</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-6 font-bold flex items-center justify-center sm:justify-start gap-1 print-hide">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Sisteme <span id="detail-student-adder" class="text-slate-600">-</span> tarafından eklendi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 slide-up" style="animation-delay: 0.2s;">
+                <div class="lg:col-span-2 w-full">
+                    <h3 class="text-2xl font-black text-slate-800 mb-6 px-2 flex items-center gap-2 print:mt-4 print:border-b print:pb-2">
+                        Gözlem Kayıtları 
+                        <span id="note-count-badge" class="bg-fuchsia-100 text-fuchsia-700 text-sm px-3 py-1 rounded-full align-middle print-hide shadow-sm">0</span>
+                    </h3>
+                    
+                    <div class="relative border-l-2 border-slate-100 pl-4 sm:pl-6 ml-2 sm:ml-4 space-y-6" id="notes-container"></div>
+                    
+                    <div id="no-notes-msg" class="text-center py-16 bg-white rounded-[2rem] border border-slate-200 border-dashed hidden print-hide">
+                        <span class="text-5xl mb-4 block animate-pulse">📝</span>
+                        <p class="text-slate-500 font-bold text-lg">Bu öğrenci için henüz gözlem kaydedilmemiş.</p>
+                        <p class="text-slate-400 text-sm mt-2">Sağ taraftaki formu kullanarak ilk notunuzu ekleyin.</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 print-hide">
+                    <div class="bg-white rounded-[2.5rem] p-6 border border-slate-200 shadow-sm sticky top-24 transition-all hover:shadow-md">
+                        <h3 class="font-black text-xl text-slate-800 mb-5">Hızlı Gözlem Ekle</h3>
+                        
+                        <div class="mb-5 flex flex-col gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="note-type" value="info" checked class="hidden cat-radio cat-info">
+                                <div class="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 font-bold text-slate-500 text-sm transition-all hover:bg-slate-100"><span class="text-lg">📘</span> Genel Durum</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="note-type" value="success" class="hidden cat-radio cat-success">
+                                <div class="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 font-bold text-slate-500 text-sm transition-all hover:bg-slate-100"><span class="text-lg">⭐</span> Gelişim / Başarı</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="note-type" value="warning" class="hidden cat-radio cat-warning">
+                                <div class="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 font-bold text-slate-500 text-sm transition-all hover:bg-slate-100"><span class="text-lg">⚠️</span> Dikkat Edilmeli</div>
+                            </label>
+                        </div>
+
+                        <div id="quick-notes-area" class="mb-4">
+                            <p class="text-xs font-bold text-slate-400 mb-2 ml-1">Akıllı Etiketler:</p>
+                            <div class="flex flex-wrap gap-2" id="dynamic-quick-notes">
+                                </div>
+                        </div>
+
+                        <textarea id="new-note-content" rows="4" placeholder="Öğrencinin bugünkü durumu nasıldı? Detayları buraya yazın..." class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none resize-none mb-4 font-bold text-slate-700 transition-all"></textarea>
+                        
+                        <button onclick="addNote()" class="btn-press w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-black text-lg shadow-lg transition-all transform hover:-translate-y-1 hover:shadow-xl">
+                            Gözlemi Kaydet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-login-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden">
+                <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 p-2.5 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-[1.5rem] flex items-center justify-center mx-auto mb-5 shadow-inner transform rotate-3 hover:rotate-6 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z" /></svg>
+                </div>
+                <h3 class="text-2xl font-black text-slate-800 mb-2">Kurucu Girişi</h3>
+                <p class="text-slate-500 font-bold mb-6 text-sm leading-tight">Bu alana sadece yetkili (Kurucu Gmail Hesabı) erişebilir.</p>
+                
+                <form onsubmit="submitAdminAuth(event)">
+                    <input type="email" id="admin-auth-email" required placeholder="Yetkili Email Adresiniz" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none font-bold text-center text-sm mb-3 transition-all">
+                    <input type="password" id="admin-auth-pass" required placeholder="Firebase Şifreniz" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none font-bold text-center text-lg tracking-widest mb-4 transition-all">
+                    <button type="submit" class="btn-press w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black py-4 shadow-lg shadow-indigo-200 transition-transform transform hover:-translate-y-1">Yönetime Bağlan</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="admin-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden pb-24">
+            <div class="flex flex-col md:flex-row items-center justify-between mb-8 border-b border-slate-200 pb-6 gap-4 slide-up">
+                <div>
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <span class="text-4xl animate-spin" style="animation-duration: 4s;">⚙️</span>
+                        Sistem Kontrol Merkezi
+                    </h2>
+                    <p class="text-slate-500 font-bold mt-1">Türkiye'deki tüm kurumların ve eğitmenlerin verilerini buradan denetleyin.</p>
+                </div>
+                <button onclick="logoutAdmin()" class="btn-press bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white px-6 py-3 rounded-full font-black shadow-sm transition-colors w-full md:w-auto">
+                    Güvenli Çıkış Yap
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 slide-up" style="animation-delay: 0.1s;">
+                <div class="bg-gradient-to-br from-violet-500 to-indigo-600 p-6 rounded-[2rem] text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    <p class="text-indigo-200 font-bold uppercase tracking-wider text-sm mb-1">Kayıtlı Kurum</p>
+                    <p class="text-4xl font-black" id="admin-stat-kurum">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-fuchsia-500 to-pink-600 p-6 rounded-[2rem] text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    <p class="text-pink-200 font-bold uppercase tracking-wider text-sm mb-1">Eğitimci Sayısı</p>
+                    <p class="text-4xl font-black" id="admin-stat-teacher">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-400 to-teal-500 p-6 rounded-[2rem] text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    <p class="text-emerald-100 font-bold uppercase tracking-wider text-sm mb-1">Öğrenci Sayısı</p>
+                    <p class="text-4xl font-black" id="admin-stat-student">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-amber-400 to-orange-500 p-6 rounded-[2rem] text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    <p class="text-orange-100 font-bold uppercase tracking-wider text-sm mb-1">Toplam Gözlem</p>
+                    <p class="text-4xl font-black" id="admin-stat-note">0</p>
+                </div>
+            </div>
+
+            <div class="slide-up" style="animation-delay: 0.2s;">
+                <h3 class="text-xl font-black text-slate-800 mb-4">Türkiye Genelindeki Tüm Öğrenciler</h3>
+                <div class="relative mb-6 group">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <input type="text" id="admin-search" oninput="renderAdminStudents()" placeholder="İl, İlçe, Kurum Adı veya Öğrenci Ara..." class="w-full pl-14 pr-5 py-4 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none font-bold text-slate-800 text-lg transition-all shadow-sm">
+                </div>
+                
+                <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-5 font-bold">Öğrenci Adı</th>
+                                    <th class="p-5 font-bold">Kurum Bilgisi (İl/İlçe)</th>
+                                    <th class="p-5 font-bold">Eğitimci</th>
+                                    <th class="p-5 font-bold text-right">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-students-list" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[2.5rem] max-w-lg w-full p-8 shadow-2xl transform scale-95 transition-transform duration-300" id="student-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-3xl font-black text-slate-800 tracking-tight" id="modal-title">Yeni Kayıt</h3>
+                <button onclick="closeModal('student-modal')" class="bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-600 rounded-full p-2.5 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="bg-fuchsia-50 border border-fuchsia-100 p-4 rounded-2xl mb-6 flex items-start gap-3">
+                <span class="text-2xl mt-0.5 animate-bounce" style="animation-duration: 2s;">🏫</span>
+                <p class="text-sm font-bold text-fuchsia-800 leading-snug">Öğrenci <strong><span id="modal-kurum-info">Kurumunuz</span></strong> arşivine eklenecektir. Sadece zümreniz görebilir.</p>
+            </div>
+
+            <form id="student-form" class="space-y-5">
+                <input type="hidden" id="edit-student-id" value="">
+                <div class="group">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1 transition-colors group-focus-within:text-fuchsia-600">Öğrencinin Adı Soyadı</label>
+                    <input type="text" id="student-name" required placeholder="Ad Soyad" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none font-bold text-lg text-slate-800 transition-all">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="group">
+                        <label class="block text-sm font-bold text-slate-700 mb-2 ml-1 transition-colors group-focus-within:text-fuchsia-600">Yaşı</label>
+                        <input type="number" id="student-age" required min="1" max="99" placeholder="Örn: 8" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none font-bold text-lg text-slate-800 transition-all">
+                    </div>
+                    <div class="group">
+                        <label id="label-student-diagnosis" class="block text-sm font-bold text-fuchsia-700 mb-2 ml-1 transition-colors group-focus-within:text-fuchsia-600">Bilgi</label>
+                        <input type="text" id="student-diagnosis" required placeholder="..." class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none font-bold text-lg text-slate-800 transition-all">
+                    </div>
+                </div>
+                <div id="student-extra-container" class="hidden group">
+                    <label id="label-student-extra" class="block text-sm font-bold text-fuchsia-700 mb-2 ml-1 transition-colors group-focus-within:text-fuchsia-600">Ek Bilgi</label>
+                    <input type="text" id="student-extra" placeholder="..." class="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-50 outline-none font-bold text-lg text-slate-800 transition-all">
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeModal('student-modal')" class="btn-press flex-1 px-5 py-4 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 font-black text-lg transition-colors">İptal</button>
+                    <button type="submit" class="btn-press flex-1 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-black text-lg shadow-lg transition-transform hover:-translate-y-1">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-[2rem] max-w-sm w-full p-8 text-center shadow-2xl transform scale-95 transition-transform duration-200" id="confirm-modal-content">
+            <div class="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800 mb-2" id="confirm-title">Emin misiniz?</h3>
+            <p class="text-slate-500 font-bold mb-8" id="confirm-message">Bu işlemi geri alamazsınız.</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="btn-press flex-1 px-4 py-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-black transition-colors">İptal</button>
+                <button id="confirm-action-btn" class="btn-press flex-1 px-4 py-4 bg-rose-600 text-white rounded-xl hover:bg-rose-700 font-black shadow-md transition-colors">Evet, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl translate-y-32 opacity-0 transition-all duration-400 z-[100] flex items-center gap-3 font-bold min-w-[300px] justify-center text-lg">
+        <span id="toast-icon">✨</span>
+        <span id="toast-message">İşlem başarılı!</span>
+    </div>
+
+    <script type="module">
+        import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // *** GÜVENLİK VE ALTYAPI BİREBİR KORUNMUŞTUR ***
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU",
+            authDomain: "shaped-totem-481514-c5.firebaseapp.com",
+            projectId: "shaped-totem-481514-c5",
+            storageBucket: "shaped-totem-481514-c5.firebasestorage.app",
+            messagingSenderId: "519295049418",
+            appId: "1:519295049418:web:7d04e18c4ea36bc088de33",
+            measurementId: "G-10ENZQDXK1"
+        };
+        
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tea-genel-sistem';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        function getPubCollection(name) { return collection(db, 'artifacts', appId, 'public', 'data', name); }
+        function getPubDoc(name, docId) { return doc(db, 'artifacts', appId, 'public', 'data', name, docId); }
+
+        const TURKEY_LOCATIONS = {
+            "Adana":["Aladağ","Ceyhan","Çukurova","Feke","İmamoğlu","Karaisalı","Karataş","Kozan","Pozantı","Saimbeyli","Sarıçam","Seyhan","Tufanbeyli","Yumurtalık","Yüreğir"],
+            "Adıyaman":["Besni","Çelikhan","Gerger","Gölbaşı","Kahta","Merkez","Samsat","Sincik","Tut"],
+            "Afyonkarahisar":["Başmakçı","Bayat","Bolvadin","Çay","Çobanlar","Dazkırı","Dinar","Emirdağ","Evciler","Hocalar","İhsaniye","İscehisar","Kızılören","Merkez","Sandıklı","Sinanpaşa","Sultandağı","Şuhut"],
+            "Ağrı":["Diyadin","Doğubayazıt","Eleşkirt","Hamur","Merkez","Patnos","Taşlıçay","Tutak"],
+            "Aksaray":["Ağaçören","Eskil","Gülağaç","Güzelyurt","Merkez","Ortaköy","Sarıyahşi","Sultanhanı"],
+            "Amasya":["Göynücek","Gümüşhacıköy","Hamamözü","Merkez","Merzifon","Suluova","Taşova"],
+            "Ankara":["Akyurt","Altındağ","Ayaş","Bala","Beypazarı","Çamlıdere","Çankaya","Çubuk","Elmadağ","Etimesgut","Evren","Gölbaşı","Güdül","Haymana","Kahramankazan","Kalecik","Keçiören","Kızılcahamam","Mamak","Nallıhan","Polatlı","Pursaklar","Sincan","Şereflikoçhisar","Yenimahalle"],
+            "Antalya":["Akseki","Aksu","Alanya","Demre","Döşemealtı","Elmalı","Finike","Gazipaşa","Gündoğmuş","İbradı","Kaş","Kemer","Kepez","Konyaaltı","Korkuteli","Kumluca","Manavgat","Muratpaşa","Serik"],
+            "Ardahan":["Çıldır","Damal","Göle","Hanak","Merkez","Posof"],
+            "Artvin":["Ardanuç","Arhavi","Borçka","Hopa","Kemalpaşa","Merkez","Murgul","Şavşat","Yusufeli"],
+            "Aydın":["Bozdoğan","Buharkent","Çine","Didim","Efeler","Germencik","İncirliova","Karacasu","Karpuzlu","Koçarlı","Köşk","Kuşadası","Kuyucak","Nazilli","Söke","Sultanhisar","Yenipazar"],
+            "Balıkesir":["Altıeylül","Ayvalık","Balya","Bandırma","Bigadiç","Burhaniye","Dursunbey","Edremit","Erdek","Gömeç","Gönen","Havran","İvrindi","Karesi","Kepsut","Manyas","Marmara","Savaştepe","Sındırgı","Susurluk"],
+            "Bartın":["Amasra","Kurucaşile","Merkez","Ulus"],
+            "Batman":["Beşiri","Gercüş","Hasankeyf","Kozluk","Merkez","Sason"],
+            "Bayburt":["Aydıntepe","Demirözü","Merkez"],
+            "Bilecik":["Bozüyük","Gölpazarı","İnhisar","Merkez","Osmaneli","Pazaryeri","Söğüt","Yenipazar"],
+            "Bingöl":["Adaklı","Genç","Karlıova","Kiğı","Merkez","Solhan","Yayladere","Yedisu"],
+            "Bitlis":["Adilcevaz","Ahlat","Güroymak","Hizan","Merkez","Mutki","Tatvan"],
+            "Bolu":["Dörtdivan","Gerede","Göynük","Kıbrıscık","Mengen","Merkez","Mudurnu","Seben","Yeniçağa"],
+            "Burdur":["Ağlasun","Altınyayla","Bucak","Çavdır","Çeltikçi","Gölhisar","Karamanlı","Kemer","Merkez","Tefenni","Yeşilova"],
+            "Bursa":["Büyükorhan","Gemlik","Gürsu","Harmancık","İnegöl","İznik","Karacabey","Keles","Kestel","Mudanya","Mustafakemalpaşa","Nilüfer","Orhaneli","Orhangazi","Osmangazi","Yenişehir","Yıldırım"],
+            "Çanakkale":["Ayvacık","Bayramiç","Biga","Bozcaada","Çan","Eceabat","Ezine","Gelibolu","Gökçeada","Lapseki","Merkez","Yenice"],
+            "Çankırı":["Atkaracalar","Bayramören","Çerkeş","Eldivan","Ilgaz","Kızılırmak","Korgun","Kurşunlu","Merkez","Orta","Şabanözü","Yapraklı"],
+            "Çorum":["Alaca","Bayat","Boğazkale","Dodurga","İskilip","Kargı","Laçin","Mecitözü","Merkez","Oğuzlar","Ortaköy","Osmancık","Sungurlu","Uğurludağ"],
+            "Denizli":["Acıpayam","Babadağ","Baklan","Bekilli","Beyağaç","Bozkurt","Buldan","Çal","Çameli","Çardak","Çivril","Güney","Honaz","Kale","Merkezefendi","Pamukkale","Sarayköy","Serinhisar","Tavas"],
+            "Diyarbakır":["Bağlar","Bismil","Çermik","Çınar","Çüngüş","Dicle","Eğil","Ergani","Hani","Hazro","Kayapınar","Kocaköy","Kulp","Lice","Silvan","Sur","Yenişehir"],
+            "Düzce":["Akçakoca","Cumayeri","Çilimli","Gölyaka","Gümüşova","Kaynaşlı","Merkez","Yığılca"],
+            "Edirne":["Enez","Havsa","İpsala","Keşan","Lalapaşa","Meriç","Merkez","Süloğlu","Uzunköprü"],
+            "Elazığ":["Ağın","Alacakaya","Arıcak","Baskil","Karakoçan","Keban","Kovancılar","Maden","Merkez","Palu","Sivrice"],
+            "Erzincan":["Çayırlı","İliç","Kemah","Kemaliye","Merkez","Otlukbeli","Refahiye","Tercan","Üzümlü"],
+            "Erzurum":["Aşkale","Aziziye","Çat","Hınıs","Horasan","İspir","Karaçoban","Karayazı","Köprüköy","Narman","Oltu","Olur","Palandöken","Pasinler","Pazaryolu","Şenkaya","Tekman","Tortum","Uzundere","Yakutiye"],
+            "Eskişehir":["Alpu","Beylikova","Çifteler","Günyüzü","Han","İnönü","Mahmudiye","Mihalgazi","Mihalıççık","Odunpazarı","Sarıcakaya","Seyitgazi","Sivrihisar","Tepebaşı"],
+            "Gaziantep":["Araban","İslahiye","Karkamış","Nizip","Nurdağı","Oğuzeli","Şahinbey","Şehitkamil","Yavuzeli"],
+            "Giresun":["Alucra","Bulancak","Çamoluk","Çanakçı","Dereli","Doğankent","Espiye","Eynesil","Görele","Güce","Keşap","Merkez","Piraziz","Şebinkarahisar","Tirebolu","Yağlıdere"],
+            "Gümüşhane":["Kelkit","Köse","Kürtün","Merkez","Şiran","Torul"],
+            "Hakkari":["Çukurca","Derecik","Merkez","Şemdinli","Yüksekova"],
+            "Hatay":["Altınözü","Antakya","Arsuz","Belen","Defne","Dörtyol","Erzin","Hassa","İskenderun","Kırıkhan","Kumlu","Payas","Reyhanlı","Samandağ","Yayladağı"],
+            "Iğdır":["Aralık","Karakoyunlu","Merkez","Tuzluca"],
+            "Isparta":["Aksu","Atabey","Eğirdir","Gelendost","Gönen","Keçiborlu","Merkez","Senirkent","Sütçüler","Şarkikaraağaç","Uluborlu","Yalvaç","Yenişarbademli"],
+            "İstanbul":["Adalar","Arnavutköy","Ataşehir","Avcılar","Bağcılar","Bahçelievler","Bakırköy","Başakşehir","Bayrampaşa","Beşiktaş","Beykoz","Beylikdüzü","Beyoğlu","Büyükçekmece","Çatalca","Çekmeköy","Esenler","Esenyurt","Eyüpsultan","Fatih","Gaziosmanpaşa","Güngören","Kadıköy","Kağıthane","Kartal","Küçükçekmece","Maltepe","Pendik","Sancaktepe","Sarıyer","Silivri","Sultanbeyli","Sultangazi","Şile","Şişli","Tuzla","Ümraniye","Üsküdar","Zeytinburnu"],
+            "İzmir":["Aliağa","Balçova","Bayındır","Bayraklı","Bergama","Beydağ","Bornova","Buca","Çeşme","Çiğli","Dikili","Foça","Gaziemir","Güzelbahçe","Karabağlar","Karaburun","Karşıyaka","Kemalpaşa","Kınık","Kiraz","Konak","Menderes","Menemen","Narlıdere","Ödemiş","Seferihisar","Selçuk","Tire","Torbalı","Urla"],
+            "Kahramanmaraş":["Afşin","Andırın","Çağlayancerit","Dulkadiroğlu","Ekinözü","Elbistan","Göksun","Nurhak","Onikişubat","Pazarcık","Türkoğlu"],
+            "Karabük":["Eflani","Eskipazar","Merkez","Ovacık","Safranbolu","Yenice"],
+            "Karaman":["Ayrancı","Başyayla","Ermenek","Kazımkarabekir","Merkez","Sarıveliler"],
+            "Kars":["Akyaka","Arpaçay","Digor","Kağızman","Merkez","Sarıkamış","Selim","Susuz"],
+            "Kastamonu":["Abana","Ağlı","Araç","Azdavay","Bozkurt","Cide","Çatalzeytin","Daday","Devrekani","Doğanyurt","Hanönü","İhsangazi","İnebolu","Küre","Merkez","Pınarbaşı","Seydiler","Şenpazar","Taşköprü","Tosya"],
+            "Kayseri":["Akkışla","Bünyan","Develi","Felahiye","Hacılar","İncesu","Kocasinan","Melikgazi","Özvatan","Pınarbaşı","Sarıoğlan","Sarız","Talas","Tomarza","Yahyalı","Yeşilhisar"],
+            "Kırıkkale":["Bahşılı","Balışeyh","Çelebi","Delice","Karakeçili","Keskin","Merkez","Sulakyurt","Yahşihan"],
+            "Kırklareli":["Babaeski","Demirköy","Kofçaz","Lüleburgaz","Merkez","Pehlivanköy","Pınarhisar","Vize"],
+            "Kırşehir":["Akçakent","Akpınar","Boztepe","Çiçekdağı","Kaman","Merkez","Mucur"],
+            "Kilis":["Elbeyli","Musabeyli","Merkez","Polateli"],
+            "Kocaeli":["Başiskele","Çayırova","Darıca","Derince","Dilovası","Gebze","Gölcük","İzmit","Kandıra","Karamürsel","Kartepe","Körfez"],
+            "Konya":["Ahırlı","Akören","Akşehir","Altınekin","Beyşehir","Bozkır","Cihanbeyli","Çeltik","Çumra","Derbent","Derebucak","Doğanhisar","Emirgazi","Ereğli","Güneysınır","Hadim","Halkapınar","Hüyük","Ilgın","Kadınhanı","Karapınar","Karatay","Kulu","Meram","Sarayönü","Selçuklu","Seydişehir","Taşkent","Tuzlukçu","Yalıhüyük","Yunak"],
+            "Kütahya":["Altıntaş","Aslanapa","Çavdarhisar","Domaniç","Dumlupınar","Emet","Gediz","Hisarcık","Merkez","Pazarlar","Şaphane","Simav","Tavşanlı"],
+            "Malatya":["Akçadağ","Arapgir","Arguvan","Battalgazi","Darende","Doğanşehir","Doğanyol","Hekimhan","Kale","Kuluncak","Pütürge","Yazıhan","Yeşilyurt"],
+            "Manisa":["Ahmetli","Akhisar","Alaşehir","Demirci","Gölmarmara","Gördes","Kırkağaç","Köprübaşı","Kula","Salihli","Sarıgöl","Saruhanlı","Selendi","Soma","Şehzadeler","Turgutlu","Yunusemre"],
+            "Mardin":["Artuklu","Dargeçit","Derik","Kızıltepe","Mazıdağı","Midyat","Nusaybin","Ömerli","Savur","Yeşilli"],
+            "Mersin":["Akdeniz","Anamur","Aydıncık","Bozyazı","Çamlıyayla","Erdemli","Gülnar","Mezitli","Mut","Silifke","Tarsus","Toroslar","Yenişehir"],
+            "Muğla":["Bodrum","Dalaman","Datça","Fethiye","Kavaklıdere","Köyceğiz","Marmaris","Menteşe","Milas","Ortaca","Seydikemer","Ula","Yatağan"],
+            "Muş":["Bulanık","Hasköy","Korkut","Malazgirt","Merkez","Varto"],
+            "Nevşehir":["Acıgöl","Avanos","Derinkuyu","Gülşehir","Hacıbektaş","Kozaklı","Merkez","Ürgüp"],
+            "Niğde":["Altunhisar","Bor","Çamardı","Çiftlik","Merkez","Ulukışla"],
+            "Ordu":["Akkuş","Altınordu","Aybastı","Çamaş","Çatalpınar","Çaybaşı","Fatsa","Gölköy","Gülyalı","Gürgentepe","İkizce","Kabadüz","Kabataş","Korgan","Kumru","Mesudiye","Perşembe","Ulubey","Ünye"],
+            "Osmaniye":["Bahçe","Düziçi","Hasanbeyli","Kadirli","Merkez","Sumbas","Toprakkale"],
+            "Rize":["Ardeşen","Çamlıhemşin","Çayeli","Derepazarı","Fındıklı","Güneysu","Hemşin","İkizdere","İyidere","Kalkandere","Merkez","Pazar"],
+            "Sakarya":["Adapazarı","Akyazı","Arifiye","Erenler","Ferizli","Geyve","Hendek","Karapürçek","Karasu","Kaynarca","Kocaali","Pamukova","Sapanca","Serdivan","Söğütlü","Taraklı"],
+            "Samsun":["19 Mayıs","Alaçam","Asarcık","Atakum","Ayvacık","Bafra","Canik","Çarşamba","Havza","İlkadım","Kavak","Ladik","Salıpazarı","Tekkeköy","Terme","Vezirköprü","Yakakent"],
+            "Siirt":["Baykan","Eruh","Kurtalan","Merkez","Pervari","Şirvan","Tillo"],
+            "Sinop":["Ayancık","Boyabat","Dikmen","Durağan","Erfelek","Gerze","Merkez","Saraydüzü","Türkeli"],
+            "Sivas":["Akıncılar","Altınyayla","Divriği","Doğanşar","Gemerek","Gölova","Gürün","Hafik","İmranlı","Kangal","Koyulhisar","Merkez","Suşehri","Şarkışla","Ulaş","Yıldızeli","Zara"],
+            "Şanlıurfa":["Akçakale","Birecik","Bozova","Ceylanpınar","Eyyübiye","Halfeti","Haliliye","Harran","Hilvan","Karaköprü","Siverek","Suruç","Viranşehir"],
+            "Şırnak":["Beytüşşebap","Cizre","Güçlükonak","İdil","Merkez","Silopi","Uludere"],
+            "Tekirdağ":["Çerkezköy","Çorlu","Ergene","Hayrabolu","Kapaklı","Marmaraereğlisi","Muratlı","Saray","Süleymanpaşa","Şarköy"],
+            "Tokat":["Almus","Artova","Başçiftlik","Erbaa","Merkez","Niksar","Pazar","Reşadiye","Sulusaray","Turhal","Yeşilyurt","Zile"],
+            "Trabzon":["Akçaabat","Araklı","Arsin","Beşikdüzü","Çarşıbaşı","Çaykara","Dernekpazarı","Düzköy","Hayrat","Köprübaşı","Maçka","Of","Ortahisar","Sürmene","Şalpazarı","Tonya","Vakfıkebir","Yomra"],
+            "Tunceli":["Çemişgezek","Hozat","Mazgirt","Merkez","Nazımiye","Ovacık","Pertek","Pülümür"],
+            "Uşak":["Banaz","Eşme","Karahallı","Merkez","Sivaslı","Ulubey"],
+            "Van":["Bahçesaray","Başkale","Çaldıran","Çatak","Edremit","Erciş","Gevaş","Gürpınar","İpekyolu","Muradiye","Özalp","Saray","Tuşba"],
+            "Yalova":["Altınova","Armutlu","Çınarcık","Çiftlikköy","Merkez","Termal"],
+            "Yozgat":["Akdağmadeni","Aydıncık","Boğazlıyan","Çandır","Çayıralan","Çekerek","Kadışehri","Merkez","Saraykent","Sarıkaya","Sorgun","Şefaatli","Yenifakılı","Yerköy"],
+            "Zonguldak":["Alaplı","Çaycuma","Devrek","Ereğli","Gökçebey","Kilimli","Kozlu","Merkez"]
+        };
+
+        let currentUser = null; 
+        let currentTeacher = null; 
+        let currentStudentId = null;
+        let authModeState = 'login'; 
+        let isAdminActive = false; 
+
+        let allTeachers = [];
+        let allStudents = [];
+        let allNotes = [];
+
+        // Dinamik Selamlama Fonksiyonu
+        function getGreeting() {
+            const hour = new Date().getHours();
+            if (hour >= 5 && hour < 12) return "Günaydın";
+            if (hour >= 12 && hour < 18) return "İyi Günler";
+            if (hour >= 18 && hour < 22) return "İyi Akşamlar";
+            return "İyi Geceler";
+        }
+
+        const ilSelect = document.getElementById('auth-il');
+        const ilceSelect = document.getElementById('auth-ilce');
+        Object.keys(TURKEY_LOCATIONS).sort((a,b) => a.localeCompare(b, 'tr')).forEach(p => {
+            const opt = document.createElement('option'); opt.value = p; opt.innerText = p;
+            ilSelect.appendChild(opt);
+        });
+
+        ilSelect.addEventListener('change', (e) => {
+            ilceSelect.innerHTML = '<option value="" disabled selected>İlçe Seçin...</option>';
+            const districts = TURKEY_LOCATIONS[e.target.value] || [];
+            districts.sort((a,b) => a.localeCompare(b, 'tr')).forEach(d => {
+                const opt = document.createElement('option'); opt.value = d; opt.innerText = d;
+                ilceSelect.appendChild(opt);
+            });
+        });
+
+        document.getElementById('auth-kurum-turu').addEventListener('change', (e) => {
+            const isBireysel = e.target.value === 'Bireysel Eğitmen';
+            const kurumKutusu = document.getElementById('auth-kurum-container');
+            if(isBireysel) {
+                kurumKutusu.classList.add('hidden');
+                document.getElementById('auth-kurum').value = "Bireysel Eğitim";
+            } else {
+                kurumKutusu.classList.remove('hidden');
+                document.getElementById('auth-kurum').value = "";
+            }
+        });
+
+        const gradients = ['linear-gradient(135deg, #6366f1, #a855f7)', 'linear-gradient(135deg, #f43f5e, #f97316)', 'linear-gradient(135deg, #10b981, #3b82f6)', 'linear-gradient(135deg, #8b5cf6, #ec4899)', 'linear-gradient(135deg, #f59e0b, #ef4444)', 'linear-gradient(135deg, #0ea5e9, #6366f1)'];
+        function getGradientForName(name) {
+            let sum = 0; for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+            return gradients[sum % gradients.length];
+        }
+
+        function handleFirebaseError(error, context) {
+            const errorBox = document.getElementById('auth-error-box');
+            if(errorBox) errorBox.classList.remove('hidden');
+            
+            if (error.code === 'auth/operation-not-allowed') {
+                if(errorBox) errorBox.innerHTML = `⚠️ <b>KAYIT HATASI:</b><br>Firebase'de <b>Anonymous (Anonim)</b> giriş kapalı.`;
+            } else if (error.code === 'permission-denied') {
+                if(errorBox) errorBox.innerHTML = `⚠️ <b>VERİTABANI İZNİ HATASI:</b><br>Lütfen Firebase'den izni açın.`;
+            } else {
+                if(errorBox) errorBox.innerHTML = `⚠️ Bir sorun oluştu: <br><span class="text-xs">${error.message}</span>`;
+            }
+            console.error("Firebase Error in " + context + ":", error);
+            showToast("İşlem başarısız oldu.", "error");
+        }
+
+        async function init() {
+            try { 
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth); 
+                }
+            } catch (error) { 
+                console.error("Auth init error:", error);
+                document.getElementById('loading-view').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => document.getElementById('loading-view').classList.add('hidden'), 500);
+                showView('login');
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                startDataListeners();
+                
+                if(user.email) {
+                    isAdminActive = true;
+                    document.getElementById('loading-view').classList.add('opacity-0', 'pointer-events-none');
+                    setTimeout(() => document.getElementById('loading-view').classList.add('hidden'), 500);
+                    closeAdminLoginModal();
+                    showView('admin');
+                    return;
+                } else {
+                    isAdminActive = false;
+                }
+                
+                const savedTeacher = sessionStorage.getItem('rehab_teacher_id');
+                if (savedTeacher) {
+                    setTimeout(() => {
+                        const teacher = allTeachers.find(t => t.id === savedTeacher);
+                        if (teacher) { currentTeacher = teacher; updateUI(); showView('dashboard'); } 
+                        else { showView('login'); }
+                        document.getElementById('loading-view').classList.add('opacity-0', 'pointer-events-none');
+                        setTimeout(() => document.getElementById('loading-view').classList.add('hidden'), 500);
+                    }, 800);
+                } else {
+                    setTimeout(() => { 
+                        document.getElementById('loading-view').classList.add('opacity-0', 'pointer-events-none');
+                        setTimeout(() => document.getElementById('loading-view').classList.add('hidden'), 500);
+                        showView('login'); 
+                    }, 500);
+                }
+            }
+        });
+
+        init();
+
+        function startDataListeners() {
+            if (!currentUser) return;
+            
+            // Öğretmenleri dinle
+            onSnapshot(getPubCollection('teachers_tr'), (snapshot) => {
+                allTeachers = []; snapshot.forEach(doc => { allTeachers.push({ id: doc.id, ...doc.data() }); });
+                if(isAdminActive) {
+                    document.getElementById('admin-stat-teacher').innerText = allTeachers.length;
+                    const uniqueKurums = new Set(allTeachers.map(t => t.kurumKey));
+                    document.getElementById('admin-stat-kurum').innerText = uniqueKurums.size;
+                }
+            }, (error) => {
+                if(error.code === 'permission-denied') handleFirebaseError(error, "listener");
+            });
+
+            // Öğrencileri dinle
+            let studentQuery = null;
+            if (isAdminActive) {
+                studentQuery = getPubCollection('students_tr');
+            } else if (currentTeacher) {
+                studentQuery = query(getPubCollection('students_tr'), where("kurumKey", "==", currentTeacher.kurumKey));
+            }
+
+            if (studentQuery) {
+                onSnapshot(studentQuery, (snapshot) => {
+                    allStudents = []; snapshot.forEach(doc => { allStudents.push({ id: doc.id, ...doc.data() }); });
+                    allStudents.sort((a, b) => {
+                        const timeA = a.updatedAt ? a.updatedAt.toMillis() : (a.createdAt ? a.createdAt.toMillis() : 0);
+                        const timeB = b.updatedAt ? b.updatedAt.toMillis() : (b.createdAt ? b.createdAt.toMillis() : 0);
+                        return timeB - timeA;
+                    });
+                    
+                    if(isAdminActive) {
+                        document.getElementById('admin-stat-student').innerText = allStudents.length;
+                    }
+                    
+                    if(currentTeacher) {
+                        const myStudents = allStudents.filter(s => s.kurumKey === currentTeacher.kurumKey);
+                        document.getElementById('stat-students').innerText = myStudents.length;
+                        renderStudents(document.getElementById('search-student') ? document.getElementById('search-student').value : '');
+                    }
+                    
+                    if(currentStudentId && !document.getElementById('student-detail-view').classList.contains('hidden')) {
+                        const currentStudent = allStudents.find(s => s.id === currentStudentId);
+                        if(currentStudent) openStudentDetail(currentStudent, true);
+                        else showView('dashboard'); 
+                    }
+
+                    if(isAdminActive && !document.getElementById('admin-view').classList.contains('hidden')) renderAdminStudents();
+                }, (error) => {
+                    console.error("Students listener error", error);
+                });
+            }
+
+            // Notları dinle
+            let notesQuery = null;
+            if (isAdminActive) {
+                notesQuery = getPubCollection('notes_tr');
+            } else if (currentTeacher) {
+                notesQuery = query(getPubCollection('notes_tr'), where("kurumKey", "==", currentTeacher.kurumKey));
+            }
+
+            if (notesQuery) {
+                onSnapshot(notesQuery, (snapshot) => {
+                    allNotes = []; snapshot.forEach(doc => { allNotes.push({ id: doc.id, ...doc.data() }); });
+                    allNotes.sort((a, b) => {
+                        const timeA = a.createdAt ? a.createdAt.toMillis() : Date.now();
+                        const timeB = b.createdAt ? b.createdAt.toMillis() : Date.now();
+                        return timeB - timeA;
+                    });
+                    
+                    if(isAdminActive) {
+                        document.getElementById('admin-stat-note').innerText = allNotes.length;
+                    }
+
+                    if(currentTeacher) {
+                        const myStudentsIds = allStudents.filter(s => s.kurumKey === currentTeacher.kurumKey).map(s => s.id);
+                        const myKurumNotes = allNotes.filter(n => myStudentsIds.includes(n.studentId));
+                        document.getElementById('stat-notes').innerText = myKurumNotes.length;
+                        
+                        // Öğrenci listesini de notlar gelince güncelle (Son işlem zamanı için)
+                        if(document.getElementById('dashboard-view') && !document.getElementById('dashboard-view').classList.contains('hidden')) {
+                            renderStudents(document.getElementById('search-student') ? document.getElementById('search-student').value : '');
+                        }
+                    }
+                    if (currentStudentId) renderNotes();
+                }, (error) => {
+                    console.error("Notes listener error", error);
+                });
+            }
+        }
+
+        window.showView = function(viewId) {
+            ['login', 'dashboard', 'student-detail', 'admin'].forEach(v => { 
+                const el = document.getElementById(v + '-view');
+                if(el) el.classList.add('hidden'); 
+            });
+            
+            if(viewId !== 'login' && viewId !== 'admin') document.getElementById('navbar').classList.remove('hidden');
+            else document.getElementById('navbar').classList.add('hidden');
+
+            const view = document.getElementById(viewId + '-view');
+            if(view) {
+                view.classList.remove('hidden'); view.classList.remove('slide-up'); void view.offsetWidth; view.classList.add('slide-up');
+            }
+
+            if (viewId === 'dashboard' && currentTeacher) { document.getElementById('search-student').value = ''; renderStudents(); updateUI(); }
+            if (viewId === 'admin') renderAdminStudents();
+            document.getElementById('main-scroll').scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        window.openAdminSettings = function() {
+            const modal = document.getElementById('admin-login-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); }, 10);
+            document.getElementById('admin-auth-pass').value = '';
+        }
+
+        window.closeAdminLoginModal = function() {
+            const modal = document.getElementById('admin-login-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        window.submitAdminAuth = function(e) {
+            e.preventDefault();
+            const email = document.getElementById('admin-auth-email').value.trim();
+            const pass = document.getElementById('admin-auth-pass').value;
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .then((userCredential) => {
+                    showToast("Yönetici girişi onaylandı.", "success");
+                })
+                .catch((error) => {
+                    console.error("Yönetici Giriş Hatası:", error);
+                    showToast("Giriş başarısız: Yetkili kullanıcı bulunamadı veya şifre yanlış.", "error");
+                });
+        }
+
+        window.logoutAdmin = function() {
+            signOut(auth).then(() => {
+                isAdminActive = false;
+                showToast("Sistemden güvenli çıkış yapıldı.");
+                
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    signInAnonymously(auth);
+                }
+            });
+        };
+
+        window.renderAdminStudents = function() {
+            const tbody = document.getElementById('admin-students-list');
+            if(!tbody) return;
+            const term = document.getElementById('admin-search').value.toLowerCase().trim();
+            tbody.innerHTML = '';
+
+            let targetList = allStudents;
+            if(term) {
+                targetList = allStudents.filter(s => s.name.toLowerCase().includes(term) || s.il.toLowerCase().includes(term) || s.ilce.toLowerCase().includes(term) || s.kurum.toLowerCase().includes(term));
+            }
+            const displayList = targetList.slice(0, 100); 
+            
+            displayList.forEach(student => {
+                const tr = document.createElement('tr'); tr.className = "hover:bg-indigo-50/50 transition-colors duration-200 group";
+                tr.innerHTML = `
+                    <td class="p-5 font-bold text-slate-800">${student.name}</td>
+                    <td class="p-5"><p class="font-bold text-indigo-600 text-sm">${student.kurum}</p><p class="text-xs text-slate-400 font-bold">${student.il} / ${student.ilce}</p></td>
+                    <td class="p-5 text-sm font-bold text-slate-600">${student.addedBy}</td>
+                    <td class="p-5 text-right"><button onclick="deleteStudentAdmin('${student.id}')" class="text-xs bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm opacity-50 group-hover:opacity-100 btn-press">Kalıcı Olarak Sil</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteStudentAdmin = function(studentId) {
+            showConfirm("Tüm Ağdan Kalıcı Sil", "Öğrenci ve tüm notları veritabanınızdan tamamen silinecektir.", async () => {
+                try {
+                    const studentNotes = allNotes.filter(n => n.studentId === studentId);
+                    for(let note of studentNotes) await deleteDoc(getPubDoc('notes_tr', note.id));
+                    await deleteDoc(getPubDoc('students_tr', studentId));
+                    showToast("Kayıt sistemden kalıcı olarak silindi.");
+                } catch(e) { console.error(e); showToast("Silme hatası.", "error"); }
+            });
+        }
+
+        window.setAuthMode = function(mode) {
+            authModeState = mode;
+            document.getElementById('auth-error-box').classList.add('hidden'); 
+            
+            if(mode === 'login') {
+                document.getElementById('register-fields').classList.add('hidden');
+                document.getElementById('tab-login').className = "flex-1 py-3 rounded-xl bg-white shadow-md font-black text-fuchsia-600 transition-all text-xs sm:text-sm uppercase tracking-wide btn-press";
+                document.getElementById('tab-register').className = "flex-1 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-800 transition-all text-xs sm:text-sm uppercase tracking-wide btn-press";
+                document.getElementById('auth-submit-btn').innerHTML = `Giriş Yap <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`;
+                
+                document.getElementById('auth-il').removeAttribute('required'); document.getElementById('auth-ilce').removeAttribute('required'); document.getElementById('auth-kurum').removeAttribute('required');
+            } else {
+                document.getElementById('register-fields').classList.remove('hidden');
+                document.getElementById('tab-register').className = "flex-1 py-3 rounded-xl bg-white shadow-md font-black text-fuchsia-600 transition-all text-xs sm:text-sm uppercase tracking-wide btn-press";
+                document.getElementById('tab-login').className = "flex-1 py-3 rounded-xl font-bold text-slate-500 hover:text-slate-800 transition-all text-xs sm:text-sm uppercase tracking-wide btn-press";
+                document.getElementById('auth-submit-btn').innerText = "Ağa Katıl ve Sisteme Gir";
+
+                document.getElementById('auth-il').setAttribute('required', 'true'); document.getElementById('auth-ilce').setAttribute('required', 'true'); document.getElementById('auth-kurum').setAttribute('required', 'true');
+            }
+        }
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('auth-error-box').classList.add('hidden');
+            
+            if(!currentUser) {
+                showToast("Sistem henüz hazır değil, bekleniyor...", "error");
+                return;
+            }
+
+            const nameInput = document.getElementById('auth-name').value.trim();
+            const passwordInput = document.getElementById('auth-password').value.trim();
+            const existingTeacher = allTeachers.find(t => t.name.toLowerCase() === nameInput.toLowerCase());
+
+            if(authModeState === 'login') {
+                if (existingTeacher) {
+                    if (existingTeacher.password === passwordInput) {
+                        currentTeacher = existingTeacher; sessionStorage.setItem('rehab_teacher_id', existingTeacher.id);
+                        updateUI(); showView('dashboard'); showToast(`Tekrar hoş geldin, ${nameInput.split(' ')[0]}!`);
+                    } else { showToast("Şifre hatalı.", "error"); }
+                } else { showToast("Kayıt bulunamadı. Yeni kayıt sekmesine geçin.", "error"); }
+            } else {
+                if (existingTeacher) { showToast("Bu isimde biri zaten kayıtlı. Giriş yapın.", "error"); return; }
+                const il = document.getElementById('auth-il').value;
+                const ilce = document.getElementById('auth-ilce').value;
+                const kurumTuru = document.getElementById('auth-kurum-turu').value;
+                let kurum = document.getElementById('auth-kurum').value.trim();
+                
+                if(kurumTuru === 'Bireysel Eğitmen') { kurum = nameInput + " Bireysel Eğitim"; }
+                if(!il || !ilce || !kurum) { showToast("İl, İlçe ve Kurum bilgileri zorunludur.", "error"); return; }
+                
+                const kurumKey = `${il}-${ilce}-${kurumTuru}-${kurum}`.toLowerCase().replace(/\s+/g, '-');
+
+                try {
+                    const newTeacherRef = doc(getPubCollection('teachers_tr'));
+                    const teacherData = { name: nameInput, password: passwordInput, kurumTuru, il, ilce, kurum, kurumKey, createdAt: serverTimestamp() };
+                    await setDoc(newTeacherRef, teacherData);
+                    currentTeacher = { id: newTeacherRef.id, ...teacherData };
+                    sessionStorage.setItem('rehab_teacher_id', currentTeacher.id);
+                    updateUI(); showView('dashboard'); showToast("Ağa katıldınız! Hoş geldiniz.", "success");
+                } catch (error) { 
+                    handleFirebaseError(error, "register");
+                }
+            }
+        });
+
+        window.logout = function() {
+            currentTeacher = null; sessionStorage.removeItem('rehab_teacher_id');
+            document.getElementById('auth-form').reset(); setAuthMode('login'); showView('login');
+            showToast("Güvenli çıkış yapıldı.");
+        }
+
+        function updateUI() {
+            if (currentTeacher) {
+                const firstName = currentTeacher.name.split(' ')[0];
+                document.getElementById('nav-teacher-name').innerText = `${getGreeting()}, ${firstName}`;
+                document.getElementById('nav-teacher-initial').innerText = currentTeacher.name.charAt(0).toUpperCase();
+                document.getElementById('nav-kurum-name').innerText = currentTeacher.kurum;
+                document.getElementById('dash-kurum-title').innerText = currentTeacher.kurum;
+                document.getElementById('dash-kurum-loc').innerText = `${currentTeacher.il}, ${currentTeacher.ilce}`;
+                document.getElementById('dash-kurum-turu').innerText = currentTeacher.kurumTuru;
+                document.getElementById('print-kurum-name').innerText = currentTeacher.kurum; 
+            }
+        }
+
+        window.openStudentModalForAdd = function() {
+            const diagLabel = document.getElementById('label-student-diagnosis');
+            const diagInput = document.getElementById('student-diagnosis');
+            
+            const extraContainer = document.getElementById('student-extra-container');
+            const extraLabel = document.getElementById('label-student-extra');
+            const extraInput = document.getElementById('student-extra');
+            const modalKurumInfo = document.getElementById('modal-kurum-info');
+            
+            modalKurumInfo.innerText = currentTeacher.kurum;
+            extraContainer.classList.remove('hidden'); 
+
+            if(currentTeacher.kurumTuru === 'Rehabilitasyon Merkezi') {
+                diagLabel.innerText = "Tanısı / Özel Durumu";
+                diagInput.placeholder = "Örn: Otizm, Disleksi vb.";
+                extraLabel.innerText = "Destek İhtiyacı";
+                extraInput.placeholder = "Örn: Fiziksel / Zihinsel / Dil Terapisi";
+            } else if(currentTeacher.kurumTuru === 'Kolej / Özel Okul' || currentTeacher.kurumTuru === 'Devlet Okulu') {
+                diagLabel.innerText = "Sınıfı ve Şubesi";
+                diagInput.placeholder = "Örn: 5/A, 12/B Sınıfı";
+                extraLabel.innerText = "Kulüp veya İlgi Alanı";
+                extraInput.placeholder = "Örn: Müzik Kulübü, Sayısal Bölüm";
+            } else if(currentTeacher.kurumTuru === 'Özel Öğretim Kursu') {
+                diagLabel.innerText = "Alan / Sınıf Seviyesi";
+                diagInput.placeholder = "Örn: LGS Sayısal, 12.Sınıf";
+                extraLabel.innerText = "Hedef Sınavı";
+                extraInput.placeholder = "Örn: YKS, LGS, YDT";
+            } else if(currentTeacher.kurumTuru === 'Kreş / Anaokulu') {
+                diagLabel.innerText = "Yaş Grubu Sınıfı";
+                diagInput.placeholder = "Örn: 4 Yaş Yıldızlar Sınıfı";
+                extraLabel.innerText = "Alerji / Özel Durum";
+                extraInput.placeholder = "Örn: Fıstık Alerjisi Var";
+            } else {
+                diagLabel.innerText = "Eğitim Seviyesi";
+                diagInput.placeholder = "Örn: Başlangıç Seviyesi";
+                extraContainer.classList.add('hidden'); 
+            }
+            openModal('student-modal');
+        }
+
+        window.openModal = function(id) { 
+            const modal = document.getElementById(id); const content = document.getElementById(id + '-content');
+            modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            if(id === 'student-modal' && document.getElementById('edit-student-id').value === "") { 
+                document.getElementById('student-form').reset(); 
+                document.getElementById('modal-title').innerText = "Yeni Öğrenci Kaydı"; 
+            }
+        }
+        
+        window.closeModal = function(id) { 
+            const modal = document.getElementById(id); const content = document.getElementById(id + '-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); if(id === 'student-modal') document.getElementById('edit-student-id').value = ""; }, 300);
+        }
+
+        document.getElementById('student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser || !currentTeacher) return;
+
+            const editId = document.getElementById('edit-student-id').value;
+            const name = document.getElementById('student-name').value.trim();
+            const age = document.getElementById('student-age').value;
+            const diagnosis = document.getElementById('student-diagnosis').value.trim() || 'Belirtilmedi';
+            const extra = document.getElementById('student-extra').value.trim() || '';
+            
+            const data = { name, age, diagnosis, extra, il: currentTeacher.il, ilce: currentTeacher.ilce, kurum: currentTeacher.kurum, kurumKey: currentTeacher.kurumKey, updatedAt: serverTimestamp() };
+
+            try {
+                if(editId) { await updateDoc(getPubDoc('students_tr', editId), data); showToast("Öğrenci başarıyla güncellendi!"); } 
+                else { data.addedBy = currentTeacher.name; data.addedById = currentTeacher.id; data.createdAt = serverTimestamp(); await addDoc(getPubCollection('students_tr'), data); showToast("Öğrenci arşivinize başarıyla eklendi!"); }
+                closeModal('student-modal');
+            } catch (error) { handleFirebaseError(error, "add_student"); }
+        });
+
+        window.filterStudents = function() { renderStudents(document.getElementById('search-student').value.toLowerCase().trim()); }
+
+        function getLatestNoteTimeStr(studentId) {
+            const stuNotes = allNotes.filter(n => n.studentId === studentId);
+            if(stuNotes.length === 0) return "Henüz not yok";
+            // Notlar allNotes içinde tarihe göre sıralı gelir. (En yeni ilk)
+            const latest = stuNotes[0];
+            if(latest && latest.createdAt) {
+                return timeAgo(latest.createdAt.toDate());
+            }
+            return "Az önce güncellendi";
+        }
+
+        function renderStudents(searchTerm = '') {
+            const grid = document.getElementById('students-grid'); const noDataMsg = document.getElementById('no-students-msg');
+            grid.innerHTML = '';
+
+            let filteredStudents = allStudents.filter(s => s.kurumKey === currentTeacher.kurumKey);
+            
+            if(searchTerm) {
+                filteredStudents = filteredStudents.filter(s => s.name.toLowerCase().includes(searchTerm) || (s.diagnosis && s.diagnosis.toLowerCase().includes(searchTerm)));
+            }
+
+            if (filteredStudents.length === 0) { grid.classList.add('hidden'); noDataMsg.classList.remove('hidden'); } else {
+                grid.classList.remove('hidden'); noDataMsg.classList.add('hidden');
+                const displayStudents = filteredStudents.slice(0, 100); const fragment = document.createDocumentFragment();
+                displayStudents.forEach((student, index) => {
+                    const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const noteCount = allNotes.filter(n => n.studentId === student.id).length;
+                    const gradient = getGradientForName(student.name);
+                    const lastActiveStr = getLatestNoteTimeStr(student.id);
+
+                    // Aktiflik durumuna göre rozet (Dinamik özellik)
+                    let statusBadge = '';
+                    if(noteCount === 0) statusBadge = `<span class="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-md animate-pulse">YENİ</span>`;
+                    else if(noteCount > 5) statusBadge = `<span class="absolute -top-2 -right-2 bg-amber-400 text-amber-900 text-[10px] font-black px-2 py-1 rounded-full shadow-md">AKTİF</span>`;
+
+                    const card = document.createElement('div');
+                    // Gecikmeli Stagger efekti eklendi (Dinamik Özellik)
+                    card.className = "stagger-item student-card bg-white rounded-[2rem] p-6 border border-slate-200 cursor-pointer flex flex-col justify-between h-full relative overflow-hidden group";
+                    card.style.animationDelay = `${index * 0.04}s`; 
+                    card.onclick = () => openStudentDetail(student);
+                    
+                    card.innerHTML = `
+                        ${statusBadge}
+                        <div>
+                            <div class="flex items-center gap-4 mb-5">
+                                <div class="w-16 h-16 rounded-2xl text-white flex items-center justify-center font-black text-2xl shadow-sm transform group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300" style="background: ${gradient}">${initials}</div>
+                                <div class="flex-1 overflow-hidden">
+                                    <h3 class="font-black text-slate-800 text-xl truncate group-hover:text-fuchsia-600 transition-colors">${student.name}</h3>
+                                    <p class="text-sm font-bold text-slate-400 mt-1">${student.age} Yaş</p>
+                                </div>
+                            </div>
+                            <div class="bg-fuchsia-50 px-3 py-2 rounded-xl text-sm font-bold text-fuchsia-700 flex items-center gap-2 border border-fuchsia-100 transition-colors group-hover:bg-fuchsia-100"><span class="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse"></span><span class="truncate">${student.diagnosis}</span></div>
+                        </div>
+                        <div class="pt-5 border-t border-slate-100 mt-5 relative">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="font-black text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl text-xs border border-slate-100">${noteCount} Gözlem</span>
+                                <span class="text-fuchsia-600 font-black text-sm hover:underline flex items-center gap-1 group-hover:translate-x-1 transition-transform">Dosya <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></span>
+                            </div>
+                            <p class="text-[10px] font-bold text-slate-400 text-left w-full truncate">Son işlem: ${lastActiveStr}</p>
+                        </div>
+                    `;
+                    fragment.appendChild(card);
+                });
+                grid.appendChild(fragment);
+            }
+        }
+
+        function loadQuickNotes() {
+            const container = document.getElementById('dynamic-quick-notes');
+            if(!currentTeacher) return;
+
+            let notes = [];
+            if(currentTeacher.kurumTuru === 'Rehabilitasyon Merkezi') {
+                notes = [
+                    { t: "İnce motor becerileri gelişti ✋", c: "bg-emerald-100 text-emerald-700" },
+                    { t: "Göz teması kurdu 👀", c: "bg-blue-100 text-blue-700" },
+                    { t: "Yönergelere tam uyum sağladı ✅", c: "bg-indigo-100 text-indigo-700" },
+                    { t: "Dikkat süresi çok kısaydı ⚠️", c: "bg-orange-100 text-orange-700" }
+                ];
+            } else if(currentTeacher.kurumTuru === 'Kolej / Özel Okul' || currentTeacher.kurumTuru === 'Devlet Okulu') {
+                notes = [
+                    { t: "Derse çok aktif katılım sağladı ✋", c: "bg-emerald-100 text-emerald-700" },
+                    { t: "Ödevlerini eksiksiz yapmıştı 📚", c: "bg-blue-100 text-blue-700" },
+                    { t: "Arkadaşlarıyla çok uyumluydu 🤝", c: "bg-indigo-100 text-indigo-700" },
+                    { t: "Dikkati çok dağınıktı 🎯", c: "bg-orange-100 text-orange-700" }
+                ];
+            } else if(currentTeacher.kurumTuru === 'Özel Öğretim Kursu') {
+                notes = [
+                    { t: "Deneme sınavı netleri arttı 📈", c: "bg-emerald-100 text-emerald-700" },
+                    { t: "Soru çözümü saati verimli geçti ✍️", c: "bg-blue-100 text-blue-700" },
+                    { t: "Derse devamsızlık yaptı ❌", c: "bg-orange-100 text-orange-700" }
+                ];
+            } else if(currentTeacher.kurumTuru === 'Kreş / Anaokulu') {
+                notes = [
+                    { t: "Öğle yemeğini tam yedi 🍲", c: "bg-emerald-100 text-emerald-700" },
+                    { t: "Uykusunu tam aldı 💤", c: "bg-blue-100 text-blue-700" },
+                    { t: "Oyunlarda paylaşımcıydı 🧸", c: "bg-indigo-100 text-indigo-700" },
+                    { t: "Bugün biraz huzursuzdu 🥺", c: "bg-orange-100 text-orange-700" }
+                ];
+            } else {
+                notes = [
+                    { t: "Çalışma verimli geçti 🌟", c: "bg-emerald-100 text-emerald-700" },
+                    { t: "İlerleme kaydedildi 📈", c: "bg-blue-100 text-blue-700" },
+                    { t: "Tekrar yapması gerekiyor ⚠️", c: "bg-orange-100 text-orange-700" }
+                ];
+            }
+
+            container.innerHTML = notes.map((n, i) => 
+                `<button onclick="appendNote('${n.t}')" style="animation-delay: ${i*0.05}s" class="slide-up btn-press bg-slate-100 hover:${n.c.split(' ')[0]} hover:${n.c.split(' ')[1]} text-slate-600 text-xs px-3 py-2 rounded-xl font-bold transition-colors shadow-sm">${n.t}</button>`
+            ).join('');
+        }
+
+        window.openStudentDetail = function(student, isUpdate = false) {
+            currentStudentId = student.id;
+            
+            document.getElementById('detail-student-name').innerText = student.name;
+            document.getElementById('detail-student-age').innerText = student.age;
+            document.getElementById('detail-student-diagnosis').innerText = student.diagnosis;
+            document.getElementById('detail-student-adder').innerText = student.addedBy || 'Bilinmiyor';
+            
+            const lbl = document.getElementById('detail-dynamic-label');
+            const extBox = document.getElementById('detail-extra-box');
+            const extLbl = document.getElementById('detail-extra-label');
+            const extTxt = document.getElementById('detail-student-extra');
+
+            if(currentTeacher.kurumTuru === 'Rehabilitasyon Merkezi') {
+                lbl.innerText = "Tanı Durumu"; extLbl.innerText = "Destek İhtiyacı";
+            } else if(currentTeacher.kurumTuru.includes('Okul')) {
+                lbl.innerText = "Sınıf ve Şube"; extLbl.innerText = "Kulüp/Eğilim";
+            } else if(currentTeacher.kurumTuru === 'Özel Öğretim Kursu') {
+                lbl.innerText = "Alan / Seviye"; extLbl.innerText = "Hedef Sınav";
+            } else if(currentTeacher.kurumTuru === 'Kreş / Anaokulu') {
+                lbl.innerText = "Yaş / Sınıf"; extLbl.innerText = "Özel Durum";
+            } else {
+                lbl.innerText = "Bilgi / Seviye";
+            }
+
+            if(student.extra) {
+                extBox.classList.remove('hidden');
+                extTxt.innerText = student.extra;
+            } else {
+                extBox.classList.add('hidden');
+            }
+
+            const initialEl = document.getElementById('detail-student-initial');
+            initialEl.innerText = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            initialEl.style.background = getGradientForName(student.name);
+
+            const actionsDiv = document.getElementById('student-actions');
+            if(student.addedById === currentTeacher.id) actionsDiv.classList.remove('hidden'); else actionsDiv.classList.add('hidden');
+
+            if(!isUpdate) { 
+                document.getElementById('new-note-content').value = ''; 
+                document.querySelector('input[name="note-type"][value="info"]').checked = true; 
+                loadQuickNotes(); 
+                showView('student-detail'); 
+            }
+            renderNotes();
+        }
+
+        window.openEditStudentModal = function() {
+            const student = allStudents.find(s => s.id === currentStudentId); if(!student) return;
+            document.getElementById('modal-title').innerText = "Öğrenciyi Düzenle"; 
+            document.getElementById('edit-student-id').value = student.id;
+            document.getElementById('student-name').value = student.name; 
+            document.getElementById('student-age').value = student.age;
+            document.getElementById('student-diagnosis').value = student.diagnosis !== 'Belirtilmedi' ? student.diagnosis : ''; 
+            document.getElementById('student-extra').value = student.extra || ''; 
+            openStudentModalForAdd();
+        }
+
+        let deleteAction = null;
+        window.closeConfirmModal = function() {
+            const modal = document.getElementById('confirm-modal'); const content = document.getElementById('confirm-modal-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 200); deleteAction = null;
+        }
+
+        function showConfirm(title, message, action) {
+            document.getElementById('confirm-title').innerText = title; document.getElementById('confirm-message').innerText = message; deleteAction = action;
+            const modal = document.getElementById('confirm-modal'); const content = document.getElementById('confirm-modal-content');
+            modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        document.getElementById('confirm-action-btn').addEventListener('click', async () => { if(deleteAction) await deleteAction(); closeConfirmModal(); });
+
+        window.deleteStudent = function() {
+            showConfirm("Öğrenciyi Sil?", "Öğrenci ve ona ait TÜM notlar silinecektir.", async () => {
+                try {
+                    const studentNotes = allNotes.filter(n => n.studentId === currentStudentId);
+                    for(let note of studentNotes) await deleteDoc(getPubDoc('notes_tr', note.id)); 
+                    await deleteDoc(getPubDoc('students_tr', currentStudentId));
+                    showToast("Öğrenci ve notları başarıyla silindi.", "success", "🗑️"); showView('dashboard');
+                } catch(e) { console.error(e); showToast("Silme hatası.", "error"); }
+            });
+        }
+
+        function shootConfetti() {
+            const emojis = ['⭐', '🎉', '👏', '🚀', '🌟', '🏆'];
+            for(let i=0; i<45; i++) {
+                const el = document.createElement('div');
+                el.innerText = emojis[Math.floor(Math.random()*emojis.length)];
+                el.style.position = 'fixed';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = '-50px';
+                el.style.fontSize = (Math.random() * 25 + 15) + 'px';
+                el.style.zIndex = 9999;
+                el.style.pointerEvents = 'none';
+                el.style.transition = 'all 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                document.body.appendChild(el);
+                setTimeout(() => {
+                    el.style.top = '100vh';
+                    el.style.transform = `rotate(${Math.random()*720}deg) translateX(${(Math.random()-0.5)*300}px)`;
+                }, 50);
+                setTimeout(() => el.remove(), 2500);
+            }
+        }
+
+        window.appendNote = function(text) {
+            const textarea = document.getElementById('new-note-content');
+            textarea.value = textarea.value ? textarea.value + " " + text : text;
+            textarea.focus();
+        }
+
+        window.addNote = async function() {
+            if(!currentUser || !currentTeacher || !currentStudentId) return;
+            const content = document.getElementById('new-note-content').value.trim(); const type = document.querySelector('input[name="note-type"]:checked').value;
+            if (!content) return showToast("Lütfen bir not yazın.", "error");
+
+            try {
+                await addDoc(getPubCollection('notes_tr'), { 
+                    studentId: currentStudentId, 
+                    teacherId: currentTeacher.id, 
+                    teacherName: currentTeacher.name, 
+                    content: content, 
+                    type: type, 
+                    kurumKey: currentTeacher.kurumKey, 
+                    createdAt: serverTimestamp() 
+                });
+                document.getElementById('new-note-content').value = ''; 
+                showToast("Not başarıyla eklendi.", "success", "📝");
+                if(type === 'success') shootConfetti(); 
+            } catch (error) { handleFirebaseError(error, "add_note"); }
+        }
+
+        window.deleteNote = function(noteId) { 
+            showConfirm("Notu Sil?", "Bu gözlem notu kalıcı olarak silinecektir.", async () => { 
+                try { 
+                    await deleteDoc(getPubDoc('notes_tr', noteId)); 
+                    showToast("Not silindi.", "success", "🗑️"); 
+                } catch(e) { console.error(e); showToast("Silinemedi.", "error"); } 
+            }); 
+        }
+
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000); let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " yıl önce"; interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " ay önce"; interval = seconds / 86400;
+            if (interval > 1) { if(Math.floor(interval) === 1) return "Dün"; return Math.floor(interval) + " gün önce"; }
+            interval = seconds / 3600; if (interval > 1) return Math.floor(interval) + " saat önce"; interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " dakika önce"; return "Az önce";
+        }
+
+        function renderNotes() {
+            if (!currentStudentId) return;
+            const container = document.getElementById('notes-container'); const noNotesMsg = document.getElementById('no-notes-msg'); const badge = document.getElementById('note-count-badge');
+            container.innerHTML = '';
+            const studentNotes = allNotes.filter(n => n.studentId === currentStudentId); badge.innerText = studentNotes.length;
+
+            if (studentNotes.length === 0) { noNotesMsg.classList.remove('hidden'); } else {
+                noNotesMsg.classList.add('hidden'); const fragment = document.createDocumentFragment();
+                studentNotes.forEach((note, index) => {
+                    let relativeTime = "Şimdi"; let exactTime = "";
+                    if (note.createdAt) { const date = note.createdAt.toDate(); relativeTime = timeAgo(date); exactTime = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' }); }
+                    const isMyNote = note.teacherId === currentTeacher.id;
+                    let typeBg = "bg-slate-50"; let typeBorder = "border-slate-200"; let typeText = "text-slate-800"; let typeIcon = "📘";
+                    if(note.type === 'success') { typeBg = "bg-emerald-50"; typeBorder = "border-emerald-200"; typeText = "text-emerald-900"; typeIcon = "⭐"; } 
+                    else if (note.type === 'warning') { typeBg = "bg-orange-50"; typeBorder = "border-orange-200"; typeText = "text-orange-900"; typeIcon = "⚠️"; }
+
+                    const noteEl = document.createElement('div'); 
+                    // Dinamik Animasyon ve Tasarım Eklendi
+                    noteEl.className = `stagger-item bg-white rounded-[2rem] p-5 sm:p-6 border ${typeBorder} shadow-sm relative group mb-6 print-border transform transition-transform hover:-translate-y-1 hover:shadow-md`;
+                    noteEl.style.animationDelay = `${index * 0.08}s`;
+                    noteEl.innerHTML = `
+                        <!-- Timeline İşaretçisi -->
+                        <div class="absolute -left-5 sm:-left-7 top-6 w-3 h-3 rounded-full bg-slate-300 border-2 border-white shadow-sm print-hide"></div>
+                        
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black ${isMyNote ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-200' : 'bg-slate-200 text-slate-700 shadow-inner'} print-hide transform transition-transform group-hover:scale-105">${note.teacherName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</div>
+                                <div><h4 class="font-black text-slate-800 leading-tight text-lg">${note.teacherName} ${isMyNote ? '<span class="text-xs font-bold bg-fuchsia-100 text-fuchsia-600 px-2 py-0.5 rounded-full ml-1 align-middle">Siz</span>' : ''}</h4><span class="text-sm font-bold text-slate-400" title="${exactTime}">${relativeTime}</span></div>
+                            </div>
+                            ${isMyNote ? `<button onclick="deleteNote('${note.id}')" class="btn-press text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-2.5 rounded-xl transition-all opacity-100 sm:opacity-0 group-hover:opacity-100 print-hide" title="Notu Sil"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
+                        </div>
+                        <div class="${typeBg} rounded-2xl p-5 border ${typeBorder} relative overflow-hidden">
+                            <span class="absolute right-3 top-3 opacity-20 text-4xl pointer-events-none transform rotate-12">${typeIcon}</span>
+                            <p class="whitespace-pre-line text-base font-bold leading-relaxed ${typeText} relative z-10">${escapeHtml(note.content)}</p>
+                        </div>
+                    `;
+                    fragment.appendChild(noteEl);
+                });
+                container.appendChild(fragment);
+            }
+        }
+
+        let toastTimeout; function showToast(message, type = 'success', icon = '✨') {
+            const toast = document.getElementById('toast'); 
+            document.getElementById('toast-message').innerText = message;
+            document.getElementById('toast-icon').innerText = icon;
+            toast.className = `fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full shadow-2xl z-[100] flex items-center gap-3 font-bold min-w-[300px] justify-center transition-all duration-400 text-lg ${type === 'success' ? 'bg-slate-900 text-white' : 'bg-rose-600 text-white'}`;
+            void toast.offsetWidth; toast.classList.remove('translate-y-32', 'opacity-0');
+            clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.classList.add('translate-y-32', 'opacity-0'); }, 4000);
+        }
+        function escapeHtml(unsafe) { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    </script>
+</body>
+</html>
