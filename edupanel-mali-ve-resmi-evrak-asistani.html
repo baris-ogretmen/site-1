@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduPanel Pro | Dokunmatik İmza & Finans Entegreli</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glassmorphism */
+        body {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        /* Print Styles */
+        #print-area { display: none; }
+        @media print {
+            body { background: white !important; margin: 0; padding: 0; }
+            #login-screen, #app-screen, #success-modal, aside, main, .no-print { display: none !important; }
+            #print-area { 
+                display: block !important; 
+                padding: 40px; 
+                background: white; 
+                color: black; 
+                font-family: serif; 
+            }
+            .page-break { page-break-after: always; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 12px; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+            .official-signature { margin-top: 50px; text-align: right; padding-right: 50px; }
+            .official-signature img { max-height: 80px; mix-blend-multiply: multiply; display: inline-block; }
+        }
+
+        /* Touchevent Optimization */
+        #signature-pad {
+            touch-action: none; /* Parmakla imza atarken sayfanın kaymasını engeller */
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="text-gray-800 h-screen overflow-hidden flex selection:bg-brand-500 selection:text-white">
+
+    <!-- 1. GİRİŞ EKRANI -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-[#e0c3fc] to-[#8ec5fc] transition-opacity duration-500">
+        <div class="glass-card p-10 rounded-3xl w-full max-w-md text-center animate-fade-in">
+            <div class="bg-gradient-to-tr from-brand-600 to-brand-400 text-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-brand-500/30 transform rotate-3">
+                <i class="ph ph-graduation-cap text-5xl transform -rotate-3"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">EduPanel Pro</h1>
+            <p class="text-gray-500 mb-8 text-sm">Mobil Uyumlu Eğitim & Finans Yönetimi</p>
+            <div class="space-y-4">
+                <button onclick="login('manager')" class="w-full flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-2xl border border-white/80 shadow-sm transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-indigo-100 text-indigo-600 p-3 rounded-xl"><i class="ph ph-briefcase text-2xl"></i></div>
+                        <div class="text-left"><h3 class="font-bold">Müdür Girişi</h3><p class="text-xs text-gray-500">Mali Takip & Analiz</p></div>
+                    </div>
+                    <i class="ph ph-caret-right"></i>
+                </button>
+                <button onclick="login('teacher')" class="w-full flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-2xl border border-white/80 shadow-sm transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-brand-100 text-brand-600 p-3 rounded-xl"><i class="ph ph-chalkboard-teacher text-2xl"></i></div>
+                        <div class="text-left"><h3 class="font-bold">Öğretmen Girişi</h3><p class="text-xs text-gray-500">Akıllı PKT & Dokunmatik İmza</p></div>
+                    </div>
+                    <i class="ph ph-caret-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ANA UYGULAMA İSKELETİ -->
+    <div id="app-screen" class="hidden w-full h-full flex transition-opacity duration-500 opacity-0">
+        <!-- Sidebar -->
+        <aside class="w-72 h-full glass-panel flex flex-col shadow-2xl z-20 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-white/40">
+                <div class="bg-brand-500 text-white p-2 rounded-xl shadow-lg shadow-brand-500/30"><i class="ph ph-graduation-cap text-2xl"></i></div>
+                <h1 class="text-xl font-bold text-gray-900">EduPanel</h1>
+            </div>
+            <div class="p-6 pb-2">
+                <div class="flex items-center gap-3 mb-6 bg-white/50 p-3 rounded-2xl border border-white/60">
+                    <img id="profile-img" src="" alt="Profile" class="w-11 h-11 rounded-full shadow-sm">
+                    <div>
+                        <h3 id="profile-name" class="text-sm font-bold text-gray-800">İsim</h3>
+                        <p id="profile-role" class="text-xs text-brand-600 font-medium bg-brand-50 px-2 py-0.5 rounded-md mt-1 italic">Rol</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 px-4 space-y-2 overflow-y-auto" id="nav-menu">
+                <div id="menu-manager" class="hidden space-y-2">
+                    <button onclick="navigate('m-dashboard')" id="nav-m-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-presentation-chart text-xl"></i><span>Mali Dashboard</span>
+                    </button>
+                    <button onclick="navigate('m-assign')" id="nav-m-assign" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-target text-xl"></i><span>Kazanım Atama</span>
+                    </button>
+                </div>
+                <div id="menu-teacher" class="hidden space-y-2">
+                    <button onclick="navigate('t-dashboard')" id="nav-t-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-house text-xl"></i><span>Panel</span>
+                    </button>
+                    <button onclick="navigate('t-attendance')" id="nav-t-attendance" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-hand-pointing text-xl"></i><span>Yoklama</span>
+                    </button>
+                    <button onclick="navigate('t-pkt')" id="nav-t-pkt" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-list-checks text-xl"></i><span>Akıllı PKT</span>
+                    </button>
+                    <button onclick="navigate('t-signature')" id="nav-t-signature" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 text-gray-600 hover:bg-white/60">
+                        <i class="ph ph-pen-nib text-xl"></i><span>İmza Kasası</span>
+                    </button>
+                </div>
+            </nav>
+            <div class="p-4 border-t border-white/40">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors text-sm font-semibold">
+                    <i class="ph ph-sign-out text-lg"></i>Çıkış Yap
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 h-full overflow-y-auto p-4 md:p-8">
+            
+            <!-- MÜDÜR: MALİ DASHBOARD -->
+            <div id="view-m-dashboard" class="view-section hidden animate-fade-in">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Mali ve Operasyonel Durum 💰</h2>
+                    <p class="text-gray-600 mt-1">Kurumun hakediş potansiyeli ve imza risk analizi.</p>
+                </header>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-between border-l-4 border-brand-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Tahmini Hakediş</span>
+                            <div class="bg-brand-100 p-2 rounded-lg text-brand-600"><i class="ph ph-money text-xl"></i></div>
+                        </div>
+                        <div>
+                            <h4 id="m-stat-earnings" class="text-2xl font-black text-gray-800 tracking-tight">₺0</h4>
+                            <p class="text-xs text-green-600 font-bold mt-1">Öğrenci Başı ₺10.500</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-between border-l-4 border-red-500 bg-red-50/20">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-red-400 uppercase tracking-widest">Kesinti Riski</span>
+                            <div class="bg-red-100 p-2 rounded-lg text-red-600"><i class="ph ph-warning-diamond text-xl"></i></div>
+                        </div>
+                        <div>
+                            <h4 id="m-stat-risk" class="text-2xl font-black text-red-600 tracking-tight">₺0</h4>
+                            <p id="m-stat-risk-desc" class="text-xs text-gray-500 mt-1">İmza ve yoklama hatası</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-between border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-orange-400 uppercase tracking-widest">İmza Eksiği</span>
+                            <div class="bg-orange-100 p-2 rounded-lg text-orange-600"><i class="ph ph-pen-nib text-xl"></i></div>
+                        </div>
+                        <div>
+                            <h4 id="m-stat-missing-sigs" class="text-2xl font-black text-gray-800 tracking-tight">0</h4>
+                            <p class="text-xs text-gray-500 mt-1">Öğrenci bazlı evrak</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 rounded-2xl flex flex-col justify-between border-l-4 border-green-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Yoklama Oranı</span>
+                            <div class="bg-green-100 p-2 rounded-lg text-green-600"><i class="ph ph-user-check text-xl"></i></div>
+                        </div>
+                        <div>
+                            <h4 id="m-stat-attendance-rate" class="text-2xl font-black text-gray-800 tracking-tight">%0</h4>
+                            <p class="text-xs text-gray-500 mt-1">Güncel derse katılım</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="ph ph-activity text-xl text-brand-500"></i> Bekleyen İmza ve Yoklama Akışı
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-xs text-gray-400 border-b border-gray-100"><th class="pb-3">Öğrenci</th><th class="pb-3">Hakediş Durumu</th><th class="pb-3">Risk Faktörü</th></tr>
+                            </thead>
+                            <tbody id="m-dashboard-table" class="text-sm">
+                                <!-- JS Injection -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MÜDÜR: KAZANIM ATAMA -->
+            <div id="view-m-assign" class="view-section hidden animate-fade-in">
+                <header class="mb-8"><h2 class="text-3xl font-bold text-gray-800">Kazanım Atama</h2></header>
+                <div id="m-assign-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+            </div>
+
+            <!-- ÖĞRETMEN: DASHBOARD -->
+            <div id="view-t-dashboard" class="view-section hidden animate-fade-in">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Eğitimci Paneli 🚀</h2>
+                    <p class="text-gray-600 mt-1">Zeynep Hanım, bugün bekleyen dersleriniz mevcut.</p>
+                </header>
+                <div class="glass-card rounded-3xl p-8 max-w-xl mx-auto text-center border-2 border-brand-200 shadow-xl shadow-brand-500/10">
+                    <div class="w-24 h-24 bg-brand-500 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-6 shadow-lg"><i class="ph ph-bolt text-5xl"></i></div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Dokunmatik Destek Aktif!</h3>
+                    <p class="text-gray-600 mb-8 leading-relaxed">Artık parmağınızla veya tablet kaleminizle imza atabilirsiniz. PKT değerlendirmelerini yapıp çıktı motorunu başlatmaya hazırsınız.</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="navigate('t-attendance')" class="bg-white border border-gray-200 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm">Yoklama Gir</button>
+                        <button onclick="navigate('t-pkt')" class="bg-brand-600 text-white py-4 rounded-2xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30">Değerlendirme</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÖĞRETMEN: YOKLAMA -->
+            <div id="view-t-attendance" class="view-section hidden animate-fade-in">
+                <header class="mb-8"><h2 class="text-3xl font-bold text-gray-800">Günlük Yoklama</h2></header>
+                <div id="t-attendance-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- ÖĞRETMEN: PKT -->
+            <div id="view-t-pkt" class="view-section hidden animate-fade-in flex flex-col h-full relative">
+                <header class="mb-6"><h2 class="text-3xl font-bold text-gray-800">Akıllı PKT Sistemi</h2></header>
+                <div id="t-pkt-container" class="space-y-4 pb-32 flex-1 overflow-y-auto"></div>
+                <div class="absolute bottom-4 left-0 right-0 p-4 bg-gradient-to-t from-gray-100/50 flex justify-center no-print">
+                    <button onclick="signAndSubmitAll()" class="w-full max-w-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-5 rounded-3xl font-black text-xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <i class="ph ph-printer text-3xl"></i> TÜMÜNÜ ONAYLA VE ÇIKTI AL
+                    </button>
+                </div>
+            </div>
+
+            <!-- ÖĞRETMEN: İMZA KASASI -->
+            <div id="view-t-signature" class="view-section hidden animate-fade-in">
+                <header class="mb-8"><h2 class="text-3xl font-bold text-gray-800">Dijital İmza Kasası</h2></header>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="glass-card p-6 rounded-3xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold">Dokunmatik İmza Alanı</h3>
+                            <button onclick="clearSignature()" class="text-red-500 text-sm">Temizle</button>
+                        </div>
+                        <div class="bg-white rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden">
+                            <canvas id="signature-pad" class="w-full h-64 cursor-crosshair"></canvas>
+                        </div>
+                        <button onclick="saveSignature()" class="w-full mt-6 bg-brand-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-brand-500/30">İmzamı Kaydet</button>
+                    </div>
+                    <div class="glass-card p-6 rounded-3xl text-center">
+                        <h3 class="font-bold text-left mb-4">Kasadaki İmza</h3>
+                        <div id="saved-signature-container" class="w-full h-64 bg-white/50 rounded-2xl flex items-center justify-center p-4 border border-gray-100 relative">
+                            <p id="no-signature-text" class="text-gray-400 italic">İmza bulunamadı.</p>
+                            <img id="saved-signature-img" src="" class="hidden max-h-full max-w-full mix-blend-multiply">
+                        </div>
+                        <p class="text-xs text-gray-400 mt-4">Bu imza resmi evrakların altında görünecektir.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 3. PRINT AREA (HIDDEN) -->
+    <div id="print-area"></div>
+
+    <!-- 4. SUCCESS MODAL -->
+    <div id="success-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-fade-in">
+            <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="ph ph-check-circle text-5xl"></i></div>
+            <h3 class="text-xl font-bold text-gray-800">Evraklar Hazır!</h3>
+            <p class="text-gray-500 mt-2">İmzalı PKT'ler oluşturuldu ve yazdırma kuyruğuna gönderildi.</p>
+            <button onclick="closeModal()" class="w-full mt-6 bg-gray-800 text-white py-3 rounded-xl font-bold">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        const MOCK_DATA = [
+            { id: 1, name: "Ahmet Yılmaz", age: 7, module: "Zihinsel Engelliler", attendance: null, goals: [{ id: "g1", text: "1-10 arası ritmik sayar.", status: null }] },
+            { id: 2, name: "Ayşe Kaya", age: 5, module: "Otizm Spectrum", attendance: null, goals: [{ id: "g2", text: "İsmiyle seslenince bakar.", status: null }] },
+            { id: 3, name: "Caner Demir", age: 10, module: "Özel Öğrenme Güçlüğü", attendance: null, goals: [] }
+        ];
+        const SAMPLE_GOALS = ["Basit taklit becerileri", "Ana renkleri gösterir", "Düz çizgi çizer", "5N1K soruları"];
+
+        let studentsData = [];
+        let savedSignatureData = null;
+        let currentRole = null;
+
+        // --- APP INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const stored = localStorage.getItem('edu_v3_data');
+            studentsData = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(MOCK_DATA));
+            savedSignatureData = localStorage.getItem('edu_signature');
+            initSignaturePad();
+        });
+
+        function saveData() {
+            localStorage.setItem('edu_v3_data', JSON.stringify(studentsData));
+            if (currentRole === 'manager') updateManagerDashboardStats();
+        }
+
+        // --- AUTH & NAV ---
+        function login(role) {
+            currentRole = role;
+            document.getElementById('login-screen').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                setTimeout(() => document.getElementById('app-screen').classList.remove('opacity-0'), 50);
+                setupProfile(role);
+                navigate(role === 'manager' ? 'm-dashboard' : 't-dashboard');
+            }, 500);
+        }
+
+        function logout() { location.reload(); }
+
+        function setupProfile(role) {
+            document.getElementById('profile-name').textContent = role === 'manager' ? 'Kemal Müdür' : 'Zeynep Öğretmen';
+            document.getElementById('profile-role').textContent = role === 'manager' ? 'Kurum Müdürü' : 'Eğitim Uzmanı';
+            document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${role === 'manager' ? 'Kemal' : 'Zeynep'}&background=0ea5e9&color=fff`;
+            document.getElementById('menu-manager').classList.toggle('hidden', role !== 'manager');
+            document.getElementById('menu-teacher').classList.toggle('hidden', role !== 'teacher');
+        }
+
+        function navigate(id) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(`view-${id}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-white/60', 'text-brand-600', 'shadow-sm'));
+            const btn = document.getElementById(`nav-${id}`);
+            if(btn) btn.classList.add('bg-white/60', 'text-brand-600', 'shadow-sm');
+
+            if (id === 'm-dashboard') renderManagerDashboard();
+            if (id === 'm-assign') renderManagerAssign();
+            if (id === 't-attendance') renderTeacherAttendance();
+            if (id === 't-pkt') renderTeacherPKT();
+            if (id === 't-signature') { showSavedSignature(); resizeCanvas(); }
+        }
+
+        // --- MANAGER LOGIC ---
+        function updateManagerDashboardStats() {
+            let totalEarnings = studentsData.length * 10500;
+            let risk = 0;
+            let missingSigs = 0;
+            let presentCount = 0;
+
+            studentsData.forEach(s => {
+                let sRisk = 0;
+                if (!s.attendance) sRisk += 5250;
+                if (s.goals.some(g => g.status === null)) { sRisk += 2000; missingSigs++; }
+                if (s.attendance === 'geldi') presentCount++;
+                risk += sRisk;
+            });
+
+            document.getElementById('m-stat-earnings').textContent = `₺${totalEarnings.toLocaleString()}`;
+            document.getElementById('m-stat-risk').textContent = `₺${risk.toLocaleString()}`;
+            document.getElementById('m-stat-missing-sigs').textContent = missingSigs;
+            document.getElementById('m-stat-attendance-rate').textContent = `%${Math.round((presentCount / studentsData.length) * 100)}`;
+        }
+
+        function renderManagerDashboard() {
+            updateManagerDashboardStats();
+            const table = document.getElementById('m-dashboard-table');
+            table.innerHTML = '';
+            studentsData.forEach(s => {
+                const hasRisk = !s.attendance || s.goals.some(g => g.status === null);
+                table.innerHTML += `
+                    <tr class="border-b border-gray-50 hover:bg-white/40 transition-colors">
+                        <td class="py-4 font-bold text-gray-800">${s.name}</td>
+                        <td class="py-4">₺10.500 <span class="text-xs text-gray-400">/ Aylık</span></td>
+                        <td class="py-4">${hasRisk ? '<span class="text-red-500 font-bold flex items-center gap-1"><i class="ph ph-warning"></i> Kesinti Riski</span>' : '<span class="text-green-500 font-bold">Güvende</span>'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderManagerAssign() {
+            const cont = document.getElementById('m-assign-container');
+            cont.innerHTML = '';
+            studentsData.forEach(s => {
+                cont.innerHTML += `
+                    <div class="glass-card p-5 rounded-2xl flex flex-col">
+                        <h4 class="font-bold text-gray-800">${s.name}</h4>
+                        <div class="flex-1 my-3 space-y-1">
+                            ${s.goals.map(g => `<div class="bg-white/50 p-2 rounded text-xs flex justify-between"><span>${g.text}</span><button onclick="removeGoal(${s.id},'${g.id}')" class="text-red-400">Sil</button></div>`).join('')}
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="sel-${s.id}" class="flex-1 text-xs p-2 rounded-lg border">
+                                <option value="">Kazanım Seç...</option>
+                                ${SAMPLE_GOALS.map(g => `<option value="${g}">${g}</option>`).join('')}
+                            </select>
+                            <button onclick="addGoal(${s.id})" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs">Ata</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        function addGoal(id) { 
+            const val = document.getElementById(`sel-${id}`).value; 
+            if(!val) return;
+            studentsData.find(s=>s.id===id).goals.push({id:'g'+Date.now(), text:val, status:null});
+            saveData(); renderManagerAssign();
+        }
+        function removeGoal(sid, gid) {
+            const s = studentsData.find(st=>st.id===sid);
+            s.goals = s.goals.filter(g=>g.id!==gid);
+            saveData(); renderManagerAssign();
+        }
+
+        // --- TEACHER LOGIC ---
+        function renderTeacherAttendance() {
+            const cont = document.getElementById('t-attendance-container');
+            cont.innerHTML = '';
+            studentsData.forEach(s => {
+                const active = s.attendance;
+                cont.innerHTML += `
+                    <div class="glass-card p-5 rounded-2xl">
+                        <h4 class="font-bold mb-4">${s.name}</h4>
+                        <div class="flex gap-2">
+                            <button onclick="setAtt(${s.id},'geldi')" class="flex-1 py-3 rounded-xl border-2 transition-all ${active==='geldi'?'bg-green-500 text-white border-green-500':'border-gray-100'}">Geldi</button>
+                            <button onclick="setAtt(${s.id},'gelmedi')" class="flex-1 py-3 rounded-xl border-2 transition-all ${active==='gelmedi'?'bg-red-500 text-white border-red-500':'border-gray-100'}">Gelmedi</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        function setAtt(id, status) { studentsData.find(s=>s.id===id).attendance = status; saveData(); renderTeacherAttendance(); }
+
+        function renderTeacherPKT() {
+            const cont = document.getElementById('t-pkt-container');
+            cont.innerHTML = '';
+            studentsData.forEach(s => {
+                if(s.goals.length === 0) return;
+                cont.innerHTML += `
+                    <div class="glass-card p-6 rounded-2xl border-l-8 border-brand-400">
+                        <h4 class="font-bold mb-4">${s.name} <span class="text-xs text-gray-400 font-normal">| ${s.module}</span></h4>
+                        <div class="space-y-2">
+                            ${s.goals.map(g => `
+                                <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl">
+                                    <span class="text-sm font-medium">${g.text}</span>
+                                    <div class="flex gap-2">
+                                        <button onclick="setStatus(${s.id},'${g.id}','+')" class="w-10 h-10 rounded-lg ${g.status==='+'?'bg-emerald-500 text-white':'bg-white text-gray-400'}">+</button>
+                                        <button onclick="setStatus(${s.id},'${g.id}','-')" class="w-10 h-10 rounded-lg ${g.status==='-'?'bg-orange-500 text-white':'bg-white text-gray-400'}">-</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        function setStatus(sid, gid, val) { studentsData.find(s=>s.id===sid).goals.find(g=>g.id===gid).status = val; saveData(); renderTeacherPKT(); }
+
+        // --- PRINT MOTOR ---
+        function signAndSubmitAll() {
+            if(!savedSignatureData) { alert("Lütfen önce İmza Kasası'na imzanızı kaydedin."); navigate('t-signature'); return; }
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = '';
+            studentsData.forEach((s) => {
+                const section = document.createElement('div');
+                section.className = 'page-break';
+                section.innerHTML = `
+                    <div class="print-header"><h2>T.C. MİLLİ EĞİTİM BAKANLIĞI</h2><h3>Aylık Performans Kayıt Tablosu</h3></div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                        <div><strong>Öğrenci Adı:</strong> ${s.name}</div>
+                        <div><strong>Modül:</strong> ${s.module}</div>
+                    </div>
+                    <table>
+                        <thead><tr><th>No</th><th>Kazanım</th><th>Durum</th></tr></thead>
+                        <tbody>${s.goals.map((g, i) => `<tr><td>${i+1}</td><td>${g.text}</td><td style="text-align:center;">${g.status || '-'}</td></tr>`).join('')}</tbody>
+                    </table>
+                    <div class="official-signature">
+                        <p><strong>Eğitimci:</strong> Zeynep Öğretmen</p>
+                        <p><strong>Tarih:</strong> ${new Date().toLocaleDateString('tr-TR')}</p>
+                        <img src="${savedSignatureData}" alt="Signature">
+                    </div>
+                `;
+                printArea.appendChild(section);
+            });
+            document.getElementById('success-modal').classList.remove('hidden');
+            setTimeout(() => { window.print(); }, 1000);
+        }
+
+        function closeModal() { document.getElementById('success-modal').classList.add('hidden'); }
+
+        // --- SIGNATURE PAD LOGIC (TOUCH SUPPORTED) ---
+        let canvas, ctx, isDrawing = false;
+        
+        function initSignaturePad() {
+            canvas = document.getElementById('signature-pad');
+            ctx = canvas.getContext('2d');
+            
+            // Mouse Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stopDrawing);
+
+            // Touch Events
+            canvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousedown", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            }, false);
+
+            canvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent("mousemove", {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+                e.preventDefault(); // Kaydırmayı engelle
+            }, false);
+
+            canvas.addEventListener('touchend', () => {
+                const mouseEvent = new MouseEvent("mouseup", {});
+                canvas.dispatchEvent(mouseEvent);
+            }, false);
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                ctx.closePath();
+                isDrawing = false;
+            }
+        }
+
+        function resizeCanvas() {
+            const r = canvas.parentElement.getBoundingClientRect();
+            canvas.width = r.width;
+            canvas.height = r.height;
+            // Çizgi ayarlarını yenile
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+        }
+
+        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        
+        function saveSignature() {
+            savedSignatureData = canvas.toDataURL("image/png");
+            localStorage.setItem('edu_signature', savedSignatureData);
+            showSavedSignature();
+        }
+
+        function showSavedSignature() {
+            if (savedSignatureData) {
+                const img = document.getElementById('saved-signature-img');
+                img.src = savedSignatureData;
+                img.classList.remove('hidden');
+                document.getElementById('no-signature-text').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
