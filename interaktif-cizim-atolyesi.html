@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>İnteraktif Çizim Atölyesi</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --bg-color: #f4f7f6;
+            --panel-bg: #ffffff;
+            --text: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevent pull-to-refresh and scroll on mobile */
+        }
+
+        /* Header & Controls */
+        .toolbar {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-right: auto;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #f0f4f8;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        button {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            background-color: #fff;
+            color: var(--text);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            padding: 0;
+            border: 2px solid transparent;
+        }
+        .color-btn.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        .btn-clear {
+            background-color: #ff4757;
+            color: white;
+        }
+
+        /* Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            padding: 15px;
+            gap: 15px;
+            overflow-y: auto;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 50%;
+            height: 100%;
+        }
+
+        .canvas-title {
+            background: var(--primary);
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px 20px 0 0;
+            font-weight: bold;
+            margin-bottom: 0;
+            font-size: 1rem;
+            z-index: 2;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .canvas-wrapper:nth-child(2) .canvas-title {
+            background: #2ed573; /* Green for student side */
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-height: calc(100vh - 120px);
+            background: white;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none; /* Crucial for touch drawing without scrolling */
+        }
+
+        /* Student canvas background (notebook grid) */
+        #studentCanvas {
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            cursor: crosshair;
+        }
+
+        /* Responsive Layout for Mobile/Tablets */
+        @media (max-width: 768px) {
+            .workspace {
+                flex-direction: column;
+                justify-content: flex-start;
+                overflow-y: auto; /* Allow scrolling to see both on small screens */
+            }
+            .canvas-wrapper {
+                max-width: 100%;
+                width: 100%;
+                height: auto;
+            }
+            h1 {
+                display: none; /* Hide title on small screens to save space */
+            }
+            .toolbar {
+                padding: 5px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <h1>Çizim Atölyesi</h1>
+        
+        <div class="control-group" id="animalSelector">
+            <button class="active" onclick="setAnimal('cat', this)">Kedi</button>
+            <button onclick="setAnimal('dog', this)">Köpek</button>
+            <button onclick="setAnimal('rabbit', this)">Tavşan</button>
+        </div>
+
+        <div class="control-group" id="colorSelector">
+            <span style="font-size: 0.8rem; color: #666; font-weight: bold;">Kalem:</span>
+            <button class="color-btn active" style="background-color: #2f3542;" onclick="setColor('#2f3542', this)"></button>
+            <button class="color-btn" style="background-color: #ff4757;" onclick="setColor('#ff4757', this)"></button>
+            <button class="color-btn" style="background-color: #1e90ff;" onclick="setColor('#1e90ff', this)"></button>
+            <button class="color-btn" style="background-color: #2ed573;" onclick="setColor('#2ed573', this)"></button>
+            <button class="color-btn" style="background-color: #ffa502;" onclick="setColor('#ffa502', this)"></button>
+            <!-- Silgi: Same as bg color but drawn normally -->
+            <button class="color-btn" style="background-color: #fff; border: 2px dashed #ccc;" onclick="setColor('#ffffff', this)" title="Silgi">🤍</button>
+        </div>
+
+        <button class="btn-clear" onclick="clearStudentCanvas()">Tahtayı Temizle</button>
+    </div>
+
+    <div class="workspace">
+        <!-- Öğretmen (Animasyon) Alanı -->
+        <div class="canvas-wrapper">
+            <div class="canvas-title">İzle ve Öğren 👀</div>
+            <div class="canvas-container">
+                <canvas id="animCanvas" width="800" height="800"></canvas>
+            </div>
+        </div>
+
+        <!-- Öğrenci (Çizim) Alanı -->
+        <div class="canvas-wrapper">
+            <div class="canvas-title">Sen Çiz 🖍️</div>
+            <div class="canvas-container">
+                <canvas id="studentCanvas" width="800" height="800"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. ANIMAL DATA (PATHS & FILLS)
+        // ==========================================
+        const animalsData = {
+            cat: {
+                outlines: [
+                    { id: 'head', d: 'M 250,300 C 250,100 550,100 550,300 C 550,500 250,500 250,300 Z' },
+                    { id: 'leftEar', d: 'M 275,210 C 260,150 250,110 260,100 C 280,90 330,140 355,175' },
+                    { id: 'rightEar', d: 'M 525,210 C 540,150 550,110 540,100 C 520,90 470,140 445,175' },
+                    { id: 'stripes', d: 'M 380,210 C 380,225 375,240 370,250 M 400,205 C 400,230 400,250 400,260 M 420,210 C 420,225 425,240 430,250' },
+                    { id: 'leftEye', d: 'M 318,290 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0' },
+                    { id: 'rightEye', d: 'M 458,290 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0' },
+                    { id: 'nose', d: 'M 390,320 L 410,320 L 400,335 Z' },
+                    { id: 'mouth', d: 'M 400,335 C 400,355 370,360 360,345 M 400,335 C 400,355 430,360 440,345' },
+                    { id: 'whiskersL', d: 'M 310,320 L 220,300 M 305,335 L 210,335 M 310,350 L 220,370' },
+                    { id: 'whiskersR', d: 'M 490,320 L 580,300 M 495,335 L 590,335 M 490,350 L 580,370' },
+                    { id: 'body', d: 'M 285,410 C 180,480 180,680 250,720 L 550,720 C 620,680 620,480 515,410' },
+                    { id: 'leftLeg', d: 'M 360,450 L 360,690 C 360,730 400,730 400,690 L 400,550' },
+                    { id: 'rightLeg', d: 'M 440,450 L 440,690 C 440,730 400,730 400,690 L 400,550' },
+                    { id: 'paws', d: 'M 370,690 L 370,670 M 380,690 L 380,670 M 450,690 L 450,670 M 460,690 L 460,670' },
+                    { id: 'leftHaunch', d: 'M 250,720 C 180,650 220,530 280,500' },
+                    { id: 'rightHaunch', d: 'M 550,720 C 620,650 580,530 520,500' },
+                    { id: 'tail', d: 'M 530,660 C 650,700 750,600 680,500 C 630,430 550,500 600,550 C 620,570 650,550 660,530 C 675,500 640,480 600,520 C 560,560 530,600 530,620 Z' }
+                ],
+                fills: [
+                    { id: 'tail', d: 'M 530,660 C 650,700 750,600 680,500 C 630,430 550,500 600,550 C 620,570 650,550 660,530 C 675,500 640,480 600,520 C 560,560 530,600 530,620 Z', color: '#FCAE54', order: 1 },
+                    { id: 'body', d: 'M 285,410 C 180,480 180,680 250,720 L 550,720 C 620,680 620,480 515,410 C 450,430 350,430 285,410 Z', color: '#FCAE54', order: 2 },
+                    { id: 'chest', d: 'M 340,430 C 460,430 480,550 400,680 C 320,550 340,430 340,430 Z', color: '#FFFFFF', order: 3 },
+                    { id: 'head', d: 'M 250,300 C 250,100 550,100 550,300 C 550,500 250,500 250,300 Z', color: '#FCAE54', order: 4 },
+                    { id: 'leftEar', d: 'M 275,210 C 260,150 250,110 260,100 C 280,90 330,140 355,175 Z', color: '#FCAE54', order: 4 },
+                    { id: 'rightEar', d: 'M 525,210 C 540,150 550,110 540,100 C 520,90 470,140 445,175 Z', color: '#FCAE54', order: 4 },
+                    { id: 'leftInnerEar', d: 'M 285,190 C 275,150 270,120 275,115 C 285,110 320,150 335,175 Z', color: '#FFB6C1', order: 5 },
+                    { id: 'rightInnerEar', d: 'M 515,190 C 525,150 530,120 525,115 C 515,110 480,150 465,175 Z', color: '#FFB6C1', order: 5 },
+                    { id: 'nose', d: 'M 390,320 L 410,320 L 400,335 Z', color: '#FFB6C1', order: 6 },
+                    { id: 'leftEye', d: 'M 318,290 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0', color: '#111111', order: 6 },
+                    { id: 'rightEye', d: 'M 458,290 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0', color: '#111111', order: 6 },
+                    { id: 'leftEyeHighlight', d: 'M 326,285 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 },
+                    { id: 'rightEyeHighlight', d: 'M 466,285 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 },
+                    { id: 'whiskersL_white', d: 'M 310,320 L 220,300 M 305,335 L 210,335 M 310,350 L 220,370', type: 'stroke', color: '#FFFFFF', lineWidth: 4, order: 8 },
+                    { id: 'whiskersR_white', d: 'M 490,320 L 580,300 M 495,335 L 590,335 M 490,350 L 580,370', type: 'stroke', color: '#FFFFFF', lineWidth: 4, order: 8 }
+                ]
+            },
+            dog: {
+                outlines: [
+                    { id: 'head', d: 'M 280,300 C 280,150 520,150 520,300 C 520,450 280,450 280,300 Z' },
+                    { id: 'leftEar', d: 'M 290,220 C 180,250 200,450 310,380' },
+                    { id: 'rightEar', d: 'M 510,220 C 620,250 600,450 490,380' },
+                    { id: 'snout', d: 'M 350,330 C 350,290 450,290 450,330 C 450,380 350,380 350,330 Z' },
+                    { id: 'nose', d: 'M 380,315 L 420,315 L 400,340 Z' },
+                    { id: 'mouth', d: 'M 400,340 C 400,360 380,360 380,350 M 400,340 C 400,360 420,360 420,350' },
+                    { id: 'leftEye', d: 'M 340,260 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0' },
+                    { id: 'rightEye', d: 'M 440,260 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0' },
+                    { id: 'body', d: 'M 310,420 C 200,500 220,700 280,720 L 520,720 C 580,700 600,500 490,420' },
+                    { id: 'leftLeg', d: 'M 360,480 L 360,720' },
+                    { id: 'rightLeg', d: 'M 440,480 L 440,720' },
+                    { id: 'paws', d: 'M 340,720 L 380,720 M 420,720 L 460,720' },
+                    { id: 'tail', d: 'M 550,650 C 650,600 700,450 650,400 C 620,380 580,450 580,550' }
+                ],
+                fills: [
+                    { id: 'tail', d: 'M 550,650 C 650,600 700,450 650,400 C 620,380 580,450 580,550 Z', color: '#8B4513', order: 1 },
+                    { id: 'body', d: 'M 310,420 C 200,500 220,700 280,720 L 520,720 C 580,700 600,500 490,420 Z', color: '#D2B48C', order: 2 },
+                    { id: 'chest', d: 'M 360,450 C 440,450 460,550 400,680 C 340,550 360,450 360,450 Z', color: '#FFFFFF', order: 3 },
+                    { id: 'head', d: 'M 280,300 C 280,150 520,150 520,300 C 520,450 280,450 280,300 Z', color: '#D2B48C', order: 4 },
+                    { id: 'snoutFill', d: 'M 350,330 C 350,290 450,290 450,330 C 450,380 350,380 350,330 Z', color: '#FFF8DC', order: 5 },
+                    { id: 'noseFill', d: 'M 380,315 L 420,315 L 400,340 Z', color: '#2f3542', order: 6 },
+                    { id: 'leftEar', d: 'M 290,220 C 180,250 200,450 310,380 Z', color: '#8B4513', order: 5 },
+                    { id: 'rightEar', d: 'M 510,220 C 620,250 600,450 490,380 Z', color: '#8B4513', order: 5 },
+                    { id: 'leftEye', d: 'M 340,260 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', color: '#111111', order: 6 },
+                    { id: 'rightEye', d: 'M 440,260 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', color: '#111111', order: 6 },
+                    { id: 'leftEyeHighlight', d: 'M 346,256 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 },
+                    { id: 'rightEyeHighlight', d: 'M 446,256 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 }
+                ]
+            },
+            rabbit: {
+                outlines: [
+                    { id: 'head', d: 'M 300,350 C 300,220 500,220 500,350 C 500,480 300,480 300,350 Z' },
+                    { id: 'leftEar', d: 'M 340,240 C 300,50 380,50 380,220' },
+                    { id: 'rightEar', d: 'M 460,240 C 500,50 420,50 420,220' },
+                    { id: 'nose', d: 'M 390,360 L 410,360 L 400,375 Z' },
+                    { id: 'mouth', d: 'M 400,375 C 400,395 380,390 370,380 M 400,375 C 400,395 420,390 430,380' },
+                    { id: 'tooth', d: 'M 395,385 L 395,400 L 405,400 L 405,385 Z' },
+                    { id: 'leftEye', d: 'M 330,310 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0' },
+                    { id: 'rightEye', d: 'M 446,310 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0' },
+                    { id: 'whiskersL', d: 'M 330,350 L 220,330 M 325,365 L 210,365 M 330,380 L 220,400' },
+                    { id: 'whiskersR', d: 'M 470,350 L 580,330 M 475,365 L 590,365 M 470,380 L 580,400' },
+                    { id: 'body', d: 'M 320,460 C 200,500 200,720 300,720 L 500,720 C 600,720 600,500 480,460' },
+                    { id: 'paws', d: 'M 340,720 L 340,680 C 340,660 380,660 380,680 L 380,720 M 420,720 L 420,680 C 420,660 460,660 460,680 L 460,720' },
+                    { id: 'tail', d: 'M 520,650 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0' }
+                ],
+                fills: [
+                    { id: 'tail', d: 'M 520,650 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0', color: '#FFFFFF', order: 1 },
+                    { id: 'body', d: 'M 320,460 C 200,500 200,720 300,720 L 500,720 C 600,720 600,500 480,460 Z', color: '#D3D3D3', order: 2 },
+                    { id: 'belly', d: 'M 360,500 C 440,500 460,650 400,700 C 340,650 360,500 360,500 Z', color: '#FFFFFF', order: 3 },
+                    { id: 'head', d: 'M 300,350 C 300,220 500,220 500,350 C 500,480 300,480 300,350 Z', color: '#D3D3D3', order: 4 },
+                    { id: 'leftEar', d: 'M 340,240 C 300,50 380,50 380,220 Z', color: '#D3D3D3', order: 4 },
+                    { id: 'rightEar', d: 'M 460,240 C 500,50 420,50 420,220 Z', color: '#D3D3D3', order: 4 },
+                    { id: 'leftInnerEar', d: 'M 348,230 C 320,80 370,80 370,210 Z', color: '#FFB6C1', order: 5 },
+                    { id: 'rightInnerEar', d: 'M 452,230 C 480,80 430,80 430,210 Z', color: '#FFB6C1', order: 5 },
+                    { id: 'nose', d: 'M 390,360 L 410,360 L 400,375 Z', color: '#FFB6C1', order: 6 },
+                    { id: 'tooth', d: 'M 395,385 L 395,400 L 405,400 L 405,385 Z', color: '#FFFFFF', order: 6 },
+                    { id: 'leftEye', d: 'M 330,310 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0', color: '#111111', order: 6 },
+                    { id: 'rightEye', d: 'M 446,310 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0', color: '#111111', order: 6 },
+                    { id: 'leftEyeHighlight', d: 'M 338,305 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 },
+                    { id: 'rightEyeHighlight', d: 'M 454,305 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0', color: '#FFFFFF', order: 7 },
+                    { id: 'whiskersL_white', d: 'M 330,350 L 220,330 M 325,365 L 210,365 M 330,380 L 220,400', type: 'stroke', color: '#FFFFFF', lineWidth: 4, order: 8 },
+                    { id: 'whiskersR_white', d: 'M 470,350 L 580,330 M 475,365 L 590,365 M 470,380 L 580,400', type: 'stroke', color: '#FFFFFF', lineWidth: 4, order: 8 }
+                ]
+            }
+        };
+
+        // ==========================================
+        // 2. ANIMATION ENGINE (Teacher Canvas)
+        // ==========================================
+        const animCanvas = document.getElementById('animCanvas');
+        const ctxAnim = animCanvas.getContext('2d');
+        const svgNS = "http://www.w3.org/2000/svg";
+        
+        let currentOutlines = [];
+        let currentFills = [];
+        let loopStartTime = null;
+        let animationFrameId = null;
+        
+        let T_OUTLINE = 0;
+        let T_PAUSE = 600;
+        let T_FILL_START = 0;
+        let T_HOLD_START = 0;
+        let T_HOLD = 2000;
+        let T_FADEOUT_START = 0;
+        let T_FADEOUT = 1000;
+        let TOTAL_TIME = 0;
+
+        function easeInOutSine(x) {
+            return -(Math.cos(Math.PI * x) - 1) / 2;
+        }
+
+        function loadAnimal(animalKey) {
+            const data = animalsData[animalKey];
+            currentOutlines = [];
+            currentFills = [];
+            
+            let currentTime = 0;
+
+            // Prepare outlines and calc times
+            data.outlines.forEach(o => {
+                const p = document.createElementNS(svgNS, "path");
+                p.setAttribute("d", o.d);
+                let length = p.getTotalLength();
+                let duration = Math.max(300, length * 2.5); // Drawing speed
+                
+                currentOutlines.push({
+                    ...o,
+                    length: length,
+                    duration: duration,
+                    startTime: currentTime,
+                    endTime: currentTime + duration,
+                    path2D: new Path2D(o.d)
+                });
+                currentTime += duration + 50; // 50ms pause between strokes
+            });
+
+            T_OUTLINE = currentTime;
+            T_FILL_START = T_OUTLINE + T_PAUSE;
+            
+            let maxFillEnd = 0;
+            data.fills.forEach(f => {
+                let startTime = T_FILL_START + (f.order - 1) * 350;
+                let duration = 600;
+                let endTime = startTime + duration;
+                if (endTime > maxFillEnd) maxFillEnd = endTime;
+
+                currentFills.push({
+                    ...f,
+                    startTime: startTime,
+                    duration: duration,
+                    endTime: endTime,
+                    path2D: new Path2D(f.d)
+                });
+            });
+
+            T_HOLD_START = maxFillEnd;
+            T_FADEOUT_START = T_HOLD_START + T_HOLD;
+            TOTAL_TIME = T_FADEOUT_START + T_FADEOUT;
+
+            // Reset animation loop
+            loopStartTime = null;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            ctxAnim.clearRect(0, 0, 800, 800);
+            renderAnimation(performance.now());
+        }
+
+        function renderAnimation(timestamp) {
+            if (!loopStartTime) loopStartTime = timestamp;
+            let elapsed = timestamp - loopStartTime;
+
+            if (elapsed > TOTAL_TIME) {
+                loopStartTime = timestamp;
+                elapsed = 0;
+            }
+
+            ctxAnim.clearRect(0, 0, 800, 800);
+
+            let globalAlpha = 1;
+            if (elapsed > T_FADEOUT_START) {
+                globalAlpha = 1 - ((elapsed - T_FADEOUT_START) / T_FADEOUT);
+            }
+            globalAlpha = Math.max(0, globalAlpha);
+
+            // 1. Fills
+            if (elapsed > T_OUTLINE) {
+                currentFills.forEach(f => {
+                    if (elapsed >= f.startTime) {
+                        let fillProgress = 1;
+                        if (elapsed < f.endTime) {
+                            fillProgress = easeInOutSine((elapsed - f.startTime) / f.duration);
+                        }
+                        ctxAnim.globalAlpha = fillProgress * globalAlpha;
+
+                        if (f.type === 'stroke') {
+                            ctxAnim.strokeStyle = f.color;
+                            ctxAnim.lineWidth = f.lineWidth || 4;
+                            ctxAnim.lineCap = 'round';
+                            ctxAnim.lineJoin = 'round';
+                            ctxAnim.setLineDash([]);
+                            ctxAnim.stroke(f.path2D);
+                        } else {
+                            ctxAnim.fillStyle = f.color;
+                            ctxAnim.fill(f.path2D);
+                        }
+                    }
+                });
+            }
+
+            // 2. Outlines
+            ctxAnim.globalAlpha = globalAlpha; 
+            ctxAnim.strokeStyle = '#2f3542'; 
+            ctxAnim.lineWidth = 4;
+            ctxAnim.lineCap = 'round';
+            ctxAnim.lineJoin = 'round';
+
+            currentOutlines.forEach(o => {
+                if (elapsed >= o.startTime) {
+                    if (elapsed >= o.endTime) {
+                        ctxAnim.setLineDash([]);
+                        ctxAnim.stroke(o.path2D);
+                    } else {
+                        let progress = easeInOutSine((elapsed - o.startTime) / o.duration);
+                        let currentLength = progress * o.length;
+                        ctxAnim.setLineDash([o.length, o.length]);
+                        ctxAnim.lineDashOffset = o.length - currentLength;
+                        ctxAnim.stroke(o.path2D);
+                    }
+                }
+            });
+
+            animationFrameId = requestAnimationFrame(renderAnimation);
+        }
+
+        // ==========================================
+        // 3. DRAWING ENGINE (Student Canvas)
+        // ==========================================
+        const drawCanvas = document.getElementById('studentCanvas');
+        const ctxDraw = drawCanvas.getContext('2d');
+        
+        // Initial Draw Settings
+        ctxDraw.lineWidth = 6;
+        ctxDraw.lineCap = 'round';
+        ctxDraw.lineJoin = 'round';
+        ctxDraw.strokeStyle = '#2f3542';
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // Convert DOM coordinates to canvas 800x800 internal coordinates accurately
+        function getPointerPos(e) {
+            const rect = drawCanvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            // Handle touch events
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            const scaleX = drawCanvas.width / rect.width;
+            const scaleY = drawCanvas.height / rect.height;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            e.preventDefault(); // Prevent touch scrolling
+            isDrawing = true;
+            const pos = getPointerPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            
+            // Draw a single dot if just clicking/tapping
+            ctxDraw.beginPath();
+            ctxDraw.arc(lastX, lastY, ctxDraw.lineWidth / 2, 0, Math.PI * 2);
+            ctxDraw.fillStyle = ctxDraw.strokeStyle;
+            ctxDraw.fill();
+            ctxDraw.beginPath(); 
+        }
+
+        function draw(e) {
+            e.preventDefault(); // Prevent touch scrolling
+            if (!isDrawing) return;
+            const pos = getPointerPos(e);
+            
+            ctxDraw.beginPath();
+            ctxDraw.moveTo(lastX, lastY);
+            ctxDraw.lineTo(pos.x, pos.y);
+            ctxDraw.stroke();
+            
+            lastX = pos.x;
+            lastY = pos.y;
+        }
+
+        function stopDrawing(e) {
+            if(e) e.preventDefault();
+            isDrawing = false;
+        }
+
+        // Mouse Events
+        drawCanvas.addEventListener('mousedown', startDrawing);
+        drawCanvas.addEventListener('mousemove', draw);
+        drawCanvas.addEventListener('mouseup', stopDrawing);
+        drawCanvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch Events (Akıllı tahta, tablet, telefon için)
+        drawCanvas.addEventListener('touchstart', startDrawing, { passive: false });
+        drawCanvas.addEventListener('touchmove', draw, { passive: false });
+        drawCanvas.addEventListener('touchend', stopDrawing, { passive: false });
+        drawCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
+
+        // ==========================================
+        // 4. UI CONTROLS
+        // ==========================================
+        function setAnimal(animal, btn) {
+            // Update active button state
+            document.querySelectorAll('#animalSelector button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Load and play the animal animation
+            loadAnimal(animal);
+        }
+
+        function setColor(color, btn) {
+            document.querySelectorAll('#colorSelector button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            ctxDraw.strokeStyle = color;
+            // If it's the eraser (white), make the brush bigger
+            if (color === '#ffffff') {
+                ctxDraw.lineWidth = 25;
+            } else {
+                ctxDraw.lineWidth = 6;
+            }
+        }
+
+        function clearStudentCanvas() {
+            ctxDraw.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        }
+
+        // Start initial animation (Cat)
+        loadAnimal('cat');
+
+    </script>
+</body>
+</html>
