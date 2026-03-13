@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIR Floortime 101 & 201 Masterclass - Gemini AI Sürümü</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        floortime: {
+                            teal: '#14b8a6', tealDark: '#0f766e', tealGlow: 'rgba(20, 184, 166, 0.4)',
+                            blue: '#38bdf8', blueDark: '#0369a1',
+                            white: '#f8fafc', bg: '#f8fafc', accent: '#f59e0b',
+                            glass: 'rgba(255, 255, 255, 0.85)'
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], serif: ['Georgia', 'serif'] },
+                    boxShadow: { 'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)', 'glow': '0 0 20px rgba(20, 184, 166, 0.3)' }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%); color: #1e293b; min-height: 100vh; overflow: hidden; }
+        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .bounce { animation: bounce 2s infinite; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .prose h3 { color: #0f766e; margin-top: 2.5rem; margin-bottom: 1.25rem; font-weight: 800; font-size: 1.75rem; letter-spacing: -0.025em; }
+        .prose h4 { color: #0369a1; margin-top: 2rem; margin-bottom: 1rem; font-weight: 700; font-size: 1.25rem; }
+        .prose p { margin-bottom: 1.5rem; line-height: 1.8; color: #475569; font-size: 1.125rem; }
+        .prose ul { list-style-type: none; padding-left: 0; margin-bottom: 2rem; }
+        .prose li { margin-bottom: 1rem; line-height: 1.7; position: relative; padding-left: 1.75rem; color: #334155;}
+        .prose li::before { content: "✦"; position: absolute; left: 0; color: #14b8a6; font-weight: bold; }
+        
+        .clinic-note { background: linear-gradient(to right, #f0f9ff, #ffffff); border-left: 5px solid #0284c7; padding: 1.5rem 2rem; border-radius: 0.5rem 1rem 1rem 0.5rem; margin: 2rem 0; font-style: italic; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); position: relative; }
+        .clinic-note::before { content: "💡 Klinik İpucu"; display: block; font-style: normal; font-weight: 800; color: #0284c7; margin-bottom: 0.5rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        
+        .chat-bubble-user { background: #0f766e; color: white; border-radius: 1rem 1rem 0 1rem; }
+        .chat-bubble-ai { background: #f1f5f9; color: #1e293b; border-radius: 1rem 1rem 1rem 0; border: 1px solid #e2e8f0; }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #94a3b8; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        .ai-gradient-text { background: linear-gradient(to right, #8b5cf6, #3b82f6, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+        .ai-border-glow { position: relative; }
+        .ai-border-glow::before { content: ""; position: absolute; inset: -2px; border-radius: inherit; background: linear-gradient(45deg, #8b5cf6, #3b82f6, #14b8a6); z-index: -1; filter: blur(8px); opacity: 0; transition: opacity 0.3s; }
+        .ai-border-glow:hover::before { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const { useState, useEffect, useRef } = React;
+
+        // --- GEMINI API KEY ---
+        // Environment runtime will supply this. No validation logic added.
+        const apiKey = ""; 
+
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: 'AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU',
+            authDomain: 'shaped-totem-481514-c5.firebaseapp.com',
+            projectId: 'shaped-totem-481514-c5',
+            storageBucket: 'shaped-totem-481514-c5.firebasestorage.app',
+            messagingSenderId: '519295049418',
+            appId: '1:519295049418:web:7d04e18c4ea36bc088de33',
+            measurementId: 'G-10ENZQDXK1'
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const APP_ID = 'floortime-master-app'; 
+
+        // --- PCM to WAV CONVERTER UTILITY FOR TTS ---
+        const pcmToWav = (pcmData, sampleRate) => {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const wavHeader = new ArrayBuffer(44);
+            const view = new DataView(wavHeader);
+
+            const writeString = (view, offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcmData.byteLength, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcmData.byteLength, true);
+
+            const wavBuffer = new Uint8Array(44 + pcmData.byteLength);
+            wavBuffer.set(new Uint8Array(wavHeader), 0);
+            wavBuffer.set(new Uint8Array(pcmData), 44);
+            return wavBuffer;
+        };
+
+        // --- COURSE DATA ---
+        const COURSE_DATA = [
+            {
+                id: 0, level: "101", title: "Modül 1: DIR Modeli ve Nörolojik Temeller",
+                content: `
+                    <h3>DIR Paradigmasına Derinlemesine Giriş</h3>
+                    <p>Klasik davranışçı yaklaşımlar genellikle gözlemlenebilir davranışlara odaklanır ve bu davranışları ödül/ceza mekanizmalarıyla şekillendirmeye çalışır. Dr. Stanley Greenspan tarafından geliştirilen <strong>DIR modeli</strong> ise "davranışın altındaki nedeni" arar. Çocuğun sinir sistemini, duyusal işlemleme kapasitesini ve duygusal dünyasını merkeze alır.</p>
+                    <h4>D (Developmental - Gelişimsel Boyut)</h4>
+                    <p>Gelişimsel boyut, çocuğun kronolojik yaşından ziyade <strong>gelişimsel yaşına</strong> odaklanır. Eğer bir çocuk regüle olup bizimle bağ kuramıyorsa (FEDC 1 ve 2), ona renkleri eşlemeyi veya mantıksal soruları cevaplamayı öğretmek (FEDC 6) beyhude ve stres verici bir çabadır.</p>
+                    <h4>I (Individual Differences - Bireysel Farklılıklar)</h4>
+                    <ul>
+                        <li><strong>Duyusal İşlemleme:</strong> Çocuk seslere aşırı mı duyarlı (Hiper-reaktif) yoksa acıyı/sesi hissetmiyor mu (Hipo-reaktif)?</li>
+                        <li><strong>Motor Planlama (Praksis):</strong> Çocuk aklından geçen bir eylemi vücuduna dökebiliyor mu?</li>
+                    </ul>
+                    <div class="clinic-note">Sürekli kendi etrafında dönen veya nesneleri sıraya dizen bir çocuk "yaramaz" değildir. O an sinir sistemini regüle etmeye çalışan, duyusal arayış içinde olan bir çocuktur.</div>
+                    <h4>R (Relationship-based - İlişki Temelli Boyut)</h4>
+                    <p>Öğrenmenin yakıtı <strong>duygudur (Affect)</strong>. Çocuklar, nörolojik olarak güvende hissetmedikleri ve keyif almadıkları bir ortamda yeni nöral ağlar kuramazlar.</p>
+                `,
+                quiz: [
+                    { q: "DIR modelinde 'I' (Bireysel Farklılıklar) kapsamına hangisi GİRMEZ?", options: ["Motor planlama becerisi (Praksis)", "Duyusal işlemleme profili", "Çocuğun okuldaki matematik notları", "İşitsel ve görsel reaktivite durumu"], answer: 2 }
+                ]
+            },
+            {
+                id: 1, level: "101", title: "Modül 2: Floortime Uygulama Prensipleri",
+                content: `
+                    <h3>Floortime: Çocuğun Dünyasına Açılan Kapı</h3>
+                    <p>Floortime (Yerde Oyun), DIR modelinin klinik uygulama biçimidir. Amacı; çocuğun liderliğini takip ederek onun dünyasına girmek ve ardından bu etkileşimi genişleterek çocuğu gelişim merdivenlerinde yukarı taşımaktır.</p>
+                    <h4>Temel Prensip 1: Çocuğun Liderliğini Takip Etmek</h4>
+                    <p>Çocuğun liderliğini takip etmek <em>"sessizce izlemek" demek değildir</em>. Onun eylemine, kendi duygusal tonunuzu (affect) katarak <strong>katılmaktır</strong>.</p>
+                    <h4>Temel Prensip 2: Etkileşim Halkasını Açmak ve Kapatmak</h4>
+                    <p>İletişim bir masa tenisi gibidir. Topu atarsınız, karşı taraf yanıt verir, siz tekrar karşılık verirsiniz. Floortime'da asıl amaç bu halkaların sayısını artırmak ve kesintisiz bir akış (continuous flow) yaratmaktır.</p>
+                    <div class="clinic-note">Uygulayıcı Hatası: Çocuğa sürekli sorular sorarak ("Bu ne renk?") etkileşim başlattığını sanmak. Gerçek etkileşim jestlerle ve mimiklerle başlar.</div>
+                `,
+                quiz: [
+                    { q: "'Çocuğun liderliğini takip etmek' ifadesi Floortime'da ne anlama gelir?", options: ["Sadece izlemek ve müdahale etmemek.", "Çocuğun doğal ilgisine odaklanıp, o ilgi alanına duygusal bir tonda ortak olmak.", "Kuralları kabul edip oyuncakları dizmek."], answer: 1 }
+                ]
+            },
+            {
+                id: 2, level: "201", title: "Modül 3: 201'e Giriş - FEDC 1, 2, 3",
+                content: `
+                    <h3>201 Seviyesi: Temel Fonksiyonel Basamaklar (FEDC)</h3>
+                    <h4>FEDC 1: Regülasyon ve Ortak Dikkat</h4>
+                    <p>Duyusal olarak bombardımana uğramış bir sinir sistemi "Savaş, Kaç veya Don" modundadır. <strong>Ko-Regülasyon</strong> stratejisi ile önce terapist kendi sinir sistemini sakinleştirir, ardından çocuğa ihtiyacı olan derin bası veya ritmik hareketi sunar.</p>
+                    <h4>FEDC 2: Bağ Kurma ve İlişki</h4>
+                    <p>İnsan dünyasının nesnelerden daha cazip olduğunu fark etmesidir. Oyuncakları aradan çıkarın! En büyük oyuncak SİZSİNİZ. Eğer seansta "Neşe" (Joy) yoksa, Floortime yapmıyorsunuz demektir.</p>
+                    <h4>FEDC 3: İki Yönlü Amaçlı İletişim</h4>
+                    <p>Sebep-sonuç ilişkisinin keşfidir. Jestler ve mimiklerle karşılıklı diyaloglar başlar. Strateji: Çocuğun rastgele görünen her jestine <strong>anlam yükleyin</strong>.</p>
+                `,
+                quiz: [
+                    { q: "Regüle olmayan bir çocukla çalışırken ilk hedef nedir?", options: ["Kelimeleri tekrar ettirmek", "İlgisini çekmek için oyuncaklar çıkarmak", "Ko-regülasyon sağlayarak güven hissi vermek"], answer: 2 }
+                ]
+            },
+            {
+                id: 3, level: "201", title: "Modül 4: FEDC 4 - Problem Çözme ve 'Playful Obstruction'",
+                content: `
+                    <h3>İleri Seviye 201: Benliğin Doğuşu ve Playful Obstruction</h3>
+                    <h4>FEDC 4: Karmaşık İletişim ve Ortak Problem Çözme</h4>
+                    <p>Çocuk artık bir dizi eylemi birleştirir. İstediği kurabiyeyi almak için elinizden tutar, sizi mutfağa çeker, dolabı gösterir ve sizin yüzünüze bakar. Benlik algısı bu aşamada oturur.</p>
+                    <h4>Altın Terapötik Strateji: Playful Obstruction (Oyuncu Tıkanıklık)</h4>
+                    <p>Çocuğun sürekli tekrar eden ezbere oyun kalıplarını kırmak için araya "oyuncu ve sevimli engeller" koymaktır. Amacımız çocuğu sinirlendirmek değil, onun yeni bir etkileşim halkası açmasını sağlamaktır.</p>
+                    <div class="clinic-note">Eğer çocuk engelle karşılaştığında ağlama krizine (FEDC 1) giriyorsa, tıkanıklık çok "sert" olmuş demektir. Tıkanıklık her zaman tolere edilebilir olmalıdır.</div>
+                `,
+                quiz: [
+                    { q: "'Oyuncu Tıkanıklık' (Playful Obstruction) tekniğinin temel amacı nedir?", options: ["Çocuğu sinirlendirerek sınırlarını öğretmek.", "Ezberlenmiş kalıplarını kırıp, yeni bir etkileşim başlatarak problem çözmesini teşvik etmek.", "İstediğimiz oyuna geçmek."], answer: 1 }
+                ]
+            },
+            {
+                id: 4, level: "201", title: "Modül 5: FEDC 5 ve 6 - Sembolik Oyun ve Mantık",
+                content: `
+                    <h3>Zihnin Özgürleşmesi: Fikirler ve Mantık</h3>
+                    <h4>FEDC 5: Duygusal Fikirler ve Sembolik Oyun</h4>
+                    <p>Çocuğun iç dünyası sembolik oyunla dışarı yansır. Bir blok roket olur, oyuncak ayı hastalanır. <strong>Strateji:</strong> Oyunu Genişletin (Expand). "Aaa ayıcık çok yedi, karnı mı ağrıdı?" diyerek oyuna yeni bir duygu katın.</p>
+                    <h4>FEDC 6: Mantıksal Düşünme</h4>
+                    <p>Gerçeklik testi başlar. Çocuk fikirler arasında mantıksal bağlantılar kurar. "Neden?" sorusu anahtardır. <strong>Strateji:</strong> Fikirlerine mantıksal meydan okuyun. "Sence roket bozulunca uzaylılar ne hissetti?".</p>
+                `,
+                quiz: [
+                    { q: "Bir çocuğun oyuncak bebeğine hayali biberonla süt içirmesi hangi basamaktır?", options: ["FEDC 3 (İki Yönlü İletişim)", "FEDC 5 (Sembolik Oyun / Duygusal Fikirler)", "FEDC 1 (Regülasyon)"], answer: 1 }
+                ]
+            },
+            {
+                id: 5, level: "201", title: "Modül 6: Sahada Uygulama - Affect Ustalığı",
+                content: `
+                    <h3>201 Uzmanlığı: Duygusal Tonun (Affect) Kullanımı</h3>
+                    <h4>Affect Eşleşmesi (Pacing)</h4>
+                    <p>Hipo-reaktif (düşük enerjili) bir çocuğu uyandırmak için <strong>yüksek, canlı ve değişken bir Affect</strong> kullanılır. Ancak, Hiper-reaktif (kolayca aşırı uyarılan) bir çocukta yüksek Affect kullanırsanız çocuk krize girer. Burada <strong>sakin, fısıltılı, ritmik bir Affect</strong> kullanılmalıdır.</p>
+                    <h4>Sahte (Fake) Duygu Tuzağı</h4>
+                    <p>Robotik bir şekilde, içten olmayan bir tonda "Aferin" demek beyin tarafından 'güvensiz' olarak algılanır. Otantik olun. Coşkunuz mimiklerinize gerçek bir şekilde yansısın.</p>
+                `,
+                quiz: [
+                    { q: "Düşük enerjili (hipo-reaktif) bir çocuğu etkileşime çekmek için nasıl bir Affect kullanılmalıdır?", options: ["Çok yavaş ve hareketsiz.", "Canlı, enerjik ve değişken tonlamalı.", "Tamamen sessiz kalınmalı."], answer: 1 }
+                ]
+            },
+            {
+                id: 6, level: "201", title: "Modül 7: Vaka Formülasyonu ve Final",
+                content: `
+                    <h3>Masterclass Finali: Vaka Analizi (Ege, 4 Yaş)</h3>
+                    <ul>
+                        <li><strong>D (Gelişimsel):</strong> FEDC 1 ve 2 zayıf. Göz teması çok kısıtlı.</li>
+                        <li><strong>I (Bireysel Farklılıklar):</strong> İşitsel hiper-reaktif (seslerden korkuyor). Vestibüler hipo-reaktif (sürekli dönme ihtiyacı var).</li>
+                        <li><strong>R (İlişki):</strong> Ebeveynler sürekli komut vererek çocuğu strese sokuyor.</li>
+                    </ul>
+                    <h4>Floortime Müdahale Planı</h4>
+                    <p><strong>1. Regülasyon:</strong> Ege'nin dönme (vestibüler) arayışına <strong>katılın</strong>. O dönerken ritmik bir şekilde "Döööön" diyerek sesinizi ekleyin.</p>
+                    <p><strong>2. Bağ Kurma:</strong> Battaniyede sallama oyunu başlatın. Sallamayı aniden durdurun (Playful Obstruction). Gözünüze bakıp tekrar sallanmak istediğini belirtmesini bekleyin.</p>
+                    <div class="clinic-note">Eğitimi tamamladınız! Bu vakayı anladıysanız klinik sahaya hazırsınız demektir.</div>
+                `,
+                quiz: [
+                    { q: "Ege battaniyede sallanırken uygulayıcının aniden durup beklemesi hangi stratejiye örnektir?", options: ["Mola cezası vermek", "Affect eşleşmesi", "Oyuncu Tıkanıklık (Playful Obstruction)"], answer: 2 }
+                ]
+            }
+        ];
+
+        // --- ICONS ---
+        const CheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+        const Lock = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+        const PlayCircle = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>;
+        const Sparkles = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-yellow-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 5.8a2 2 0 001.3 1.3L21 12l-5.8 1.9a2 2 0 00-1.3 1.3L12 21l-1.9-5.8a2 2 0 00-1.3-1.3L3 12l5.8-1.9a2 2 0 001.3-1.3L12 3z"/></svg>;
+        
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+            
+            // Core
+            const [activeModuleId, setActiveModuleId] = useState(0);
+            const [unlockedModules, setUnlockedModules] = useState([0]); 
+            const [completedModules, setCompletedModules] = useState([]); 
+            const [quizAnswers, setQuizAnswers] = useState({}); 
+            const [quizResult, setQuizResult] = useState(null); 
+            const [userNotes, setUserNotes] = useState({}); 
+            const [currentNote, setCurrentNote] = useState('');
+            
+            // AI Feature States
+            const [isAiOpen, setIsAiOpen] = useState(false);
+            const [aiMessages, setAiMessages] = useState([]);
+            const [aiInput, setAiInput] = useState('');
+            const [isAiLoading, setIsAiLoading] = useState(false);
+            
+            const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+            const [isAnalyzingNote, setIsAnalyzingNote] = useState(false);
+            const [noteAnalysisResult, setNoteAnalysisResult] = useState('');
+            
+            const [dynamicQuiz, setDynamicQuiz] = useState(null);
+            const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+            
+            const chatEndRef = useRef(null);
+            const audioRef = useRef(null);
+
+            const activeModule = COURSE_DATA.find(m => m.id === activeModuleId);
+            const progressPercentage = Math.round((completedModules.length / COURSE_DATA.length) * 100);
+
+            // Auth & DB Initialization
+            useEffect(() => {
+                const init = async () => {
+                    try { await signInAnonymously(auth); } catch (e) { setIsFirebaseReady(true); }
+                };
+                init();
+                const unsub = onAuthStateChanged(auth, u => { setUser(u); setIsFirebaseReady(true); });
+                return () => unsub();
+            }, []);
+
+            useEffect(() => {
+                if (!user || !db) return;
+                const unsub = onSnapshot(doc(db, 'artifacts', APP_ID, 'users', user.uid), docSnap => {
+                    if (docSnap.exists()) {
+                        const d = docSnap.data();
+                        if (d.unlockedModules) setUnlockedModules(d.unlockedModules);
+                        if (d.completedModules) setCompletedModules(d.completedModules);
+                        if (d.notes) setUserNotes(d.notes);
+                    }
+                });
+                return () => unsub();
+            }, [user]);
+
+            // Reset specific states on module change
+            useEffect(() => {
+                setQuizAnswers({});
+                setQuizResult(null);
+                setNoteAnalysisResult('');
+                setDynamicQuiz(null);
+                setCurrentNote(userNotes[activeModuleId] || '');
+                setAiMessages([{ role: 'ai', text: `Merhaba! "${activeModule.title}" modülündeyiz. Klinik gözlemlerle ilgili sorularınızı bana (Gemini) yöneltebilirsiniz.` }]);
+                if(audioRef.current) { audioRef.current.pause(); setIsPlayingTTS(false); }
+            }, [activeModuleId, userNotes]);
+
+            useEffect(() => {
+                if(chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }, [aiMessages, isAiOpen]);
+
+            const saveProgress = async (unlocked, completed) => {
+                if (user && db) await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { unlockedModules: unlocked, completedModules: completed }, { merge: true });
+            };
+
+            const saveNote = async () => {
+                const updatedNotes = { ...userNotes, [activeModuleId]: currentNote };
+                if (user && db) await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { notes: updatedNotes }, { merge: true });
+            };
+
+            // ---- GEMINI AI FEATURES ----
+
+            // 1. Text To Speech Feature
+            const playAudioSummary = async () => {
+                if(isPlayingTTS && audioRef.current) {
+                    audioRef.current.pause();
+                    setIsPlayingTTS(false);
+                    return;
+                }
+                setIsPlayingTTS(true);
+                try {
+                    const cleanText = activeModule.content.replace(/<[^>]*>?/gm, '');
+                    const promptText = `Lütfen şu klinik eğitim metnini, motive edici ve akıcı bir tonda oku: ${cleanText.substring(0, 600)}`;
+                    const payload = {
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await res.json();
+                    if(!data.candidates) throw new Error("TTS failed");
+                    
+                    const inlineData = data.candidates[0].content.parts[0].inlineData;
+                    const mimeType = inlineData.mimeType;
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
+
+                    const binaryString = atob(inlineData.data);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                    
+                    const wavData = pcmToWav(bytes.buffer, sampleRate);
+                    const blob = new Blob([wavData], { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    audioRef.current = new Audio(url);
+                    audioRef.current.onended = () => setIsPlayingTTS(false);
+                    audioRef.current.play();
+                } catch (err) {
+                    console.error("TTS Error:", err);
+                    setIsPlayingTTS(false);
+                }
+            };
+
+            // 2. Clinical Notes Analyzer
+            const analyzeNotesWithAI = async () => {
+                if (!currentNote.trim()) return;
+                setIsAnalyzingNote(true);
+                setNoteAnalysisResult('');
+                try {
+                    const prompt = `Aşağıdaki klinik gözlem notlarını DIR Floortime teorisine göre profesyonelce analiz et. Kısaca güçlü yanları vurgula ve yapıcı, nokta atışı 1-2 strateji önerisi ver:\n\nNot: "${currentNote}"`;
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "Sen şefkatli ve uzman bir DIR Floortime klinik süpervizörüsün." }] } })
+                    });
+                    const data = await res.json();
+                    setNoteAnalysisResult(data.candidates[0].content.parts[0].text);
+                } catch (err) {
+                    setNoteAnalysisResult('Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+                } finally {
+                    setIsAnalyzingNote(false);
+                }
+            };
+
+            // 3. Dynamic Quiz Generator (Structured JSON)
+            const generateAiQuiz = async () => {
+                setIsGeneratingQuiz(true);
+                setDynamicQuiz(null);
+                setQuizAnswers({});
+                setQuizResult(null);
+                try {
+                    const prompt = `DIR Floortime "${activeModule.title}" konusuyla ilgili klinisyenleri test edecek, pratik bir klinik vaka senaryosu içeren 1 adet zorlayıcı çoktan seçmeli soru üret.`;
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    q: { type: "STRING" },
+                                    options: { type: "ARRAY", items: { type: "STRING" } },
+                                    answer: { type: "INTEGER" }
+                                }
+                            }
+                        }
+                    };
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    const quizData = JSON.parse(data.candidates[0].content.parts[0].text);
+                    setDynamicQuiz([quizData]); // Wrap in array to match existing map logic
+                } catch (err) {
+                    console.error("Quiz generation failed", err);
+                } finally {
+                    setIsGeneratingQuiz(false);
+                }
+            };
+
+            // 4. Chat Supervisor
+            const handleAiSubmit = async (e) => {
+                e.preventDefault();
+                if(!aiInput.trim()) return;
+                const newUserMsg = { role: 'user', text: aiInput };
+                setAiMessages(prev => [...prev, newUserMsg]);
+                setAiInput('');
+                setIsAiLoading(true);
+
+                try {
+                    const systemInstruction = `Sen Gemini tabanlı uzman bir DIR Floortime süpervizörüsün. Kullanıcı "${activeModule.title}" modülünde. Yanıtlarını Türkçe, kısa, bilimsel ve yol gösterici olarak ver.`;
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: newUserMsg.text }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
+                    });
+                    const data = await res.json();
+                    setAiMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+                } catch (err) {
+                    setAiMessages(prev => [...prev, { role: 'ai', text: "Yapay zeka sistemine şu an ulaşılamıyor." }]);
+                } finally {
+                    setIsAiLoading(false);
+                }
+            };
+
+            const submitQuiz = () => {
+                const targetQuiz = dynamicQuiz || activeModule.quiz;
+                let correctCount = 0;
+                targetQuiz.forEach((q, idx) => { if (quizAnswers[idx] === q.answer) correctCount++; });
+
+                if (correctCount === targetQuiz.length) {
+                    setQuizResult('success');
+                    let newCompleted = [...completedModules];
+                    if (!completedModules.includes(activeModuleId)) newCompleted.push(activeModuleId);
+                    
+                    const nextModuleId = activeModuleId + 1;
+                    let newUnlocked = [...unlockedModules];
+                    if (nextModuleId < COURSE_DATA.length && !unlockedModules.includes(nextModuleId)) newUnlocked.push(nextModuleId);
+                    
+                    setCompletedModules(newCompleted);
+                    setUnlockedModules(newUnlocked);
+                    saveProgress(newUnlocked, newCompleted);
+                } else {
+                    setQuizResult('fail');
+                }
+            };
+
+            if (!isFirebaseReady) return <div className="min-h-screen bg-floortime-bg flex items-center justify-center"><div className="w-16 h-16 border-4 border-floortime-teal border-t-transparent rounded-full animate-spin"></div></div>;
+
+            const targetQuiz = dynamicQuiz || activeModule.quiz;
+
+            return (
+                <div className="h-screen flex flex-col lg:flex-row font-sans relative">
+                    {/* SIDEBAR */}
+                    <aside className="w-full lg:w-[350px] glass-panel flex flex-col z-20 shadow-xl border-r border-slate-200 bg-white/90">
+                        <div className="p-8 border-b border-slate-200">
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Floortime<span className="ai-gradient-text">AI</span></h1>
+                            <p className="text-xs text-slate-500 font-bold uppercase mt-2">Gemini Masterclass</p>
+                            
+                            <div className="mt-8">
+                                <div className="flex justify-between items-end mb-2">
+                                    <span className="text-xs font-black text-slate-400 uppercase">Akademik İlerleme</span>
+                                    <span className="text-2xl font-black text-floortime-tealDark">%{progressPercentage}</span>
+                                </div>
+                                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                    <div className="bg-gradient-to-r from-floortime-teal to-blue-500 h-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            {COURSE_DATA.map((mod) => {
+                                const isUnlocked = unlockedModules.includes(mod.id);
+                                const isCompleted = completedModules.includes(mod.id);
+                                const isActive = activeModuleId === mod.id;
+
+                                return (
+                                    <button key={mod.id} onClick={() => isUnlocked && setActiveModuleId(mod.id)} disabled={!isUnlocked}
+                                        className={`w-full text-left p-4 rounded-xl flex items-center gap-3 transition-all ${isActive ? 'bg-floortime-teal/10 border-2 border-floortime-teal shadow-sm' : isUnlocked ? 'bg-white border-2 border-transparent hover:border-slate-200' : 'opacity-50 grayscale'}`}
+                                    >
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isCompleted ? 'bg-emerald-500 text-white' : isActive ? 'bg-floortime-teal text-white' : 'bg-slate-200 text-slate-400'}`}>
+                                            {isCompleted ? <CheckCircle /> : isUnlocked ? <PlayCircle /> : <Lock />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase truncate">{mod.title}</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </aside>
+
+                    {/* MAIN CONTENT AREA */}
+                    <main className="flex-1 h-full overflow-y-auto bg-transparent p-6 md:p-12 relative scroll-smooth">
+                        <div className="max-w-4xl mx-auto pb-40 fade-in">
+                            
+                            {/* Feature 1: TTS AI Button */}
+                            <div className="flex items-center justify-between mb-8">
+                                <span className="bg-floortime-blue/20 text-floortime-blueDark text-xs font-black px-4 py-2 rounded-xl uppercase border border-floortime-blue/30">
+                                    {activeModule.level} SEVİYESİ
+                                </span>
+                                <button 
+                                    onClick={playAudioSummary}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-md ai-border-glow ${isPlayingTTS ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    {isPlayingTTS ? (
+                                        <><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" /></svg> Durdur</>
+                                    ) : (
+                                        <><Sparkles /> Modül Özetini Dinle (Gemini TTS)</>
+                                    )}
+                                </button>
+                            </div>
+
+                            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-8">{activeModule.title}</h2>
+                            <div className="prose prose-lg max-w-none mb-12 bg-white/80 p-8 rounded-3xl shadow-sm border border-slate-100" dangerouslySetInnerHTML={{ __html: activeModule.content }}></div>
+
+                            {/* Feature 2: Clinical Notes Analyzer */}
+                            <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 shadow-sm border border-slate-200 mb-12 relative">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">Klinik Not Defterim</h3>
+                                        <p className="text-sm text-slate-500 mt-1">Gözlemlerinizi yazın ve Gemini AI'dan süpervizyon alın.</p>
+                                    </div>
+                                    <button 
+                                        onClick={analyzeNotesWithAI}
+                                        disabled={!currentNote.trim() || isAnalyzingNote}
+                                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all ai-border-glow shadow-lg"
+                                    >
+                                        <Sparkles /> {isAnalyzingNote ? 'Analiz Ediliyor...' : 'Yapay Zeka ile Analiz Et'}
+                                    </button>
+                                </div>
+                                <textarea 
+                                    value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} onBlur={saveNote}
+                                    placeholder="Bu vakada çocuğun regülasyon düzeyi nasıldı? Hangi stratejileri denediniz?..."
+                                    className="w-full h-32 p-4 rounded-xl border border-slate-300 focus:border-floortime-teal focus:ring-2 focus:ring-floortime-teal/20 outline-none resize-none text-slate-700 bg-white"
+                                />
+                                
+                                {noteAnalysisResult && (
+                                    <div className="mt-6 p-6 bg-indigo-50/50 border border-indigo-100 rounded-2xl fade-in relative">
+                                        <div className="absolute -top-3 left-6 bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><Sparkles/> Gemini Süpervizör Yanıtı</div>
+                                        <div className="text-slate-700 prose prose-sm max-w-none pt-2 font-medium" dangerouslySetInnerHTML={{ __html: noteAnalysisResult.replace(/\n/g, '<br/>') }}></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Feature 3: Dynamic AI Quiz */}
+                            <div className="bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white relative">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-slate-700 pb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black tracking-tight">Klinik Değerlendirme</h3>
+                                        <p className="text-slate-400 text-sm mt-1">Bu modülü geçmek için doğru analizi yapmalısınız.</p>
+                                    </div>
+                                    <button 
+                                        onClick={generateAiQuiz} disabled={isGeneratingQuiz}
+                                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-glow"
+                                    >
+                                        <Sparkles /> {isGeneratingQuiz ? 'Üretiliyor...' : 'Yapay Zekadan Yeni Vaka İste'}
+                                    </button>
+                                </div>
+                                
+                                {targetQuiz.map((q, qIndex) => (
+                                    <div key={qIndex} className="mb-10 fade-in">
+                                        <p className="font-bold text-lg text-slate-100 mb-5">{qIndex + 1}. {q.q}</p>
+                                        <div className="space-y-3">
+                                            {q.options.map((opt, optIndex) => {
+                                                const isSelected = quizAnswers[qIndex] === optIndex;
+                                                return (
+                                                    <label key={optIndex} className={`flex items-start p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-floortime-teal bg-floortime-teal/10' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}>
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4 mt-0.5 flex-shrink-0 ${isSelected ? 'border-floortime-teal' : 'border-slate-500'}`}>
+                                                            {isSelected && <div className="w-2.5 h-2.5 bg-floortime-teal rounded-full"></div>}
+                                                        </div>
+                                                        <input type="radio" name={`q-${activeModuleId}-${qIndex}`} className="hidden" checked={isSelected} onChange={() => handleQuizOptionSelect(qIndex, optIndex)} />
+                                                        <span className={`text-base font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>{opt}</span>
+                                                    </label>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div className="pt-6 border-t border-slate-700">
+                                    {quizResult === 'success' && (
+                                        <div className="mb-6 p-4 bg-emerald-500/10 text-emerald-300 rounded-xl border border-emerald-500/30 flex items-center gap-3 fade-in">
+                                            <CheckCircle /> <span className="font-bold">Analiz Doğru! İlerleme kaydedildi.</span>
+                                        </div>
+                                    )}
+                                    {quizResult === 'fail' && (
+                                        <div className="mb-6 p-4 bg-red-500/10 text-red-300 rounded-xl border border-red-500/30 flex items-center gap-3 fade-in">
+                                            <span className="font-bold">Analiz Hatası. Lütfen tekrar değerlendirin.</span>
+                                        </div>
+                                    )}
+                                    <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < targetQuiz.length} className="w-full bg-floortime-teal hover:bg-teal-400 disabled:opacity-30 text-slate-900 font-black py-4 rounded-xl transition-all text-lg shadow-glow">
+                                        Yanıtları Onayla
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* AI SUPERVISOR (Floating Chat) */}
+                    <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${isAiOpen ? 'w-80 md:w-96' : 'w-auto'}`}>
+                        <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden mb-4 border border-slate-200 transition-all duration-300 origin-bottom-right w-full ${isAiOpen ? 'opacity-100 scale-100 h-96 flex flex-col' : 'opacity-0 scale-50 h-0 pointer-events-none'}`}>
+                            <div className="bg-slate-900 p-4 flex justify-between items-center text-white">
+                                <div className="flex items-center gap-2 font-bold"><Sparkles /> AI Süpervizör</div>
+                                <button onClick={() => setIsAiOpen(false)} className="text-white/80 hover:text-white">&times;</button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
+                                {aiMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-3 ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'} shadow-sm`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></div>
+                                    </div>
+                                ))}
+                                {isAiLoading && <div className="chat-bubble-ai p-3 w-16 typing-indicator"><span></span><span></span><span></span></div>}
+                                <div ref={chatEndRef} />
+                            </div>
+                            <form onSubmit={handleAiSubmit} className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                                <input type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Sorunuzu yazın..." className="flex-1 bg-slate-100 rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-floortime-teal" />
+                                <button type="submit" disabled={!aiInput.trim() || isAiLoading} className="bg-floortime-teal text-white p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-floortime-tealDark disabled:opacity-50">➔</button>
+                            </form>
+                        </div>
+                        <button onClick={() => setIsAiOpen(!isAiOpen)} className={`w-14 h-14 rounded-full shadow-glow flex items-center justify-center transition-transform hover:scale-110 text-white ${isAiOpen ? 'bg-slate-800' : 'bg-gradient-to-r from-indigo-500 to-floortime-teal bounce'}`}>
+                            {isAiOpen ? '✕' : <Sparkles />}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
