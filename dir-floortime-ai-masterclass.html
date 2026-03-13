@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIR Floortime 101 & 201 Masterclass - Gemini AI Sürümü</title>
+    <title>DIR Floortime Masterclass - Ultimate AI & Roleplay</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,14 +13,13 @@
                 extend: {
                     colors: {
                         floortime: {
-                            teal: '#14b8a6', tealDark: '#0f766e', tealGlow: 'rgba(20, 184, 166, 0.4)',
+                            teal: '#14b8a6', tealDark: '#0f766e',
                             blue: '#38bdf8', blueDark: '#0369a1',
                             white: '#f8fafc', bg: '#f8fafc', accent: '#f59e0b',
-                            glass: 'rgba(255, 255, 255, 0.85)'
                         }
                     },
                     fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], serif: ['Georgia', 'serif'] },
-                    boxShadow: { 'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)', 'glow': '0 0 20px rgba(20, 184, 166, 0.3)' }
+                    boxShadow: { 'glow': '0 0 20px rgba(20, 184, 166, 0.3)', 'glow-indigo': '0 0 20px rgba(99, 102, 241, 0.4)' }
                 }
             }
         }
@@ -39,7 +38,7 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%); color: #1e293b; min-height: 100vh; overflow: hidden; }
-        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .bounce { animation: bounce 2s infinite; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -64,6 +63,9 @@
         
         .chat-bubble-user { background: #0f766e; color: white; border-radius: 1rem 1rem 0 1rem; }
         .chat-bubble-ai { background: #f1f5f9; color: #1e293b; border-radius: 1rem 1rem 1rem 0; border: 1px solid #e2e8f0; }
+        .chat-bubble-roleplay-child { background: #fef08a; color: #854d0e; border-radius: 1rem 1rem 1rem 0; border: 1px solid #fde047; font-family: 'Georgia', serif; font-size: 1.1rem;}
+        .chat-bubble-roleplay-therapist { background: #818cf8; color: white; border-radius: 1rem 1rem 0 1rem; }
+
         .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #94a3b8; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both; }
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
         .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
@@ -72,6 +74,15 @@
         .ai-border-glow { position: relative; }
         .ai-border-glow::before { content: ""; position: absolute; inset: -2px; border-radius: inherit; background: linear-gradient(45deg, #8b5cf6, #3b82f6, #14b8a6); z-index: -1; filter: blur(8px); opacity: 0; transition: opacity 0.3s; }
         .ai-border-glow:hover::before { opacity: 0.8; }
+        
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 100; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* Flashcard Flip Animation */
+        .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        .flashcard-front, .flashcard-back { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .flashcard-back { transform: rotateY(180deg); }
     </style>
 </head>
 <body>
@@ -84,9 +95,8 @@
 
         const { useState, useEffect, useRef } = React;
 
-        // --- GEMINI API KEY ---
-        // Environment runtime will supply this. No validation logic added.
-        const apiKey = ""; 
+        // --- GEMINI API KEY (Environment Fallback) ---
+        const envApiKey = ""; 
 
         // --- FIREBASE CONFIG ---
         const firebaseConfig = {
@@ -105,34 +115,19 @@
 
         // --- PCM to WAV CONVERTER UTILITY FOR TTS ---
         const pcmToWav = (pcmData, sampleRate) => {
-            const numChannels = 1;
-            const bitsPerSample = 16;
+            const numChannels = 1; const bitsPerSample = 16;
             const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
             const blockAlign = numChannels * (bitsPerSample / 8);
-            const wavHeader = new ArrayBuffer(44);
-            const view = new DataView(wavHeader);
-
-            const writeString = (view, offset, string) => {
-                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
-            };
-
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + pcmData.byteLength, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, byteRate, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, bitsPerSample, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, pcmData.byteLength, true);
-
+            const wavHeader = new ArrayBuffer(44); const view = new DataView(wavHeader);
+            const writeString = (view, offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
+            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcmData.byteLength, true);
+            writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data'); view.setUint32(40, pcmData.byteLength, true);
             const wavBuffer = new Uint8Array(44 + pcmData.byteLength);
-            wavBuffer.set(new Uint8Array(wavHeader), 0);
-            wavBuffer.set(new Uint8Array(pcmData), 44);
+            wavBuffer.set(new Uint8Array(wavHeader), 0); wavBuffer.set(new Uint8Array(pcmData), 44);
             return wavBuffer;
         };
 
@@ -142,9 +137,9 @@
                 id: 0, level: "101", title: "Modül 1: DIR Modeli ve Nörolojik Temeller",
                 content: `
                     <h3>DIR Paradigmasına Derinlemesine Giriş</h3>
-                    <p>Klasik davranışçı yaklaşımlar genellikle gözlemlenebilir davranışlara odaklanır ve bu davranışları ödül/ceza mekanizmalarıyla şekillendirmeye çalışır. Dr. Stanley Greenspan tarafından geliştirilen <strong>DIR modeli</strong> ise "davranışın altındaki nedeni" arar. Çocuğun sinir sistemini, duyusal işlemleme kapasitesini ve duygusal dünyasını merkeze alır.</p>
+                    <p>Klasik davranışçı yaklaşımlar genellikle gözlemlenebilir davranışlara odaklanır ve bu davranışları ödül/ceza mekanizmalarıyla şekillendirmeye çalışır. Dr. Stanley Greenspan tarafından geliştirilen <strong>DIR modeli</strong> ise "davranışın altındaki nedeni" arar.</p>
                     <h4>D (Developmental - Gelişimsel Boyut)</h4>
-                    <p>Gelişimsel boyut, çocuğun kronolojik yaşından ziyade <strong>gelişimsel yaşına</strong> odaklanır. Eğer bir çocuk regüle olup bizimle bağ kuramıyorsa (FEDC 1 ve 2), ona renkleri eşlemeyi veya mantıksal soruları cevaplamayı öğretmek (FEDC 6) beyhude ve stres verici bir çabadır.</p>
+                    <p>Gelişimsel boyut, çocuğun kronolojik yaşından ziyade <strong>gelişimsel yaşına</strong> odaklanır. Eğer bir çocuk regüle olup bizimle bağ kuramıyorsa (FEDC 1 ve 2), ona renkleri eşlemeyi öğretmek (FEDC 6) beyhude ve stres verici bir çabadır.</p>
                     <h4>I (Individual Differences - Bireysel Farklılıklar)</h4>
                     <ul>
                         <li><strong>Duyusal İşlemleme:</strong> Çocuk seslere aşırı mı duyarlı (Hiper-reaktif) yoksa acıyı/sesi hissetmiyor mu (Hipo-reaktif)?</li>
@@ -152,11 +147,9 @@
                     </ul>
                     <div class="clinic-note">Sürekli kendi etrafında dönen veya nesneleri sıraya dizen bir çocuk "yaramaz" değildir. O an sinir sistemini regüle etmeye çalışan, duyusal arayış içinde olan bir çocuktur.</div>
                     <h4>R (Relationship-based - İlişki Temelli Boyut)</h4>
-                    <p>Öğrenmenin yakıtı <strong>duygudur (Affect)</strong>. Çocuklar, nörolojik olarak güvende hissetmedikleri ve keyif almadıkları bir ortamda yeni nöral ağlar kuramazlar.</p>
+                    <p>Öğrenmenin yakıtı <strong>duygudur (Affect)</strong>. Çocuklar, nörolojik olarak güvende hissetmedikleri ortamlarda yeni nöral ağlar kuramazlar.</p>
                 `,
-                quiz: [
-                    { q: "DIR modelinde 'I' (Bireysel Farklılıklar) kapsamına hangisi GİRMEZ?", options: ["Motor planlama becerisi (Praksis)", "Duyusal işlemleme profili", "Çocuğun okuldaki matematik notları", "İşitsel ve görsel reaktivite durumu"], answer: 2 }
-                ]
+                quiz: [{ q: "DIR modelinde 'I' (Bireysel Farklılıklar) kapsamına hangisi GİRMEZ?", options: ["Motor planlama becerisi (Praksis)", "Duyusal işlemleme profili", "Çocuğun okuldaki matematik notları", "İşitsel ve görsel reaktivite durumu"], answer: 2 }]
             },
             {
                 id: 1, level: "101", title: "Modül 2: Floortime Uygulama Prensipleri",
@@ -166,12 +159,10 @@
                     <h4>Temel Prensip 1: Çocuğun Liderliğini Takip Etmek</h4>
                     <p>Çocuğun liderliğini takip etmek <em>"sessizce izlemek" demek değildir</em>. Onun eylemine, kendi duygusal tonunuzu (affect) katarak <strong>katılmaktır</strong>.</p>
                     <h4>Temel Prensip 2: Etkileşim Halkasını Açmak ve Kapatmak</h4>
-                    <p>İletişim bir masa tenisi gibidir. Topu atarsınız, karşı taraf yanıt verir, siz tekrar karşılık verirsiniz. Floortime'da asıl amaç bu halkaların sayısını artırmak ve kesintisiz bir akış (continuous flow) yaratmaktır.</p>
+                    <p>İletişim bir masa tenisi gibidir. Topu atarsınız, karşı taraf yanıt verir, siz tekrar karşılık verirsiniz. Asıl amaç bu halkaların sayısını artırmak ve kesintisiz bir akış (continuous flow) yaratmaktır.</p>
                     <div class="clinic-note">Uygulayıcı Hatası: Çocuğa sürekli sorular sorarak ("Bu ne renk?") etkileşim başlattığını sanmak. Gerçek etkileşim jestlerle ve mimiklerle başlar.</div>
                 `,
-                quiz: [
-                    { q: "'Çocuğun liderliğini takip etmek' ifadesi Floortime'da ne anlama gelir?", options: ["Sadece izlemek ve müdahale etmemek.", "Çocuğun doğal ilgisine odaklanıp, o ilgi alanına duygusal bir tonda ortak olmak.", "Kuralları kabul edip oyuncakları dizmek."], answer: 1 }
-                ]
+                quiz: [{ q: "'Çocuğun liderliğini takip etmek' ifadesi Floortime'da ne anlama gelir?", options: ["Sadece izlemek ve müdahale etmemek.", "Çocuğun doğal ilgisine odaklanıp, o ilgi alanına duygusal bir tonda ortak olmak.", "Kuralları kabul edip oyuncakları dizmek."], answer: 1 }]
             },
             {
                 id: 2, level: "201", title: "Modül 3: 201'e Giriş - FEDC 1, 2, 3",
@@ -184,23 +175,19 @@
                     <h4>FEDC 3: İki Yönlü Amaçlı İletişim</h4>
                     <p>Sebep-sonuç ilişkisinin keşfidir. Jestler ve mimiklerle karşılıklı diyaloglar başlar. Strateji: Çocuğun rastgele görünen her jestine <strong>anlam yükleyin</strong>.</p>
                 `,
-                quiz: [
-                    { q: "Regüle olmayan bir çocukla çalışırken ilk hedef nedir?", options: ["Kelimeleri tekrar ettirmek", "İlgisini çekmek için oyuncaklar çıkarmak", "Ko-regülasyon sağlayarak güven hissi vermek"], answer: 2 }
-                ]
+                quiz: [{ q: "Regüle olmayan bir çocukla çalışırken ilk hedef nedir?", options: ["Kelimeleri tekrar ettirmek", "İlgisini çekmek için oyuncaklar çıkarmak", "Ko-regülasyon sağlayarak güven hissi vermek"], answer: 2 }]
             },
             {
                 id: 3, level: "201", title: "Modül 4: FEDC 4 - Problem Çözme ve 'Playful Obstruction'",
                 content: `
                     <h3>İleri Seviye 201: Benliğin Doğuşu ve Playful Obstruction</h3>
                     <h4>FEDC 4: Karmaşık İletişim ve Ortak Problem Çözme</h4>
-                    <p>Çocuk artık bir dizi eylemi birleştirir. İstediği kurabiyeyi almak için elinizden tutar, sizi mutfağa çeker, dolabı gösterir ve sizin yüzünüze bakar. Benlik algısı bu aşamada oturur.</p>
+                    <p>Çocuk artık bir dizi eylemi birleştirir. İstediği kurabiyeyi almak için elinizden tutar, sizi mutfağa çeker, dolabı gösterir. Benlik algısı bu aşamada oturur.</p>
                     <h4>Altın Terapötik Strateji: Playful Obstruction (Oyuncu Tıkanıklık)</h4>
                     <p>Çocuğun sürekli tekrar eden ezbere oyun kalıplarını kırmak için araya "oyuncu ve sevimli engeller" koymaktır. Amacımız çocuğu sinirlendirmek değil, onun yeni bir etkileşim halkası açmasını sağlamaktır.</p>
                     <div class="clinic-note">Eğer çocuk engelle karşılaştığında ağlama krizine (FEDC 1) giriyorsa, tıkanıklık çok "sert" olmuş demektir. Tıkanıklık her zaman tolere edilebilir olmalıdır.</div>
                 `,
-                quiz: [
-                    { q: "'Oyuncu Tıkanıklık' (Playful Obstruction) tekniğinin temel amacı nedir?", options: ["Çocuğu sinirlendirerek sınırlarını öğretmek.", "Ezberlenmiş kalıplarını kırıp, yeni bir etkileşim başlatarak problem çözmesini teşvik etmek.", "İstediğimiz oyuna geçmek."], answer: 1 }
-                ]
+                quiz: [{ q: "'Oyuncu Tıkanıklık' (Playful Obstruction) tekniğinin temel amacı nedir?", options: ["Çocuğu sinirlendirerek sınırlarını öğretmek.", "Ezberlenmiş kalıplarını kırıp, yeni bir etkileşim başlatarak problem çözmesini teşvik etmek.", "İstediğimiz oyuna geçmek."], answer: 1 }]
             },
             {
                 id: 4, level: "201", title: "Modül 5: FEDC 5 ve 6 - Sembolik Oyun ve Mantık",
@@ -211,9 +198,7 @@
                     <h4>FEDC 6: Mantıksal Düşünme</h4>
                     <p>Gerçeklik testi başlar. Çocuk fikirler arasında mantıksal bağlantılar kurar. "Neden?" sorusu anahtardır. <strong>Strateji:</strong> Fikirlerine mantıksal meydan okuyun. "Sence roket bozulunca uzaylılar ne hissetti?".</p>
                 `,
-                quiz: [
-                    { q: "Bir çocuğun oyuncak bebeğine hayali biberonla süt içirmesi hangi basamaktır?", options: ["FEDC 3 (İki Yönlü İletişim)", "FEDC 5 (Sembolik Oyun / Duygusal Fikirler)", "FEDC 1 (Regülasyon)"], answer: 1 }
-                ]
+                quiz: [{ q: "Bir çocuğun oyuncak bebeğine hayali biberonla süt içirmesi hangi basamaktır?", options: ["FEDC 3 (İki Yönlü İletişim)", "FEDC 5 (Sembolik Oyun / Duygusal Fikirler)", "FEDC 1 (Regülasyon)"], answer: 1 }]
             },
             {
                 id: 5, level: "201", title: "Modül 6: Sahada Uygulama - Affect Ustalığı",
@@ -224,9 +209,7 @@
                     <h4>Sahte (Fake) Duygu Tuzağı</h4>
                     <p>Robotik bir şekilde, içten olmayan bir tonda "Aferin" demek beyin tarafından 'güvensiz' olarak algılanır. Otantik olun. Coşkunuz mimiklerinize gerçek bir şekilde yansısın.</p>
                 `,
-                quiz: [
-                    { q: "Düşük enerjili (hipo-reaktif) bir çocuğu etkileşime çekmek için nasıl bir Affect kullanılmalıdır?", options: ["Çok yavaş ve hareketsiz.", "Canlı, enerjik ve değişken tonlamalı.", "Tamamen sessiz kalınmalı."], answer: 1 }
-                ]
+                quiz: [{ q: "Düşük enerjili (hipo-reaktif) bir çocuğu etkileşime çekmek için nasıl bir Affect kullanılmalıdır?", options: ["Çok yavaş ve hareketsiz.", "Canlı, enerjik ve değişken tonlamalı.", "Tamamen sessiz kalınmalı."], answer: 1 }]
             },
             {
                 id: 6, level: "201", title: "Modül 7: Vaka Formülasyonu ve Final",
@@ -242,9 +225,7 @@
                     <p><strong>2. Bağ Kurma:</strong> Battaniyede sallama oyunu başlatın. Sallamayı aniden durdurun (Playful Obstruction). Gözünüze bakıp tekrar sallanmak istediğini belirtmesini bekleyin.</p>
                     <div class="clinic-note">Eğitimi tamamladınız! Bu vakayı anladıysanız klinik sahaya hazırsınız demektir.</div>
                 `,
-                quiz: [
-                    { q: "Ege battaniyede sallanırken uygulayıcının aniden durup beklemesi hangi stratejiye örnektir?", options: ["Mola cezası vermek", "Affect eşleşmesi", "Oyuncu Tıkanıklık (Playful Obstruction)"], answer: 2 }
-                ]
+                quiz: [{ q: "Ege battaniyede sallanırken uygulayıcının aniden durup beklemesi hangi stratejiye örnektir?", options: ["Mola cezası vermek", "Affect eşleşmesi", "Oyuncu Tıkanıklık (Playful Obstruction)"], answer: 2 }]
             }
         ];
 
@@ -253,45 +234,159 @@
         const Lock = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
         const PlayCircle = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>;
         const Sparkles = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-yellow-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 5.8a2 2 0 001.3 1.3L21 12l-5.8 1.9a2 2 0 00-1.3 1.3L12 21l-1.9-5.8a2 2 0 00-1.3-1.3L3 12l5.8-1.9a2 2 0 001.3-1.3L12 3z"/></svg>;
-        
+        const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+        const StarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>;
+
+        // --- COMPONENTS ---
+        const Toast = ({ message, type, isVisible }) => (
+            <div className={`toast ${isVisible ? 'show' : ''}`}>
+                <div className={`px-6 py-4 rounded-2xl shadow-2xl font-bold flex items-center gap-3 text-white ${type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+                    {type === 'error' ? '⚠️' : '✅'} {message}
+                </div>
+            </div>
+        );
+
+        const SettingsModal = ({ isOpen, onClose, setAiConfig }) => {
+            const [localKey, setLocalKey] = useState(localStorage.getItem('gemini_api_key') || '');
+            const [localModel, setLocalModel] = useState(localStorage.getItem('gemini_model') || 'gemini-2.5-flash-preview-09-2025');
+
+            if (!isOpen) return null;
+
+            const handleSave = (e) => {
+                e.preventDefault();
+                localStorage.setItem('gemini_api_key', localKey);
+                localStorage.setItem('gemini_model', localModel);
+                setAiConfig({ key: localKey, model: localModel });
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden slide-up border border-slate-200">
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 text-white flex justify-between items-center">
+                            <h3 className="text-xl font-bold flex items-center gap-2"><SettingsIcon /> Gelişmiş AI Ayarları</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
+                        </div>
+                        <form onSubmit={handleSave} className="p-6 space-y-6">
+                            <p className="text-sm text-slate-500 font-medium">Modeli ve API anahtarınızı manuel olarak serbest metin şeklinde girebilirsiniz.</p>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Gemini API Anahtarı (Opsiyonel)</label>
+                                <input type="password" value={localKey} onChange={(e) => setLocalKey(e.target.value)} placeholder="AIzaSy... (Boş bırakılırsa sistem key'i kullanılır)" className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-floortime-teal outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Manuel Model Girişi</label>
+                                <input 
+                                    type="text" 
+                                    list="ai-models" 
+                                    value={localModel} 
+                                    onChange={(e) => setLocalModel(e.target.value)} 
+                                    placeholder="Model adını yazın (örn: gemini-1.5-pro)" 
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-floortime-teal outline-none bg-white font-mono text-sm"
+                                    required
+                                />
+                                <datalist id="ai-models">
+                                    <option value="gemini-2.5-flash-preview-09-2025" />
+                                    <option value="gemini-1.5-pro" />
+                                    <option value="gemini-1.5-flash" />
+                                    <option value="gpt-4o" />
+                                </datalist>
+                            </div>
+                            <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-md transition-all">Kaydet ve Uygula</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const Flashcard = ({ front, back }) => {
+            const [flipped, setFlipped] = useState(false);
+            return (
+                <div className={`flashcard relative w-full h-40 cursor-pointer perspective-1000 ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(!flipped)}>
+                    <div className="flashcard-inner w-full h-full absolute">
+                        <div className="flashcard-front bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-100 rounded-2xl flex items-center justify-center p-6 text-center shadow-sm">
+                            <h4 className="font-black text-indigo-900 text-lg">{front}</h4>
+                            <div className="absolute bottom-2 text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Cevabı Görmek İçin Tıkla</div>
+                        </div>
+                        <div className="flashcard-back bg-indigo-600 rounded-2xl flex items-center justify-center p-6 text-center shadow-lg text-white">
+                            <p className="font-medium text-sm leading-relaxed">{back}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- MAIN APP COMPONENT ---
         const App = () => {
             const [user, setUser] = useState(null);
             const [isFirebaseReady, setIsFirebaseReady] = useState(false);
             
-            // Core
+            // Core & XP
             const [activeModuleId, setActiveModuleId] = useState(0);
             const [unlockedModules, setUnlockedModules] = useState([0]); 
             const [completedModules, setCompletedModules] = useState([]); 
+            const [xp, setXp] = useState(0);
+            
             const [quizAnswers, setQuizAnswers] = useState({}); 
             const [quizResult, setQuizResult] = useState(null); 
             const [userNotes, setUserNotes] = useState({}); 
             const [currentNote, setCurrentNote] = useState('');
             
-            // AI Feature States
-            const [isAiOpen, setIsAiOpen] = useState(false);
-            const [aiMessages, setAiMessages] = useState([]);
-            const [aiInput, setAiInput] = useState('');
-            const [isAiLoading, setIsAiLoading] = useState(false);
+            // AI Config
+            const [aiConfig, setAiConfig] = useState({ 
+                key: localStorage.getItem('gemini_api_key') || '', 
+                model: localStorage.getItem('gemini_model') || 'gemini-2.5-flash-preview-09-2025' 
+            });
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [toast, setToast] = useState({ message: '', type: 'success', isVisible: false });
             
-            const [isPlayingTTS, setIsPlayingTTS] = useState(false);
+            // Note AI
             const [isAnalyzingNote, setIsAnalyzingNote] = useState(false);
             const [noteAnalysisResult, setNoteAnalysisResult] = useState('');
             
+            // Quiz AI
             const [dynamicQuiz, setDynamicQuiz] = useState(null);
             const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+
+            // Flashcards AI
+            const [flashcards, setFlashcards] = useState([]);
+            const [isGeneratingCards, setIsGeneratingCards] = useState(false);
+
+            // Roleplay AI (Vaka Canlandırma)
+            const [isRoleplayActive, setIsRoleplayActive] = useState(false);
+            const [roleplayMessages, setRoleplayMessages] = useState([]);
+            const [roleplayInput, setRoleplayInput] = useState('');
+            const [isRoleplayLoading, setIsRoleplayLoading] = useState(false);
+            const roleplayEndRef = useRef(null);
             
-            const chatEndRef = useRef(null);
-            const audioRef = useRef(null);
+            // Cert
+            const [showCertificateMode, setShowCertificateMode] = useState(false);
+            const [userName, setUserName] = useState('');
+            const [isCertificateGenerated, setIsCertificateGenerated] = useState(false);
+            
+            const canvasRef = useRef(null);
+            const contentRef = useRef(null);
 
             const activeModule = COURSE_DATA.find(m => m.id === activeModuleId);
             const progressPercentage = Math.round((completedModules.length / COURSE_DATA.length) * 100);
 
-            // Auth & DB Initialization
+            // Helpers
+            const showToast = (message, type = 'error') => {
+                setToast({ message, type, isVisible: true });
+                setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 4000);
+            };
+
+            const getApiKey = () => aiConfig.key || envApiKey;
+
+            const addXp = async (amount, reason) => {
+                const newXp = xp + amount;
+                setXp(newXp);
+                showToast(`+${amount} XP Kazanıldı! (${reason})`, 'success');
+                if (user && db) await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { xp: newXp }, { merge: true });
+            };
+
+            // Init Firebase
             useEffect(() => {
-                const init = async () => {
-                    try { await signInAnonymously(auth); } catch (e) { setIsFirebaseReady(true); }
-                };
+                const init = async () => { try { await signInAnonymously(auth); } catch (e) { setIsFirebaseReady(true); } };
                 init();
                 const unsub = onAuthStateChanged(auth, u => { setUser(u); setIsFirebaseReady(true); });
                 return () => unsub();
@@ -305,6 +400,7 @@
                         if (d.unlockedModules) setUnlockedModules(d.unlockedModules);
                         if (d.completedModules) setCompletedModules(d.completedModules);
                         if (d.notes) setUserNotes(d.notes);
+                        if (d.xp) setXp(d.xp);
                     }
                 });
                 return () => unsub();
@@ -312,18 +408,13 @@
 
             // Reset specific states on module change
             useEffect(() => {
-                setQuizAnswers({});
-                setQuizResult(null);
-                setNoteAnalysisResult('');
-                setDynamicQuiz(null);
+                setQuizAnswers({}); setQuizResult(null); setNoteAnalysisResult('');
+                setDynamicQuiz(null); setFlashcards([]); setIsRoleplayActive(false); setRoleplayMessages([]);
                 setCurrentNote(userNotes[activeModuleId] || '');
-                setAiMessages([{ role: 'ai', text: `Merhaba! "${activeModule.title}" modülündeyiz. Klinik gözlemlerle ilgili sorularınızı bana (Gemini) yöneltebilirsiniz.` }]);
-                if(audioRef.current) { audioRef.current.pause(); setIsPlayingTTS(false); }
+                if(contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
             }, [activeModuleId, userNotes]);
 
-            useEffect(() => {
-                if(chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            }, [aiMessages, isAiOpen]);
+            useEffect(() => { if(roleplayEndRef.current) roleplayEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [roleplayMessages]);
 
             const saveProgress = async (unlocked, completed) => {
                 if (user && db) await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { unlockedModules: unlocked, completedModules: completed }, { merge: true });
@@ -334,133 +425,53 @@
                 if (user && db) await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { notes: updatedNotes }, { merge: true });
             };
 
-            // ---- GEMINI AI FEATURES ----
+            // ---- AI FEATURES ----
 
-            // 1. Text To Speech Feature
-            const playAudioSummary = async () => {
-                if(isPlayingTTS && audioRef.current) {
-                    audioRef.current.pause();
-                    setIsPlayingTTS(false);
-                    return;
-                }
-                setIsPlayingTTS(true);
+            // 1. Generate Flashcards
+            const generateFlashcards = async () => {
+                if (!getApiKey()) { showToast('API Anahtarı gerekli.'); return; }
+                setIsGeneratingCards(true); setFlashcards([]);
                 try {
-                    const cleanText = activeModule.content.replace(/<[^>]*>?/gm, '');
-                    const promptText = `Lütfen şu klinik eğitim metnini, motive edici ve akıcı bir tonda oku: ${cleanText.substring(0, 600)}`;
                     const payload = {
-                        contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } },
-                        model: "gemini-2.5-flash-preview-tts"
+                        contents: [{ parts: [{ text: `DIR Floortime "${activeModule.title}" konusundan en kritik 3 adet kavramı seç. Her biri için ön yüz (kısa kavram adı) ve arka yüz (klinik açıklama) oluştur.` }] }],
+                        generationConfig: { responseMimeType: "application/json", responseSchema: { type: "ARRAY", items: { type: "OBJECT", properties: { front: { type: "STRING" }, back: { type: "STRING" } } } } }
                     };
-
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-                    });
-                    
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${getApiKey()}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                     const data = await res.json();
-                    if(!data.candidates) throw new Error("TTS failed");
-                    
-                    const inlineData = data.candidates[0].content.parts[0].inlineData;
-                    const mimeType = inlineData.mimeType;
-                    const rateMatch = mimeType.match(/rate=(\d+)/);
-                    const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
-
-                    const binaryString = atob(inlineData.data);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-                    
-                    const wavData = pcmToWav(bytes.buffer, sampleRate);
-                    const blob = new Blob([wavData], { type: 'audio/wav' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    audioRef.current = new Audio(url);
-                    audioRef.current.onended = () => setIsPlayingTTS(false);
-                    audioRef.current.play();
-                } catch (err) {
-                    console.error("TTS Error:", err);
-                    setIsPlayingTTS(false);
-                }
+                    setFlashcards(JSON.parse(data.candidates[0].content.parts[0].text));
+                    addXp(20, 'Akıllı Kart Üretimi');
+                } catch (err) { showToast('Kartlar üretilemedi.'); } finally { setIsGeneratingCards(false); }
             };
 
-            // 2. Clinical Notes Analyzer
-            const analyzeNotesWithAI = async () => {
-                if (!currentNote.trim()) return;
-                setIsAnalyzingNote(true);
-                setNoteAnalysisResult('');
-                try {
-                    const prompt = `Aşağıdaki klinik gözlem notlarını DIR Floortime teorisine göre profesyonelce analiz et. Kısaca güçlü yanları vurgula ve yapıcı, nokta atışı 1-2 strateji önerisi ver:\n\nNot: "${currentNote}"`;
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "Sen şefkatli ve uzman bir DIR Floortime klinik süpervizörüsün." }] } })
-                    });
-                    const data = await res.json();
-                    setNoteAnalysisResult(data.candidates[0].content.parts[0].text);
-                } catch (err) {
-                    setNoteAnalysisResult('Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin.');
-                } finally {
-                    setIsAnalyzingNote(false);
-                }
+            // 2. Roleplay (Canlı Vaka)
+            const startRoleplay = () => {
+                setIsRoleplayActive(true);
+                setRoleplayMessages([{ role: 'ai', text: "*Odanın köşesinde oturuyor, ellerini kulaklarına kapatmış ve sürekli sallanıyor. Size bakmıyor.* (Bu bir canlı vaka simülasyonudur. Floortime stratejinizi terapist olarak aşağıya yazın.)" }]);
             };
 
-            // 3. Dynamic Quiz Generator (Structured JSON)
-            const generateAiQuiz = async () => {
-                setIsGeneratingQuiz(true);
-                setDynamicQuiz(null);
-                setQuizAnswers({});
-                setQuizResult(null);
-                try {
-                    const prompt = `DIR Floortime "${activeModule.title}" konusuyla ilgili klinisyenleri test edecek, pratik bir klinik vaka senaryosu içeren 1 adet zorlayıcı çoktan seçmeli soru üret.`;
-                    const payload = {
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
-                            responseMimeType: "application/json",
-                            responseSchema: {
-                                type: "OBJECT",
-                                properties: {
-                                    q: { type: "STRING" },
-                                    options: { type: "ARRAY", items: { type: "STRING" } },
-                                    answer: { type: "INTEGER" }
-                                }
-                            }
-                        }
-                    };
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    const quizData = JSON.parse(data.candidates[0].content.parts[0].text);
-                    setDynamicQuiz([quizData]); // Wrap in array to match existing map logic
-                } catch (err) {
-                    console.error("Quiz generation failed", err);
-                } finally {
-                    setIsGeneratingQuiz(false);
-                }
-            };
-
-            // 4. Chat Supervisor
-            const handleAiSubmit = async (e) => {
+            const handleRoleplaySubmit = async (e) => {
                 e.preventDefault();
-                if(!aiInput.trim()) return;
-                const newUserMsg = { role: 'user', text: aiInput };
-                setAiMessages(prev => [...prev, newUserMsg]);
-                setAiInput('');
-                setIsAiLoading(true);
+                if(!roleplayInput.trim() || !getApiKey()) return;
+                
+                const userText = roleplayInput;
+                setRoleplayMessages(prev => [...prev, { role: 'user', text: userText }]);
+                setRoleplayInput(''); setIsRoleplayLoading(true);
 
                 try {
-                    const systemInstruction = `Sen Gemini tabanlı uzman bir DIR Floortime süpervizörüsün. Kullanıcı "${activeModule.title}" modülünde. Yanıtlarını Türkçe, kısa, bilimsel ve yol gösterici olarak ver.`;
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    const systemInstruction = `Sen DIR Floortime terapisi alan 4 yaşında bir çocuksun. Modül Konusu: ${activeModule.title}. Terapist (Kullanıcı) seninle etkileşime girmeye çalışıyor. Terapist Floortime kurallarına uyuyorsa (örn: regüle etme, liderliğini takip etme, oyuncu tıkanıklık) yavaşça bağ kur veya etkileşim halkasını genişlet. Kötü davranırsa (örn: komut verme, ceza, test etme) ağlama krizine gir veya regülasyonun bozulsun. SADECE çocuğun yapacağı fiziksel eylemi *yıldız* içinde yaz ve çocuk diliyle 1-2 kelime söyle. Açıklama yapma.`;
+                    
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${getApiKey()}`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: newUserMsg.text }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
+                        body: JSON.stringify({ contents: [{ parts: [{ text: `Terapist hamlesi: "${userText}"` }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
                     });
                     const data = await res.json();
-                    setAiMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
-                } catch (err) {
-                    setAiMessages(prev => [...prev, { role: 'ai', text: "Yapay zeka sistemine şu an ulaşılamıyor." }]);
-                } finally {
-                    setIsAiLoading(false);
-                }
+                    setRoleplayMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+                    
+                    if(roleplayMessages.length === 3) addXp(50, 'Klinik Roleplay Katılımı');
+                } catch (err) { setRoleplayMessages(prev => [...prev, { role: 'ai', text: "*Sistem Hatası: Bağlantı koptu.*" }]); } finally { setIsRoleplayLoading(false); }
             };
 
+            // 3. Quiz 
             const submitQuiz = () => {
                 const targetQuiz = dynamicQuiz || activeModule.quiz;
                 let correctCount = 0;
@@ -468,36 +479,53 @@
 
                 if (correctCount === targetQuiz.length) {
                     setQuizResult('success');
+                    addXp(100, 'Sınav Başarısı');
                     let newCompleted = [...completedModules];
                     if (!completedModules.includes(activeModuleId)) newCompleted.push(activeModuleId);
-                    
                     const nextModuleId = activeModuleId + 1;
                     let newUnlocked = [...unlockedModules];
                     if (nextModuleId < COURSE_DATA.length && !unlockedModules.includes(nextModuleId)) newUnlocked.push(nextModuleId);
-                    
-                    setCompletedModules(newCompleted);
-                    setUnlockedModules(newUnlocked);
-                    saveProgress(newUnlocked, newCompleted);
-                } else {
-                    setQuizResult('fail');
-                }
+                    setCompletedModules(newCompleted); setUnlockedModules(newUnlocked); saveProgress(newUnlocked, newCompleted);
+                } else { setQuizResult('fail'); }
+            };
+
+            // Cert
+            const generateCertificate = (e) => {
+                e.preventDefault(); if (!userName.trim()) return;
+                setIsCertificateGenerated(true); 
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                setTimeout(() => {
+                    const canvas = canvasRef.current; if (!canvas) return;
+                    const ctx = canvas.getContext('2d'); const width = canvas.width; const height = canvas.height;
+                    const bgGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+                    bgGradient.addColorStop(0, '#ffffff'); bgGradient.addColorStop(1, '#f8fafc');
+                    ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
+                    ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 16; ctx.strokeRect(25, 25, width - 50, height - 50);
+                    ctx.fillStyle = '#0f766e'; ctx.font = '900 48px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('MASTERCLASS SERTİFİKASI', width / 2, 140);
+                    ctx.fillStyle = '#64748b'; ctx.font = 'italic 24px Georgia, serif'; ctx.fillText('Yapay zeka destekli DIR Floortime eğitimini başarıyla tamamlayan:', width / 2, 200);
+                    ctx.fillStyle = '#b45309'; ctx.font = 'bold 64px Georgia, serif'; ctx.fillText(userName.toUpperCase(), width / 2, 330);
+                    ctx.fillStyle = '#94a3b8'; ctx.font = '16px Inter'; ctx.fillText(`Doğrulama: TR-ULTIMATE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`, width / 2, 600);
+                }, 250); 
             };
 
             if (!isFirebaseReady) return <div className="min-h-screen bg-floortime-bg flex items-center justify-center"><div className="w-16 h-16 border-4 border-floortime-teal border-t-transparent rounded-full animate-spin"></div></div>;
-
             const targetQuiz = dynamicQuiz || activeModule.quiz;
 
             return (
                 <div className="h-screen flex flex-col lg:flex-row font-sans relative">
+                    <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} />
+                    <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} setAiConfig={setAiConfig} />
+
                     {/* SIDEBAR */}
                     <aside className="w-full lg:w-[350px] glass-panel flex flex-col z-20 shadow-xl border-r border-slate-200 bg-white/90">
                         <div className="p-8 border-b border-slate-200">
                             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Floortime<span className="ai-gradient-text">AI</span></h1>
-                            <p className="text-xs text-slate-500 font-bold uppercase mt-2">Gemini Masterclass</p>
-                            
-                            <div className="mt-8">
+                            <div className="flex items-center gap-2 mt-3 bg-amber-100/50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full w-fit shadow-sm">
+                                <StarIcon /> <span className="font-bold text-sm">{xp} Uzmanlık XP</span>
+                            </div>
+                            <div className="mt-6">
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-xs font-black text-slate-400 uppercase">Akademik İlerleme</span>
+                                    <span className="text-xs font-black text-slate-400 uppercase">İlerleme</span>
                                     <span className="text-2xl font-black text-floortime-tealDark">%{progressPercentage}</span>
                                 </div>
                                 <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -511,7 +539,6 @@
                                 const isUnlocked = unlockedModules.includes(mod.id);
                                 const isCompleted = completedModules.includes(mod.id);
                                 const isActive = activeModuleId === mod.id;
-
                                 return (
                                     <button key={mod.id} onClick={() => isUnlocked && setActiveModuleId(mod.id)} disabled={!isUnlocked}
                                         className={`w-full text-left p-4 rounded-xl flex items-center gap-3 transition-all ${isActive ? 'bg-floortime-teal/10 border-2 border-floortime-teal shadow-sm' : isUnlocked ? 'bg-white border-2 border-transparent hover:border-slate-200' : 'opacity-50 grayscale'}`}
@@ -526,140 +553,143 @@
                                 );
                             })}
                         </div>
+                        <div className="p-4 border-t border-slate-200 flex gap-2">
+                            <button onClick={() => setIsSettingsOpen(true)} className="flex-shrink-0 w-14 h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shadow-sm" title="Ayarlar">
+                                <SettingsIcon />
+                            </button>
+                            {progressPercentage === 100 ? (
+                                <button onClick={() => setShowCertificateMode(true)} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black rounded-2xl shadow-md transition-all">Sertifika Al</button>
+                            ) : (
+                                <div className="flex-1 bg-slate-100 rounded-2xl flex items-center justify-center text-xs font-bold text-slate-400 uppercase px-4 text-center">Eğitimi Tamamlayın</div>
+                            )}
+                        </div>
                     </aside>
 
                     {/* MAIN CONTENT AREA */}
-                    <main className="flex-1 h-full overflow-y-auto bg-transparent p-6 md:p-12 relative scroll-smooth">
-                        <div className="max-w-4xl mx-auto pb-40 fade-in">
-                            
-                            {/* Feature 1: TTS AI Button */}
-                            <div className="flex items-center justify-between mb-8">
-                                <span className="bg-floortime-blue/20 text-floortime-blueDark text-xs font-black px-4 py-2 rounded-xl uppercase border border-floortime-blue/30">
-                                    {activeModule.level} SEVİYESİ
-                                </span>
-                                <button 
-                                    onClick={playAudioSummary}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-md ai-border-glow ${isPlayingTTS ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'}`}
-                                >
-                                    {isPlayingTTS ? (
-                                        <><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" /></svg> Durdur</>
-                                    ) : (
-                                        <><Sparkles /> Modül Özetini Dinle (Gemini TTS)</>
-                                    )}
-                                </button>
-                            </div>
-
-                            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-8">{activeModule.title}</h2>
-                            <div className="prose prose-lg max-w-none mb-12 bg-white/80 p-8 rounded-3xl shadow-sm border border-slate-100" dangerouslySetInnerHTML={{ __html: activeModule.content }}></div>
-
-                            {/* Feature 2: Clinical Notes Analyzer */}
-                            <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 shadow-sm border border-slate-200 mb-12 relative">
-                                <div className="flex justify-between items-start mb-4">
+                    {showCertificateMode ? (
+                        <div className="flex-1 flex items-center justify-center p-8 animated-bg overflow-y-auto">
+                            <div className="bg-white p-14 rounded-[2.5rem] shadow-2xl max-w-4xl w-full text-center">
+                                {!isCertificateGenerated ? (
+                                    <form onSubmit={generateCertificate} className="space-y-6">
+                                        <h1 className="text-4xl font-black text-slate-900">Tebrikler!</h1>
+                                        <p>Sertifikanızı üretmek için adınızı girin.</p>
+                                        <input type="text" required value={userName} onChange={(e) => setUserName(e.target.value)} className="w-full px-6 py-4 rounded-xl border-2 border-slate-200 text-center text-xl" placeholder="Adınız Soyadınız" />
+                                        <button type="submit" className="w-full bg-floortime-teal text-white font-black py-4 rounded-xl">Sertifika Üret</button>
+                                    </form>
+                                ) : (
                                     <div>
-                                        <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">Klinik Not Defterim</h3>
-                                        <p className="text-sm text-slate-500 mt-1">Gözlemlerinizi yazın ve Gemini AI'dan süpervizyon alın.</p>
-                                    </div>
-                                    <button 
-                                        onClick={analyzeNotesWithAI}
-                                        disabled={!currentNote.trim() || isAnalyzingNote}
-                                        className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all ai-border-glow shadow-lg"
-                                    >
-                                        <Sparkles /> {isAnalyzingNote ? 'Analiz Ediliyor...' : 'Yapay Zeka ile Analiz Et'}
-                                    </button>
-                                </div>
-                                <textarea 
-                                    value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} onBlur={saveNote}
-                                    placeholder="Bu vakada çocuğun regülasyon düzeyi nasıldı? Hangi stratejileri denediniz?..."
-                                    className="w-full h-32 p-4 rounded-xl border border-slate-300 focus:border-floortime-teal focus:ring-2 focus:ring-floortime-teal/20 outline-none resize-none text-slate-700 bg-white"
-                                />
-                                
-                                {noteAnalysisResult && (
-                                    <div className="mt-6 p-6 bg-indigo-50/50 border border-indigo-100 rounded-2xl fade-in relative">
-                                        <div className="absolute -top-3 left-6 bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><Sparkles/> Gemini Süpervizör Yanıtı</div>
-                                        <div className="text-slate-700 prose prose-sm max-w-none pt-2 font-medium" dangerouslySetInnerHTML={{ __html: noteAnalysisResult.replace(/\n/g, '<br/>') }}></div>
+                                        <canvas ref={canvasRef} width="800" height="600" className="max-w-full h-auto rounded-xl shadow-lg mx-auto mb-6"></canvas>
+                                        <button onClick={() => setShowCertificateMode(false)} className="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold">Eğitime Dön</button>
                                     </div>
                                 )}
                             </div>
-
-                            {/* Feature 3: Dynamic AI Quiz */}
-                            <div className="bg-slate-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white relative">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-slate-700 pb-6">
-                                    <div>
-                                        <h3 className="text-2xl font-black tracking-tight">Klinik Değerlendirme</h3>
-                                        <p className="text-slate-400 text-sm mt-1">Bu modülü geçmek için doğru analizi yapmalısınız.</p>
-                                    </div>
-                                    <button 
-                                        onClick={generateAiQuiz} disabled={isGeneratingQuiz}
-                                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-glow"
-                                    >
-                                        <Sparkles /> {isGeneratingQuiz ? 'Üretiliyor...' : 'Yapay Zekadan Yeni Vaka İste'}
-                                    </button>
-                                </div>
+                        </div>
+                    ) : (
+                        <main ref={contentRef} className="flex-1 h-full overflow-y-auto bg-transparent p-6 md:p-12 relative scroll-smooth">
+                            <div className="max-w-4xl mx-auto pb-40 fade-in">
                                 
-                                {targetQuiz.map((q, qIndex) => (
-                                    <div key={qIndex} className="mb-10 fade-in">
-                                        <p className="font-bold text-lg text-slate-100 mb-5">{qIndex + 1}. {q.q}</p>
-                                        <div className="space-y-3">
-                                            {q.options.map((opt, optIndex) => {
-                                                const isSelected = quizAnswers[qIndex] === optIndex;
-                                                return (
-                                                    <label key={optIndex} className={`flex items-start p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-floortime-teal bg-floortime-teal/10' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}>
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4 mt-0.5 flex-shrink-0 ${isSelected ? 'border-floortime-teal' : 'border-slate-500'}`}>
-                                                            {isSelected && <div className="w-2.5 h-2.5 bg-floortime-teal rounded-full"></div>}
-                                                        </div>
-                                                        <input type="radio" name={`q-${activeModuleId}-${qIndex}`} className="hidden" checked={isSelected} onChange={() => handleQuizOptionSelect(qIndex, optIndex)} />
-                                                        <span className={`text-base font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>{opt}</span>
-                                                    </label>
-                                                )
-                                            })}
+                                <div className="flex items-center gap-3 mb-8">
+                                    <span className="bg-floortime-blue/20 text-floortime-blueDark text-xs font-black px-4 py-2 rounded-xl uppercase tracking-widest border border-floortime-blue/30 backdrop-blur-sm">
+                                        {activeModule.level} SEVİYESİ
+                                    </span>
+                                </div>
+
+                                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-8">{activeModule.title}</h2>
+                                <div className="prose prose-lg max-w-none mb-12 bg-white/80 p-8 rounded-3xl shadow-sm border border-slate-100" dangerouslySetInnerHTML={{ __html: activeModule.content }}></div>
+
+                                {/* Flashcards Feature */}
+                                <div className="mb-16">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-2xl font-black text-slate-800">Akıllı Bilgi Kartları</h3>
+                                        <button onClick={generateFlashcards} disabled={isGeneratingCards} className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-2 transition-all">
+                                            <Sparkles /> {isGeneratingCards ? 'Üretiliyor...' : 'Yapay Zeka ile Kart Üret'}
+                                        </button>
+                                    </div>
+                                    {flashcards.length > 0 && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 fade-in">
+                                            {flashcards.map((card, idx) => <Flashcard key={idx} front={card.front} back={card.back} />)}
+                                        </div>
+                                    )}
+                                    {flashcards.length === 0 && !isGeneratingCards && (
+                                        <div className="p-8 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl text-center text-slate-400 font-medium">Bu modülün özetini kavram kartları (Flashcard) olarak görmek için butona tıklayın.</div>
+                                    )}
+                                </div>
+
+                                {/* Roleplay Feature (Vaka Canlandırma) */}
+                                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-indigo-900/20 mb-16 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -z-10"></div>
+                                    <div className="flex justify-between items-center mb-8 border-b border-indigo-500/30 pb-6">
+                                        <div>
+                                            <h3 className="text-3xl font-black tracking-tight flex items-center gap-3"><Sparkles className="w-8 h-8 text-indigo-400"/> Canlı Vaka Simülatörü</h3>
+                                            <p className="text-indigo-200 mt-2 font-medium">Sadece teoriyi okumayın. Gerçek zamanlı olarak yapay zeka bir vaka ile pratik yapın.</p>
                                         </div>
                                     </div>
-                                ))}
 
-                                <div className="pt-6 border-t border-slate-700">
-                                    {quizResult === 'success' && (
-                                        <div className="mb-6 p-4 bg-emerald-500/10 text-emerald-300 rounded-xl border border-emerald-500/30 flex items-center gap-3 fade-in">
-                                            <CheckCircle /> <span className="font-bold">Analiz Doğru! İlerleme kaydedildi.</span>
+                                    {!isRoleplayActive ? (
+                                        <div className="text-center py-10">
+                                            <div className="text-6xl mb-6">🧸</div>
+                                            <h4 className="text-2xl font-bold mb-4">Kliniğe Girmeye Hazır mısınız?</h4>
+                                            <p className="text-indigo-200 max-w-md mx-auto mb-8">Yapay zeka bu modülün konusuna göre regülasyonu bozuk bir çocuk veya kaygılı bir ebeveyn rolüne girecek. Sizin göreviniz terapist olarak süreci yönetmek.</p>
+                                            <button onClick={startRoleplay} className="bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 px-10 rounded-2xl shadow-glow-indigo transition-all text-lg transform hover:scale-105">Simülasyonu Başlat</button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-slate-800/50 rounded-2xl border border-indigo-500/20 flex flex-col h-[400px]">
+                                            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                                {roleplayMessages.map((msg, idx) => (
+                                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                        {msg.role === 'ai' && <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-xl mr-3 shadow-md flex-shrink-0">🧸</div>}
+                                                        <div className={`max-w-[80%] p-4 shadow-md ${msg.role === 'user' ? 'chat-bubble-roleplay-therapist text-base' : 'chat-bubble-roleplay-child'}`}>
+                                                            {msg.text}
+                                                        </div>
+                                                        {msg.role === 'user' && <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white ml-3 shadow-md flex-shrink-0 font-bold text-xs">SİZ</div>}
+                                                    </div>
+                                                ))}
+                                                {isRoleplayLoading && <div className="flex justify-start"><div className="w-10 h-10 rounded-full bg-yellow-100 mr-3"></div><div className="chat-bubble-roleplay-child p-4 typing-indicator"><span></span><span></span><span></span></div></div>}
+                                                <div ref={roleplayEndRef} />
+                                            </div>
+                                            <form onSubmit={handleRoleplaySubmit} className="p-4 bg-slate-800/80 border-t border-indigo-500/20 flex gap-3 rounded-b-2xl">
+                                                <input type="text" value={roleplayInput} onChange={(e) => setRoleplayInput(e.target.value)} placeholder="Terapist olarak ne yaparsınız/söylersiniz?..." className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-5 py-3 text-white focus:outline-none focus:border-indigo-500" />
+                                                <button type="submit" disabled={!roleplayInput.trim() || isRoleplayLoading} className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-8 rounded-xl disabled:opacity-50 transition-colors shadow-lg">Uygula</button>
+                                            </form>
                                         </div>
                                     )}
-                                    {quizResult === 'fail' && (
-                                        <div className="mb-6 p-4 bg-red-500/10 text-red-300 rounded-xl border border-red-500/30 flex items-center gap-3 fade-in">
-                                            <span className="font-bold">Analiz Hatası. Lütfen tekrar değerlendirin.</span>
+                                </div>
+
+                                {/* Dynamic AI Quiz */}
+                                <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-slate-200">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 border-b border-slate-100 pb-6">
+                                        <div><h3 className="text-2xl font-black text-slate-800 tracking-tight">Klinik Değerlendirme Testi</h3></div>
+                                    </div>
+                                    
+                                    {targetQuiz.map((q, qIndex) => (
+                                        <div key={qIndex} className="mb-10 fade-in">
+                                            <p className="font-bold text-xl text-slate-800 mb-5">{qIndex + 1}. {q.q}</p>
+                                            <div className="space-y-3">
+                                                {q.options.map((opt, optIndex) => {
+                                                    const isSelected = quizAnswers[qIndex] === optIndex;
+                                                    return (
+                                                        <label key={optIndex} className={`flex items-start p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-floortime-teal bg-floortime-teal/5 shadow-md transform scale-[1.01]' : 'border-slate-200 bg-white hover:border-floortime-teal/50'}`}>
+                                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 mt-0.5 flex-shrink-0 ${isSelected ? 'border-floortime-teal' : 'border-slate-300'}`}>
+                                                                {isSelected && <div className="w-3 h-3 bg-floortime-teal rounded-full"></div>}
+                                                            </div>
+                                                            <input type="radio" name={`q-${activeModuleId}-${qIndex}`} className="hidden" checked={isSelected} onChange={() => handleQuizOptionSelect(qIndex, optIndex)} />
+                                                            <span className={`text-lg font-medium ${isSelected ? 'text-teal-900' : 'text-slate-600'}`}>{opt}</span>
+                                                        </label>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
-                                    )}
-                                    <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < targetQuiz.length} className="w-full bg-floortime-teal hover:bg-teal-400 disabled:opacity-30 text-slate-900 font-black py-4 rounded-xl transition-all text-lg shadow-glow">
-                                        Yanıtları Onayla
-                                    </button>
+                                    ))}
+
+                                    <div className="pt-6 border-t border-slate-100">
+                                        {quizResult === 'success' && <div className="mb-6 p-5 bg-emerald-50 text-emerald-800 rounded-2xl border border-emerald-200 flex items-center gap-3 fade-in"><CheckCircle /> <span className="font-bold text-lg">Analiz Doğru! 100 XP Kazandınız.</span></div>}
+                                        {quizResult === 'fail' && <div className="mb-6 p-5 bg-red-50 text-red-800 rounded-2xl border border-red-200 flex items-center gap-3 fade-in"><span className="font-bold text-lg">Analiz Hatası. Lütfen tekrar değerlendirin.</span></div>}
+                                        <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < targetQuiz.length} className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-white font-black py-5 rounded-2xl transition-all text-xl shadow-xl hover:shadow-2xl">Yanıtları Onayla ve İlerle</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </main>
-
-                    {/* AI SUPERVISOR (Floating Chat) */}
-                    <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${isAiOpen ? 'w-80 md:w-96' : 'w-auto'}`}>
-                        <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden mb-4 border border-slate-200 transition-all duration-300 origin-bottom-right w-full ${isAiOpen ? 'opacity-100 scale-100 h-96 flex flex-col' : 'opacity-0 scale-50 h-0 pointer-events-none'}`}>
-                            <div className="bg-slate-900 p-4 flex justify-between items-center text-white">
-                                <div className="flex items-center gap-2 font-bold"><Sparkles /> AI Süpervizör</div>
-                                <button onClick={() => setIsAiOpen(false)} className="text-white/80 hover:text-white">&times;</button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
-                                {aiMessages.map((msg, idx) => (
-                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] p-3 ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'} shadow-sm`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></div>
-                                    </div>
-                                ))}
-                                {isAiLoading && <div className="chat-bubble-ai p-3 w-16 typing-indicator"><span></span><span></span><span></span></div>}
-                                <div ref={chatEndRef} />
-                            </div>
-                            <form onSubmit={handleAiSubmit} className="p-3 bg-white border-t border-slate-100 flex gap-2">
-                                <input type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Sorunuzu yazın..." className="flex-1 bg-slate-100 rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-floortime-teal" />
-                                <button type="submit" disabled={!aiInput.trim() || isAiLoading} className="bg-floortime-teal text-white p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-floortime-tealDark disabled:opacity-50">➔</button>
-                            </form>
-                        </div>
-                        <button onClick={() => setIsAiOpen(!isAiOpen)} className={`w-14 h-14 rounded-full shadow-glow flex items-center justify-center transition-transform hover:scale-110 text-white ${isAiOpen ? 'bg-slate-800' : 'bg-gradient-to-r from-indigo-500 to-floortime-teal bounce'}`}>
-                            {isAiOpen ? '✕' : <Sparkles />}
-                        </button>
-                    </div>
+                        </main>
+                    )}
                 </div>
             );
         };
