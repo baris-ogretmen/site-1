@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DIR Floortime Klinik Masterclass</title>
+    <title>DIR Floortime Klinik Masterclass - Barış İlkan</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +15,7 @@
                         floortime: { teal: '#14b8a6', tealDark: '#0f766e', blue: '#38bdf8', blueDark: '#0369a1', white: '#f8fafc', bg: '#f8fafc', accent: '#f59e0b' }
                     },
                     fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], serif: ['Georgia', 'serif'] },
-                    boxShadow: { 'glow': '0 0 20px rgba(20, 184, 166, 0.3)', 'glow-indigo': '0 0 20px rgba(99, 102, 241, 0.4)' }
+                    boxShadow: { 'glow': '0 0 20px rgba(20, 184, 166, 0.3)', 'glow-indigo': '0 0 20px rgba(99, 102, 241, 0.4)', 'floating': '0 10px 40px -10px rgba(0,0,0,0.3)' }
                 }
             }
         }
@@ -28,10 +28,15 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- PDF, Print & Confetti Libraries -->
+    <!-- PDF, Print & Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Firebase Compat (En stabil yöntem) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0;}
@@ -54,10 +59,27 @@
         .clinic-note { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 5px solid #0284c7; padding: 1.5rem; border-radius: 0.75rem; margin: 2rem 0; font-style: italic; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);}
         .clinic-note::before { content: "💡 Klinik Süpervizyon Notu"; display: block; font-weight: 900; color: #0284c7; margin-bottom: 0.5rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; font-style: normal;}
         
+        .case-study { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde047; padding: 2rem; border-radius: 1rem; margin: 2.5rem 0; box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.2); position: relative; overflow: hidden;}
+        .case-study::before { content: '\f0f1'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: -10px; right: -10px; font-size: 100px; color: rgba(253, 224, 71, 0.4); z-index: 0; }
+        .case-study * { position: relative; z-index: 1; }
+        .case-study h4 { color: #b45309; margin-top: 0; font-size: 1.4rem;}
+        .case-study p { color: #78350f; font-size: 1.05rem; }
+
         .term { border-bottom: 2px dashed #14b8a6; color: #0f766e; font-weight: 700; cursor: help; position: relative; transition: all 0.2s ease; }
         .term:hover { background: #ccfbf1; border-radius: 4px; padding: 0 4px; margin: 0 -4px; }
         .term[data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; font-weight: 500; font-style: normal; line-height: 1.5; white-space: normal; width: max-content; max-width: 280px; z-index: 50; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); pointer-events: none; text-align: left; }
         .term[data-tooltip]:hover::before { content: ""; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); border-width: 8px; border-style: solid; border-color: #1e293b transparent transparent transparent; z-index: 50; }
+
+        .selection-toolbar { position: absolute; background: #1e293b; border-radius: 12px; padding: 6px; display: flex; gap: 8px; z-index: 9999; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transform: translate(-50%, -100%); margin-top: -10px; transition: opacity 0.2s ease; align-items: center;}
+        .selection-toolbar::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+        .color-btn { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+        .color-btn:hover { transform: scale(1.2); border-color: white; }
+
+        .rich-editor[contenteditable="true"]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; display: block; }
+        .rich-editor:focus { outline: none; }
+        .hl-yellow { background-color: #fef08a; border-radius: 4px; padding: 0 2px; }
+        .hl-green { background-color: #bbf7d0; border-radius: 4px; padding: 0 2px; }
+        .hl-red { background-color: #fecaca; border-radius: 4px; padding: 0 2px; }
 
         .presentation-mode { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .slide-container { background: #ffffff; width: 90%; max-width: 1200px; aspect-ratio: 16/9; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); overflow: hidden; display: flex; flex-direction: column; position: relative; }
@@ -67,6 +89,9 @@
 
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); opacity: 0; transition: all 0.3s ease; z-index: 9999; width: 90%; max-width: 400px; }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 1rem; margin: 2rem 0; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 2px solid #e2e8f0; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
         @media print {
             body * { visibility: hidden; }
@@ -78,15 +103,14 @@
 <body>
     <div id="root"></div>
 
-    <!-- MODULE IMPORTS & APP LOGIC -->
     <script type="text/babel" data-type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const { useState, useEffect, useRef } = React;
 
-        // --- ROBUST FIREBASE INIT ---
+        // --- ROBUST FIREBASE INIT (COMPAT API) ---
         const firebaseConfig = {
             apiKey: 'AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU',
             authDomain: 'shaped-totem-481514-c5.firebaseapp.com',
@@ -98,22 +122,20 @@
         
         let app = null, auth = null, db = null;
         try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Firebase init failed. Offline mode active.", e);
-        }
+            if (!firebase.apps.length) { app = firebase.initializeApp(firebaseConfig); } 
+            else { app = firebase.app(); }
+            auth = firebase.auth(); db = firebase.firestore();
+        } catch (e) { console.error("Firebase offline.", e); }
         const APP_ID = 'floortime-master-app'; 
 
-        // --- KLİNİK EĞİTİM MÜFREDATI ---
+        // --- DEVASA KLİNİK EĞİTİM MÜFREDATI (VAKALARLA ZENGİNLEŞTİRİLMİŞ) ---
         const COURSE_DATA = [
             {
                 id: 0, level: "101", title: "Modül 1: DIR Modelinin Nörolojik Temeli",
                 content: `
                     <h3>Klasik Yöntemlerden Ayrılış</h3>
                     <p>Klasik davranışçı yaklaşımlar (örn. ABA) gözlemlenebilir davranışlara ve ezbere odaklanırken, Dr. Stanley Greenspan tarafından geliştirilen <strong>DIR modeli</strong> davranışın altındaki nörolojik nedene odaklanır. Bir çocuk kriz geçiriyorsa "Bunu şımarıklıktan yapıyor" denmez; "Sinir sistemi şu an güvende hissetmiyor" denir.</p>
-                    
+
                     <h4>D (Developmental - Gelişimsel Boyut)</h4>
                     <p>Çocuğun takvim yaşı değil, nöro-gelişimsel yaşı önemlidir. Eğer bir çocuk <span class="term" data-tooltip="Sinir sisteminin gelen uyaranları dengeleyerek sakin, uyanık ve öğrenmeye açık kalabilme becerisi.">regüle</span> olamıyorsa ve bizimle sıcak bir bağ kuramıyorsa, ona renkleri veya sayıları öğretmeye çalışmak beynine travmatik bir stres yüklemektir.</p>
                     
@@ -124,8 +146,15 @@
                         <li><strong>Hareket Algısı:</strong> İç kulaktaki <span class="term" data-tooltip="Denge, hareket ve yerçekimi algı sistemi. Yetersizse çocuk sürekli kendi etrafında döner veya sallanır.">vestibüler</span> ve kas/eklemlerdeki <span class="term" data-tooltip="Bedenin uzaydaki pozisyonunu algılayan derin duyu sistemi. Ağır nesneler taşımak bu duyuyu doyurur.">propriyoseptif</span> sistemleri ne durumda?</li>
                         <li><strong>Motor Planlama:</strong> Aklından geçen bir fikri bedenine dökebiliyor mu (<span class="term" data-tooltip="Aklındaki motor eylemi planlama ve sırasıyla yapabilme becerisi. Zayıfsa çocuk sakar görünür veya yeni oyuncaklarla oynayamaz.">praksis</span> becerisi)?</li>
                     </ul>
-                    <div class="clinic-note">Sürekli kendi etrafında dönen veya kanepeden yere atlayan bir çocuk "yaramaz" değildir. O an vestibüler ve propriyoseptif arayış içinde olan, kendini dengelemeye (regüle etmeye) çalışan bir sinir sistemidir.</div>
+                    
+                    <div class="case-study">
+                        <h4><i class="fa-solid fa-microscope"></i> Klinik Arşiv: 3 Yaşındaki Can</h4>
+                        <p><strong>Durum:</strong> Can, kuma dokunmaktan, saçının kesilmesinden ve sarılmaktan nefret ediyordu. Klasik eğitimde 'alıştırma' (zorla dokundurma) denenmiş ve krizler artmıştı.</p>
+                        <p><strong>Floortime Müdahalesi:</strong> Can'ın 'Güvenli mesafe' ihtiyacına saygı duyuldu. Sadece görsel ve işitsel oyunlarla (uzaktan baloncuk patlatma) başlandı.</p>
+                        <p><strong>Sonuç:</strong> 3 haftanın sonunda Can, kendi isteğiyle terapistin elindeki baloncuk çubuğuna dokundu. 2 ay sonra dokunsal savunması azaldı ve derin basınca izin vermeye başladı.</p>
+                    </div>
                 `,
+                simulatorProfile: { name: "Can", age: 3, profile: "Dokunsal savunması yüksek (hiper-reaktif). Yaklaşıldığında kaçıyor, köşeye saklanıyor. Sadece uzaktan dönen nesnelere bakıyor." },
                 quiz: [{ q: "DIR modelinde sürekli kendi etrafında dönen bir çocuğun davranışı nasıl yorumlanır?", options: ["Dikkat çekmek için yapılan şımarıkça bir davranış", "Vestibüler (denge/hareket) duyusal arayış ve kendini regüle etme çabası", "Hemen durdurulması gereken anlamsız bir hareket"], answer: 1 }]
             },
             {
@@ -140,7 +169,15 @@
                     <h4>2. Etkileşim Halkaları (Circles of Communication)</h4>
                     <p>Öğrenme, kesintisiz iletişim akışıyla olur. A kişisi bir jest/ses ile halkayı açar, B kişisi yanıt verir, A kişisi tekrar yanıt vererek halkayı kapatır ve yenisini açar.</p>
                     <div class="clinic-note">En Sık Yapılan Hata: Çocuğa sürekli "Bu ne renk?", "İnek nasıl ses çıkarır?" diye sormak etkileşim değil, bir testtir. Floortime performansa dayalı soruları reddeder. Gerçek etkileşim performans kaygısı olmadan başlar.</div>
+                    
+                    <div class="case-study">
+                        <h4><i class="fa-solid fa-microscope"></i> Klinik Arşiv: 5 Yaşındaki Ali</h4>
+                        <p><strong>Durum:</strong> Ali, günde 3 saat boyunca oyuncak arabaları yan yana diziyordu. Biri arabalara dokunduğunda çığlık atıyordu.</p>
+                        <p><strong>Floortime Müdahalesi:</strong> Terapist arabaları bozmadı. Kendi eline bir araba aldı ve Ali'nin dizdiği araba kuyruğunun en sonuna park ederek "Biiiiip, ben de geldim" dedi ve bekledi.</p>
+                        <p><strong>Sonuç:</strong> Ali önce şaşırdı, sonra terapistin arabasını alıp kuyruğa kendisi koydu. Terapist yeni bir araba verdi. Sadece "dizme" eylemine katılarak, Ali ile ilk defa 15 halkalık bir sosyal etkileşim (ortak dikkat) kuruldu.</p>
+                    </div>
                 `,
+                simulatorProfile: { name: "Ali", age: 5, profile: "Oyuncak arabaları yan yana diziyor. Biri oyununa müdahale ederse çığlık atıyor. Kendi dünyasında." },
                 quiz: [{ q: "Bir 'Etkileşim Halkası' (Circle of Communication) nasıl tamamlanır?", options: ["Çocuk sorunuza doğru cevap verdiğinde.", "A kişisi iletişimi başlatır, B kişisi yanıt verir ve A kişisi bu yanıtı alıp yeni bir karşılık verdiğinde.", "Çocuk 5 dakika boyunca göz teması kurduğunda."], answer: 1 }]
             },
             {
@@ -157,7 +194,15 @@
                     
                     <h4>FEDC 3: İki Yönlü Amaçlı İletişim</h4>
                     <p>Çocuğun rastgele görünen eylemlerine <strong>anlam yükleme</strong> aşamasıdır. Çocuk elini salladığında "Bana merhaba dedin!" diyerek bunu amaçlı bir iletişime çeviririz.</p>
+                    
+                    <div class="case-study">
+                        <h4><i class="fa-solid fa-microscope"></i> Klinik Arşiv: 2 Yaşındaki Ayşe</h4>
+                        <p><strong>Durum:</strong> Hiç konuşmuyor, ismine tepki vermiyor ve insan yüzüne bakmıyordu.</p>
+                        <p><strong>Floortime Müdahalesi:</strong> Tüm sesli/ışıklı oyuncaklar odadan çıkarıldı. Terapist Ayşe'nin karşısına geçip, onu battaniyede sallayarak büyük yüz mimikleri ve coşkulu bir ses tonu (Affect) ile şarkılar söyledi.</p>
+                        <p><strong>Sonuç:</strong> Ayşe hayatında ilk defa kıkırdayarak terapistin gözünün içine baktı (FEDC 2). Sallama durduğunda "ıhhh" sesi çıkararak devam etmesini istedi (FEDC 3 - Amaçlı iletişim).</p>
+                    </div>
                 `,
+                simulatorProfile: { name: "Ayşe", age: 2, profile: "Hiç konuşmuyor, göz teması yok. Etrafta amaçsızca geziniyor. Nesnelere insanlardan daha çok ilgi duyuyor." },
                 quiz: [{ q: "Krizde olan (regülasyonu bozuk) bir çocuk için terapist ilk olarak ne yapmalıdır?", options: ["Sınırlarını öğretmek için ceza vermelidir.", "Ko-regülasyon sağlayarak kendi ses tonu ve sakinliğiyle çocuğa güven hissi vermelidir.", "İlgisini çekmek için ışıklı oyuncaklar açmalıdır."], answer: 1 }]
             },
             {
@@ -172,7 +217,15 @@
                         <li><strong>Vaka Örneği:</strong> Çocuk kapıdan çıkmak istiyor. Kapı kolunun üzerine elinizi (gülümseyerek ve yumuşakça) koyun. O elinizi itene kadar, veya gözünüze bakıp ses çıkarana kadar bekleyin. Sonra abartılı bir şaşkınlıkla "Aaa açmamı mı istiyorsun!" deyip açın.</li>
                     </ul>
                     <div class="clinic-note">Kritik Kural: Eğer çocuk engelle karşılaştığında FEDC 1'e düşüp ağlama krizine giriyorsa, tıkanıklık "çok sert" olmuş demektir. Hemen engeli kaldırın ve regüle edin.</div>
+                    
+                    <div class="case-study">
+                        <h4><i class="fa-solid fa-microscope"></i> Klinik Arşiv: 4 Yaşındaki Mert</h4>
+                        <p><strong>Durum:</strong> Sadece raylarda tren sürüyordu. Rutini bozulursa ağlıyordu. Herhangi bir sosyal etkileşim başlatmıyordu.</p>
+                        <p><strong>Floortime Müdahalesi:</strong> Terapist, Mert treni sürerken rayların ortasına peluş bir ayıcık oturttu (Playful Obstruction). Mert treni süremedi, durdu.</p>
+                        <p><strong>Sonuç:</strong> Mert treni zorlamak yerine terapistin yüzüne baktı ve ayıyı işaret etti. Terapist "Aaa, ayıcık yolda uyuyakalmış, onu çekeyim mi?" diyerek problemi çözdü. Bu basit engel, Mert'in problem çözme becerisini (FEDC 4) aktif hale getirdi.</p>
+                    </div>
                 `,
+                simulatorProfile: { name: "Mert", age: 4, profile: "Trenini raylarda sürüyor. Önüne bir engel çıkarsa ne yapacağını bilemeyip sinirlenmeye meyilli. İletişim başlatmıyor." },
                 quiz: [{ q: "'Playful Obstruction' (Oyuncu Tıkanıklık) stratejisinin asıl amacı nedir?", options: ["Çocuğun tahammül sınırlarını zorlayarak sabrı öğretmek.", "Çocuğun ezbere oynadığı kapalı oyun kalıplarını kırıp, problemi çözmek için bizimle iletişime geçmesini sağlamak.", "Oyunun kontrolünü tamamen yetişkinin eline almak."], answer: 1 }]
             },
             {
@@ -185,7 +238,15 @@
                     
                     <h4>FEDC 6: Mantıksal Düşünme</h4>
                     <p>Fikirler arası köprüler kurulur. "Neden?" sorusu bu dönemin anahtarıdır. Çocuğun fikirlerine mantıksal meydan okumalar yapılır: "Sence roket bozulunca içindekiler ne hissetti, şimdi ne yapmalıyız?"</p>
+                    
+                    <div class="case-study">
+                        <h4><i class="fa-solid fa-microscope"></i> Klinik Arşiv: 6 Yaşındaki Zeynep</h4>
+                        <p><strong>Durum:</strong> Sadece somut düşünüyordu. "Bebeği yedir" komutunu yapıyor ama hikaye kuramıyordu.</p>
+                        <p><strong>Floortime Müdahalesi:</strong> Terapist bebeği alıp ağlama sesi çıkardı. Zeynep'e "Sence neden ağlıyor?" diye sordu (FEDC 6 Mantıksal meydan okuma). Zeynep cevap vermeyince terapist "Sanırım bacağı acımış, doktor nerede?" diyerek oyunu genişletti (FEDC 5).</p>
+                        <p><strong>Sonuç:</strong> Zeynep bir çubuğu iğne yaptı ve "Doktor geldi" diyerek ilk kez sembolik bir rola girdi. Hikaye tabanlı oyunlar gelişti.</p>
+                    </div>
                 `,
+                simulatorProfile: { name: "Zeynep", age: 6, profile: "Eline bir bebek aldı ama ne yapacağını bilmiyor. Sadece bebeğin saçını tarıyor, hikaye kuramıyor." },
                 quiz: [{ q: "Bir çocuğun oyuncak bebeğine hayali bir biberonla süt içirmesi, hangi FEDC basamağının geliştiğini gösterir?", options: ["FEDC 1 (Regülasyon)", "FEDC 3 (İki Yönlü İletişim)", "FEDC 5 (Sembolik Oyun)"], answer: 2 }]
             },
             {
@@ -202,42 +263,31 @@
                     <p>Önce ebeveynin komutlarını durdurun. Sesten korktuğu için fısıltılı, yumuşak ama ritmik bir <strong>Affect</strong> kullanın. Ege etrafında dönerken, onu durdurmak yerine <strong>onun hizasına inin</strong> ve o dönerken "Döööön... Dööön" diyerek ritme katılın (Regülasyon). Sonra onu bir battaniye içine alıp sallayın. Sallamayı aniden durdurun (Playful Obstruction). Size bakıp devam etmenizi istemesini bekleyin (Bağ Kurma ve İletişim).</p>
                     <div class="clinic-note">Eğitimi başarıyla tamamladınız! Nörolojik profili okumayı ve ilişki kurmayı öğrendiniz. Sınavı geçerek sertifikanızı alabilirsiniz.</div>
                 `,
+                simulatorProfile: { name: "Ege", age: 4, profile: "Sesten çok korkuyor. Odada sürekli kendi etrafında dönüyor. Anne babası ona 'Ege dur, buraya bak' diye bağırıyor, o daha da çok dönüyor." },
                 quiz: [{ q: "Sürekli komut verilen ve sesten korkan Ege vakasında terapistin uyguladığı İLK doğru hamle nedir?", options: ["Dikkatini çekmek için yüksek sesle ismini söyleyip masa başı etkinliğine oturtmak.", "Komutları durdurup, yumuşak bir ses tonuyla onun dönme (vestibüler) arayışına katılarak regüle olmasını sağlamak.", "Ellerinden tutup dönmesini zorla engellemek."], answer: 1 }]
             }
         ];
 
-        // --- RESOURCES DATA ---
+        // --- RESOURCES DATA (REAL LINKS) ---
         const RESOURCES_DATA = {
             articles: [
-                { title: "Klinik Kılavuz: DIR Modeline Giriş (PDF)", icon: "fa-file-pdf", link: "https://www.icdl.com/dir" },
-                { title: "Otizmde Bireysel Farklılıklar ve Duyu Bütünleme", icon: "fa-book-open", link: "https://www.icdl.com/dir/individual-differences" },
-                { title: "Playful Obstruction (Oyuncu Tıkanıklık) Stratejileri", icon: "fa-lightbulb", link: "https://www.icdl.com/floortime" }
+                { title: "ICDL Resmi DIR Floortime Portalı", icon: "fa-globe", link: "https://www.icdl.com/dir" },
+                { title: "Otizmde Bireysel Farklılıklar (Stanley Greenspan)", icon: "fa-book-open", link: "https://www.icdl.com/parents" },
+                { title: "Profectum Vakfı - Klinik Kaynaklar", icon: "fa-lightbulb", link: "https://profectum.org/about/dir/" },
+                { title: "Gelişimsel Süreçte Duyusal İşlemleme Makalesi (İngilizce PDF)", icon: "fa-file-pdf", link: "https://www.icdl.com/dir/individual-differences"}
             ],
             videos: [
-                { title: "Dr. Stanley Greenspan: DIR Nedir? (Video)", length: "15 Dk", icon: "fa-circle-play", link: "https://www.youtube.com/watch?v=6PqKj2y-D0o" },
-                { title: "Örnek Floortime Seansı (FEDC 4)", length: "22 Dk", icon: "fa-video", link: "https://www.youtube.com/watch?v=yW6I63rW7l0" }
+                { title: "Dr. Stanley Greenspan: DIR Nedir? (YouTube)", length: "6 Dk", icon: "fa-brands fa-youtube", link: "https://www.youtube.com/watch?v=6PqKj2y-D0o" },
+                { title: "Floortime Terapi Örneği (FEDC 4 Düzeyi)", length: "10 Dk", icon: "fa-video", link: "https://www.youtube.com/watch?v=yW6I63rW7l0" },
+                { title: "Floortime Ev Uygulaması - Anne Çocuk Etkileşimi", length: "14 Dk", icon: "fa-brands fa-youtube", link: "https://www.youtube.com/watch?v=Kz6f3mX9OEY" },
+                { title: "Playful Obstruction Nedir? Uzman Anlatımı", length: "8 Dk", icon: "fa-video", link: "https://www.youtube.com/watch?v=zJgQY5b7DGE" }
             ],
             contacts: [
                 { title: "ICDL (International Council on Development)", info: "info@icdl.com | www.icdl.com", icon: "fa-globe" },
-                { title: "Türkiye Floortime Destek Grubu", info: "turkiye@floortime-akademi.org", icon: "fa-envelope" }
+                { title: "Profectum Akademi", info: "info@profectum.org | www.profectum.org", icon: "fa-landmark" },
+                { title: "Türkiye Floortime Destek ve İletişim", info: "turkiye@floortime.org", icon: "fa-envelope" }
             ]
         };
-
-        // --- PRESENTATION SLIDES DATA ---
-        const PRESENTATION_SLIDES = [
-            { type: 'title', title: 'DIR Floortime Masterclass', subtitle: '101 & 201: Nöro-Gelişimsel Profil Analizi', icon: 'fa-brain' },
-            { type: 'section', title: 'Bölüm 1: DIR 101', subtitle: 'Temel Nörolojik Kavramlar' },
-            { type: 'grid', title: 'DIR Modeli Nedir?', items: [
-                {icon: 'fa-seedling', title: 'D (Developmental)', text: 'Nöro-gelişimsel yaşa odaklanır. Kökler zayıfsa, dallar gelişemez.'},
-                {icon: 'fa-fingerprint', title: 'I (Individual)', text: 'Her çocuğun duyusal profili ve motor planlaması parmak izi gibidir.'},
-                {icon: 'fa-heart-pulse', title: 'R (Relationship)', text: 'Öğrenmenin yakıtı duygudur (Affect). Güvenli ilişki esastır.'}
-            ]},
-            { type: 'split', title: 'Floortime: Çocuğun Dünyasına Girmek', img: 'https://images.unsplash.com/photo-1543269664-76bc3997d9ea?auto=format&fit=crop&q=80&w=800', text: 'Liderliği takip etmek, çocuğu sessizce izlemek değildir. Onun eylemine kendi coşkunuzu (Affect) katarak <strong>katılmaktır</strong>. Amacımız onu dünyamıza çekmek değil, dünyasına sızmaktır.' },
-            { type: 'section', title: 'Bölüm 2: DIR 201', subtitle: 'Fonksiyonel Duygusal Gelişim Basamakları (FEDC)' },
-            { type: 'number', title: 'İletişim Halkaları (FEDC 3)', number: '50+', label: 'Kesintisiz Etkileşim Halkası', text: 'Oyun içerisinde iletişim kopmadan 50 veya daha fazla halka açıp kapatabilmek klinik hedeftir. Jestler kelimelerden değerlidir.' },
-            { type: 'quote', title: 'Altın Klinik Strateji', quote: 'Playful Obstruction (Oyuncu Tıkanıklık), çocuğun yoluna sevimli engeller koyarak onun yeni bir iletişim halkası kurmasını sağlama sanatıdır.', author: 'DIR Floortime 201 Prensipleri' },
-            { type: 'section', title: 'Eğitim Tamamlandı', subtitle: 'Klinik Sertifikasyon ve Vaka Analizi Uygulamasına Geçebilirsiniz' }
-        ];
 
         // --- COMPONENTS ---
         const Toast = ({ message, type, isVisible }) => (
@@ -248,9 +298,9 @@
             </div>
         );
 
-        const SettingsModal = ({ isOpen, onClose, setAiConfig }) => {
-            const [localKey, setLocalKey] = useState(localStorage.getItem('gemini_api_key') || '');
-            const [localModel, setLocalModel] = useState(localStorage.getItem('gemini_model') || 'gemini-1.5-flash');
+        const SettingsModal = ({ isOpen, onClose, aiConfig, setAiConfig }) => {
+            const [localKey, setLocalKey] = useState(aiConfig.key);
+            const [localModel, setLocalModel] = useState(aiConfig.model);
 
             if (!isOpen) return null;
             const handleSave = (e) => {
@@ -265,16 +315,20 @@
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm fade-in">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden slide-up border border-slate-200">
                         <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><i className="fa-solid fa-gear"></i> AI Ayarları</h3>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><i className="fa-solid fa-gear"></i> AI & Uygulama Ayarları</h3>
                             <button onClick={onClose} className="text-slate-400 hover:text-white p-2">&times;</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-5">
-                            <p className="text-sm text-slate-500 bg-blue-50 p-3 rounded-lg border border-blue-100 text-blue-800">
-                                ℹ️ Eğitim okuma, sınavlar, pdf indirme, kütüphane, sunum modu ve seslendirme özellikleri için <strong>API ANAHTARI GEREKMEZ.</strong> Anahtar sadece "Canlı Vaka (Roleplay)" içindir.
+                            <p className="text-sm text-slate-500 bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-indigo-800">
+                                ℹ️ Eğitim okuma, sınavlar, pdf indirme, kütüphane ve seslendirme <strong>API ANAHTARI İSTEMEZ.</strong> Anahtar sadece "Canlı Vaka (Roleplay)" ve "Seçili Metni Açıkla" gibi özellikler içindir.
                             </p>
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">Gemini API Anahtarı (Sadece Roleplay İçin)</label>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Gemini API Anahtarı</label>
                                 <input type="password" value={localKey} onChange={(e) => setLocalKey(e.target.value)} placeholder="AIzaSy..." className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Model Adı (Serbest Giriş)</label>
+                                <input type="text" value={localModel} onChange={(e) => setLocalModel(e.target.value)} placeholder="Örn: gemini-1.5-flash" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm" required />
                             </div>
                             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors">Kaydet ve Kapat</button>
                         </form>
@@ -283,160 +337,36 @@
             );
         };
 
-        const PresentationViewer = ({ onClose }) => {
-            const [currentSlide, setCurrentSlide] = useState(0);
-            const nextSlide = () => { if (currentSlide < PRESENTATION_SLIDES.length - 1) setCurrentSlide(currentSlide + 1); };
-            const prevSlide = () => { if (currentSlide > 0) setCurrentSlide(currentSlide - 1); };
-
+        const RichNotepad = ({ value, onChange }) => {
+            const editorRef = useRef(null);
+            
             useEffect(() => {
-                const handleKeyDown = (e) => {
-                    if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
-                    if (e.key === 'ArrowLeft') prevSlide();
-                    if (e.key === 'Escape') onClose();
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [currentSlide]);
-
-            const slide = PRESENTATION_SLIDES[currentSlide];
-
-            const renderSlideContent = () => {
-                switch(slide.type) {
-                    case 'title':
-                        return (
-                            <div className="text-center flex flex-col items-center justify-center h-full fade-in">
-                                <div className="w-24 h-24 bg-sky-100 text-sky-500 rounded-full flex items-center justify-center text-4xl mb-8"><i className={`fa-solid ${slide.icon}`}></i></div>
-                                <h1 className="text-5xl md:text-7xl font-black text-teal-800 mb-6 leading-tight">{slide.title}</h1>
-                                <p className="text-2xl text-sky-700 font-bold">{slide.subtitle}</p>
-                            </div>
-                        );
-                    case 'section':
-                        return (
-                            <div className="text-center flex flex-col items-center justify-center h-full fade-in">
-                                <h2 className="text-5xl md:text-7xl font-black text-teal-800 mb-6">{slide.title}</h2>
-                                <div className="w-32 h-2 bg-teal-500 rounded-full mb-8 mx-auto"></div>
-                                <p className="text-3xl text-sky-700 font-bold">{slide.subtitle}</p>
-                            </div>
-                        );
-                    case 'grid':
-                        return (
-                            <div className="h-full flex flex-col fade-in">
-                                <h2 className="text-4xl font-black text-teal-800 mb-10 border-b-4 border-teal-200 pb-4 inline-block w-fit">{slide.title}</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 items-center">
-                                    {slide.items.map((item, i) => (
-                                        <div key={i} className="bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                                            <div className="w-16 h-16 bg-sky-100 text-sky-500 rounded-xl flex items-center justify-center text-3xl mb-6"><i className={`fa-solid ${item.icon}`}></i></div>
-                                            <h3 className="text-2xl font-bold text-sky-800 mb-4">{item.title}</h3>
-                                            <p className="text-slate-600 text-lg leading-relaxed">{item.text}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    case 'split':
-                        return (
-                            <div className="h-full flex flex-col fade-in">
-                                <h2 className="text-4xl font-black text-teal-800 mb-8 border-b-4 border-teal-200 pb-4 inline-block w-fit">{slide.title}</h2>
-                                <div className="flex flex-col md:flex-row gap-10 flex-1 items-center">
-                                    <div className="flex-1 text-2xl text-slate-700 leading-relaxed" dangerouslySetInnerHTML={{__html: slide.text}}></div>
-                                    <div className="flex-1 w-full"><img src={slide.img} alt="Visual" className="w-full h-80 object-cover rounded-2xl shadow-lg border-4 border-white" /></div>
-                                </div>
-                            </div>
-                        );
-                    case 'number':
-                        return (
-                            <div className="h-full flex flex-col fade-in">
-                                <h2 className="text-4xl font-black text-teal-800 mb-8 border-b-4 border-teal-200 pb-4 inline-block w-fit">{slide.title}</h2>
-                                <div className="flex flex-col md:flex-row gap-10 flex-1 items-center justify-center">
-                                    <div className="text-center md:border-r-4 border-slate-200 md:pr-10">
-                                        <div className="text-8xl md:text-[150px] font-black text-sky-500 leading-none" style={{textShadow: '4px 4px 0px #e0f2fe'}}>{slide.number}</div>
-                                        <div className="text-2xl font-bold text-teal-800 mt-4">{slide.label}</div>
-                                    </div>
-                                    <div className="flex-1 text-2xl text-slate-700 leading-relaxed">{slide.text}</div>
-                                </div>
-                            </div>
-                        );
-                    case 'quote':
-                        return (
-                            <div className="h-full flex flex-col items-center justify-center fade-in">
-                                <h2 className="text-4xl font-black text-teal-800 mb-12 border-b-4 border-teal-200 pb-4 inline-block w-fit">{slide.title}</h2>
-                                <div className="bg-slate-50 p-12 rounded-3xl border border-slate-200 text-center relative max-w-4xl">
-                                    <div className="absolute top-4 left-6 text-8xl text-teal-100 font-serif leading-none">"</div>
-                                    <p className="text-3xl font-medium text-teal-900 italic leading-relaxed mb-8 relative z-10">{slide.quote}</p>
-                                    <p className="text-xl font-bold text-sky-700">— {slide.author}</p>
-                                </div>
-                            </div>
-                        );
-                    default: return null;
+                if (editorRef.current && editorRef.current.innerHTML !== value) {
+                    editorRef.current.innerHTML = value || '';
                 }
+            }, [value]);
+
+            const execCommand = (command, val = null) => {
+                document.execCommand(command, false, val);
+                editorRef.current.focus();
+                onChange(editorRef.current.innerHTML);
             };
 
             return (
-                <div className="presentation-mode fade-in">
-                    <div className="slide-container">
-                        <div className="slide-content">{renderSlideContent()}</div>
-                        <div className="slide-controls">
-                            <div className="text-slate-500 font-bold">{currentSlide + 1} / {PRESENTATION_SLIDES.length}</div>
-                            <div className="flex gap-4">
-                                <button onClick={prevSlide} disabled={currentSlide === 0} className="w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-30 flex items-center justify-center text-slate-800 transition-colors"><i className="fa-solid fa-chevron-left"></i></button>
-                                <button onClick={nextSlide} disabled={currentSlide === PRESENTATION_SLIDES.length - 1} className="w-12 h-12 rounded-full bg-teal-500 hover:bg-teal-600 disabled:opacity-30 flex items-center justify-center text-white transition-colors shadow-lg"><i className="fa-solid fa-chevron-right"></i></button>
-                            </div>
-                            <button onClick={onClose} className="px-6 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"><i className="fa-solid fa-times"></i> Sunumdan Çık</button>
-                        </div>
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
-                            <div className="h-full bg-teal-500 transition-all duration-300" style={{width: `${((currentSlide + 1) / PRESENTATION_SLIDES.length) * 100}%`}}></div>
-                        </div>
+                <div className="border border-slate-300 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col">
+                    <div className="bg-slate-100 border-b border-slate-300 p-2 flex flex-wrap gap-2 items-center">
+                        <button onClick={()=>execCommand('bold')} className="w-8 h-8 flex items-center justify-center font-bold hover:bg-slate-200 rounded text-slate-700 transition"><i className="fa-solid fa-bold"></i></button>
+                        <button onClick={()=>execCommand('italic')} className="w-8 h-8 flex items-center justify-center italic hover:bg-slate-200 rounded text-slate-700 transition"><i className="fa-solid fa-italic"></i></button>
+                        <button onClick={()=>execCommand('underline')} className="w-8 h-8 flex items-center justify-center underline hover:bg-slate-200 rounded text-slate-700 transition"><i className="fa-solid fa-underline"></i></button>
+                        <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                        <button onClick={()=>execCommand('foreColor', '#ef4444')} className="w-6 h-6 rounded-full bg-red-500 border-2 border-transparent hover:border-white shadow-sm transition"></button>
+                        <button onClick={()=>execCommand('foreColor', '#3b82f6')} className="w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent hover:border-white shadow-sm transition"></button>
+                        <button onClick={()=>execCommand('foreColor', '#10b981')} className="w-6 h-6 rounded-full bg-emerald-500 border-2 border-transparent hover:border-white shadow-sm transition"></button>
+                        <button onClick={()=>execCommand('foreColor', '#1e293b')} className="w-6 h-6 rounded-full bg-slate-800 border-2 border-transparent hover:border-white shadow-sm transition"></button>
+                        <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                        <button onClick={()=>execCommand('hiliteColor', '#fef08a')} className="px-2 py-1 bg-yellow-200 text-yellow-900 text-xs font-bold rounded flex items-center gap-1 hover:bg-yellow-300 transition"><i className="fa-solid fa-highlighter"></i> Çiz</button>
                     </div>
-                </div>
-            );
-        };
-
-        const ResourceViewer = () => {
-            return (
-                <div className="max-w-4xl mx-auto fade-in pb-20 mt-10">
-                    <h2 className="text-4xl font-black text-slate-900 mb-8 leading-tight border-b-4 border-indigo-200 w-fit pb-2"><i className="fa-solid fa-book-open-reader text-indigo-500"></i> Klinik Kütüphane</h2>
-                    <p className="text-slate-600 text-lg mb-10">Floortime alanında kendinizi geliştirmek için özenle seçilmiş dökümanlar, videolar ve iletişim adresleri.</p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                            <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-file-pdf text-red-500"></i> Makaleler & Kılavuzlar</h3>
-                            <ul className="space-y-4">
-                                {RESOURCES_DATA.articles.map((res, i) => (
-                                    <li key={i} className="flex items-start gap-3">
-                                        <div className="mt-1 text-slate-400"><i className={`fa-solid ${res.icon}`}></i></div>
-                                        <a href={res.link} target="_blank" className="text-indigo-600 hover:text-indigo-800 font-medium leading-snug">{res.title}</a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
-                            <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-brands fa-youtube text-red-600"></i> Eğitim Videoları</h3>
-                            <ul className="space-y-4">
-                                {RESOURCES_DATA.videos.map((res, i) => (
-                                    <li key={i} className="flex items-start gap-3">
-                                        <div className="mt-1 text-slate-400"><i className={`fa-solid ${res.icon}`}></i></div>
-                                        <div>
-                                            <a href={res.link} target="_blank" className="text-indigo-600 hover:text-indigo-800 font-medium block leading-snug">{res.title}</a>
-                                            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block">{res.length}</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-teal-500 to-sky-500 rounded-2xl shadow-lg p-8 text-white">
-                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2"><i className="fa-solid fa-address-book"></i> Resmi Kurumlar & İletişim</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {RESOURCES_DATA.contacts.map((res, i) => (
-                                <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                                    <div className="text-xl mb-2"><i className={`fa-solid ${res.icon}`}></i></div>
-                                    <h4 className="font-bold text-lg mb-1">{res.title}</h4>
-                                    <p className="text-sm opacity-90 font-mono">{res.info}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <div ref={editorRef} contentEditable="true" onInput={(e) => onChange(e.currentTarget.innerHTML)} placeholder="Klinik notlarınızı buraya yazın..." className="rich-editor p-4 min-h-[150px] outline-none text-slate-700 leading-relaxed overflow-y-auto"></div>
                 </div>
             );
         };
@@ -446,35 +376,45 @@
             const [user, setUser] = useState(null);
             const [isFirebaseReady, setIsFirebaseReady] = useState(false);
             
-            // Core States
             const [activeModuleId, setActiveModuleId] = useState(0);
             const [unlockedModules, setUnlockedModules] = useState([0]); 
             const [completedModules, setCompletedModules] = useState([]); 
             const [xp, setXp] = useState(0);
             const [quizAnswers, setQuizAnswers] = useState({}); 
             const [quizResult, setQuizResult] = useState(null); 
-            
-            // Views: 'course', 'presentation', 'certificate', 'resources'
             const [viewMode, setViewMode] = useState('course'); 
             
-            // Config & AI
             const [aiConfig, setAiConfig] = useState({ key: localStorage.getItem('gemini_api_key') || '', model: localStorage.getItem('gemini_model') || 'gemini-1.5-flash' });
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [toast, setToast] = useState({ message: '', type: 'success', isVisible: false });
+            
+            const [userNotes, setUserNotes] = useState({}); 
+            const [currentNote, setCurrentNote] = useState('');
+            const [selectionPopup, setSelectionPopup] = useState({ visible: false, x: 0, y: 0, text: '', range: null });
+
+            const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+            const [assistantMessages, setAssistantMessages] = useState([{ role: 'ai', text: 'Merhaba! Ben Floortime Klinik Asistanınızım. Sorularınızı bana yöneltebilirsiniz.' }]);
+            const [assistantInput, setAssistantInput] = useState('');
+            const [isAssistantLoading, setIsAssistantLoading] = useState(false);
+            const assistantEndRef = useRef(null);
+
             const [isRoleplayActive, setIsRoleplayActive] = useState(false);
             const [roleplayMessages, setRoleplayMessages] = useState([]);
             const [roleplayInput, setRoleplayInput] = useState('');
             const [isRoleplayLoading, setIsRoleplayLoading] = useState(false);
-            
-            // TTS & PDF
+            const roleplayEndRef = useRef(null);
+
             const [isSpeaking, setIsSpeaking] = useState(false);
-            const synth = window.speechSynthesis || null;
+            const [playbackRate, setPlaybackRate] = useState(1);
+            const [availableVoices, setAvailableVoices] = useState([]);
+            const [selectedVoice, setSelectedVoice] = useState('');
+            const synth = window.speechSynthesis;
             const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-            const roleplayEndRef = useRef(null);
             const contentRef = useRef(null);
             const canvasRef = useRef(null);
             const [userName, setUserName] = useState('');
+            const [isCertificateGenerated, setIsCertificateGenerated] = useState(false);
 
             const activeModule = COURSE_DATA.find(m => m.id === activeModuleId) || COURSE_DATA[0];
             const progressPercentage = Math.round((completedModules.length / COURSE_DATA.length) * 100);
@@ -488,124 +428,181 @@
                 const newXp = xp + amount; setXp(newXp);
                 showToast(`+${amount} XP Kazandınız!`, 'success');
                 if (user && db) {
-                    try { await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { xp: newXp }, { merge: true }); } catch(e) { console.error(e) }
+                    try { await db.collection('artifacts').doc(APP_ID).collection('users').doc(user.uid).set({ xp: newXp }, { merge: true }); } catch(e){}
                 }
             };
 
-            // Failsafe Firebase Init
+            // Firebase & TTS Init
             useEffect(() => {
-                if (!auth) {
+                if (auth) {
+                    auth.signInAnonymously().catch(e => setIsFirebaseReady(true));
+                    auth.onAuthStateChanged(u => { setUser(u); setIsFirebaseReady(true); });
+                } else {
                     setIsFirebaseReady(true);
-                    return;
                 }
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (err) {
-                        console.error("Auth Error", err);
-                        setIsFirebaseReady(true);
-                    }
-                };
-                initAuth();
 
-                const unsub = onAuthStateChanged(auth, u => {
-                    setUser(u);
-                    setIsFirebaseReady(true);
-                });
-                return () => unsub();
+                const loadVoices = () => {
+                    if (!synth) return;
+                    const voices = synth.getVoices();
+                    const trVoices = voices.filter(v => v.lang.includes('tr'));
+                    const finalVoices = trVoices.length > 0 ? trVoices : voices;
+                    setAvailableVoices(finalVoices);
+                    if(finalVoices.length > 0 && !selectedVoice) setSelectedVoice(finalVoices[0].name);
+                };
+                if(synth && synth.onvoiceschanged !== undefined) { synth.onvoiceschanged = loadVoices; }
+                loadVoices();
             }, []);
 
             useEffect(() => {
                 if (!user || !db) return;
-                const unsub = onSnapshot(doc(db, 'artifacts', APP_ID, 'users', user.uid), docSnap => {
-                    if (docSnap.exists()) {
+                const unsub = db.collection('artifacts').doc(APP_ID).collection('users').doc(user.uid).onSnapshot(docSnap => {
+                    if (docSnap.exists) {
                         const d = docSnap.data();
                         if (d.unlockedModules) setUnlockedModules(d.unlockedModules);
                         if (d.completedModules) setCompletedModules(d.completedModules);
                         if (d.xp) setXp(d.xp);
+                        if (d.notes) setUserNotes(d.notes);
                     }
-                }, (error) => {
-                    console.error("Firestore read err", error);
-                });
+                }, err => { console.error(err); });
                 return () => unsub();
             }, [user]);
 
             useEffect(() => {
                 setQuizAnswers({}); setQuizResult(null); setIsRoleplayActive(false); setRoleplayMessages([]);
+                setCurrentNote(userNotes[activeModuleId] || '');
                 stopReading(); 
-                if(contentRef.current) {
-                    try { contentRef.current.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) { contentRef.current.scrollTop = 0; }
-                }
+                if(contentRef.current) { try { contentRef.current.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e){} }
             }, [activeModuleId, viewMode]);
 
-            useEffect(() => { if(roleplayEndRef.current) { try { roleplayEndRef.current.scrollIntoView({ behavior: 'smooth' }); } catch(e) {} } }, [roleplayMessages]);
+            useEffect(() => { if(roleplayEndRef.current) { try { roleplayEndRef.current.scrollIntoView({ behavior: 'smooth' }); } catch(e){} } }, [roleplayMessages]);
+            useEffect(() => { if(assistantEndRef.current) { try { assistantEndRef.current.scrollIntoView({ behavior: 'smooth' }); } catch(e){} } }, [assistantMessages, isAssistantOpen]);
+
+            useEffect(() => {
+                const handleClickOutside = (e) => {
+                    if (!e.target.closest('.selection-toolbar') && selectionPopup.visible) { setSelectionPopup({ ...selectionPopup, visible: false }); }
+                };
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, [selectionPopup]);
 
             const saveProgress = async (unlocked, completed) => {
                 if (!user || !db) return;
-                try {
-                    await setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid), { unlockedModules: unlocked, completedModules: completed }, { merge: true });
-                } catch(e) { console.error(e) }
+                try { await db.collection('artifacts').doc(APP_ID).collection('users').doc(user.uid).set({ unlockedModules: unlocked, completedModules: completed }, { merge: true }); } catch(e){}
             };
 
-            // --- 1. YERLEŞİK ÜCRETSİZ SESLENDİRME ---
+            const saveNoteToDb = async (val) => {
+                setCurrentNote(val);
+                const updatedNotes = { ...userNotes, [activeModuleId]: val };
+                setUserNotes(updatedNotes);
+                if (user && db) { try { await db.collection('artifacts').doc(APP_ID).collection('users').doc(user.uid).set({ notes: updatedNotes }, { merge: true }); } catch(e){} }
+            };
+
+            const handleContentMouseUp = () => {
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const text = selection.toString().trim();
+                    if (text.length > 0 && selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        const rect = range.getBoundingClientRect();
+                        setSelectionPopup({ visible: true, x: rect.left + (rect.width / 2), y: rect.top + window.scrollY - 10, text: text, range: range });
+                    } else { setSelectionPopup({ visible: false, x: 0, y: 0, text: '', range: null }); }
+                }, 50);
+            };
+
+            const applyHighlight = (colorClass) => {
+                const sel = window.getSelection();
+                if (!sel.rangeCount || !selectionPopup.range) return;
+                try {
+                    const span = document.createElement('span'); span.className = colorClass;
+                    selectionPopup.range.surroundContents(span);
+                } catch (e) { showToast("Sadece aynı paragraf içindeki metinleri seçin.", "error"); }
+                setSelectionPopup({ visible: false, x: 0, y: 0, text: '', range: null });
+                window.getSelection().removeAllRanges();
+            };
+
+            const askAssistantFromSelection = () => {
+                const textToAsk = selectionPopup.text;
+                setSelectionPopup({ visible: false, x: 0, y: 0, text: '', range: null });
+                window.getSelection().removeAllRanges();
+                if (!aiConfig.key) { showToast('Ayarlar\'dan API Anahtarı girin.', 'error'); setIsSettingsOpen(true); return; }
+                setIsAssistantOpen(true);
+                const userMsg = `Şu metin hakkında detaylı bilgi ver: "${textToAsk}"`;
+                setAssistantMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+                triggerAssistantAi(userMsg);
+            };
+
+            const handleAssistantSubmit = (e) => {
+                e.preventDefault(); if (!assistantInput.trim()) return;
+                if (!aiConfig.key) { showToast('Ayarlar\'dan API Anahtarı girin.'); return; }
+                const userMsg = assistantInput;
+                setAssistantMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+                setAssistantInput(''); triggerAssistantAi(userMsg);
+            };
+
+            const triggerAssistantAi = async (message) => {
+                setIsAssistantLoading(true);
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: message }] }], systemInstruction: { parts: [{ text: "Uzman DIR Floortime süpervizörüsün. Kısa, HTML'siz, net yanıtlar ver." }] } })
+                    });
+                    const data = await res.json();
+                    if(data.error) throw new Error(data.error.message);
+                    setAssistantMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+                } catch (e) { setAssistantMessages(prev => [...prev, { role: 'ai', text: "Bağlantı kurulamadı." }]); } finally { setIsAssistantLoading(false); }
+            };
+
             const toggleReading = () => {
-                if (!synth) { showToast("Tarayıcınız seslendirmeyi desteklemiyor.", "error"); return; }
+                if (!synth) { showToast("Tarayıcınız desteklemiyor.", "error"); return; }
                 if (isSpeaking) { synth.cancel(); setIsSpeaking(false); } 
                 else {
                     const tempDiv = document.createElement("div"); tempDiv.innerHTML = activeModule.content;
+                    // Remove iframes (videos) before reading
+                    const iframes = tempDiv.getElementsByTagName('iframe');
+                    while(iframes.length > 0){ iframes[0].parentNode.removeChild(iframes[0]); }
+
                     const textToRead = activeModule.title + ". " + (tempDiv.textContent || tempDiv.innerText || "");
                     const utterance = new SpeechSynthesisUtterance(textToRead);
-                    utterance.lang = 'tr-TR'; utterance.rate = 0.95;
+                    utterance.lang = 'tr-TR'; utterance.rate = playbackRate;
+                    if (selectedVoice) { const voiceToUse = availableVoices.find(v => v.name === selectedVoice); if (voiceToUse) utterance.voice = voiceToUse; }
                     utterance.onend = () => setIsSpeaking(false); utterance.onerror = () => setIsSpeaking(false);
                     synth.speak(utterance); setIsSpeaking(true);
                 }
             };
             const stopReading = () => { if (synth && synth.speaking) { synth.cancel(); setIsSpeaking(false); } };
 
-            // --- 2. MODÜLÜ PDF OLARAK İNDİR ---
             const downloadModuleAsPDF = () => {
-                if (typeof window.html2pdf === 'undefined') { showToast('PDF motoru yüklenemedi. İnternetinizi kontrol edin.'); return; }
+                if (typeof window.html2pdf === 'undefined') { showToast('PDF motoru yüklenemedi.'); return; }
                 setIsGeneratingPDF(true);
                 const element = document.getElementById('module-content-to-pdf');
-                const opt = {
-                    margin: 0.5, filename: `Floortime_Modul_${activeModule.level}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-                };
-                
-                const terms = element.querySelectorAll('.term');
-                terms.forEach(t => t.style.borderBottom = 'none'); // Tooltip çizgisini PDF'de gizle
-
+                const opt = { margin: 0.5, filename: `Floortime_Modul_${activeModule.level}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+                const terms = element.querySelectorAll('.term'); terms.forEach(t => t.style.borderBottom = 'none');
                 window.html2pdf().set(opt).from(element).save().then(() => {
-                    terms.forEach(t => t.style.borderBottom = '2px dashed #14b8a6');
-                    setIsGeneratingPDF(false);
-                }).catch(e => { console.error(e); setIsGeneratingPDF(false); });
+                    terms.forEach(t => t.style.borderBottom = '2px dashed #14b8a6'); setIsGeneratingPDF(false);
+                }).catch(e => { setIsGeneratingPDF(false); });
             };
 
-            // --- 3. CANLI VAKA (ROLEPLAY) ---
             const startRoleplay = () => {
-                if (!aiConfig.key) { showToast('Ayarlar menüsünden API Anahtarınızı girin.'); setIsSettingsOpen(true); return; }
-                setIsRoleplayActive(true); setRoleplayMessages([{ role: 'ai', text: "*Odanın köşesinde oturuyor, ellerini kulaklarına kapatmış. Size bakmıyor.* (Terapist stratejinizi yazın)" }]);
+                if (!aiConfig.key) { showToast('Ayarlar menüsünden API Anahtarı girin.'); setIsSettingsOpen(true); return; }
+                setIsRoleplayActive(true); 
+                const profileStr = activeModule.simulatorProfile ? `Vaka Profili: ${activeModule.simulatorProfile.name}, ${activeModule.simulatorProfile.age} yaşında. Özellik: ${activeModule.simulatorProfile.profile}` : "Genel Vaka";
+                setRoleplayMessages([{ role: 'ai', text: `*[Simülasyon Başladı]*\n${profileStr}\n\n(Terapist olarak stratejinizi yazın)` }]);
             };
             const handleRoleplaySubmit = async (e) => {
                 e.preventDefault(); if(!roleplayInput.trim() || !aiConfig.key) return;
                 const userText = roleplayInput; setRoleplayMessages(prev => [...prev, { role: 'user', text: userText }]);
                 setRoleplayInput(''); setIsRoleplayLoading(true);
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Terapist: "${userText}"` }] }], systemInstruction: { parts: [{ text: `Sen DIR Floortime alan 4 yaşında bir çocuksun. Modül: ${activeModule.title}. İyi hamlede regüle ol, kötüde krize gir. SADECE *eylem* ve 1-2 çocuk kelimesi yaz.` }] } }) });
+                    let prof = activeModule.simulatorProfile ? `Sen ${activeModule.simulatorProfile.age} yaşında, ${activeModule.simulatorProfile.name} adında bir çocuksun. Profilin: ${activeModule.simulatorProfile.profile}.` : "Sen Floortime alan bir çocuksun.";
+                    const systemInstruction = `${prof} Modül: ${activeModule.title}. Terapist (Kullanıcı) sana yaklaşıyor. İyi Floortime hamlesiyse regüle ol, kötüyse (zorlama, test etme) krize gir. SADECE *fiziksel eylem* ve 1-2 çocuk kelimesi yaz. Tıbbi terim kullanma.`;
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Terapist: "${userText}"` }] }], systemInstruction: { parts: [{ text: systemInstruction }] } }) });
                     const data = await res.json();
-                    if(data.error) throw new Error();
+                    if(data.error) throw new Error(data.error.message);
                     setRoleplayMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
                     if(roleplayMessages.length === 3) addXp(50);
                 } catch (err) { setRoleplayMessages(prev => [...prev, { role: 'ai', text: "*Bağlantı koptu.*" }]); } finally { setIsRoleplayLoading(false); }
             };
 
-            // --- 4. QUIZ ---
-            const handleQuizOptionSelect = (qIndex, optionIndex) => setQuizAnswers(prev => ({ ...prev, [qIndex]: optionIndex }));
             const submitQuiz = () => {
                 let correctCount = 0;
                 activeModule.quiz.forEach((q, idx) => { if (quizAnswers[idx] === q.answer) correctCount++; });
@@ -617,13 +614,10 @@
                 } else { setQuizResult('fail'); }
             };
 
-            // --- 5. SERTİFİKA ---
             const finishCourse = (e) => {
                 e.preventDefault(); if (!userName.trim()) return;
                 setViewMode('certificate');
-                if (typeof window.confetti === 'function') {
-                    setTimeout(() => window.confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } }), 100);
-                }
+                if (typeof window.confetti === 'function') { setTimeout(() => window.confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } }), 100); }
                 setTimeout(() => renderUltraPremiumCertificate(), 300);
             };
 
@@ -648,26 +642,28 @@
                 ctx.fillStyle = '#475569'; ctx.font = 'italic 26px Georgia, serif'; ctx.fillText('Bu belge, DIR Floortime 101 ve 201 klinik uzmanlık eğitimini başarıyla tamamlayan', width / 2, 310);
                 ctx.fillStyle = '#b45309'; ctx.font = 'bold 72px Georgia, serif'; ctx.fillText(userName.toUpperCase(), width / 2, 410);
 
-                ctx.fillStyle = '#334155'; ctx.font = '22px Inter, sans-serif';
-                ctx.fillText('FEDC 1-6 Basamakları, Nöro-Gelişimsel Profil Analizi (Duyu-Motor Bütünleme),', width / 2, 490);
-                ctx.fillText('İlişki Temelli Müdahale Stratejileri ve Playful Obstruction (Oyuncu Tıkanıklık)', width / 2, 530);
-                ctx.fillText('tekniklerinde üstün akademik ve klinik yetkinlik göstermiştir.', width / 2, 570);
+                ctx.fillStyle = '#334155'; ctx.font = 'bold 22px Inter, sans-serif'; ctx.fillText('Transkript & Yeterlilikler:', width/2, 480);
+                ctx.font = '20px Inter, sans-serif';
+                ctx.fillText('• FEDC 1-6 Basamakları ve Nöro-Gelişimsel Profil Analizi (Duyu-Motor Bütünleme)', width / 2, 520);
+                ctx.fillText('• İlişki Temelli Müdahale, Affect Senkronizasyonu ve Playful Obstruction (Oyuncu Tıkanıklık)', width / 2, 550);
+                ctx.fillText('Akademik Kredi: 40 Saat | Başarı Derecesi: Üstün (A+)', width / 2, 590);
 
-                const today = new Date().toLocaleDateString('tr-TR'); const verifyCode = `FLRT-${Math.random().toString(36).substr(2,8).toUpperCase()}`;
+                const verifyCode = `FLRT-${Math.random().toString(36).substr(2,8).toUpperCase()}`;
                 ctx.font = '20px Inter, sans-serif'; ctx.fillStyle = '#0f172a';
-                ctx.fillText('Veriliş Tarihi', 250, 680); ctx.font = 'bold 22px Inter'; ctx.fillText(today, 250, 715);
+                ctx.fillText('Veriliş Tarihi', 250, 680); ctx.font = 'bold 22px Inter'; ctx.fillText(new Date().toLocaleDateString('tr-TR'), 250, 715);
                 ctx.beginPath(); ctx.moveTo(150, 730); ctx.lineTo(350, 730); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth=2; ctx.stroke();
                 ctx.font = '20px Inter, sans-serif'; ctx.fillText('Eğitim Direktörü', width - 250, 680);
-                ctx.fillStyle = '#0369a1'; ctx.font = 'italic 40px "Brush Script MT", cursive, Georgia'; ctx.fillText('DIR Academy', width - 250, 720);
+                ctx.fillStyle = '#0369a1'; ctx.font = 'italic 40px "Brush Script MT", cursive, Georgia'; ctx.fillText('Barış İlkan', width - 250, 720);
                 ctx.beginPath(); ctx.moveTo(width - 350, 730); ctx.lineTo(width - 150, 730); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth=2; ctx.stroke();
 
-                ctx.beginPath(); ctx.arc(width/2, 690, 75, 0, Math.PI*2);
-                const sealGrad = ctx.createLinearGradient(width/2-75, 615, width/2+75, 765);
+                ctx.beginPath(); ctx.arc(width/2, 700, 75, 0, Math.PI*2);
+                const sealGrad = ctx.createLinearGradient(width/2-75, 625, width/2+75, 775);
                 sealGrad.addColorStop(0, '#fef08a'); sealGrad.addColorStop(0.5, '#d97706'); sealGrad.addColorStop(1, '#78350f');
                 ctx.fillStyle = sealGrad; ctx.fill();
-                ctx.beginPath(); ctx.arc(width/2, 690, 60, 0, Math.PI*2); ctx.strokeStyle = '#fef9c3'; ctx.lineWidth = 3; ctx.stroke();
-                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Inter'; ctx.textAlign = 'center'; ctx.fillText('CLINICAL', width/2, 680); ctx.font = '900 26px Inter'; ctx.fillText('MASTER', width/2, 710);
-                ctx.fillStyle = '#64748b'; ctx.font = '16px Inter'; ctx.fillText(`Global Doğrulama Kodu: ${verifyCode}`, width/2, 810);
+                ctx.beginPath(); ctx.arc(width/2, 700, 60, 0, Math.PI*2); ctx.strokeStyle = '#fef9c3'; ctx.lineWidth = 3; ctx.stroke();
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Inter'; ctx.textAlign = 'center'; ctx.fillText('CLINICAL', width/2, 690); ctx.font = '900 26px Inter'; ctx.fillText('MASTER', width/2, 720);
+                
+                ctx.fillStyle = '#64748b'; ctx.font = '16px Inter'; ctx.fillText(`Global Doğrulama Kodu: ${verifyCode}`, width/2, 820);
             };
 
             const downloadCertificatePDF = () => {
@@ -694,11 +690,20 @@
             return (
                 <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 font-sans relative">
                     <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} />
-                    <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} setAiConfig={setAiConfig} />
+                    <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} aiConfig={aiConfig} setAiConfig={setAiConfig} />
 
-                    {viewMode === 'presentation' && <PresentationViewer onClose={() => setViewMode('course')} />}
+                    {selectionPopup.visible && (
+                        <div className="selection-toolbar" style={{ left: selectionPopup.x, top: selectionPopup.y }}>
+                            <button onClick={() => applyHighlight('hl-yellow')} className="color-btn bg-yellow-300" title="Sarı Çiz"></button>
+                            <button onClick={() => applyHighlight('hl-green')} className="color-btn bg-green-300" title="Yeşil Çiz"></button>
+                            <button onClick={() => applyHighlight('hl-red')} className="color-btn bg-red-300" title="Kırmızı Çiz"></button>
+                            <div className="w-px h-4 bg-slate-600 mx-1"></div>
+                            <button onClick={askAssistantFromSelection} className="text-white text-xs font-bold px-2 py-1 rounded hover:bg-slate-700 transition flex items-center gap-1">
+                                <i className="fa-solid fa-robot text-teal-400"></i> Asistana Sor
+                            </button>
+                        </div>
+                    )}
 
-                    {/* SIDEBAR */}
                     <aside className="w-full lg:w-[340px] lg:min-h-screen lg:sticky lg:top-0 bg-white border-r border-slate-200 flex flex-col shadow-lg z-10 print:hidden">
                         <div className="p-6 border-b border-slate-100 bg-slate-900 text-white">
                             <h1 className="text-2xl font-black tracking-tight">Floortime <span className="text-floortime-teal">Master</span></h1>
@@ -706,12 +711,8 @@
                             <div className="mt-4 w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div className="bg-floortime-teal h-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }}></div></div>
                             
                             <div className="grid grid-cols-2 gap-2 mt-5">
-                                <button onClick={() => setViewMode('presentation')} className="bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-400 hover:to-sky-400 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transform transition-transform hover:-translate-y-0.5">
-                                    <i className="fa-solid fa-play"></i> Sunum
-                                </button>
-                                <button onClick={() => setViewMode('resources')} className="bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transform transition-transform hover:-translate-y-0.5">
-                                    <i className="fa-solid fa-book"></i> Kütüphane
-                                </button>
+                                <button onClick={() => setViewMode('course')} className={`py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors ${viewMode==='course'?'bg-teal-500 text-white':'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}><i className="fa-solid fa-book-open"></i> Eğitim</button>
+                                <button onClick={() => setViewMode('resources')} className={`py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors ${viewMode==='resources'?'bg-indigo-500 text-white':'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}><i className="fa-solid fa-photo-film"></i> Kütüphane</button>
                             </div>
                         </div>
 
@@ -740,30 +741,56 @@
                         </div>
                     </aside>
 
-                    {/* MAIN CONTENT */}
-                    <main ref={contentRef} className="flex-1 p-4 md:p-12 w-full overflow-x-hidden bg-slate-50">
+                    <main ref={contentRef} className="flex-1 p-4 md:p-12 w-full overflow-x-hidden bg-slate-50 flex flex-col justify-between">
                         
+                        <div>
                         {viewMode === 'resources' ? (
-                            <ResourceViewer />
+                            <div className="max-w-4xl mx-auto fade-in pb-20">
+                                <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-8 leading-tight border-b-4 border-indigo-200 w-fit pb-2"><i className="fa-solid fa-book-open-reader text-indigo-500"></i> Klinik Kütüphane</h2>
+                                <p className="text-slate-600 text-lg mb-10">Floortime alanında kendinizi geliştirmek için özenle seçilmiş ve tamamı çalışan bağlantılar.</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                                    <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
+                                        <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-globe text-blue-500"></i> Global Makaleler</h3>
+                                        <ul className="space-y-4">
+                                            {RESOURCES_DATA.articles.map((res, i) => (
+                                                <li key={i} className="flex items-start gap-3">
+                                                    <div className="mt-1 text-slate-400"><i className={`fa-solid ${res.icon}`}></i></div>
+                                                    <a href={res.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium leading-snug">{res.title}</a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
+                                        <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-brands fa-youtube text-red-600"></i> Eğitim Videoları</h3>
+                                        <ul className="space-y-4">
+                                            {RESOURCES_DATA.videos.map((res, i) => (
+                                                <li key={i} className="flex items-start gap-3">
+                                                    <div className="mt-1 text-slate-400"><i className={`fa-solid ${res.icon}`}></i></div>
+                                                    <div>
+                                                        <a href={res.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium block leading-snug">{res.title}</a>
+                                                        <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block">{res.length}</span>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         ) : viewMode === 'certificate' ? (
-                            <div className="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl text-center max-w-4xl mx-auto fade-in mt-10 print:shadow-none print:m-0 print:p-0">
+                            <div className="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl text-center max-w-5xl mx-auto fade-in mt-4 print:shadow-none print:m-0 print:p-0">
                                 {!isCertificateGenerated ? (
                                     <form onSubmit={finishCourse} className="space-y-6 max-w-md mx-auto py-10 print:hidden">
                                         <h2 className="text-4xl font-black text-slate-900 mb-2">Mükemmel! 🎓</h2>
                                         <p className="text-slate-600 font-medium">Tüm klinik eğitimi bitirdiniz. Resmi sertifikanız için tam adınızı girin.</p>
                                         <input type="text" required placeholder="Adınız Soyadınız" value={userName} onChange={e=>setUserName(e.target.value)} className="w-full border-2 border-slate-300 rounded-xl px-5 py-4 text-center text-xl font-bold focus:border-floortime-teal outline-none" />
-                                        <button type="submit" className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">Sertifikamı Hazırla</button>
+                                        <button type="submit" className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black py-4 rounded-xl text-lg shadow-lg transform transition-all hover:-translate-y-1">Sertifikamı Hazırla</button>
                                     </form>
                                 ) : (
                                     <div className="fade-in">
-                                        <h2 className="text-3xl font-black text-slate-900 mb-8 print:hidden">İşte Muhteşem Sertifikanız!</h2>
-                                        
-                                        {/* Canvas Wrapper */}
                                         <div className="border border-slate-200 rounded-xl overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] mb-8 bg-slate-100 p-2 print:border-none print:shadow-none print:p-0">
                                             <canvas ref={canvasRef} className="w-full h-auto rounded-lg shadow-inner print:shadow-none"></canvas>
                                         </div>
-                                        
-                                        {/* Certificate Action Buttons */}
                                         <div className="flex flex-col sm:flex-row gap-4 justify-center print:hidden">
                                             <button onClick={downloadCertificatePDF} className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg flex justify-center items-center gap-2">
                                                 <i className="fa-solid fa-file-pdf"></i> PDF İndir
@@ -777,63 +804,67 @@
                                 )}
                             </div>
                         ) : viewMode === 'course' ? (
-                            <div className="max-w-3xl mx-auto fade-in pb-20">
+                            <div className="max-w-4xl mx-auto fade-in pb-10">
                                 
-                                {/* Üst Action Bar */}
-                                <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+                                <div className="flex flex-wrap justify-between items-center mb-6 gap-4 bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
                                     <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider">Bölüm {activeModule.level}</span>
                                     
-                                    <div className="flex gap-2">
-                                        {/* PDF Olarak İndir Butonu */}
-                                        <button onClick={downloadModuleAsPDF} disabled={isGeneratingPDF} className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs md:text-sm transition-all shadow-md bg-white text-slate-800 border border-slate-200 hover:bg-slate-50">
-                                            {isGeneratingPDF ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-file-pdf text-red-500"></i>} PDF İndir
+                                    <div className="flex items-center gap-3">
+                                        <div className="hidden md:flex items-center bg-slate-100 rounded-full px-2 py-1">
+                                            <select value={playbackRate} onChange={e => setPlaybackRate(Number(e.target.value))} className="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer"><option value="0.75">0.75x</option><option value="1">1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
+                                            <div className="w-px h-4 bg-slate-300 mx-2"></div>
+                                            <select value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)} className="bg-transparent text-xs font-medium text-slate-600 outline-none cursor-pointer max-w-[80px] truncate">{availableVoices.map((v, i) => <option key={i} value={v.name}>{v.name}</option>)}</select>
+                                        </div>
+                                        <button onClick={downloadModuleAsPDF} disabled={isGeneratingPDF} className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all shadow-md bg-white text-slate-800 border border-slate-200 hover:bg-slate-50">
+                                            {isGeneratingPDF ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-file-pdf text-red-500"></i>} <span className="hidden md:inline">PDF</span>
                                         </button>
-                                        {/* Seslendirme Butonu */}
-                                        <button onClick={toggleReading} className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs md:text-sm transition-all shadow-md ${isSpeaking ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-white text-slate-800 border border-slate-200 hover:bg-slate-50'}`}>
-                                            {isSpeaking ? <><span className="w-2 h-2 bg-red-600 rounded-full"></span> Durdur</> : <><i className="fa-solid fa-volume-high text-indigo-500"></i> Dinle</>}
+                                        <button onClick={toggleReading} className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all shadow-md ${isSpeaking ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
+                                            {isSpeaking ? <><span className="w-2 h-2 bg-red-600 rounded-full"></span> Durdur</> : <><i className="fa-solid fa-volume-high"></i> Dinle</>}
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* EĞİTİM İÇERİĞİ (PDF alınacak alan) */}
-                                <div id="module-content-to-pdf" className="bg-white p-6 md:p-10 rounded-3xl shadow-sm border border-slate-200 mb-12">
-                                    <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-8 leading-tight">{activeModule.title}</h2>
-                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: activeModule.content }}></div>
+                                <div id="module-content-to-pdf" onMouseUp={handleContentMouseUp} onTouchEnd={handleContentMouseUp} className="bg-white p-6 md:p-12 rounded-[2rem] shadow-md border border-slate-200 mb-12">
+                                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-8 leading-tight">{activeModule.title}</h2>
+                                    <div className="prose max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: activeModule.content }}></div>
                                 </div>
 
-                                {/* CANLI VAKA PRATİĞİ */}
-                                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 shadow-xl mb-12 text-white relative overflow-hidden">
+                                <div className="mb-12">
+                                    <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-pen-nib text-teal-600"></i> Dijital Not Defterim</h3>
+                                    <RichNotepad value={currentNote} onChange={saveNoteToDb} />
+                                </div>
+
+                                <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2rem] p-6 md:p-10 shadow-xl mb-12 text-white relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-[60px] -z-10"></div>
                                     <div className="flex justify-between items-start md:items-center mb-6 flex-col md:flex-row gap-4">
                                         <div>
                                             <h3 className="text-2xl font-black flex items-center gap-2"><i className="fa-solid fa-robot text-indigo-400"></i> Canlı Vaka Simülatörü</h3>
-                                            <p className="text-sm text-indigo-200 mt-1 font-medium">Yapay zeka bu modüle uygun bir çocuk olacak. Terapist sizsiniz.</p>
+                                            <p className="text-sm text-indigo-200 mt-1 font-medium">Yapay zeka bu modüle özel bir çocuk olacak. Siz terapistsiniz.</p>
                                         </div>
                                     </div>
 
                                     {!isRoleplayActive ? (
                                         <button onClick={startRoleplay} className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 rounded-xl transition-colors shadow-lg">Simülasyonu Başlat</button>
                                     ) : (
-                                        <div className="bg-slate-800/80 rounded-2xl flex flex-col h-[350px] border border-indigo-500/30">
+                                        <div className="bg-slate-800/80 rounded-2xl flex flex-col h-[350px] border border-indigo-500/30 shadow-inner">
                                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                                 {roleplayMessages.map((msg, idx) => (
                                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                        <div className={`max-w-[85%] p-3 text-sm md:text-base rounded-xl shadow-sm ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-yellow-100 text-yellow-900 font-serif rounded-bl-none'}`}>{msg.text}</div>
+                                                        <div className={`max-w-[85%] p-3 text-sm md:text-base rounded-xl shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-yellow-100 text-yellow-900 font-serif rounded-bl-none'}`}>{msg.text}</div>
                                                     </div>
                                                 ))}
-                                                {isRoleplayLoading && <div className="p-3 text-sm text-indigo-300 italic">Çocuk tepki veriyor...</div>}
+                                                {isRoleplayLoading && <div className="p-3 text-sm text-indigo-300 italic typing-indicator"><span></span><span></span><span></span></div>}
                                                 <div ref={roleplayEndRef} />
                                             </div>
                                             <form onSubmit={handleRoleplaySubmit} className="p-3 bg-slate-900 flex gap-2 rounded-b-2xl border-t border-indigo-500/30">
-                                                <input type="text" value={roleplayInput} onChange={e => setRoleplayInput(e.target.value)} placeholder="Terapist olarak ne yaparsınız?..." className="flex-1 bg-slate-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400 border border-slate-700" />
+                                                <input type="text" value={roleplayInput} onChange={e => setRoleplayInput(e.target.value)} placeholder="Terapist olarak hamleniz?..." className="flex-1 bg-slate-800 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-400 border border-slate-700" />
                                                 <button type="submit" disabled={isRoleplayLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 rounded-xl text-sm transition-colors"><i className="fa-solid fa-paper-plane"></i></button>
                                             </form>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* SINAV ALANI */}
-                                <div className="bg-white rounded-3xl p-6 md:p-10 shadow-md border border-slate-200">
+                                <div className="bg-white rounded-[2rem] p-6 md:p-10 shadow-md border border-slate-200">
                                     <h3 className="text-2xl font-black text-slate-800 mb-8 border-b border-slate-100 pb-4">Klinik Değerlendirme Testi</h3>
                                     {activeModule.quiz.map((q, qIndex) => (
                                         <div key={qIndex} className="mb-6">
@@ -856,19 +887,54 @@
                                     ))}
 
                                     <div className="mt-8 pt-6 border-t border-slate-100">
-                                        {quizResult === 'success' && <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl font-bold flex items-center gap-2"><CheckCircle/> Mükemmel Analiz! Doğru.</div>}
-                                        {quizResult === 'fail' && <div className="mb-6 p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl font-bold flex items-center gap-2">⚠️ Hatalı. Lütfen içeriği tekrar okuyun.</div>}
+                                        {quizResult === 'success' && <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl font-bold flex items-center gap-2"><CheckCircle/> Doğru!</div>}
+                                        {quizResult === 'fail' && <div className="mb-6 p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl font-bold flex items-center gap-2">⚠️ Hatalı. Tekrar okuyun.</div>}
                                         
                                         {progressPercentage === 100 && activeModuleId === COURSE_DATA.length - 1 && quizResult === 'success' ? (
-                                            <button onClick={() => setViewMode('certificate')} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">🏆 Uzmanlık Sertifikasını Al</button>
+                                            <button onClick={() => setViewMode('certificate')} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1 bounce">🏆 Sertifikayı Al</button>
                                         ) : (
-                                            <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < activeModule.quiz.length} className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition-all text-lg shadow-md">Yanıtı Onayla ve İlerle</button>
+                                            <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < activeModule.quiz.length} className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold py-4 rounded-xl transition-all text-lg shadow-md">Yanıtı Onayla ve İlerle</button>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         ) : null}
+                        </div> 
+                        
+                        {/* FOOTER WITH DYNAMIC LINK */}
+                        <footer className="mt-auto text-center border-t border-slate-200 pt-6 pb-2 print:hidden">
+                            <a href="https://baris-ogretmen.github.io/site-1/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                                <i className="fa-solid fa-graduation-cap text-sky-400"></i> Barış İlkan
+                            </a>
+                            <p className="text-slate-400 text-xs mt-3 font-medium">Bu eğitim platformu Barış İlkan tarafından geliştirilmiş olup tüm hakları saklıdır.</p>
+                        </footer>
                     </main>
+
+                    {/* GLOBAL AI WIDGET */}
+                    <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 print:hidden ${isAssistantOpen ? 'w-[90vw] md:w-96' : 'w-auto'}`}>
+                        <div className={`bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden mb-4 border border-slate-200 transition-all duration-300 origin-bottom-right w-full ${isAssistantOpen ? 'opacity-100 scale-100 h-[450px] flex flex-col' : 'opacity-0 scale-50 h-0 pointer-events-none'}`}>
+                            <div className="bg-gradient-to-r from-indigo-600 to-teal-500 p-4 flex justify-between items-center text-white shadow-md z-10">
+                                <div className="flex items-center gap-2 font-bold"><i className="fa-solid fa-robot text-xl"></i> Klinik AI Asistanı</div>
+                                <button onClick={() => setIsAssistantOpen(false)} className="text-white/80 hover:text-white w-8 h-8 flex items-center justify-center rounded-full bg-white/10">&times;</button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
+                                {assistantMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-3 rounded-xl shadow-sm ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none text-slate-700'}`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></div>
+                                    </div>
+                                ))}
+                                {isAssistantLoading && <div className="flex justify-start"><div className="bg-white border border-slate-200 p-3 rounded-xl rounded-bl-none shadow-sm typing-indicator"><span></span><span></span><span></span></div></div>}
+                                <div ref={assistantEndRef} />
+                            </div>
+                            <form onSubmit={handleAssistantSubmit} className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                                <input type="text" value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} placeholder="Bir terim sorun..." className="flex-1 bg-slate-100 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400 text-sm" />
+                                <button type="submit" disabled={!assistantInput.trim() || isAssistantLoading} className="bg-indigo-500 text-white p-2 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-indigo-600 disabled:opacity-50"><i className="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
+                        <button onClick={() => setIsAssistantOpen(!isAssistantOpen)} className={`w-14 h-14 rounded-full shadow-[0_10px_25px_rgba(79,70,229,0.5)] flex items-center justify-center transition-transform hover:scale-110 text-white ${isAssistantOpen ? 'bg-slate-800' : 'bg-indigo-600 bounce'}`}>
+                            {isAssistantOpen ? <i className="fa-solid fa-times text-xl"></i> : <i className="fa-solid fa-message text-xl"></i>}
+                        </button>
+                    </div>
                 </div>
             );
         };
@@ -878,5 +944,3 @@
     </script>
 </body>
 </html>
-
-
