@@ -104,9 +104,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+       
 
         const { useState, useEffect, useRef } = React;
 
@@ -375,6 +373,7 @@
         const App = () => {
             const [user, setUser] = useState(null);
             const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+const [showWelcomePopup, setShowWelcomePopup] = useState(true); // HOŞGELDİN POP-UP KONTROLÜ
             
             const [activeModuleId, setActiveModuleId] = useState(0);
             const [unlockedModules, setUnlockedModules] = useState([0]); 
@@ -400,9 +399,10 @@
 
             const [isRoleplayActive, setIsRoleplayActive] = useState(false);
             const [roleplayMessages, setRoleplayMessages] = useState([]);
-            const [roleplayInput, setRoleplayInput] = useState('');
-            const [isRoleplayLoading, setIsRoleplayLoading] = useState(false);
-            const roleplayEndRef = useRef(null);
+const [roleplayInput, setRoleplayInput] = useState('');
+const [isRoleplayLoading, setIsRoleplayLoading] = useState(false);
+const [customCaseProfile, setCustomCaseProfile] = useState(''); // YENİ: DİNAMİK VAKA HAFIZASI
+const roleplayEndRef = useRef(null);
 
             const [isSpeaking, setIsSpeaking] = useState(false);
             const [playbackRate, setPlaybackRate] = useState(1);
@@ -582,26 +582,52 @@
                 }).catch(e => { setIsGeneratingPDF(false); });
             };
 
-            const startRoleplay = () => {
-                if (!aiConfig.key) { showToast('Ayarlar menüsünden API Anahtarı girin.'); setIsSettingsOpen(true); return; }
-                setIsRoleplayActive(true); 
-                const profileStr = activeModule.simulatorProfile ? `Vaka Profili: ${activeModule.simulatorProfile.name}, ${activeModule.simulatorProfile.age} yaşında. Özellik: ${activeModule.simulatorProfile.profile}` : "Genel Vaka";
-                setRoleplayMessages([{ role: 'ai', text: `*[Simülasyon Başladı]*\n${profileStr}\n\n(Terapist olarak stratejinizi yazın)` }]);
-            };
-            const handleRoleplaySubmit = async (e) => {
-                e.preventDefault(); if(!roleplayInput.trim() || !aiConfig.key) return;
-                const userText = roleplayInput; setRoleplayMessages(prev => [...prev, { role: 'user', text: userText }]);
-                setRoleplayInput(''); setIsRoleplayLoading(true);
-                try {
-                    let prof = activeModule.simulatorProfile ? `Sen ${activeModule.simulatorProfile.age} yaşında, ${activeModule.simulatorProfile.name} adında bir çocuksun. Profilin: ${activeModule.simulatorProfile.profile}.` : "Sen Floortime alan bir çocuksun.";
-                    const systemInstruction = `${prof} Modül: ${activeModule.title}. Terapist (Kullanıcı) sana yaklaşıyor. İyi Floortime hamlesiyse regüle ol, kötüyse (zorlama, test etme) krize gir. SADECE *fiziksel eylem* ve 1-2 çocuk kelimesi yaz. Tıbbi terim kullanma.`;
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Terapist: "${userText}"` }] }], systemInstruction: { parts: [{ text: systemInstruction }] } }) });
-                    const data = await res.json();
-                    if(data.error) throw new Error(data.error.message);
-                    setRoleplayMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
-                    if(roleplayMessages.length === 3) addXp(50);
-                } catch (err) { setRoleplayMessages(prev => [...prev, { role: 'ai', text: "*Bağlantı koptu.*" }]); } finally { setIsRoleplayLoading(false); }
-            };
+           const startRoleplay = () => {
+    if (!aiConfig.key) { showToast('Ayarlar menüsünden API Anahtarı girin.', 'error'); setIsSettingsOpen(true); return; }
+    setIsRoleplayActive(true);
+    
+    let profileStr = activeModule.simulatorProfile ? `Vaka Profili: ${activeModule.simulatorProfile.name}, ${activeModule.simulatorProfile.age} yaşında. Özellik: ${activeModule.simulatorProfile.profile}` : "Genel Vaka";
+    
+    // Eğer hoca kendi dinamik vakasını girdiyse, sistemi ona göre ez!
+    if (customCaseProfile.trim().length > 0) {
+        profileStr = `ÖZEL VAKA PROFİLİ: ${customCaseProfile}`;
+    }
+
+    setRoleplayMessages([{ role: 'ai', text: `*[Simülasyon Başladı]*\n${profileStr}\n\n(Terapist olarak stratejinizi ve ilk cümlenizi yazın)` }]);
+};
+
+const handleRoleplaySubmit = async (e) => {
+    e.preventDefault(); if(!roleplayInput.trim() || !aiConfig.key) return;
+    const userText = roleplayInput; setRoleplayMessages(prev => [...prev, { role: 'user', text: userText }]);
+    setRoleplayInput(''); setIsRoleplayLoading(true);
+    try {
+        let prof = activeModule.simulatorProfile ? `Sen ${activeModule.simulatorProfile.age} yaşında, ${activeModule.simulatorProfile.name} adında bir çocuksun. Profilin: ${activeModule.simulatorProfile.profile}.` : "Sen Floortime alan bir çocuksun.";
+        
+        if (customCaseProfile.trim().length > 0) {
+            prof = `Sen şu özelliklere sahip bir çocuksun: ${customCaseProfile}.`;
+        }
+
+        // ÇÖKMEYİ ÖNLEYEN ZIRHLI PROMPT MANTIGI (System Instruction yerine doğrudan context)
+        const safePrompt = `SİSTEM KOMUTU: ${prof} Modül: ${activeModule.title}. Terapist sana yaklaşıyor. İyi bir Floortime hamlesi yaparsa (liderliğini takip etme, affect) regüle ol, kötüyse (zorlama, test etme) krize gir. SADECE *fiziksel eylem* ve 1-2 kelime yaz. Asla tıbbi terim kullanma.\n\nTERAPİSTİN HAMLESİ: "${userText}"\nÇOCUĞUN TEPKİSİ:`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] }) 
+        });
+        
+        const data = await res.json();
+        if(data.error) throw new Error(data.error.message);
+        
+        setRoleplayMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+        if(roleplayMessages.length === 3) addXp(50);
+    } catch (err) { 
+        console.error("Roleplay API Hatası:", err);
+        setRoleplayMessages(prev => [...prev, { role: 'ai', text: `*Sistem Hatası:* ${err.message}. Lütfen Ayarlar'dan API anahtarınızın ve model adınızın doğru olduğundan emin olun.` }]); 
+    } finally { 
+        setIsRoleplayLoading(false); 
+    }
+};
 
             const submitQuiz = () => {
                 let correctCount = 0;
@@ -689,7 +715,31 @@
 
             return (
                 <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50 font-sans relative">
-                    <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} />
+                     <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} />
+
+{/* İŞTE O KONUŞTUĞUMUZ KLİNİK AÇILIŞ POP-UP'I */}
+{showWelcomePopup && (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md fade-in">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden slide-up border border-slate-200 p-8 text-center relative">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-floortime-teal to-indigo-500"></div>
+            <div className="w-20 h-20 bg-teal-50 text-floortime-teal rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-teal-100">
+                <i className="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h2 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">Masterclass'a Hoş Geldiniz!</h2>
+            <p className="text-slate-600 font-medium mb-6 leading-relaxed">
+                Bu platform, <strong>DIR Floortime</strong> temel prensiplerini klinik vakalarla simüle eden interaktif bir eğitim ekosistemidir.
+                <br/><br/>
+                <span className="text-xs bg-amber-50 text-amber-800 px-4 py-3 rounded-xl block border border-amber-200 text-left space-y-2">
+                    <p><i className="fa-solid fa-circle-exclamation mr-1"></i> <strong>Yasal Uyarı:</strong> Buradaki içerikler eğitim amaçlıdır, tıbbi tavsiye yerine geçmez. Nöro-gelişimsel farklılıkların teşhisi için mutlaka uzman hekimlere başvurulmalıdır.</p>
+                    <p><i className="fa-solid fa-certificate mr-1"></i> <strong>Sertifika Bilgilendirmesi:</strong> Bu belge, katılımcının DIR Floortime modelinin temel prensiplerini, nöro-gelişimsel süreçleri ve ilişki temelli müdahale stratejilerini teorik olarak anladığını ve simülasyon ortamında başarıyla uyguladığını gösterir. Resmi bir ICDL veya Profectum terapistlik unvanı ya da klinik müdahale ruhsatı yerine geçmez.</p>
+                </span>
+            </p>
+            <button onClick={() => setShowWelcomePopup(false)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                Anladım, Eğitime Başla <i className="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+)}
                     <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} aiConfig={aiConfig} setAiConfig={setAiConfig} />
 
                     {selectionPopup.visible && (
@@ -844,8 +894,19 @@
                                     </div>
 
                                     {!isRoleplayActive ? (
-                                        <button onClick={startRoleplay} className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 rounded-xl transition-colors shadow-lg">Simülasyonu Başlat</button>
-                                    ) : (
+    <div className="space-y-4">
+        <textarea 
+            value={customCaseProfile} 
+            onChange={(e) => setCustomCaseProfile(e.target.value)} 
+            placeholder="Modülün varsayılan vakasını oynamak için burayı BOŞ BIRAKIN. Kendi vakanızı yaratmak isterseniz buraya yazın... (Örn: 6 yaşında, sürekli dönen nesnelere bakıyor, konuşmuyor...)" 
+            className="w-full bg-slate-800/60 text-indigo-100 placeholder-indigo-300/50 p-4 rounded-xl border border-indigo-500/30 text-sm outline-none focus:ring-2 focus:ring-indigo-400 resize-y" 
+            rows="3"
+        ></textarea>
+        <button onClick={startRoleplay} className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 rounded-xl transition-colors shadow-lg">
+            {customCaseProfile.trim().length > 0 ? "Özel Vakamla Simülasyonu Başlat" : "Simülasyonu Başlat"}
+        </button>
+    </div>
+) : (
                                         <div className="bg-slate-800/80 rounded-2xl flex flex-col h-[350px] border border-indigo-500/30 shadow-inner">
                                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                                 {roleplayMessages.map((msg, idx) => (
