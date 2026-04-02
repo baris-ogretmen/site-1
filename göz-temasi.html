@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mushap'ın Işık Dünyası 3.0</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050510;
+            font-family: 'Fredoka', sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Yıldız Puanı */
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 5;
+            color: #ffd700;
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            pointer-events: none;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* Yönerge Kutusu (YENİ) */
+        #instruction-box {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            font-size: 1.4rem;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 4;
+            transition: all 0.3s ease;
+        }
+
+        /* Kontrol Paneli */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(30, 30, 45, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 260px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #ui-layer.minimized {
+            transform: translateX(130%);
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            background: #FF0055;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 1.1rem;
+            margin: 0 0 10px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .section-title {
+            color: #aaa;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        button.mode-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        button.mode-btn:active { transform: scale(0.98); }
+
+        /* Modlara özel renkler */
+        button[data-mode="tracking"].active-mode { background: #00f2fe; color: #000; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
+        button[data-mode="bubbles"].active-mode { background: #FF9900; color: #fff; box-shadow: 0 0 15px rgba(255, 153, 0, 0.4); }
+        button[data-mode="attention"].active-mode { background: #ff0055; color: #fff; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+        button[data-mode="hide"].active-mode { background: #ffe500; color: #000; box-shadow: 0 0 15px rgba(255, 229, 0, 0.4); }
+        button[data-mode="breath"].active-mode { background: #bc13fe; color: #fff; box-shadow: 0 0 15px rgba(188, 19, 254, 0.4); }
+        button[data-mode="face"].active-mode { background: #00ff88; color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
+
+        .slider-container {
+            color: white;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #00f2fe;
+            margin-top: 5px;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        #feedback-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 4rem;
+            font-weight: 800;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+            z-index: 5;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Başlangıç Ekranı */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #050510 0%, #1a1a2e 100%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #start-btn {
+            padding: 25px 70px;
+            font-size: 2rem;
+            background: #fff;
+            color: #050510;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            font-weight: 800;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+            animation: pulse 2s infinite;
+            -webkit-tap-highlight-color: transparent;
+            margin-top: 30px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(255,255,255,0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Başlangıç -->
+    <div id="start-screen">
+        <h1 style="font-size: 3rem; margin-bottom: 10px; border:none; text-shadow: 0 0 20px #00f2fe;">MUSHAP</h1>
+        <p style="opacity: 0.8; font-size: 1.5rem;">Işıklar Seni Bekliyor!</p>
+        <button id="start-btn">BAŞLA</button>
+    </div>
+
+    <!-- Skor -->
+    <div id="score-board" style="display:none;">
+        <span>⭐</span>
+        <span id="star-count">0</span>
+    </div>
+
+    <!-- Yönerge Kutusu -->
+    <div id="instruction-box" style="display:none;">
+        Yönerge bekleniyor...
+    </div>
+
+    <!-- UI -->
+    <button class="toggle-btn" id="toggle-ui">⚙</button>
+    <div id="ui-layer" style="display:none;">
+        <h1>OYUN MODLARI</h1>
+        
+        <div class="section-title">Temel & Hareket</div>
+        <button class="mode-btn active-mode" data-mode="tracking" onclick="setMode('tracking')">🟢 Işık Takibi</button>
+        <button class="mode-btn" data-mode="bubbles" onclick="setMode('bubbles')">🫧 Balon Patlatma</button>
+        
+        <div class="section-title">Sosyal & Dikkat</div>
+        <button class="mode-btn" data-mode="face" onclick="setMode('face')">👀 Göz Teması</button>
+        <button class="mode-btn" data-mode="attention" onclick="setMode('attention')">🚦 Renk Avı</button>
+        <button class="mode-btn" data-mode="hide" onclick="setMode('hide')">🙈 Saklambaç</button>
+        
+        <div class="section-title">Sakinleşme</div>
+        <button class="mode-btn" data-mode="breath" onclick="setMode('breath')">🧘 Nefes Modu</button>
+        <button class="mode-btn" data-mode="freestyle" onclick="setMode('freestyle')">✨ Serbest Boyama</button>
+        
+        <div class="section-title" style="margin-top:15px;">Ayarlar</div>
+        <div class="slider-container">
+            <label>Hız: <span id="speed-val">5</span></label>
+            <input type="range" min="1" max="15" value="5" id="speed-slider">
+        </div>
+        <div class="slider-container">
+            <label>Boyut</label>
+            <input type="range" min="30" max="150" value="60" id="size-slider">
+        </div>
+    </div>
+
+    <div id="feedback-msg">HARİKA!</div>
+    <div id="canvas-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        // --- Değişkenler ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const feedbackEl = document.getElementById('feedback-msg');
+        const instructionBox = document.getElementById('instruction-box');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const uiLayer = document.getElementById('ui-layer');
+        const toggleBtn = document.getElementById('toggle-ui');
+        const scoreBoard = document.getElementById('score-board');
+        const starCountEl = document.getElementById('star-count');
+        
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        
+        let particles = [];
+        let bubbles = []; // Balon modu için
+        let mouse = { x: -100, y: -100, down: false };
+        let mode = 'tracking'; 
+        let gameRunning = false;
+        let stars = 0;
+        let audioCtx;
+        
+        // Ayarlar
+        let settings = {
+            speed: 5,
+            targetSize: 60,
+            hue: 0
+        };
+
+        // Hedef Objesi
+        let target = {
+            x: width / 2,
+            y: height / 2,
+            vx: 3,
+            vy: 3,
+            state: 'idle',
+            colorType: 'neutral', // attention modu için
+            timer: 0,
+            opacity: 1
+        };
+
+        // --- Yönerge Metinleri (SÖZLÜK) ---
+        const instructions = {
+            tracking: "Hareket eden ışığı parmağınla yakala!",
+            bubbles: "Baloncuklara dokun ve patlat!",
+            face: "Yüzün tam ortasındaki ışığa bak.",
+            attention: "Sadece <span style='color:#00ff00'>YEŞİL</span> olunca dokun!",
+            hide: "Kaybolan ışığı bul, o bir yere saklandı!",
+            breath: "Işıkla birlikte: Derin Nefes Al... Ver...",
+            freestyle: "Ekrana dokun ve istediğin gibi boya yap!"
+        };
+
+        // --- Başlatma ---
+        function startGame() {
+            if (gameRunning) return;
+            startScreen.style.display = 'none';
+            uiLayer.style.display = 'flex';
+            toggleBtn.style.display = 'flex';
+            scoreBoard.style.display = 'flex';
+            instructionBox.style.display = 'block';
+            
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) { console.warn("Ses hatası", e); }
+
+            resize();
+            setMode('tracking');
+            gameRunning = true;
+            animate();
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, {passive: false});
+        toggleBtn.addEventListener('click', () => { uiLayer.classList.toggle('minimized'); });
+        window.addEventListener('resize', resize);
+        
+        // Input Handling
+        window.addEventListener('mousemove', e => { 
+            mouse.x = e.clientX; mouse.y = e.clientY; 
+            if(mode === 'freestyle') createParticles(mouse.x, mouse.y, 1);
+        });
+        window.addEventListener('mousedown', () => { mouse.down = true; interact(); });
+        window.addEventListener('mouseup', () => { mouse.down = false; });
+        
+        window.addEventListener('touchmove', e => {
+            e.preventDefault();
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+            if(mode === 'freestyle') createParticles(mouse.x, mouse.y, 2);
+        }, {passive: false});
+        
+        window.addEventListener('touchstart', (e) => {
+            if(e.target !== startBtn && e.target !== toggleBtn && !uiLayer.contains(e.target)) e.preventDefault();
+            if(e.touches.length > 0) {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+                mouse.down = true;
+                interact();
+            }
+        }, {passive: false});
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            settings.speed = parseInt(e.target.value);
+            document.getElementById('speed-val').innerText = settings.speed;
+        });
+        document.getElementById('size-slider').addEventListener('input', (e) => {
+            settings.targetSize = parseInt(e.target.value);
+        });
+
+        // --- Mod Değiştirme ve Yönerge Güncelleme ---
+        function setMode(newMode) {
+            mode = newMode;
+            
+            // UI Güncelleme
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active-mode'));
+            const activeBtn = document.querySelector(`button[data-mode="${newMode}"]`);
+            if(activeBtn) activeBtn.classList.add('active-mode');
+            
+            // Yönergeyi Güncelle (Burası Mushap için çok önemli)
+            instructionBox.innerHTML = instructions[newMode] || "Oyna!";
+            
+            // Temizlik
+            particles = [];
+            bubbles = [];
+            target.timer = 0;
+            
+            // Mod Spesifik Ayarlar
+            if(mode === 'tracking') {
+                target.x = width/2; target.y = height/2;
+                target.vx = 3; target.vy = 3;
+            } else if (mode === 'attention') {
+                target.x = width/2; target.y = height/2;
+                changeAttentionColor();
+            } else if (mode === 'hide') {
+                relocateTarget();
+                target.opacity = 0;
+            } else if (mode === 'bubbles') {
+                // Başlangıçta 5 balon at
+                for(let i=0; i<5; i++) spawnBubble();
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            if(!gameRunning) { target.x = width/2; target.y = height/2; }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                const now = audioCtx.currentTime;
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(); osc.stop(now + 0.5);
+                } else if (type === 'pop') { // Balon sesi
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(); osc.stop(now + 0.2);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(); osc.stop(now + 0.3);
+                } else if (type === 'breath') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    gainNode.gain.setValueAtTime(0.05, now);
+                    gainNode.gain.linearRampToValueAtTime(0, now + 2);
+                    osc.start(); osc.stop(now + 2);
+                }
+            } catch(e) {}
+        }
+
+        function addStar() {
+            stars++;
+            starCountEl.innerText = stars;
+            starCountEl.style.transform = "scale(1.5)";
+            setTimeout(() => starCountEl.style.transform = "scale(1)", 200);
+        }
+
+        // --- Oyun Objeleri ---
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = Math.random() * 5 + 2;
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+                this.life = 100;
+                this.color = color;
+                this.size = Math.random() * 6 + 2;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.vx *= 0.95; this.vy *= 0.95;
+                this.life -= 2; this.size *= 0.95;
+            }
+            draw() {
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        class Bubble {
+            constructor() {
+                this.r = Math.random() * 30 + 30; // 30-60px
+                this.x = Math.random() * (width - 100) + 50;
+                this.y = height + this.r; // Alttan başla
+                this.speed = Math.random() * 2 + 1;
+                this.color = `hsl(${Math.random()*360}, 70%, 60%)`;
+                this.wobble = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += Math.sin(this.wobble) * 1;
+                this.wobble += 0.05;
+                // Ekranda çıkarsa resetle
+                if(this.y < -this.r) {
+                    this.y = height + this.r;
+                    this.x = Math.random() * (width - 100) + 50;
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.6;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // Parlama
+                ctx.beginPath();
+                ctx.arc(this.x - this.r*0.3, this.y - this.r*0.3, this.r*0.2, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function createParticles(x, y, count, color = null) {
+            const colors = ['#FF0055', '#00f2fe', '#ffe500', '#cc00ff', '#ffffff'];
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color || colors[Math.floor(Math.random() * colors.length)]));
+            }
+        }
+
+        function spawnBubble() {
+            bubbles.push(new Bubble());
+        }
+
+        function changeAttentionColor() {
+            if(mode !== 'attention') return;
+            // %40 ihtimalle Yeşil (Doğru)
+            const isGreen = Math.random() > 0.6;
+            target.colorType = isGreen ? 'correct' : 'wrong';
+            // Renk değiştikten 2-4sn sonra tekrar değişsin
+            setTimeout(changeAttentionColor, 2000 + Math.random() * 2000);
+        }
+
+        // --- Etkileşim ---
+        function interact() {
+            if (mode === 'freestyle') return;
+
+            // Balon Modu Kontrolü
+            if (mode === 'bubbles') {
+                for(let i = bubbles.length-1; i>=0; i--) {
+                    let b = bubbles[i];
+                    let dist = Math.hypot(mouse.x - b.x, mouse.y - b.y);
+                    if(dist < b.r + 20) { // Biraz toleranslı
+                        createParticles(b.x, b.y, 20, b.color);
+                        playSound('pop');
+                        addStar();
+                        bubbles.splice(i, 1);
+                        setTimeout(spawnBubble, 1000); // Yenisi gelsin
+                        return; // Bir tıkta bir balon
+                    }
+                }
+                return;
+            }
+
+            // Diğer Modlar (Hedef Bazlı)
+            let tX = target.x;
+            let tY = target.y;
+            if(mode === 'face') { tY = height/2 - 30; tX = width/2; }
+
+            let dist = Math.hypot(mouse.x - tX, mouse.y - tY);
+            let hitZone = settings.targetSize * 1.5;
+            if (hitZone < 70) hitZone = 70; // Kolaylaştırmak için min alan
+
+            if (dist < hitZone) {
+                if (mode === 'tracking') {
+                    createParticles(tX, tY, 40);
+                    playSound('success');
+                    showFeedback("YAKALADIN!");
+                    addStar();
+                    relocateTarget();
+                } 
+                else if (mode === 'attention') {
+                    if(target.colorType === 'correct') {
+                        createParticles(tX, tY, 60, '#00ff00');
+                        playSound('success');
+                        showFeedback("SÜPER!");
+                        addStar();
+                        target.colorType = 'wait';
+                        setTimeout(changeAttentionColor, 500); 
+                    } else if (target.colorType === 'wrong') {
+                        playSound('wrong');
+                        showFeedback("BEKLE!", '#ff0000');
+                    }
+                }
+                else if (mode === 'hide') {
+                    if(target.opacity > 0.2) {
+                        createParticles(tX, tY, 40);
+                        playSound('success');
+                        showFeedback("BULDUN!");
+                        addStar();
+                        target.opacity = 0;
+                        setTimeout(relocateTarget, 800);
+                    }
+                }
+                else if (mode === 'face') {
+                    createParticles(tX, tY, 30);
+                    playSound('success');
+                }
+                else if (mode === 'breath') {
+                    createParticles(mouse.x, mouse.y, 20, '#bc13fe');
+                    playSound('success');
+                }
+            }
+        }
+
+        function relocateTarget() {
+            let margin = 100;
+            target.x = Math.random() * (width - margin*2) + margin;
+            target.y = Math.random() * (height - margin*2) + margin;
+            let angle = Math.random() * Math.PI * 2;
+            target.vx = Math.cos(angle) * settings.speed;
+            target.vy = Math.sin(angle) * settings.speed;
+        }
+
+        function showFeedback(text, color = '#fff') {
+            feedbackEl.innerText = text;
+            feedbackEl.style.color = color;
+            feedbackEl.style.opacity = 1;
+            feedbackEl.style.transform = 'translate(-50%, -50%) scale(1.3)';
+            if(window.ft) clearTimeout(window.ft);
+            window.ft = setTimeout(() => {
+                feedbackEl.style.opacity = 0;
+                feedbackEl.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 800);
+        }
+
+        function drawGlowingOrb(x, y, size, hue, specificColor = null) {
+            const gradient = ctx.createRadialGradient(x, y, size * 0.1, x, y, size * 2.2);
+            let colorStart = specificColor ? specificColor : `hsl(${hue}, 100%, 85%)`;
+            let colorEnd = specificColor ? specificColor : `hsl(${hue}, 100%, 50%)`;
+
+            gradient.addColorStop(0, colorStart);
+            gradient.addColorStop(0.5, colorEnd);
+            gradient.addColorStop(1, `rgba(0,0,0,0)`);
+
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, size * 2.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x, y, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function animate() {
+            if (!gameRunning) return;
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            settings.hue = (settings.hue + 0.5) % 360;
+
+            // Parçacıklar
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i]; p.update(); p.draw();
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // MOD LOGIC
+            if (mode === 'tracking') {
+                let r = settings.targetSize;
+                if(target.x+target.vx>width-r || target.x+target.vx<r) target.vx*=-1;
+                if(target.y+target.vy>height-r || target.y+target.vy<r) target.vy*=-1;
+                
+                let s = Math.hypot(target.vx, target.vy) || 1;
+                target.vx = (target.vx/s)*settings.speed;
+                target.vy = (target.vy/s)*settings.speed;
+                target.x += target.vx; target.y += target.vy;
+                drawGlowingOrb(target.x, target.y, settings.targetSize, settings.hue);
+            } 
+            else if (mode === 'bubbles') {
+                for(let b of bubbles) { b.update(); b.draw(); }
+                // Balon sayısı azalırsa ekle
+                if(bubbles.length < 5 && Math.random() < 0.02) spawnBubble();
+            }
+            else if (mode === 'attention') {
+                let col = '#555'; 
+                if(target.colorType === 'correct') col = '#00ff00';
+                else if (target.colorType === 'wrong') col = '#ff0000';
+                let pulse = Math.sin(Date.now()/200)*5;
+                drawGlowingOrb(width/2, height/2, settings.targetSize + pulse, 0, col);
+            }
+            else if (mode === 'hide') {
+                if(target.opacity < 1) target.opacity += 0.01;
+                ctx.globalAlpha = target.opacity;
+                drawGlowingOrb(target.x, target.y, settings.targetSize, settings.hue);
+                ctx.globalAlpha = 1;
+            }
+            else if (mode === 'breath') {
+                let time = Date.now() / 1000;
+                let scale = (Math.sin(time) + 1.5) * 0.8;
+                let size = settings.targetSize * 2 * scale;
+                let breathHue = 200 + Math.sin(time*0.5)*40; 
+                drawGlowingOrb(width/2, height/2, size, breathHue);
+                ctx.fillStyle = "rgba(255,255,255,0.8)";
+                ctx.font = "bold 24px Fredoka";
+                ctx.textAlign = "center";
+                ctx.fillText(Math.sin(time) > 0 ? "Nefes Al..." : "Nefes Ver...", width/2, height/2 + 10);
+            }
+            else if (mode === 'face') {
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.2)';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.ellipse(width/2, height/2, 160, 220, 0, 0, Math.PI*2); ctx.stroke();
+                let pulse = Math.sin(Date.now() / 300) * 15 + settings.targetSize;
+                drawGlowingOrb(width/2, height/2 - 30, pulse, settings.hue);
+            }
+
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
+
