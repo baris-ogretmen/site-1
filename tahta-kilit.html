@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Değişim Koleji - Akıllı Tahta Kilit Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Senin V16 projesindeki orijinal veritabanın
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU",
+            authDomain: "shaped-totem-481514-c5.firebaseapp.com",
+            projectId: "shaped-totem-481514-c5",
+            storageBucket: "shaped-totem-481514-c5.firebasestorage.app",
+            messagingSenderId: "519295049418",
+            appId: "1:519295049418:web:7d04e18c4ea36bc088de33"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Hangi sınıftayız? URL'den alıyoruz, yoksa varsayılan Sinif_1
+        const urlParams = new URLSearchParams(window.location.search);
+        const sinifId = urlParams.get('sinif') || 'Sinif_1';
+        
+        document.getElementById('sinifIsmi').innerText = sinifId.replace('_', ' ');
+
+        // QR Kodun içine öğretmen telefonunda açılacak kumanda linkini koyuyoruz
+        const kumandaLink = `https://baris-ogretmen.github.io/site-1/kumanda.html?sinif=${sinifId}`;
+        document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(kumandaLink)}&bgcolor=1e293b&color=38bdf8`;
+
+        // Sisteme Anonim Giriş ve Dinleme
+        signInAnonymously(auth).then(() => {
+            const tahtaRef = doc(db, 'smartboards', sinifId);
+            
+            // Tahta ilk açıldığında kendini KİLİTLİ moduna alsın
+            setDoc(tahtaRef, { isLocked: true, lastUpdate: new Date().toISOString() }, { merge: true });
+
+            // Veritabanını canlı dinliyoruz
+            onSnapshot(tahtaRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.isLocked === false) {
+                        unlockBoard();
+                    } else {
+                        lockBoard();
+                    }
+                }
+            });
+        });
+
+        function unlockBoard() {
+            document.getElementById('lockScreen').classList.add('hidden');
+            document.getElementById('desktopScreen').classList.remove('hidden');
+            // 5 saniye sonra tahtayı otomatik kilitleme sistemi (İsteğe bağlı güvenlik)
+            setTimeout(() => {
+                const tahtaRef = doc(db, 'smartboards', sinifId);
+                setDoc(tahtaRef, { isLocked: true }, { merge: true });
+            }, 600000); // 10 dakika sonra otomatik kilitlenir
+        }
+
+        function lockBoard() {
+            document.getElementById('lockScreen').classList.remove('hidden');
+            document.getElementById('desktopScreen').classList.add('hidden');
+        }
+    </script>
+
+    <style>
+        body { background-color: #0f172a; color: white; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; user-select: none; }
+        .glitch-effect { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+    </style>
+</head>
+<body class="w-screen h-screen">
+
+    <div id="lockScreen" class="w-full h-full flex flex-col items-center justify-center bg-slate-900 relative z-50">
+        <div class="absolute top-10 flex items-center justify-center space-x-4">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(37,99,235,0.5)]">
+                <i class="fa-solid fa-graduation-cap text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-widest uppercase text-slate-100">Değişim Koleji</h1>
+                <p class="text-sky-400 font-bold tracking-widest text-sm uppercase glitch-effect">Akıllı Tahta Güvenlik Protokolü</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl flex flex-col items-center">
+            <div class="text-slate-400 mb-6 font-medium text-center">
+                Sistem Kilitli.<br>Açmak için telefonunuzun kamerasıyla QR kodu okutun.
+            </div>
+            
+            <div class="bg-white p-2 rounded-xl mb-6 relative group">
+                <img id="qrCode" src="" alt="QR Kod" class="w-64 h-64 rounded-lg">
+                <div class="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_10px_red] animate-[ping_2s_ease-in-out_infinite]"></div>
+            </div>
+
+            <div class="bg-slate-900 px-6 py-2 rounded-full border border-sky-500/30 flex items-center">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-3 shadow-[0_0_10px_red]"></div>
+                <h2 id="sinifIsmi" class="text-xl font-bold text-sky-400 tracking-wider">SINIF BEKLENİYOR...</h2>
+            </div>
+        </div>
+
+        <div class="absolute bottom-10 text-slate-500 text-xs font-mono text-center">
+            Barış Öğretmen Eğitim Ekosistemi V16<br>İzinsiz müdahale kayıt altına alınmaktadır.
+        </div>
+    </div>
+
+    <div id="desktopScreen" class="hidden w-full h-full bg-slate-100 flex flex-col items-center justify-center text-slate-800">
+        <i class="fa-solid fa-unlock-keyhole text-8xl text-green-500 mb-6 drop-shadow-lg"></i>
+        <h1 class="text-5xl font-black mb-2">TAHTA AÇIK</h1>
+        <p class="text-xl text-slate-600 font-medium">Değişim Koleji Eğitim Sistemine Hoş Geldiniz.</p>
+        <p class="text-sm text-slate-400 mt-10">10 dakika işlem yapılmazsa sistem otomatik kilitlenir.</p>
+    </div>
+
+</body>
+</html>

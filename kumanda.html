@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Değişim Koleji - Tahta Kumandası</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Aynı Veritabanı Bağlantısı
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqeO-yQyQPnLsOqKmSNvVH23WPvneIjaU",
+            authDomain: "shaped-totem-481514-c5.firebaseapp.com",
+            projectId: "shaped-totem-481514-c5",
+            storageBucket: "shaped-totem-481514-c5.firebasestorage.app",
+            messagingSenderId: "519295049418",
+            appId: "1:519295049418:web:7d04e18c4ea36bc088de33"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // QR koddan gelen sınıf bilgisini alıyoruz
+        const urlParams = new URLSearchParams(window.location.search);
+        const sinifId = urlParams.get('sinif') || 'Sinif_1';
+        
+        document.getElementById('sinifLabel').innerText = sinifId.replace('_', ' ');
+
+        // Anonim Giriş
+        signInAnonymously(auth).then(() => {
+            document.getElementById('status').innerText = "Bağlantı Hazır. Kilidi Açabilirsiniz.";
+            document.getElementById('status').classList.replace('text-yellow-500', 'text-green-500');
+            document.getElementById('unlockBtn').disabled = false;
+            document.getElementById('lockBtn').disabled = false;
+        }).catch((error) => {
+            document.getElementById('status').innerText = "Bağlantı Hatası!";
+            document.getElementById('status').classList.replace('text-yellow-500', 'text-red-500');
+        });
+
+        // KİLİDİ AÇMA FONKSİYONU (Butona basılınca tetiklenir)
+        window.tahtayiAc = function() {
+            const btn = document.getElementById('unlockBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl mb-2"></i><br>Açılıyor...';
+            
+            const tahtaRef = doc(db, 'smartboards', sinifId);
+            setDoc(tahtaRef, { isLocked: false, lastUpdate: new Date().toISOString() }, { merge: true })
+            .then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check text-4xl mb-2"></i><br>Tahta Açıldı!';
+                btn.classList.replace('bg-indigo-600', 'bg-green-500');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-power-off text-4xl mb-2"></i><br>Kilidi Aç';
+                    btn.classList.replace('bg-green-500', 'bg-indigo-600');
+                }, 3000);
+            });
+        };
+
+        // KİLİTLEME FONKSİYONU (Ders bitince manuel kilitlemek için)
+        window.tahtayiKilitle = function() {
+            const tahtaRef = doc(db, 'smartboards', sinifId);
+            setDoc(tahtaRef, { isLocked: true, lastUpdate: new Date().toISOString() }, { merge: true })
+            .then(() => {
+                alert("Tahta başarıyla kilitlendi!");
+            });
+        };
+    </script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-center p-6 text-slate-800 select-none">
+
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+        <div class="bg-slate-900 p-6 text-center text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+            <i class="fa-solid fa-shield-halved text-4xl text-sky-400 mb-3"></i>
+            <h1 class="text-xl font-black uppercase tracking-widest">Değişim Koleji</h1>
+            <p class="text-xs font-bold text-slate-400 mt-1">Öğretmen Erişim Paneli</p>
+        </div>
+
+        <div class="p-8 flex flex-col items-center">
+            <div class="bg-sky-50 text-sky-700 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border border-sky-200">
+                <i class="fa-solid fa-location-dot mr-1"></i> Hedef: <span id="sinifLabel" class="uppercase">SINIF...</span>
+            </div>
+
+            <button id="unlockBtn" onclick="tahtayiAc()" disabled class="w-48 h-48 bg-indigo-600 text-white rounded-full flex flex-col items-center justify-center font-black text-xl shadow-[0_10px_25px_rgba(79,70,229,0.4)] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-power-off text-4xl mb-2"></i>
+                <br>Kilidi Aç
+            </button>
+
+            <p id="status" class="text-xs font-bold text-yellow-500 mt-6 text-center animate-pulse">Sisteme bağlanılıyor...</p>
+        </div>
+
+        <div class="bg-slate-50 border-t border-slate-200 p-4 flex justify-center">
+            <button id="lockBtn" onclick="tahtayiKilitle()" disabled class="text-slate-500 hover:text-red-500 font-bold text-sm flex items-center transition disabled:opacity-50">
+                <i class="fa-solid fa-lock mr-2"></i> Dersi Bitir & Kilitle
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
