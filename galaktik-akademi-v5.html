@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galaktik Zeka ve Strateji Akademisi | Pro Komuta Merkezi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --space-blue: #020617;
+            --neon-cyan: #22d3ee;
+            --gold: #facc15;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-strong: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--space-blue);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+        }
+
+        h1, h2, h3, .font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+        }
+
+        #canvas-plexus { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.5; }
+
+        /* Professional Chessboard - Responsive Fix */
+        .chess-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            width: 100%;
+            max-width: min(85vw, 460px); 
+            max-height: min(85vw, 460px);
+            aspect-ratio: 1 / 1;
+            border: 8px solid #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(34, 211, 238, 0.2);
+            margin: auto;
+        }
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.2rem, 4vw, 2.8rem);
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .square.light { background-color: #cbd5e1; color: #0f172a; }
+        .square.dark { background-color: #475569; color: #f8fafc; }
+        
+        .square.selected { background-color: #0ea5e9 !important; }
+        .square.valid-move::after {
+            content: '';
+            width: 25%; height: 25%;
+            background: rgba(34, 211, 238, 0.7);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+        .square.capture-move { background-color: rgba(239, 68, 68, 0.4) !important; }
+
+        .piece {
+            transition: transform 0.2s, filter 0.2s;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .piece:hover { transform: scale(1.15); }
+
+        /* Maze Styling */
+        #maze-board { display: grid; background: #0f172a; gap: 2px; border-radius: 12px; }
+        .maze-cell { width: 100%; height: 100%; transition: all 0.3s; }
+        .wall { background: #1e293b; box-shadow: inset 0 0 15px #000; }
+        .path { background: #020617; }
+        .player { 
+            background: var(--neon-cyan); 
+            border-radius: 50%; 
+            box-shadow: 0 0 20px var(--neon-cyan); 
+            transform: scale(0.8);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .player::after { content: '\f135'; font-family: "Font Awesome 6 Free"; font-weight: 900; color: #000; font-size: 0.7em; }
+        .exit { 
+            background: var(--gold); 
+            box-shadow: 0 0 20px var(--gold);
+            animation: rotate 4s linear infinite;
+        }
+        .crystal { 
+            background: #a855f7; 
+            border-radius: 50%; 
+            animation: pulse 1s infinite;
+            transform: scale(0.4);
+        }
+        .mine {
+            background: #ef4444;
+            border-radius: 20%;
+            transform: scale(0.4);
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { transform: scale(0.35); opacity: 0.5; } 50% { transform: scale(0.55); opacity: 1; } }
+
+        /* Controls */
+        .ctrl-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 65px; height: 65px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            color: var(--neon-cyan);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .ctrl-btn:active { background: var(--neon-cyan); color: #000; transform: scale(0.9); }
+
+        /* Responsive Mobile */
+        @media (max-width: 768px) {
+            body { overflow-y: auto; }
+            .h-screen { height: auto; min-height: 100vh; }
+            .side-panel { display: none; }
+            .chess-grid { max-width: 95vw; max-height: 95vw; }
+        }
+    </style>
+</head>
+<body onload="initSystem()">
+
+    <canvas id="canvas-plexus"></canvas>
+
+    <div id="main-ui" class="h-screen flex flex-col p-3 md:p-6">
+        
+        <!-- HEADER -->
+        <header class="flex justify-between items-center glass-card p-4 mb-3 border-b-2 border-cyan-500/30">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-cyan-500/20 border border-cyan-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-galaxy text-lg md:text-xl text-cyan-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-bold text-cyan-400 tracking-tight uppercase">Galaktik Akademi</h1>
+                    <div class="flex gap-2 text-[9px] md:text-[10px] uppercase text-cyan-300/60">
+                        <span>Kaptan: Barış</span> • <span>Sistem: Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex flex-col items-end">
+                    <span id="rank-name" class="text-[10px] font-bold text-gold uppercase tracking-tighter">Giriş Seviyesi</span>
+                    <div class="w-32 h-1.5 bg-gray-800 rounded-full mt-1">
+                        <div id="xp-bar" class="h-full bg-cyan-500 transition-all duration-500" style="width: 10%"></div>
+                    </div>
+                </div>
+                <div class="bg-black/40 px-4 py-1.5 rounded-xl border border-white/10 shadow-lg">
+                    <span id="global-xp" class="text-xl md:text-2xl font-orbitron text-cyan-400">0</span>
+                    <span class="text-[9px] text-gray-500 ml-1 font-bold">XP</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow flex gap-4 overflow-hidden">
+            
+            <!-- NAV MENU -->
+            <nav class="hidden md:flex flex-col gap-4 w-20 items-center py-6 glass-card">
+                <button onclick="navigate('welcome')" class="p-4 hover:text-cyan-400 transition" title="Ana Menü"><i class="fas fa-home text-xl"></i></button>
+                <button onclick="navigate('chess')" class="p-4 hover:text-cyan-400 transition" title="Satranç"><i class="fas fa-chess-board text-xl"></i></button>
+                <button onclick="navigate('maze')" class="p-4 hover:text-cyan-400 transition" title="Labirent"><i class="fas fa-route text-xl"></i></button>
+            </nav>
+
+            <!-- CONTENT -->
+            <div id="content-viewer" class="flex-grow glass-card relative flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
+                
+                <!-- WELCOME -->
+                <div id="view-welcome" class="text-center space-y-8 md:space-y-12 max-w-4xl animate-fade-in">
+                    <div class="space-y-4">
+                        <h2 class="text-4xl md:text-7xl font-bold font-orbitron text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500 uppercase">Akademiye Giriş</h2>
+                        <p class="text-cyan-300 tracking-[0.3em] text-xs md:text-sm font-bold">STRATEJİ • ZEKA • DİSİPLİN</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                        <div onclick="initCategory('junior')" class="p-6 md:p-10 glass-card border-2 border-transparent hover:border-cyan-500 transition-all cursor-pointer group">
+                            <i class="fas fa-rocket text-3xl md:text-4xl text-cyan-400 mb-4"></i>
+                            <h3 class="text-xl md:text-3xl font-bold">MİNİK DAHİLER</h3>
+                        </div>
+                        <div onclick="initCategory('master')" class="p-6 md:p-10 glass-card border-2 border-transparent hover:border-gold transition-all cursor-pointer group">
+                            <i class="fas fa-chess-knight text-3xl md:text-4xl text-gold mb-4"></i>
+                            <h3 class="text-xl md:text-3xl font-bold">STRATEJİ USTALARI</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHESS -->
+                <div id="view-chess" class="hidden w-full h-full flex flex-col items-center justify-center gap-3">
+                    <div class="flex flex-wrap justify-center gap-2 p-1.5 bg-black/30 rounded-full border border-white/5">
+                        <button onclick="setChessMode('pve')" id="btn-pve" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition">Robot: Nebula</button>
+                        <button onclick="setChessMode('pvp')" id="btn-pvp" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition">PvP Modu</button>
+                        <button onclick="resetChess()" class="px-4 py-1.5 text-red-400 text-[10px] font-bold uppercase"><i class="fas fa-sync-alt mr-1"></i>Sıfırla</button>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row gap-4 md:gap-10 items-center w-full justify-center">
+                        <div id="chess-board" class="chess-grid"></div>
+                        
+                        <div class="w-full max-w-[280px] space-y-3">
+                            <div class="glass-card p-4 border-l-4 border-cyan-500">
+                                <p class="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Sıradaki Hamle</p>
+                                <h4 id="turn-indicator" class="text-xl font-bold text-white uppercase italic">BEYAZ</h4>
+                            </div>
+                            <div id="move-log" class="glass-card p-3 h-32 md:h-48 overflow-y-auto text-[10px] font-mono text-cyan-300 space-y-1">
+                                <div class="opacity-50">> Kaptan hazır.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAZE -->
+                <div id="view-maze" class="hidden w-full h-full flex flex-col items-center justify-center gap-4">
+                    <div class="flex justify-between w-full max-w-md bg-black/40 p-3 rounded-xl border border-white/5">
+                        <div class="text-center">
+                            <span class="text-[9px] text-gray-500 uppercase block">Kristal</span>
+                            <span id="maze-crystals" class="text-lg font-bold text-purple-400">0 / 0</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-[9px] text-gray-500 uppercase block">Seviye</span>
+                            <span id="maze-level-text" class="text-lg font-bold text-cyan-400">1</span>
+                        </div>
+                        <button onclick="initMaze()" class="px-3 text-cyan-400"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+
+                    <div id="maze-board" class="shadow-2xl shadow-cyan-500/10"></div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="invisible"></div>
+                        <button onmousedown="handleMazeMove('up')" class="ctrl-btn"><i class="fas fa-chevron-up"></i></button>
+                        <div class="invisible"></div>
+                        <button onmousedown="handleMazeMove('left')" class="ctrl-btn"><i class="fas fa-chevron-left"></i></button>
+                        <button onmousedown="handleMazeMove('down')" class="ctrl-btn"><i class="fas fa-chevron-down"></i></button>
+                        <button onmousedown="handleMazeMove('right')" class="ctrl-btn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- NOTIF -->
+    <div id="notif" class="fixed top-6 right-6 z-[300] transform translate-x-[150%] transition-transform duration-500">
+        <div class="glass-card p-3 border-l-4 border-cyan-400 flex items-center gap-4 min-w-[260px] shadow-2xl">
+            <div id="notif-color" class="w-1.5 h-8 rounded-full bg-cyan-400"></div>
+            <div>
+                <p id="notif-title" class="font-bold text-xs uppercase tracking-widest">SİSTEM</p>
+                <p id="notif-body" class="text-[10px] text-gray-400">Aktif edildi.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        let GS = {
+            xp: 0,
+            screen: 'welcome',
+            chess: {
+                board: [],
+                turn: 'w',
+                selected: null,
+                validMoves: [],
+                lastMove: null,
+                mode: 'pve',
+                gameOver: false
+            },
+            maze: {
+                grid: [],
+                pos: {x: 0, y: 0},
+                size: 11,
+                crystals: 0,
+                totalCrystals: 0,
+                lvl: 1
+            }
+        };
+
+        const PIECES = {
+            'w': { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
+            'b': { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
+        };
+
+        // --- CORE ---
+        function initSystem() {
+            initPlexus();
+            animatePlexus();
+            loadProgress();
+            navigate('welcome');
+            window.addEventListener('resize', () => {
+                initPlexus();
+                if(GS.screen === 'chess') renderChess();
+            });
+        }
+
+        function navigate(screen) {
+            document.querySelectorAll('#content-viewer > div').forEach(d => d.classList.add('hidden'));
+            const target = document.getElementById('view-' + screen);
+            if(target) target.classList.remove('hidden');
+            
+            GS.screen = screen;
+            if(screen === 'chess') initChess();
+            if(screen === 'maze') initMaze();
+            showNotif('ERİŞİM', screen.toUpperCase());
+        }
+
+        function initCategory(cat) { addXP(10, 'Bağlantı Kuruldu'); navigate('chess'); }
+
+        // --- PRO CHESS ENGINE ---
+        function initChess() {
+            GS.chess.turn = 'w';
+            GS.chess.gameOver = false;
+            GS.chess.selected = null;
+            GS.chess.validMoves = [];
+            GS.chess.lastMove = null;
+            GS.chess.board = [
+                ['br','bn','bb','bq','bk','bb','bn','br'],
+                ['bp','bp','bp','bp','bp','bp','bp','bp'],
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                [null,null,null,null,null,null,null,null],
+                ['wp','wp','wp','wp','wp','wp','wp','wp'],
+                ['wr','wn','wb','wq','wk','wb','wn','wr']
+            ];
+            renderChess();
+            updateChessButtons();
+        }
+
+        function renderChess() {
+            const container = document.getElementById('chess-board');
+            container.innerHTML = '';
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    const sq = document.createElement('div');
+                    sq.className = `square ${(r+c)%2===0 ? 'light' : 'dark'}`;
+                    
+                    const pCode = GS.chess.board[r][c];
+                    if(pCode) {
+                        const pieceEl = document.createElement('span');
+                        pieceEl.className = `piece ${pCode[0] === 'w' ? 'text-blue-900' : 'text-black'}`;
+                        pieceEl.innerHTML = PIECES[pCode[0]][pCode[1]];
+                        sq.appendChild(pieceEl);
+                    }
+
+                    if(GS.chess.selected && GS.chess.selected.r === r && GS.chess.selected.c === c) sq.classList.add('selected');
+                    
+                    // Son hamleyi vurgula
+                    if(GS.chess.lastMove && ((GS.chess.lastMove.fr === r && GS.chess.lastMove.fc === c) || (GS.chess.lastMove.tr === r && GS.chess.lastMove.tc === c))) {
+                        sq.style.boxShadow = "inset 0 0 15px rgba(250, 204, 21, 0.4)";
+                    }
+
+                    const moveIdx = GS.chess.validMoves.findIndex(m => m.r === r && m.c === c);
+                    if(moveIdx !== -1) {
+                        if(GS.chess.board[r][c]) sq.classList.add('capture-move');
+                        else sq.classList.add('valid-move');
+                    }
+
+                    sq.onclick = () => handleChessClick(r, c);
+                    container.appendChild(sq);
+                }
+            }
+            const ind = document.getElementById('turn-indicator');
+            ind.innerText = GS.chess.turn === 'w' ? 'KAPTAN (BEYAZ)' : 'ROBOT (SİYAH)';
+            ind.style.color = GS.chess.turn === 'w' ? 'var(--neon-cyan)' : '#94a3b8';
+        }
+
+        function handleChessClick(r, c) {
+            if(GS.chess.gameOver) return;
+            if(GS.chess.mode === 'pve' && GS.chess.turn === 'b') return;
+
+            const piece = GS.chess.board[r][c];
+            if(piece && piece[0] === GS.chess.turn) {
+                GS.chess.selected = {r, c};
+                GS.chess.validMoves = calculateLegalMoves(r, c);
+                renderChess();
+                return;
+            }
+
+            const moveIndex = GS.chess.validMoves.findIndex(m => m.r === r && m.c === c);
+            if(GS.chess.selected && moveIndex !== -1) {
+                executeMove(GS.chess.selected.r, GS.chess.selected.c, r, c);
+                if(GS.chess.mode === 'pve' && !GS.chess.gameOver) setTimeout(robotBrain, 600);
+            } else {
+                GS.chess.selected = null;
+                GS.chess.validMoves = [];
+            }
+            renderChess();
+        }
+
+        function calculateLegalMoves(r, c) {
+            const moves = [];
+            const piece = GS.chess.board[r][c];
+            if(!piece) return [];
+            const color = piece[0], type = piece[1], enemy = color === 'w' ? 'b' : 'w';
+
+            const sliding = (dirs) => {
+                dirs.forEach(d => {
+                    let nr = r + d[0], nc = c + d[1];
+                    while(nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                        const target = GS.chess.board[nr][nc];
+                        if(!target) moves.push({r: nr, c: nc});
+                        else { if(target[0] === enemy) moves.push({r: nr, c: nc}); break; }
+                        nr += d[0]; nc += d[1];
+                    }
+                });
+            };
+
+            switch(type) {
+                case 'p':
+                    const dir = color === 'w' ? -1 : 1;
+                    if(!GS.chess.board[r+dir]?.[c]) {
+                        moves.push({r: r+dir, c});
+                        if(((color === 'w' && r === 6) || (color === 'b' && r === 1)) && !GS.chess.board[r+2*dir]?.[c]) moves.push({r: r+2*dir, c});
+                    }
+                    [[dir, 1], [dir, -1]].forEach(d => {
+                        const tr = r + d[0], tc = c + d[1];
+                        if(GS.chess.board[tr]?.[tc] && GS.chess.board[tr][tc][0] === enemy) moves.push({r: tr, c: tc});
+                    });
+                    break;
+                case 'r': sliding([[0,1],[0,-1],[1,0],[-1,0]]); break;
+                case 'b': sliding([[1,1],[1,-1],[-1,1],[-1,-1]]); break;
+                case 'q': sliding([[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]); break;
+                case 'n': [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(d => {
+                    const nr=r+d[0], nc=c+d[1];
+                    if(nr>=0 && nr<8 && nc>=0 && nc<8 && (!GS.chess.board[nr][nc] || GS.chess.board[nr][nc][0]===enemy)) moves.push({r:nr, c:nc});
+                }); break;
+                case 'k': [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d => {
+                    const nr=r+d[0], nc=c+d[1];
+                    if(nr>=0 && nr<8 && nc>=0 && nc<8 && (!GS.chess.board[nr][nc] || GS.chess.board[nr][nc][0]===enemy)) moves.push({r:nr, c:nc});
+                }); break;
+            }
+            return moves;
+        }
+
+        function executeMove(fR, fC, tR, tC) {
+            const piece = GS.chess.board[fR][fC];
+            const target = GS.chess.board[tR][tC];
+            GS.chess.lastMove = {fr: fR, fc: fC, tr: tR, tc: tC};
+            GS.chess.board[tR][tC] = piece;
+            GS.chess.board[fR][fC] = null;
+            logChess(`${GS.chess.turn === 'w' ? 'Beyaz' : 'Siyah'}: ${piece[1].toUpperCase()} -> ${String.fromCharCode(97+tC)}${8-tR}`);
+            if(target && target[1] === 'k') endChess(GS.chess.turn);
+            GS.chess.turn = GS.chess.turn === 'w' ? 'b' : 'w';
+            GS.chess.selected = null;
+            GS.chess.validMoves = [];
+            addXP(10, 'Taktik Hamle');
+        }
+
+        function robotBrain() {
+            if(GS.chess.gameOver) return;
+            let all = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(GS.chess.board[r][c] && GS.chess.board[r][c][0] === 'b') {
+                        calculateLegalMoves(r,c).forEach(m => {
+                            let s = Math.random();
+                            const t = GS.chess.board[m.r][m.c];
+                            if(t) s += {p:10, n:30, b:30, r:50, q:90, k:900}[t[1]];
+                            all.push({fR:r, fC:c, tR:m.r, tC:m.c, s});
+                        });
+                    }
+                }
+            }
+            all.sort((a,b) => b.s - a.s);
+            if(all[0]) executeMove(all[0].fR, all[0].fC, all[0].tR, all[0].tC);
+            renderChess();
+        }
+
+        function logChess(m) {
+            const l = document.getElementById('move-log');
+            const d = document.createElement('div');
+            d.innerHTML = `> ${m}`;
+            l.prepend(d);
+        }
+
+        function endChess(w) { GS.chess.gameOver = true; showNotif('MAT!', w === 'w' ? 'KAPTAN GALİP' : 'ROBOT GALİP'); addXP(300, 'Zafer'); }
+        function setChessMode(m) { GS.chess.mode = m; updateChessButtons(); resetChess(); }
+        function updateChessButtons() {
+            document.getElementById('btn-pve').className = GS.chess.mode === 'pve' ? 'px-4 py-1.5 bg-cyan-600 rounded-full text-[10px] font-bold uppercase' : 'px-4 py-1.5 text-gray-500 text-[10px] font-bold uppercase';
+            document.getElementById('btn-pvp').className = GS.chess.mode === 'pvp' ? 'px-4 py-1.5 bg-cyan-600 rounded-full text-[10px] font-bold uppercase' : 'px-4 py-1.5 text-gray-500 text-[10px] font-bold uppercase';
+        }
+        function resetChess() { initChess(); logChess("Sistem sıfırlandı."); }
+
+        // --- MAZE ---
+        function initMaze() {
+            const container = document.getElementById('maze-board');
+            GS.maze.size = 11 + (GS.maze.lvl * 2);
+            if(GS.maze.size > 21) GS.maze.size = 21;
+            container.style.gridTemplateColumns = `repeat(${GS.maze.size}, 1fr)`;
+            container.style.width = 'min(80vw, 420px)';
+            container.style.height = 'min(80vw, 420px)';
+            GS.maze.grid = Array(GS.maze.size).fill().map(() => Array(GS.maze.size).fill(1));
+            function carve(x, y) {
+                GS.maze.grid[y][x] = 0;
+                const d = [[0,2],[0,-2],[2,0],[-2,0]].sort(() => Math.random() - 0.5);
+                for(let [dx, dy] of d) {
+                    let nx = x + dx, ny = y + dy;
+                    if(nx>=0 && nx<GS.maze.size && ny>=0 && ny<GS.maze.size && GS.maze.grid[ny][nx]===1) {
+                        GS.maze.grid[y+dy/2][x+dx/2] = 0; carve(nx, ny);
+                    }
+                }
+            }
+            carve(0, 0); GS.maze.pos = {x: 0, y: 0};
+            GS.maze.grid[GS.maze.size-1][GS.maze.size-1] = 0;
+            GS.maze.crystals = 0; GS.maze.totalCrystals = 0;
+            for(let i=0; i<GS.maze.size; i++) {
+                for(let j=0; j<GS.maze.size; j++) {
+                    if(GS.maze.grid[i][j] === 0 && Math.random() < 0.12 && (i+j>0)) { GS.maze.grid[i][j] = 2; GS.maze.totalCrystals++; }
+                    else if(GS.maze.grid[i][j] === 0 && Math.random() < 0.05 && (i+j>4)) { GS.maze.grid[i][j] = 3; } // Mine
+                }
+            }
+            renderMaze();
+        }
+
+        function renderMaze() {
+            const container = document.getElementById('maze-board');
+            container.innerHTML = '';
+            for(let y=0; y<GS.maze.size; y++) {
+                for(let x=0; x<GS.maze.size; x++) {
+                    const c = document.createElement('div');
+                    c.className = 'maze-cell ' + (GS.maze.grid[y][x] === 1 ? 'wall' : 'path');
+                    if(x === GS.maze.pos.x && y === GS.maze.pos.y) c.classList.add('player');
+                    else if(x === GS.maze.size-1 && y === GS.maze.size-1) c.classList.add('exit');
+                    else if(GS.maze.grid[y][x] === 2) c.classList.add('crystal');
+                    else if(GS.maze.grid[y][x] === 3) c.classList.add('mine');
+                    container.appendChild(c);
+                }
+            }
+            document.getElementById('maze-crystals').innerText = `${GS.maze.crystals} / ${GS.maze.totalCrystals}`;
+            document.getElementById('maze-level-text').innerText = GS.maze.lvl;
+        }
+
+        function handleMazeMove(d) {
+            let nx = GS.maze.pos.x, ny = GS.maze.pos.y;
+            if(d === 'up') ny--; if(d === 'down') ny++; if(d === 'left') nx--; if(d === 'right') nx++;
+            if(nx >= 0 && nx < GS.maze.size && ny >= 0 && ny < GS.maze.size && GS.maze.grid[ny][nx] !== 1) {
+                GS.maze.pos = {x: nx, y: ny};
+                if(GS.maze.grid[ny][nx] === 2) { GS.maze.crystals++; GS.maze.grid[ny][nx] = 0; addXP(20, 'Kristal'); }
+                if(GS.maze.grid[ny][nx] === 3) { addXP(-50, 'MAYIN!'); GS.maze.grid[ny][nx] = 0; }
+                if(nx === GS.maze.size-1 && ny === GS.maze.size-1) { addXP(150, 'Sektör Temizlendi'); GS.maze.lvl++; setTimeout(initMaze, 300); }
+                renderMaze();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if(GS.screen === 'maze') {
+                if(e.key === 'ArrowUp') handleMazeMove('up');
+                if(e.key === 'ArrowDown') handleMazeMove('down');
+                if(e.key === 'ArrowLeft') handleMazeMove('left');
+                if(e.key === 'ArrowRight') handleMazeMove('right');
+            }
+        });
+
+        // --- UTILS ---
+        function addXP(a, r) {
+            GS.xp = Math.max(0, GS.xp + a); updateXPDisplay();
+            showNotif(r, `${a > 0 ? '+' : ''}${a} XP`); saveProgress();
+        }
+        function updateXPDisplay() {
+            document.getElementById('global-xp').innerText = GS.xp;
+            document.getElementById('xp-bar').style.width = (GS.xp % 1000) / 10 + '%';
+            const ranks = ["Kademi I", "Usta", "Elit", "Galaktik", "Efsane"];
+            document.getElementById('rank-name').innerText = ranks[Math.min(Math.floor(GS.xp / 1000), 4)];
+        }
+        function showNotif(t, b) {
+            const n = document.getElementById('notif');
+            document.getElementById('notif-title').innerText = t;
+            document.getElementById('notif-body').innerText = b;
+            n.classList.remove('translate-x-[150%]');
+            setTimeout(() => n.classList.add('translate-x-[150%]'), 3000);
+        }
+        function saveProgress() { localStorage.setItem('ga_v5_xp', GS.xp); }
+        function loadProgress() { GS.xp = parseInt(localStorage.getItem('ga_v5_xp')) || 0; updateXPDisplay(); }
+
+        // --- PLEXUS ---
+        let c, ctx, pts = [];
+        function initPlexus() {
+            c = document.getElementById('canvas-plexus'); ctx = c.getContext('2d');
+            c.width = window.innerWidth; c.height = window.innerHeight; pts = [];
+            for(let i=0; i<45; i++) pts.push({x: Math.random()*c.width, y: Math.random()*c.height, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4});
+        }
+        function animatePlexus() {
+            ctx.clearRect(0,0,c.width, c.height); ctx.fillStyle = "#22d3ee"; ctx.strokeStyle = "rgba(34, 211, 238, 0.04)";
+            pts.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x < 0 || p.x > c.width) p.vx *= -1; if(p.y < 0 || p.y > c.height) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 0.8, 0, Math.PI*2); ctx.fill();
+                for(let j=i+1; j<pts.length; j++){
+                    const d = Math.hypot(p.x-pts[j].x, p.y-pts[j].y);
+                    if(d<140){ ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); }
+                }
+            });
+            requestAnimationFrame(animatePlexus);
+        }
+    </script>
+</body>
+</html>
