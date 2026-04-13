@@ -73,11 +73,31 @@
             document.getElementById('desktopScreen').classList.add('hidden');
         }
 
-        // BARIŞ HOCA ÖZEL: ACİL ÇIKIŞ X BUTONU
+        // BARIŞ HOCA ÖZEL: ACİL ÇIKIŞ X BUTONU (Artık Şapkadan Tetikleniyor)
         window.acilCikis = function() {
             if(confirm("Acil Çıkış: Tahta kilit sistemini tamamen kapatıp masaüstüne dönmek istediğinize emin misiniz?")) {
                 window.close(); // Tarayıcıyı kapatmayı dener
                 document.getElementById('lockScreen').classList.add('hidden'); // Kapatamazsa en azından ekranı gizler
+            }
+        };
+
+        // GİZLİ 5 TIKLAMA ŞİFRESİ MANTIĞI
+        let tiklamaSayisi = 0;
+        let tiklamaZamanlayici;
+
+        window.gizliCikisTetikle = function() {
+            tiklamaSayisi++;
+            clearTimeout(tiklamaZamanlayici);
+            
+            // 5 kere tıklandıysa çıkışı tetikle
+            if (tiklamaSayisi >= 5) {
+                tiklamaSayisi = 0; 
+                window.acilCikis(); 
+            } else {
+                // 2 saniye içinde ardışık basılmazsa sayacı sıfırla (yanlışlıkla basmaları önlemek için)
+                tiklamaZamanlayici = setTimeout(() => {
+                    tiklamaSayisi = 0;
+                }, 2000);
             }
         };
     </script>
@@ -92,12 +112,8 @@
 
     <div id="lockScreen" class="w-full h-full flex flex-col items-center justify-center bg-slate-900 relative z-50">
         
-        <button onclick="acilCikis()" class="absolute top-8 right-8 w-14 h-14 bg-slate-800/50 hover:bg-red-500/80 text-slate-400 hover:text-white rounded-full flex items-center justify-center text-2xl transition-all border border-slate-700 z-[100] cursor-pointer" title="Acil Çıkış">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
         <div class="absolute top-10 flex items-center justify-center space-x-4">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(37,99,235,0.5)]">
+            <div onclick="gizliCikisTetikle()" class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(37,99,235,0.5)] select-none">
                 <i class="fa-solid fa-graduation-cap text-white"></i>
             </div>
             <div>
@@ -112,7 +128,7 @@
             </div>
             
             <div class="bg-white p-2 rounded-xl mb-6 relative group">
-                <img id="qrCode" src="" alt="QR Kod" class="w-64 h-64 rounded-lg">
+                <img id="qrCode" src="" alt="QR Kod" class="w-64 h-64 rounded-lg pointer-events-none">
                 <div class="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_10px_red] animate-[ping_2s_ease-in-out_infinite]"></div>
             </div>
 
