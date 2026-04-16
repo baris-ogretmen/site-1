@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Değişim Koleji | Dijital Görev - 8. Sınıf</title>
+    <style>
+        :root {
+            --dark-bg: #0f172a;
+            --neon-blue: #38bdf8;
+            --neon-purple: #a855f7;
+            --text-main: #f1f5f9;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* --- GİRİŞ EKRANI --- */
+        #giris-ekrani {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--neon-blue);
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+            text-align: center;
+        }
+
+        #ogrenci-listesi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        .user-card {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+
+        .user-card:hover {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        /* --- OYUN SAHASI --- */
+        #oyun-alani {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #puzzle-board {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            height: 450px;
+            border: 2px solid var(--neon-purple);
+            background: rgba(168, 85, 247, 0.05);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.2);
+        }
+
+        .slot {
+            border: 0.5px solid rgba(168, 85, 247, 0.2);
+            position: relative;
+        }
+
+        .piece {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            cursor: grab;
+            background-size: 450px 450px;
+            border-radius: 4px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+            touch-action: none;
+            transition: transform 0.1s;
+        }
+
+        .piece.placed {
+            pointer-events: none;
+            box-shadow: none;
+            border: 1px solid white;
+            filter: brightness(1.1);
+        }
+
+        /* --- MODAL --- */
+        #logic-gate {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid var(--neon-blue);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .option-btn:hover { background: rgba(56, 189, 248, 0.1); }
+
+        .shake { animation: shake 0.4s; border-color: #ef4444 !important; color: #ef4444 !important; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* --- FINAL --- */
+        #celebration {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: #000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .victory-text {
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-align: center;
+            background: linear-gradient(to right, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="giris-ekrani">
+    <h1 class="main-title">LGS Görev Sistemi 🛡️</h1>
+    <div id="ogrenci-listesi"></div>
+</div>
+
+<div id="oyun-alani">
+    <div id="puzzle-board">
+        <div class="slot" data-id="0"></div><div class="slot" data-id="1"></div><div class="slot" data-id="2"></div>
+        <div class="slot" data-id="3"></div><div class="slot" data-id="4"></div><div class="slot" data-id="5"></div>
+        <div class="slot" data-id="6"></div><div class="slot" data-id="7"></div><div class="slot" data-id="8"></div>
+    </div>
+</div>
+
+<div id="logic-gate">
+    <div class="modal-content">
+        <h2 id="quest-title" style="color: var(--neon-blue); margin-bottom: 20px;">LGS BİLGİ DOĞRULAMA 🔐</h2>
+        <p id="quest-text" style="margin-bottom: 25px; font-size: 1.2rem; line-height: 1.5; color: white;"></p>
+        <div id="options-box"></div>
+    </div>
+</div>
+
+<div id="celebration">
+    <img src="https://i.ibb.co/L6mN3WJ/bot.png" width="250" alt="CyberBot" style="margin-bottom: 30px;">
+    <h1 id="victory-msg" class="victory-text"></h1>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+/* 8. Sınıf Fen Bilimleri ve İnkılap Tarihi Örnekleri */
+const OGRENCILER = [
+    { 
+        ad: "Örnek 1", 
+        resim: "https://picsum.photos/id/180/450/450", 
+        soru: "Fen Bilimleri: DNA'nın temel yapı birimi aşağıdakilerden hangisidir?", 
+        cevaplar: ["Gen", "Nükleotid", "Kromozom"], 
+        dogruCevap: "Nükleotid" 
+    },
+    { 
+        ad: "Örnek 2", 
+        resim: "https://picsum.photos/id/227/450/450", 
+        soru: "İnkılap Tarihi: Mustafa Kemal'in 'Size ben taarruzu emretmiyorum, ölmeyi emrediyorum!' dediği tarihi cephe hangisidir?", 
+        cevaplar: ["Kafkas Cephesi", "Çanakkale Cephesi", "Suriye Cephesi"], 
+        dogruCevap: "Çanakkale Cephesi" 
+    },
+    { 
+        ad: "Örnek 3", 
+        resim: "https://picsum.photos/id/119/450/450", 
+        soru: "Fen Bilimleri: Mevsimlerin oluşmasında Dünya'nın Güneş etrafında dolanması ve başka hangi özellik etkilidir?", 
+        cevaplar: ["Eksen Eğikliği", "Ay'ın Çekim Gücü", "Dünya'nın Şekli"], 
+        dogruCevap: "Eksen Eğikliği" 
+    }
+];
+
+let currentStudent = null;
+let partsPlaced = 0;
+
+function initApp() {
+    const list = document.getElementById('ogrenci-listesi');
+    OGRENCILER.forEach(std => {
+        const div = document.createElement('div');
+        div.className = 'user-card';
+        div.innerText = std.ad;
+        div.onclick = () => startMission(std);
+        list.appendChild(div);
+    });
+}
+
+function startMission(std) {
+    currentStudent = std;
+    document.getElementById('giris-ekrani').style.display = 'none';
+    document.getElementById('oyun-alani').style.display = 'block';
+    createPuzzle();
+}
+
+function createPuzzle() {
+    const gameArea = document.getElementById('oyun-alani');
+    const gridSize = 3; // 3x3 yapboz
+    const pSize = 150;
+
+    for(let i=0; i < 9; i++) {
+        const row = Math.floor(i / gridSize);
+        const col = i % gridSize;
+
+        const piece = document.createElement('div');
+        piece.className = 'piece';
+        piece.style.backgroundImage = `url(${currentStudent.resim})`;
+        piece.style.backgroundPosition = `-${col * pSize}px -${row * pSize}px`;
+        
+        // Dağınık yerleştir
+        piece.style.left = (Math.random() * (window.innerWidth - 180)) + 'px';
+        piece.style.top = (Math.random() * (window.innerHeight - 180)) + 'px';
+        piece.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
+        piece.dataset.id = i;
+
+        bindEvents(piece);
+        gameArea.appendChild(piece);
+    }
+}
+
+function bindEvents(el) {
+    let ox, oy;
+
+    const start = (e) => {
+        const cx = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const cy = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        ox = cx - el.offsetLeft;
+        oy = cy - el.offsetTop;
+        el.style.zIndex = 1000;
+        el.style.transform = 'rotate(0deg) scale(1.05)';
+    };
+
+    const move = (e) => {
+        if(el.style.zIndex != 1000) return;
+        const cx = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const cy = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        el.style.left = (cx - ox) + 'px';
+        el.style.top = (cy - oy) + 'px';
+    };
+
+    const stop = () => {
+        if(el.style.zIndex != 1000) return;
+        el.style.zIndex = 10;
+        el.style.transform = 'rotate(0deg) scale(1)';
+        
+        const slots = document.querySelectorAll('.slot');
+        slots.forEach(slot => {
+            const r = slot.getBoundingClientRect();
+            const er = el.getBoundingClientRect();
+            const midX = er.left + er.width/2;
+            const midY = er.top + er.height/2;
+
+            if(midX > r.left && midX < r.right && midY > r.top && midY < r.bottom && slot.dataset.id === el.dataset.id) {
+                el.style.left = r.left + 'px';
+                el.style.top = r.top + 'px';
+                el.classList.add('placed');
+                partsPlaced++;
+                if(partsPlaced === 9) triggerGate();
+            }
+        });
+    };
+
+    el.addEventListener('mousedown', start);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', stop);
+    el.addEventListener('touchstart', start);
+    window.addEventListener('touchmove', move);
+    window.addEventListener('touchend', stop);
+}
+
+function triggerGate() {
+    setTimeout(() => {
+        document.getElementById('logic-gate').style.display = 'flex';
+        // Güvenli HTML yapısı oluşturuldu. String tırnak hataları giderildi.
+        document.getElementById('quest-text').innerHTML = `Tebrikler ${currentStudent.ad}, görsel veriyi tamamladın. <br><br> Şimdi son erişim şifresini gir: <br><br> <b>${currentStudent.soru}</b>`;
+        
+        const box = document.getElementById('options-box');
+        box.innerHTML = '';
+        currentStudent.cevaplar.forEach(ans => {
+            const b = document.createElement('button');
+            b.className = 'option-btn';
+            b.innerText = ans;
+            b.onclick = () => checkGate(ans, b);
+            box.appendChild(b);
+        });
+    }, 600);
+}
+
+function checkGate(val, btn) {
+    if(val === currentStudent.dogruCevap) {
+        showVictory();
+    } else {
+        btn.classList.add('shake');
+        setTimeout(() => btn.classList.remove('shake'), 400);
+    }
+}
+
+function showVictory() {
+    document.getElementById('logic-gate').style.display = 'none';
+    document.getElementById('celebration').style.display = 'flex';
+    document.getElementById('victory-msg').innerHTML = `HARİKASIN ${currentStudent.ad.toUpperCase()}! <br> LGS'DE BAŞARILAR!`;
+    
+    const end = Date.now() + (6 * 1000);
+    (function frame() {
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#38bdf8', '#a855f7'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#38bdf8', '#a855f7'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+}
+
+initApp();
+</script>
+</body>
+</html>
