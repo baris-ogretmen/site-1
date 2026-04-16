@@ -6,19 +6,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LGS Yolunda Geleceğin Mimarı</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Modern, dostane bir font -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
     <style>
         /* === ÖZEL ANİMASYONLAR VE STİLLER === */
         body {
-            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden; /* Tam ekran uygulama hissi */
-            touch-action: none; /* Mobilde istenmeyen kaydırmaları önler */
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden; 
+            touch-action: none; 
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Arkaplan Yüzen Şekiller */
+        .bg-shape {
+            position: absolute;
+            filter: blur(60px);
+            z-index: 0;
+            opacity: 0.6;
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -50px) scale(1.1); }
         }
 
         /* Başlık Efekti */
         .title-glow {
-            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+            text-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Glassmorphism Panel (Cam Efekti) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
         }
 
         /* Yapboz Alanı */
@@ -30,14 +57,15 @@
             height: 100vh;
             width: 100vw;
             position: relative;
+            z-index: 10;
         }
 
         .puzzle-board {
             width: 300px;
             height: 300px;
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 4px dashed #93c5fd;
-            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border: 3px dashed #60a5fa;
+            border-radius: 12px;
             position: relative;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
             margin-bottom: 20px;
@@ -48,7 +76,7 @@
             height: 100px;
             position: absolute;
             box-sizing: border-box;
-            border: 1px solid rgba(147, 197, 253, 0.3);
+            border: 1px solid rgba(147, 197, 253, 0.4);
         }
 
         .puzzle-piece {
@@ -56,73 +84,99 @@
             height: 100px;
             position: absolute;
             cursor: grab;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-radius: 4px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+            border-radius: 8px;
             transition: transform 0.1s;
             touch-action: none;
-            z-index: 10;
+            z-index: 20;
         }
 
         .puzzle-piece:active {
             cursor: grabbing;
-            transform: scale(1.05);
+            transform: scale(1.08) rotate(2deg);
             z-index: 50;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.25);
         }
 
         .puzzle-piece.snapped {
             cursor: default;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 5 !important;
             box-shadow: none;
             border-radius: 0;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         /* Snap (Yerleşme) Efekti */
         @keyframes sparkle {
-            0% { transform: scale(0) rotate(0deg); opacity: 1; }
-            100% { transform: scale(2) rotate(180deg); opacity: 0; }
+            0% { transform: scale(0.5) rotate(0deg); opacity: 1; }
+            100% { transform: scale(2.5) rotate(90deg); opacity: 0; }
         }
         .sparkle-effect {
             position: absolute;
             width: 100px; height: 100px;
-            background: radial-gradient(circle, rgba(253,224,71,0.8) 0%, rgba(253,224,71,0) 70%);
-            animation: sparkle 0.6s ease-out forwards;
+            background: radial-gradient(circle, rgba(250,204,21,0.9) 0%, rgba(250,204,21,0) 60%);
+            animation: sparkle 0.5s ease-out forwards;
             pointer-events: none;
-            z-index: 20;
+            z-index: 25;
         }
 
         /* Quiz Animasyonları */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
         }
         .shake-error {
             animation: shake 0.4s ease-in-out;
-            background-color: #fee2e2 !important; /* Kırmızımsı */
+            background-color: #fef2f2 !important; 
             border-color: #ef4444 !important;
-            color: #b91c1c !important;
+            color: #991b1b !important;
         }
 
         .correct-flash {
-            background-color: #dcfce3 !important; /* Yeşilimsi */
+            background-color: #f0fdf4 !important; 
             border-color: #22c55e !important;
-            color: #15803d !important;
-            transform: scale(1.02);
-            transition: all 0.2s;
+            color: #166534 !important;
+            transform: scale(1.03);
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.2);
+        }
+
+        /* Motivasyon Toast Mesajı */
+        .toast-msg {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #f59e0b;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            z-index: 100;
+            pointer-events: none;
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+            animation: toastPop 1s ease-in-out forwards;
+        }
+
+        @keyframes toastPop {
+            0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -80px) scale(0.9); }
         }
 
         /* Final Kutlaması */
         @keyframes pulse-text {
-            0% { transform: scale(1); text-shadow: 0 0 20px #ef4444, 0 0 40px #3b82f6; }
-            50% { transform: scale(1.1); text-shadow: 0 0 40px #22c55e, 0 0 80px #eab308; }
-            100% { transform: scale(1); text-shadow: 0 0 20px #ef4444, 0 0 40px #3b82f6; }
+            0% { transform: scale(1); text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
+            50% { transform: scale(1.05); text-shadow: 0 0 30px rgba(34, 197, 94, 0.8), 0 0 40px rgba(234, 179, 8, 0.8); }
+            100% { transform: scale(1); text-shadow: 0 0 15px rgba(59, 130, 246, 0.8); }
         }
         .finale-text {
             animation: pulse-text 2s infinite;
-            background: linear-gradient(to right, #ef4444, #3b82f6, #22c55e, #eab308);
+            background: linear-gradient(135deg, #ef4444, #3b82f6, #22c55e, #eab308);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -140,13 +194,18 @@
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="w-screen h-screen text-slate-800">
+<body>
+
+    <!-- Arkaplan Dekorasyonları -->
+    <div class="bg-shape bg-blue-300 w-96 h-96 -top-20 -left-20"></div>
+    <div class="bg-shape bg-purple-300 w-80 h-80 bottom-10 -right-10" style="animation-delay: -5s;"></div>
 
     <!-- 1. GİRİŞ EKRANI -->
-    <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-50 transition-opacity duration-500">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-lg w-[90%] border border-blue-100">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-4 title-glow">LGS Şifreleri</h1>
-            <p class="text-gray-600 mb-8 text-lg">Geleceğin mimarı, kendi ismini seç ve yapbozu tamamla!</p>
+    <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500 p-4">
+        <div class="glass-panel p-8 md:p-10 rounded-3xl text-center max-w-lg w-full">
+            <div class="inline-block bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-sm font-bold tracking-widest mb-4">LGS 2024 - 2025</div>
+            <h1 class="text-4xl md:text-5xl font-black text-slate-800 mb-4 title-glow">Sanal Yapboz</h1>
+            <p class="text-slate-600 mb-8 text-lg font-semibold">Geleceğin mimarı, kendi ismini seç ve şifreleri çözmeye başla!</p>
             <div id="student-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Butonlar JS ile buraya gelecek -->
             </div>
@@ -155,28 +214,31 @@
 
     <!-- 2. YAPBOZ EKRANI -->
     <div id="game-screen" class="hidden">
-        <h2 class="text-3xl font-bold text-blue-700 mb-6 drop-shadow-md z-10 text-center px-4" id="game-title">Yapbozu Tamamla!</h2>
+        <div class="glass-panel px-8 py-4 rounded-2xl mb-6 text-center z-10">
+            <h2 class="text-3xl font-black text-blue-600 drop-shadow-sm" id="game-title">Parçaları Birleştir</h2>
+            <p id="puzzle-progress" class="text-slate-500 font-bold mt-1 bg-white/50 inline-block px-4 py-1 rounded-full">0 / 9 Parça</p>
+        </div>
         <!-- Board ve Parçalar JS ile oluşturulacak -->
     </div>
 
     <!-- 3. QUİZ EKRANI (Modal) -->
-    <div id="quiz-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-md z-40">
-        <div class="bg-white rounded-2xl shadow-2xl w-[95%] max-w-2xl overflow-hidden flex flex-col transform transition-all">
+    <div id="quiz-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-md z-40 p-4">
+        <div class="glass-panel rounded-3xl w-full max-w-2xl overflow-hidden flex flex-col transform transition-all">
             <!-- Header -->
-            <div class="bg-blue-600 text-white p-5 text-center relative">
-                <h3 class="text-2xl font-bold" id="quiz-student-name">Tebrikler!</h3>
-                <p class="text-blue-100 mt-1">LGS Şifrelerini Çözme Vakti</p>
-                <div class="absolute top-0 left-0 h-1 bg-green-400 transition-all duration-300" id="progress-bar" style="width: 0%"></div>
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 text-center relative shadow-md">
+                <h3 class="text-3xl font-black" id="quiz-student-name">Tebrikler!</h3>
+                <p class="text-blue-100 mt-1 font-semibold opacity-90">Şimdi LGS Şifrelerini Çözme Vakti</p>
+                <div class="absolute bottom-0 left-0 h-1.5 bg-green-400 transition-all duration-500 rounded-r-full" id="progress-bar" style="width: 0%"></div>
             </div>
             
             <!-- Soru Alanı -->
-            <div class="p-6 md:p-8 flex-1">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider" id="question-counter">Soru 1 / 13</span>
+            <div class="p-6 md:p-8 flex-1 bg-white/90">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="bg-blue-100 text-blue-700 text-sm font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm" id="question-counter">Soru 1 / 13</span>
                 </div>
-                <h4 class="text-xl md:text-2xl font-medium text-slate-800 mb-8 leading-snug" id="question-text">Soru metni buraya gelecek...</h4>
+                <h4 class="text-xl md:text-2xl font-bold text-slate-800 mb-8 leading-relaxed" id="question-text">Soru metni buraya gelecek...</h4>
                 
-                <div class="space-y-3" id="options-container">
+                <div class="space-y-4" id="options-container">
                     <!-- Şıklar JS ile gelecek -->
                 </div>
             </div>
@@ -184,23 +246,92 @@
     </div>
 
     <!-- 4. FİNAL KUTLAMASI -->
-    <div id="celebration-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/90 z-[100] text-center p-4">
+    <div id="celebration-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm z-[100] text-center p-4">
         <canvas id="confetti-canvas"></canvas>
         <div class="relative z-10 flex flex-col items-center">
-            <h1 class="text-5xl md:text-7xl finale-text mb-6 uppercase tracking-tight" id="finale-message">HARİKASIN!</h1>
-            <p class="text-2xl md:text-4xl text-white font-light">LGS YOLUNDA GELECEĞİN MİMARI SENSİN!</p>
-            <button onclick="location.reload()" class="mt-12 bg-white text-blue-600 font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform">Tekrar Oyna</button>
+            <h1 class="text-6xl md:text-8xl finale-text mb-4 uppercase tracking-tight drop-shadow-2xl" id="finale-message">HARİKASIN!</h1>
+            <p class="text-2xl md:text-4xl text-blue-100 font-bold mb-12 drop-shadow-lg">LGS YOLUNDA GELECEĞİN MİMARI SENSİN!</p>
+            <button onclick="location.reload()" class="bg-gradient-to-r from-green-400 to-emerald-500 text-white font-black py-4 px-10 rounded-full shadow-[0_0_30px_rgba(34,197,94,0.5)] hover:scale-110 hover:shadow-[0_0_50px_rgba(34,197,94,0.8)] transition-all duration-300 text-xl border-2 border-white/50">Tekrar Oyna</button>
         </div>
     </div>
 
     <!-- ================= JAVASCRIPT MOTORU ================= -->
     <script>
-        // 1. ÖĞRETMEN KONTROL PANELİ (DİNAMİK VERİ)
-        // Barış Hocam, yeni öğrenci eklemek için bu diziyi kullanabilirsin.
+        // --- SES MOTORU (Dahili Sentezleyici) ---
+        // Barış Hocam, dışarıdan dosya yüklemeden tarayıcının kendi gücüyle ses üretiyoruz!
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'snap') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } 
+            else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.setValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.3, now + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            else if (type === 'win') {
+                // Minik zafer melodisi
+                [400, 500, 600, 800].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'sine';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = freq;
+                    g.gain.setValueAtTime(0.2, now + i*0.15);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.15 + 0.3);
+                    o.start(now + i*0.15);
+                    o.stop(now + i*0.15 + 0.3);
+                });
+            }
+        }
+
+
+        // 1. ÖĞRETMEN KONTROL PANELİ (DİNAMİK VERİ - GÜVENLİ YAPI)
         const OGRENCILER = [
             {
-                ad: "LGS Şampiyonu", // Buraya gerçek öğrenci adı yazılabilir.
-                resim: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=600&auto=format&fit=crop", // Örnek eğitim/başarı temalı yüksek çözünürlüklü görsel
+                ad: "LGS Şampiyonu", 
+                resim: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=600&auto=format&fit=crop", 
                 sorular: [
                     // --- FEN BİLİMLERİ (5 Soru) ---
                     {
@@ -277,10 +408,13 @@
         let currentStudent = null;
         let puzzlePieces = [];
         let snappedCount = 0;
-        const GRID_SIZE = 3; // 3x3 Yapboz
-        const PIECE_SIZE = 100; // Her parça 100px (300x300 Board)
+        const GRID_SIZE = 3; // 3x3 = 9 Parça
+        const PIECE_SIZE = 100; 
         const BOARD_SIZE = 300;
         let currentQuestionIndex = 0;
+
+        // Motivasyon kelimeleri dizisi
+        const motivations = ["Harika gidiyorsun!", "Süper Zeka!", "Müthiş!", "Aynen Devam!", "LGS Seni Bekler!"];
 
         // --- UYGULAMA BAŞLATMA ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -291,9 +425,12 @@
             const btnContainer = document.getElementById('student-buttons');
             OGRENCILER.forEach(student => {
                 const btn = document.createElement('button');
-                btn.className = "w-full bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-800 font-bold py-3 px-6 rounded-xl border border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg";
+                btn.className = "w-full bg-white text-blue-600 hover:bg-blue-600 hover:text-white font-black py-4 px-6 rounded-2xl border-2 border-blue-200 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_10px_20px_rgba(59,130,246,0.3)]";
                 btn.innerText = student.ad;
-                btn.onclick = () => startGame(student);
+                btn.onclick = () => {
+                    initAudio(); // Sesi başlat (Kullanıcı etkileşimi zorunludur)
+                    startGame(student);
+                };
                 btnContainer.appendChild(btn);
             });
         }
@@ -303,17 +440,20 @@
             document.getElementById('start-screen').classList.add('hidden');
             const gameScreen = document.getElementById('game-screen');
             gameScreen.classList.remove('hidden');
-            
-            // Puzzle Board Oluştur
+            updateProgressText();
             createPuzzleBoard();
+        }
+
+        function updateProgressText() {
+            document.getElementById('puzzle-progress').innerText = `${snappedCount} / ${GRID_SIZE * GRID_SIZE} Parça`;
         }
 
         // --- YAPBOZ MOTORU ---
         function createPuzzleBoard() {
             const gameScreen = document.getElementById('game-screen');
             snappedCount = 0;
+            updateProgressText();
             
-            // Mevcut board'u temizle (varsa)
             const oldBoard = document.querySelector('.puzzle-board');
             if(oldBoard) oldBoard.remove();
             const oldPieces = document.querySelectorAll('.puzzle-piece');
@@ -322,7 +462,6 @@
             const board = document.createElement('div');
             board.className = 'puzzle-board';
             
-            // Parçaları ve slotları oluştur
             let piecesData = [];
 
             for(let row = 0; row < GRID_SIZE; row++) {
@@ -331,48 +470,38 @@
                     const targetX = col * PIECE_SIZE;
                     const targetY = row * PIECE_SIZE;
 
-                    // Slot (Hedef Alan)
                     const slot = document.createElement('div');
                     slot.className = 'puzzle-slot';
                     slot.style.left = `${targetX}px`;
                     slot.style.top = `${targetY}px`;
                     board.appendChild(slot);
 
-                    // Parça Verisi
                     piecesData.push({ id, row, col, targetX, targetY });
                 }
             }
 
             gameScreen.appendChild(board);
             
-            // Board pozisyonunu al (dağıtma işlemi için)
-            const boardRect = board.getBoundingClientRect();
-
-            // Parçaları oluştur ve dağıt
             piecesData.forEach(data => {
                 const piece = document.createElement('div');
-                piece.className = 'puzzle-piece bg-white';
+                piece.className = 'puzzle-piece';
                 piece.id = data.id;
                 
-                // Arkaplan resmi ayarı
                 piece.style.backgroundImage = `url(${currentStudent.resim})`;
                 piece.style.backgroundSize = `${BOARD_SIZE}px ${BOARD_SIZE}px`;
                 piece.style.backgroundPosition = `-${data.targetX}px -${data.targetY}px`;
 
-                // Ekranda rastgele bir konuma yerleştir (Board'un biraz dışına)
-                // Güvenli alan hesaplaması (ekranın içinde kalması için)
                 const margin = 20;
+                const topOffset = 180; // Başlıkların altına düşmesi için
                 const maxX = window.innerWidth - PIECE_SIZE - margin;
                 const maxY = window.innerHeight - PIECE_SIZE - margin;
                 
-                // Rastgele X, Y (Üst başlığın altına düşecek şekilde)
                 const randomX = Math.max(margin, Math.random() * maxX);
-                const randomY = Math.max(100, Math.random() * maxY);
+                const randomY = Math.max(topOffset, Math.random() * maxY);
 
                 piece.style.left = `${randomX}px`;
                 piece.style.top = `${randomY}px`;
                 
-                // Parça verilerini elemente iliştir
                 piece.dataset.targetX = data.targetX;
                 piece.dataset.targetY = data.targetY;
 
@@ -421,39 +550,36 @@
             const boardRect = board.getBoundingClientRect();
             const pieceRect = piece.getBoundingClientRect();
             
-            // Parçanın board'a göre göreceli pozisyonu
             const relativeX = pieceRect.left - boardRect.left;
             const relativeY = pieceRect.top - boardRect.top;
             
             const targetX = parseFloat(piece.dataset.targetX);
             const targetY = parseFloat(piece.dataset.targetY);
 
-            // Snap toleransı (Mesafe kontrolü - 35px)
-            const tolerance = 35; 
+            const tolerance = 40; 
             
             if (Math.abs(relativeX - targetX) < tolerance && Math.abs(relativeY - targetY) < tolerance) {
-                // Doğru yere bırakıldı! Snap!
-                
-                // Parçayı fiziksel olarak board'un içine taşı
                 piece.style.left = `${targetX}px`;
                 piece.style.top = `${targetY}px`;
-                board.appendChild(piece); // Container değiştir
+                board.appendChild(piece);
                 
                 piece.classList.add('snapped');
                 
-                // TIK Efekti (Sparkle)
                 const sparkle = document.createElement('div');
                 sparkle.className = 'sparkle-effect';
                 sparkle.style.left = `${targetX}px`;
                 sparkle.style.top = `${targetY}px`;
                 board.appendChild(sparkle);
                 
-                // Efekt bitince DOM'dan sil
-                setTimeout(() => sparkle.remove(), 600);
+                playSound('snap'); // Yeni Ses Özelliği
+                
+                setTimeout(() => sparkle.remove(), 500);
 
                 snappedCount++;
+                updateProgressText();
+
                 if (snappedCount === (GRID_SIZE * GRID_SIZE)) {
-                    setTimeout(() => startQuiz(), 1000); // 1 saniye bekle, quizi başlat
+                    setTimeout(() => startQuiz(), 800);
                 }
             }
         }
@@ -470,33 +596,45 @@
             const totalQuestions = currentStudent.sorular.length;
             const q = currentStudent.sorular[currentQuestionIndex];
             
-            // Progress Bar
-            const progress = ((currentQuestionIndex) / totalQuestions) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
+            // İlerleme çubuğu yumuşak geçişi
+            setTimeout(() => {
+                const progress = ((currentQuestionIndex) / totalQuestions) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+            }, 50);
             
             document.getElementById('question-counter').innerText = `Soru ${currentQuestionIndex + 1} / ${totalQuestions}`;
             document.getElementById('question-text').innerText = q.soru;
             
             const optionsContainer = document.getElementById('options-container');
-            optionsContainer.innerHTML = ''; // Temizle
+            optionsContainer.innerHTML = ''; 
             
             q.cevaplar.forEach(cevap => {
                 const btn = document.createElement('button');
-                btn.className = "w-full text-left px-5 py-4 border-2 border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 font-medium text-slate-700 transition-all duration-200 focus:outline-none";
+                btn.className = "w-full text-left px-6 py-4 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md font-bold text-slate-700 transition-all duration-200 focus:outline-none text-lg";
                 btn.innerText = cevap;
                 btn.onclick = () => checkAnswer(btn, cevap, q.dogruCevap);
                 optionsContainer.appendChild(btn);
             });
         }
 
+        function showToast() {
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.innerText = motivations[Math.floor(Math.random() * motivations.length)];
+            document.getElementById('quiz-screen').appendChild(toast);
+            setTimeout(() => toast.remove(), 1000);
+        }
+
         function checkAnswer(btn, secilen, dogru) {
-            // Tıklamaları geçici olarak kapat
             const allBtns = document.getElementById('options-container').querySelectorAll('button');
             allBtns.forEach(b => b.disabled = true);
 
             if (secilen === dogru) {
                 // DOĞRU CEVAP
                 btn.classList.add('correct-flash');
+                playSound('correct');
+                showToast();
+
                 setTimeout(() => {
                     currentQuestionIndex++;
                     if (currentQuestionIndex < currentStudent.sorular.length) {
@@ -504,18 +642,20 @@
                     } else {
                         triggerFinale();
                     }
-                }, 800);
+                }, 1000);
             } else {
                 // YANLIŞ CEVAP
                 btn.classList.add('shake-error');
+                playSound('wrong');
+                
                 setTimeout(() => {
                     btn.classList.remove('shake-error');
-                    allBtns.forEach(b => b.disabled = false); // Yeniden seçime izin ver
-                }, 500);
+                    allBtns.forEach(b => b.disabled = false); 
+                }, 600);
             }
         }
 
-        // --- FİNAL KUTLAMASI (Kusursuz LGS Motivasyonu) ---
+        // --- FİNAL KUTLAMASI ---
         function triggerFinale() {
             document.getElementById('quiz-screen').classList.add('hidden');
             const finaleScreen = document.getElementById('celebration-screen');
@@ -524,10 +664,11 @@
             const msg = document.getElementById('finale-message');
             msg.innerText = `HARİKASIN ${currentStudent.ad}!`;
 
+            playSound('win');
             startConfetti();
         }
 
-        // --- HAFİF SIKLET CONFETTI MOTORU ---
+        // --- GELİŞMİŞ CONFETTI MOTORU ---
         function startConfetti() {
             const canvas = document.getElementById('confetti-canvas');
             const ctx = canvas.getContext('2d');
@@ -535,19 +676,19 @@
             canvas.height = window.innerHeight;
 
             const particles = [];
-            const colors = ['#fde047', '#3b82f6', '#ef4444', '#22c55e', '#a855f7'];
+            const colors = ['#fde047', '#3b82f6', '#ef4444', '#22c55e', '#a855f7', '#ec4899', '#06b6d4'];
 
-            for (let i = 0; i < 150; i++) {
+            for (let i = 0; i < 200; i++) {
                 particles.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height - canvas.height,
-                    w: Math.random() * 10 + 5,
-                    h: Math.random() * 5 + 5,
+                    w: Math.random() * 12 + 6,
+                    h: Math.random() * 6 + 6,
                     color: colors[Math.floor(Math.random() * colors.length)],
-                    speedY: Math.random() * 3 + 2,
-                    speedX: Math.random() * 2 - 1,
+                    speedY: Math.random() * 4 + 2,
+                    speedX: Math.random() * 3 - 1.5,
                     rotation: Math.random() * 360,
-                    rotationSpeed: Math.random() * 10 - 5
+                    rotationSpeed: Math.random() * 12 - 6
                 });
             }
 
@@ -558,7 +699,10 @@
                     ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
                     ctx.rotate((p.rotation * Math.PI) / 180);
                     ctx.fillStyle = p.color;
-                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    // Yuvarlatılmış konfetiler
+                    ctx.beginPath();
+                    ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, 2);
+                    ctx.fill();
                     ctx.restore();
 
                     p.y += p.speedY;
@@ -574,7 +718,6 @@
             }
             draw();
             
-            // Pencere boyutu değişirse canvas'ı güncelle
             window.addEventListener('resize', () => {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
