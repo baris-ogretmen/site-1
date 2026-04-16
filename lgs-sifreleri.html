@@ -1,0 +1,587 @@
+```html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LGS Yolunda Geleceğin Mimarı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* === ÖZEL ANİMASYONLAR VE STİLLER === */
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #cbebff 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; /* Tam ekran uygulama hissi */
+            touch-action: none; /* Mobilde istenmeyen kaydırmaları önler */
+            user-select: none;
+        }
+
+        /* Başlık Efekti */
+        .title-glow {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Yapboz Alanı */
+        #game-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .puzzle-board {
+            width: 300px;
+            height: 300px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 4px dashed #93c5fd;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .puzzle-slot {
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            box-sizing: border-box;
+            border: 1px solid rgba(147, 197, 253, 0.3);
+        }
+
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            transition: transform 0.1s;
+            touch-action: none;
+            z-index: 10;
+        }
+
+        .puzzle-piece:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            z-index: 50;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .puzzle-piece.snapped {
+            cursor: default;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5 !important;
+            box-shadow: none;
+            border-radius: 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Snap (Yerleşme) Efekti */
+        @keyframes sparkle {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: scale(2) rotate(180deg); opacity: 0; }
+        }
+        .sparkle-effect {
+            position: absolute;
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(253,224,71,0.8) 0%, rgba(253,224,71,0) 70%);
+            animation: sparkle 0.6s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Quiz Animasyonları */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake-error {
+            animation: shake 0.4s ease-in-out;
+            background-color: #fee2e2 !important; /* Kırmızımsı */
+            border-color: #ef4444 !important;
+            color: #b91c1c !important;
+        }
+
+        .correct-flash {
+            background-color: #dcfce3 !important; /* Yeşilimsi */
+            border-color: #22c55e !important;
+            color: #15803d !important;
+            transform: scale(1.02);
+            transition: all 0.2s;
+        }
+
+        /* Final Kutlaması */
+        @keyframes pulse-text {
+            0% { transform: scale(1); text-shadow: 0 0 20px #ef4444, 0 0 40px #3b82f6; }
+            50% { transform: scale(1.1); text-shadow: 0 0 40px #22c55e, 0 0 80px #eab308; }
+            100% { transform: scale(1); text-shadow: 0 0 20px #ef4444, 0 0 40px #3b82f6; }
+        }
+        .finale-text {
+            animation: pulse-text 2s infinite;
+            background: linear-gradient(to right, #ef4444, #3b82f6, #22c55e, #eab308);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 900;
+        }
+        
+        canvas#confetti-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="w-screen h-screen text-slate-800">
+
+    <!-- 1. GİRİŞ EKRANI -->
+    <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-50 transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-lg w-[90%] border border-blue-100">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-4 title-glow">LGS Şifreleri</h1>
+            <p class="text-gray-600 mb-8 text-lg">Geleceğin mimarı, kendi ismini seç ve yapbozu tamamla!</p>
+            <div id="student-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Butonlar JS ile buraya gelecek -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. YAPBOZ EKRANI -->
+    <div id="game-screen" class="hidden">
+        <h2 class="text-3xl font-bold text-blue-700 mb-6 drop-shadow-md z-10 text-center px-4" id="game-title">Yapbozu Tamamla!</h2>
+        <!-- Board ve Parçalar JS ile oluşturulacak -->
+    </div>
+
+    <!-- 3. QUİZ EKRANI (Modal) -->
+    <div id="quiz-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-md z-40">
+        <div class="bg-white rounded-2xl shadow-2xl w-[95%] max-w-2xl overflow-hidden flex flex-col transform transition-all">
+            <!-- Header -->
+            <div class="bg-blue-600 text-white p-5 text-center relative">
+                <h3 class="text-2xl font-bold" id="quiz-student-name">Tebrikler!</h3>
+                <p class="text-blue-100 mt-1">LGS Şifrelerini Çözme Vakti</p>
+                <div class="absolute top-0 left-0 h-1 bg-green-400 transition-all duration-300" id="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <!-- Soru Alanı -->
+            <div class="p-6 md:p-8 flex-1">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider" id="question-counter">Soru 1 / 13</span>
+                </div>
+                <h4 class="text-xl md:text-2xl font-medium text-slate-800 mb-8 leading-snug" id="question-text">Soru metni buraya gelecek...</h4>
+                
+                <div class="space-y-3" id="options-container">
+                    <!-- Şıklar JS ile gelecek -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. FİNAL KUTLAMASI -->
+    <div id="celebration-screen" class="hidden absolute inset-0 flex items-center justify-center bg-slate-900/90 z-[100] text-center p-4">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="relative z-10 flex flex-col items-center">
+            <h1 class="text-5xl md:text-7xl finale-text mb-6 uppercase tracking-tight" id="finale-message">HARİKASIN!</h1>
+            <p class="text-2xl md:text-4xl text-white font-light">LGS YOLUNDA GELECEĞİN MİMARI SENSİN!</p>
+            <button onclick="location.reload()" class="mt-12 bg-white text-blue-600 font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform">Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT MOTORU ================= -->
+    <script>
+        // 1. ÖĞRETMEN KONTROL PANELİ (DİNAMİK VERİ)
+        // Barış Hocam, yeni öğrenci eklemek için bu diziyi kullanabilirsin.
+        const OGRENCILER = [
+            {
+                ad: "LGS Şampiyonu", // Buraya gerçek öğrenci adı yazılabilir.
+                resim: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=600&auto=format&fit=crop", // Örnek eğitim/başarı temalı yüksek çözünürlüklü görsel
+                sorular: [
+                    // --- FEN BİLİMLERİ (5 Soru) ---
+                    {
+                        soru: "Eğik düzlem, kuvvetten kazanç sağlarken yoldan kayba neden olur. Buna göre aşağıdaki basit makinelerden hangisinde *kesinlikle* kuvvet kazancı vardır?",
+                        cevaplar: ["A) Sabit makara", "B) Hareketli makara", "C) Eşit kollu terazi", "D) Maşa"],
+                        dogruCevap: "B) Hareketli makara"
+                    },
+                    {
+                        soru: "Ahmet, ağır bir koliyi kamyonete yüklemek için bir tahta kalası rampaya dönüştürüyor. Ahmet'in bu tasarımı hangi basit makine prensibine dayanır?",
+                        cevaplar: ["A) Kaldıraç", "B) Eğik Düzlem", "C) Çıkrık", "D) Dişli Çark"],
+                        dogruCevap: "B) Eğik Düzlem"
+                    },
+                    {
+                        soru: "Ot -> Çekirge -> Kurbağa -> Yılan -> Kartal besin zincirinde, kurbağa sayısının hızla azalması durumunda aşağıdakilerden hangisinin gerçekleşmesi beklenir?",
+                        cevaplar: ["A) Çekirge sayısı azalır", "B) Yılan sayısı artar", "C) Ot sayısı azalır", "D) Kartal sayısı artar"],
+                        dogruCevap: "C) Ot sayısı azalır"
+                    },
+                    {
+                        soru: "Üretici canlıların güneş enerjisini kullanarak besin ve oksijen üretmesine fotosentez denir. Buna göre fotosentez hızını aşağıdakilerden hangisi doğrudan etkilemez?",
+                        cevaplar: ["A) Işık şiddeti", "B) Su miktarı", "C) Karbondioksit miktarı", "D) Ortamdaki oksijen miktarı"],
+                        dogruCevap: "D) Ortamdaki oksijen miktarı"
+                    },
+                    {
+                        soru: "Canlıların besinleri parçalayarak enerji elde etmesi olayına solunum denir. Oksijenli solunum sonucunda hücrede aşağıdakilerden hangisi *oluşmaz*?",
+                        cevaplar: ["A) ATP (Enerji)", "B) Su", "C) Karbondioksit", "D) Glikoz (Besin)"],
+                        dogruCevap: "D) Glikoz (Besin)"
+                    },
+                    // --- İNKILAP TARİHİ (8 Soru) ---
+                    {
+                        soru: "Lozan Barış Antlaşması'nda kapitülasyonların kesin olarak kaldırılması, Atatürk'ün hangi ilkesiyle doğrudan ilişkilidir?",
+                        cevaplar: ["A) Laiklik", "B) Milliyetçilik", "C) Devletçilik", "D) İnkılapçılık"],
+                        dogruCevap: "B) Milliyetçilik"
+                    },
+                    {
+                        soru: "Toplumda ayrıcalık bildiren unvanların yasaklanması ve herkesin kanun önünde eşit sayılması hangi Atatürk ilkesinin gereğidir?",
+                        cevaplar: ["A) Halkçılık", "B) Cumhuriyetçilik", "C) Laiklik", "D) Devletçilik"],
+                        dogruCevap: "A) Halkçılık"
+                    },
+                    {
+                        soru: "Aşağıdakilerden hangisi siyasi alanda yapılan inkılaplardan biri değildir?",
+                        cevaplar: ["A) Saltanatın kaldırılması", "B) Cumhuriyetin ilanı", "C) Halifeliğin kaldırılması", "D) Tevhid-i Tedrisat Kanunu'nun kabulü"],
+                        dogruCevap: "D) Tevhid-i Tedrisat Kanunu'nun kabulü"
+                    },
+                    {
+                        soru: "1926'da kabul edilen Türk Medeni Kanunu ile kadınlara hangi hak verilmemiştir?",
+                        cevaplar: ["A) İstediği mesleğe girme hakkı", "B) Mirastan eşit pay alma hakkı", "C) Siyasi seçimlerde oy kullanma hakkı", "D) Boşanma hakkı"],
+                        dogruCevap: "C) Siyasi seçimlerde oy kullanma hakkı"
+                    },
+                    {
+                        soru: "Eğitim ve öğretimde birliği sağlamak amacıyla 3 Mart 1924'te çıkarılan kanun aşağıdakilerden hangisidir?",
+                        cevaplar: ["A) Tevhid-i Tedrisat Kanunu", "B) Maarif Teşkilatı Hakkında Kanun", "C) Harf İnkılabı", "D) Türk Tarih Kurumu'nun açılması"],
+                        dogruCevap: "A) Tevhid-i Tedrisat Kanunu"
+                    },
+                    {
+                        soru: "Kılık Kıyafet Kanunu ve Tekke, Zaviye ve Türbelerin kapatılması hangi alanda yapılan yeniliklerdendir?",
+                        cevaplar: ["A) Ekonomi", "B) Toplumsal", "C) Hukuk", "D) Siyasi"],
+                        dogruCevap: "B) Toplumsal"
+                    },
+                    {
+                        soru: "İzmir İktisat Kongresi'nde alınan 'Misak-ı İktisadi' kararlarının temel amacı nedir?",
+                        cevaplar: ["A) Yabancı sermayeyi tamamen kovmak", "B) Siyasi bağımsızlığı sağlamak", "C) Milli ve bağımsız bir ekonomi kurmak", "D) Tarımı terk edip sanayiye geçmek"],
+                        dogruCevap: "C) Milli ve bağımsız bir ekonomi kurmak"
+                    },
+                    {
+                        soru: "Cumhuriyetin ilk yıllarında bulaşıcı hastalıklarla mücadele etmek ve aşı üretmek amacıyla kurulan kurum aşağıdakilerden hangisidir?",
+                        cevaplar: ["A) Kızılay", "B) Yeşilay", "C) Hıfzıssıhha Enstitüsü", "D) Türk Eğitim Vakfı"],
+                        dogruCevap: "C) Hıfzıssıhha Enstitüsü"
+                    }
+                ]
+            }
+        ];
+
+        // --- GLOBAL DEĞİŞKENLER ---
+        let currentStudent = null;
+        let puzzlePieces = [];
+        let snappedCount = 0;
+        const GRID_SIZE = 3; // 3x3 Yapboz
+        const PIECE_SIZE = 100; // Her parça 100px (300x300 Board)
+        const BOARD_SIZE = 300;
+        let currentQuestionIndex = 0;
+
+        // --- UYGULAMA BAŞLATMA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initStartScreen();
+        });
+
+        function initStartScreen() {
+            const btnContainer = document.getElementById('student-buttons');
+            OGRENCILER.forEach(student => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-800 font-bold py-3 px-6 rounded-xl border border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg";
+                btn.innerText = student.ad;
+                btn.onclick = () => startGame(student);
+                btnContainer.appendChild(btn);
+            });
+        }
+
+        function startGame(student) {
+            currentStudent = student;
+            document.getElementById('start-screen').classList.add('hidden');
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.classList.remove('hidden');
+            
+            // Puzzle Board Oluştur
+            createPuzzleBoard();
+        }
+
+        // --- YAPBOZ MOTORU ---
+        function createPuzzleBoard() {
+            const gameScreen = document.getElementById('game-screen');
+            snappedCount = 0;
+            
+            // Mevcut board'u temizle (varsa)
+            const oldBoard = document.querySelector('.puzzle-board');
+            if(oldBoard) oldBoard.remove();
+            const oldPieces = document.querySelectorAll('.puzzle-piece');
+            oldPieces.forEach(p => p.remove());
+
+            const board = document.createElement('div');
+            board.className = 'puzzle-board';
+            
+            // Parçaları ve slotları oluştur
+            let piecesData = [];
+
+            for(let row = 0; row < GRID_SIZE; row++) {
+                for(let col = 0; col < GRID_SIZE; col++) {
+                    const id = `piece-${row}-${col}`;
+                    const targetX = col * PIECE_SIZE;
+                    const targetY = row * PIECE_SIZE;
+
+                    // Slot (Hedef Alan)
+                    const slot = document.createElement('div');
+                    slot.className = 'puzzle-slot';
+                    slot.style.left = `${targetX}px`;
+                    slot.style.top = `${targetY}px`;
+                    board.appendChild(slot);
+
+                    // Parça Verisi
+                    piecesData.push({ id, row, col, targetX, targetY });
+                }
+            }
+
+            gameScreen.appendChild(board);
+            
+            // Board pozisyonunu al (dağıtma işlemi için)
+            const boardRect = board.getBoundingClientRect();
+
+            // Parçaları oluştur ve dağıt
+            piecesData.forEach(data => {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece bg-white';
+                piece.id = data.id;
+                
+                // Arkaplan resmi ayarı
+                piece.style.backgroundImage = `url(${currentStudent.resim})`;
+                piece.style.backgroundSize = `${BOARD_SIZE}px ${BOARD_SIZE}px`;
+                piece.style.backgroundPosition = `-${data.targetX}px -${data.targetY}px`;
+
+                // Ekranda rastgele bir konuma yerleştir (Board'un biraz dışına)
+                // Güvenli alan hesaplaması (ekranın içinde kalması için)
+                const margin = 20;
+                const maxX = window.innerWidth - PIECE_SIZE - margin;
+                const maxY = window.innerHeight - PIECE_SIZE - margin;
+                
+                // Rastgele X, Y (Üst başlığın altına düşecek şekilde)
+                const randomX = Math.max(margin, Math.random() * maxX);
+                const randomY = Math.max(100, Math.random() * maxY);
+
+                piece.style.left = `${randomX}px`;
+                piece.style.top = `${randomY}px`;
+                
+                // Parça verilerini elemente iliştir
+                piece.dataset.targetX = data.targetX;
+                piece.dataset.targetY = data.targetY;
+
+                gameScreen.appendChild(piece);
+                makeDraggable(piece, board);
+            });
+        }
+
+        function makeDraggable(piece, board) {
+            let isDragging = false;
+            let startX, startY;
+            let initialLeft, initialTop;
+
+            piece.addEventListener('pointerdown', (e) => {
+                if (piece.classList.contains('snapped')) return;
+                
+                isDragging = true;
+                piece.setPointerCapture(e.pointerId);
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = parseFloat(piece.style.left);
+                initialTop = parseFloat(piece.style.top);
+            });
+
+            piece.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                piece.style.left = `${initialLeft + dx}px`;
+                piece.style.top = `${initialTop + dy}px`;
+            });
+
+            piece.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                piece.releasePointerCapture(e.pointerId);
+                
+                checkSnap(piece, board);
+            });
+        }
+
+        function checkSnap(piece, board) {
+            const boardRect = board.getBoundingClientRect();
+            const pieceRect = piece.getBoundingClientRect();
+            
+            // Parçanın board'a göre göreceli pozisyonu
+            const relativeX = pieceRect.left - boardRect.left;
+            const relativeY = pieceRect.top - boardRect.top;
+            
+            const targetX = parseFloat(piece.dataset.targetX);
+            const targetY = parseFloat(piece.dataset.targetY);
+
+            // Snap toleransı (Mesafe kontrolü - 35px)
+            const tolerance = 35; 
+            
+            if (Math.abs(relativeX - targetX) < tolerance && Math.abs(relativeY - targetY) < tolerance) {
+                // Doğru yere bırakıldı! Snap!
+                
+                // Parçayı fiziksel olarak board'un içine taşı
+                piece.style.left = `${targetX}px`;
+                piece.style.top = `${targetY}px`;
+                board.appendChild(piece); // Container değiştir
+                
+                piece.classList.add('snapped');
+                
+                // TIK Efekti (Sparkle)
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle-effect';
+                sparkle.style.left = `${targetX}px`;
+                sparkle.style.top = `${targetY}px`;
+                board.appendChild(sparkle);
+                
+                // Efekt bitince DOM'dan sil
+                setTimeout(() => sparkle.remove(), 600);
+
+                snappedCount++;
+                if (snappedCount === (GRID_SIZE * GRID_SIZE)) {
+                    setTimeout(() => startQuiz(), 1000); // 1 saniye bekle, quizi başlat
+                }
+            }
+        }
+
+        // --- QUİZ MOTORU ---
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('quiz-student-name').innerText = `Tebrikler ${currentStudent.ad}!`;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const totalQuestions = currentStudent.sorular.length;
+            const q = currentStudent.sorular[currentQuestionIndex];
+            
+            // Progress Bar
+            const progress = ((currentQuestionIndex) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            document.getElementById('question-counter').innerText = `Soru ${currentQuestionIndex + 1} / ${totalQuestions}`;
+            document.getElementById('question-text').innerText = q.soru;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = ''; // Temizle
+            
+            q.cevaplar.forEach(cevap => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left px-5 py-4 border-2 border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 font-medium text-slate-700 transition-all duration-200 focus:outline-none";
+                btn.innerText = cevap;
+                btn.onclick = () => checkAnswer(btn, cevap, q.dogruCevap);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btn, secilen, dogru) {
+            // Tıklamaları geçici olarak kapat
+            const allBtns = document.getElementById('options-container').querySelectorAll('button');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (secilen === dogru) {
+                // DOĞRU CEVAP
+                btn.classList.add('correct-flash');
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < currentStudent.sorular.length) {
+                        loadQuestion();
+                    } else {
+                        triggerFinale();
+                    }
+                }, 800);
+            } else {
+                // YANLIŞ CEVAP
+                btn.classList.add('shake-error');
+                setTimeout(() => {
+                    btn.classList.remove('shake-error');
+                    allBtns.forEach(b => b.disabled = false); // Yeniden seçime izin ver
+                }, 500);
+            }
+        }
+
+        // --- FİNAL KUTLAMASI (Kusursuz LGS Motivasyonu) ---
+        function triggerFinale() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            const finaleScreen = document.getElementById('celebration-screen');
+            finaleScreen.classList.remove('hidden');
+            
+            const msg = document.getElementById('finale-message');
+            msg.innerText = `HARİKASIN ${currentStudent.ad}!`;
+
+            startConfetti();
+        }
+
+        // --- HAFİF SIKLET CONFETTI MOTORU ---
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#fde047', '#3b82f6', '#ef4444', '#22c55e', '#a855f7'];
+
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 5 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    ctx.restore();
+
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += p.rotationSpeed;
+
+                    if (p.y > canvas.height) {
+                        p.y = -10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+            
+            // Pencere boyutu değişirse canvas'ı güncelle
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+    </script>
+</body>
+</html>
+
+```
