@@ -211,6 +211,13 @@
                     <div id="drop-kitap" style="max-height:150px; overflow-y:auto; border:2px solid #e2e8f0; padding:10px; border-radius:10px;">Yükleniyor...</div>
                     <label style="color:#d97706; font-weight:bold; display:block; margin-top:10px;">🟡 Sarı Kutu (Yazı)</label>
                     <div id="drop-yazi" style="max-height:150px; overflow-y:auto; border:2px solid #e2e8f0; padding:10px; border-radius:10px;">Yükleniyor...</div>
+                    
+                    <h3 style="margin-top:20px; border-top:2px solid #e2e8f0; padding-top:10px;">🎯 Ana Kategori Kartları (Oyunlar)</h3>
+                    <label style="color:#4f46e5; font-weight:bold; display:block;">🧠 Akıl & Zeka Kartı</label>
+                    <div id="drop-akilzeka" style="max-height:150px; overflow-y:auto; border:2px solid #e2e8f0; padding:10px; border-radius:10px; margin-bottom:10px;">Yükleniyor...</div>
+                    
+                    <label style="color:#db2777; font-weight:bold; display:block;">🤖 Robotik Kartı</label>
+                    <div id="drop-robotik" style="max-height:150px; overflow-y:auto; border:2px solid #e2e8f0; padding:10px; border-radius:10px;">Yükleniyor...</div>
                 </div>
             </div>
 
@@ -364,7 +371,18 @@
                 data.icon = document.getElementById('p-selected-icon').value; 
                 
                 const cats=[]; document.querySelectorAll('.cat-check:checked').forEach(c=>cats.push(c.value)); 
-                if(cats.length>0) { cats.forEach(k => { batch.set(db.collection(tur).doc(), {...data, kategori:k}); }); batch.commit().then(() => { showToast("✅ İçerik Eklendi!"); verileriYukle(); }); return; } else { data.kategori="Genel"; } 
+                if(cats.length>0) { 
+                    cats.forEach(k => { 
+                        batch.set(db.collection(tur).doc(), {...data, kategori:k}); 
+                        // OTOMATİK VİTRİN EŞLEŞTİRMESİ
+                        if(data.vitrin && k === "Akıl Zeka") db.collection("site_ayarlari").doc("vitrin_akilzeka").set({baslik: data.baslik, link: data.link, aciklama: data.aciklama});
+                        if(data.vitrin && k === "Robotik") db.collection("site_ayarlari").doc("vitrin_robotik").set({baslik: data.baslik, link: data.link, aciklama: data.aciklama});
+                    }); 
+                    batch.commit().then(() => { showToast("✅ İçerik Eklendi!"); verileriYukle(); }); 
+                    return; 
+                } else { 
+                    data.kategori="Genel"; 
+                } 
             }
             batch.set(ref, data);
             batch.commit().then(() => { showToast("✅ İçerik Eklendi!"); verileriYukle(); if(tur==='yazilar') yazilariGetirOzel(); });
@@ -391,6 +409,20 @@
                     drop+=`<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${y.baslik}</span><button onclick="db.collection('site_ayarlari').doc('vitrin_yazi').set({baslik:'${escapeStr(y.baslik)}', link:'ebeveyn-kosesi.html'}); showToast('Seçildi')" class="btn-mini bg-warning">SEÇ</button></div>`;
                 }); 
                 document.getElementById('drop-yazi').innerHTML=drop;
+            });
+
+            db.collection("projeler").orderBy("tarih","desc").get().then(snap=>{ 
+                let dropAkil="", dropRobotik="";
+                snap.forEach(d=>{ const p=d.data(); 
+                    if(p.kategori === "Akıl Zeka") {
+                        dropAkil+=`<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${p.baslik}</span><button onclick="db.collection('site_ayarlari').doc('vitrin_akilzeka').set({baslik:'${escapeStr(p.baslik)}', link:'${formatLink(p.link)}', aciklama:'${escapeStr(p.aciklama)}'}); showToast('Akıl Zeka Vitrinine Eklendi!')" class="btn-mini bg-info">VİTRİN YAP</button></div>`;
+                    }
+                    if(p.kategori === "Robotik") {
+                        dropRobotik+=`<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${p.baslik}</span><button onclick="db.collection('site_ayarlari').doc('vitrin_robotik').set({baslik:'${escapeStr(p.baslik)}', link:'${formatLink(p.link)}', aciklama:'${escapeStr(p.aciklama)}'}); showToast('Robotik Vitrinine Eklendi!')" class="btn-mini bg-info">VİTRİN YAP</button></div>`;
+                    }
+                }); 
+                document.getElementById('drop-akilzeka').innerHTML=dropAkil || '<div style="color:#999; padding:5px;">İçerik Yok</div>';
+                document.getElementById('drop-robotik').innerHTML=dropRobotik || '<div style="color:#999; padding:5px;">İçerik Yok</div>';
             });
 
             db.collection("tavsiyeler").orderBy("tarih","desc").onSnapshot(s=>{ let h=""; s.forEach(d=>{ const t=d.data(); h+=createRow(t.baslik, d.id, 'tavsiyeler', t.link, 'TAVSİYE'); }); document.getElementById('list-tavsiyeler').innerHTML=h; });
