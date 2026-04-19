@@ -404,40 +404,33 @@
 
             db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById('haftanin-oyunu-karti').setAttribute("href", d.url); document.getElementById('vitrin-baslik').innerText = d.baslik || "HAFTANIN OYUNU"; } });
             db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>h+=`<span style="margin-right:100px; display:inline-block;">📢 ${d.data().metin}</span>`); if(h) document.getElementById('duyuru-alani').innerHTML=h; });
-            // PANEL KUMANDASI: AKIL ZEKA KARTINI GÜNCELLE
+            // PANEL KUMANDASI: AKIL ZEKA KARTINI GÜNCELLE (Sadece link değişir, tasarım bozulmaz)
             db.collection("site_ayarlari").doc("vitrin_akilzeka").onSnapshot(doc => {
                 if(doc.exists) {
-                    const d = doc.data();
                     const kart = document.querySelector('a[data-name="akıl zeka"]');
-                    if(kart) {
-                        kart.setAttribute("href", d.link);
-                        kart.querySelector('h3').innerText = d.baslik;
-                        kart.querySelector('p').innerText = d.aciklama || "Akıl ve Zeka Oyunu";
-                    }
+                    if(kart) kart.setAttribute("href", doc.data().link);
                 }
             });
 
-            // PANEL KUMANDASI: ROBOTİK KARTINI GÜNCELLE
+            // PANEL KUMANDASI: ROBOTİK KARTINI GÜNCELLE (Sadece link değişir, tasarım bozulmaz)
             db.collection("site_ayarlari").doc("vitrin_robotik").onSnapshot(doc => {
                 if(doc.exists) {
-                    const d = doc.data();
                     const kart = document.querySelector('a[data-name="robotik"]');
-                    if(kart) {
-                        kart.setAttribute("href", d.link);
-                        kart.querySelector('h3').innerText = d.baslik;
-                        kart.querySelector('p').innerText = d.aciklama || "Robotik Atölyesi";
-                    }
+                    if(kart) kart.setAttribute("href", doc.data().link);
                 }
             });
 
-            // 2. DİNAMİK İÇERİK FİLTRELEME MOTORU
+            // 2. DİNAMİK İÇERİK FİLTRELEME MOTORU (AÇ-KAPA MANTIKLI)
             let tumDinamikIcerikler = [];
             db.collection("projeler").orderBy("tarih", "desc").onSnapshot(s => { 
                 tumDinamikIcerikler = [];
                 s.forEach(d => { tumDinamikIcerikler.push(d.data()); });
                 
-                kategoriFiltrele('Tümü', document.querySelector('.kat-btn.aktif'));
+                // BAŞLANGIÇTA LİSTEYİ BOŞ TUT (Otomatik yüklemeyi iptal ettik)
+                document.getElementById('dinamik-icerik-alani').innerHTML = ''; 
+                document.querySelectorAll('.kat-btn').forEach(b => b.classList.remove('aktif'));
                 
+                // Güncel içerikler kısmı aynı kalıyor
                 let h=""; 
                 tumDinamikIcerikler.slice(0, 6).forEach(p => {
                     h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
@@ -454,11 +447,19 @@
                 } else {
                     altMenu.style.display = 'none';
                     btn.classList.remove('aktif');
-                    kategoriFiltrele('Tümü', document.querySelector('#kategori-butonlari button')); 
+                    document.getElementById('dinamik-icerik-alani').innerHTML = ''; // Akademi menüsü kapanınca listeyi de sil
                 }
             }
 
             window.kategoriFiltrele = function(secilenKategori, btn, isAkademi = false) {
+                // EĞER TIKLANAN BUTON ZATEN AKTİFSE (KAPATMA İŞLEMİ)
+                if(btn && btn.classList.contains('aktif')) {
+                    btn.classList.remove('aktif');
+                    document.getElementById('dinamik-icerik-alani').innerHTML = ''; // Listeyi boşalt
+                    return; // Fonksiyonu durdur, daha fazla işlem yapma
+                }
+
+                // BAŞKA BİR BUTONA TIKLANDIYSA NORMAL ÇALIŞTIR
                 if (!isAkademi) {
                     document.getElementById('akademi-alt-menu').style.display = 'none'; 
                     document.querySelectorAll('#kategori-butonlari .kat-btn').forEach(b => b.classList.remove('aktif'));
