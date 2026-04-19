@@ -143,6 +143,16 @@
         .kat-btn:hover { border-color: var(--ana-renk); color: var(--ana-renk); }
         .kat-btn.aktif { background: var(--ana-renk); color: white; border-color: var(--ana-renk); box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
 
+        /* ARAMA MOTORU CSS */
+        #search-modal { display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10vh; backdrop-filter: blur(10px); background: rgba(15, 23, 42, 0.9); }
+        .search-container { width: 90%; max-width: 600px; background: transparent; position: relative; }
+        .search-box { width: 100%; padding: 20px; font-size: 1.5rem; border: none; border-bottom: 3px solid var(--vurgu); background: transparent; color: white; outline: none; font-weight: bold; text-align: center; }
+        .search-box::placeholder { color: rgba(255,255,255,0.5); }
+        .search-results { margin-top: 20px; max-height: 60vh; overflow-y: auto; width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .search-item { background: white; padding: 15px 20px; border-radius: 15px; display: flex; align-items: center; gap: 15px; text-decoration: none; color: var(--koyu); font-weight: bold; transition: 0.3s; animation: popIn 0.3s; cursor: pointer; border-left: 5px solid var(--ana-renk); }
+        .search-item:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .search-badge { color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; }
+
         footer { text-align: center; color: #64748b; font-size: 0.9rem; padding: 20px; margin-top: 50px; border-top: 1px solid #eee; }
     </style>
 </head>
@@ -152,6 +162,7 @@
 
     <header>
         <div class="header-tools">
+            <button class="tool-btn" onclick="openSearchModal()"><i class="fas fa-search"></i> Ara</button>
             <button class="tool-btn" onclick="openShareModal()"><i class="fas fa-qrcode"></i> Paylaş</button>
         </div>
         <img src="profil.jpg.jpeg" class="profile-img" alt="Barış İlkan">
@@ -309,6 +320,14 @@
             <div class="message msg-bot">Merhaba! Ben Barış Öğretmen'in yapay zeka asistanı <b>Biri</b>. 👋<br><br>Eğitim materyalleri, oyunlar veya koçluk hakkında sana nasıl yardımcı olabilirim?</div>
         </div>
         <div class="chat-input-area"><input type="text" id="user-input" class="chat-input" placeholder="Bir şeyler sor..."><button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button></div>
+    </div>
+
+    <div class="modal-overlay" id="search-modal" onclick="if(event.target===this) closeSearchModal()">
+        <div class="search-container">
+            <span onclick="closeSearchModal()" style="position:absolute; top:-40px; right:0px; color:white; font-size:2.5rem; cursor:pointer; font-weight:bold;">&times;</span>
+            <input type="text" id="master-search" class="search-box" placeholder="Oyun, PDF, Video, Yazı ara..." onkeyup="performSearch()">
+            <div class="search-results" id="search-results-area"></div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="yazi-modal"><div class="report-modal"><span onclick="document.getElementById('yazi-modal').style.display='none'" style="position:absolute; right:20px; font-size:1.5rem; cursor:pointer;">&times;</span><h3 id="modal-baslik"></h3><div id="modal-icerik" style="text-align:left; line-height:1.6;"></div></div></div>
@@ -484,6 +503,55 @@
             }
 
             // FONKSİYONLAR
+            // EVRENSEL ARAMA MOTORU BEYNİ
+            let aramaHavuzu = [];
+            function havuzuGuncelle(koleksiyon, tur, ikon) {
+                db.collection(koleksiyon).onSnapshot(s => {
+                    aramaHavuzu = aramaHavuzu.filter(item => item.tur !== tur); // Eski veriyi temizle
+                    s.forEach(d => {
+                        let data = d.data();
+                        aramaHavuzu.push({ id: d.id, baslik: data.baslik, link: data.link, tur: tur, ikon: data.icon || ikon });
+                    });
+                });
+            }
+            // Tüm veritabanlarını gizlice hafızaya al
+            havuzuGuncelle("projeler", "Oyun", "fa-gamepad");
+            havuzuGuncelle("videolar", "Video", "fa-video");
+            havuzuGuncelle("kaynaklar", "PDF", "fa-file-pdf");
+            havuzuGuncelle("yazilar", "Yazı", "fa-newspaper");
+
+            window.openSearchModal = function() {
+                document.getElementById('search-modal').style.display = 'flex';
+                document.getElementById('master-search').value = '';
+                document.getElementById('search-results-area').innerHTML = '<div style="color:white; text-align:center; margin-top:20px; font-size:1.2rem;">Ne öğrenmek istersin? Yukarıya yaz Hocam! 🚀</div>';
+                setTimeout(() => document.getElementById('master-search').focus(), 100);
+            }
+            window.closeSearchModal = function() { document.getElementById('search-modal').style.display = 'none'; }
+            
+            window.performSearch = function() {
+                let query = document.getElementById('master-search').value.toLowerCase().trim();
+                let area = document.getElementById('search-results-area');
+                if (query.length < 2) { area.innerHTML = ''; return; }
+                
+                let sonuclar = aramaHavuzu.filter(item => item.baslik.toLowerCase().includes(query));
+                if (sonuclar.length === 0) { area.innerHTML = '<div style="color:#ff4757; text-align:center; font-weight:bold; font-size:1.2rem; background:rgba(255,255,255,0.1); padding:20px; border-radius:15px;">Aramana uygun içerik bulamadık 😔</div>'; return; }
+                
+                let h = '';
+                sonuclar.forEach(item => {
+                    // Yazı ise modali aç, değilse linke git
+                    let action = item.tur === 'Yazı' ? `onclick="closeSearchModal(); yaziAc('${item.id}', '${item.baslik.replace(/'/g, "\\'")}')"` : `href="${item.link}"`;
+                    let tag = item.tur === 'Yazı' ? 'div' : 'a';
+                    let renk = item.tur==='Oyun' ? '#f59e0b' : item.tur==='Video' ? '#ef4444' : item.tur==='PDF' ? '#10b981' : '#3b82f6';
+                    
+                    h += `<${tag} ${action} class="search-item" style="border-left-color:${renk}">
+                            <i class="fas ${item.ikon}" style="font-size:1.8rem; color:${renk}; width:40px; text-align:center;"></i>
+                            <div style="flex:1; font-size:1.1rem;">${item.baslik}</div>
+                            <span class="search-badge" style="background:${renk}">${item.tur}</span>
+                          </${tag}>`;
+                });
+                area.innerHTML = h;
+            }
+
             window.yaziAc = function(id, baslik) { 
                 document.getElementById('modal-baslik').innerText = baslik; 
                 document.getElementById('modal-icerik').innerHTML = makaleVerileri[id]; 
