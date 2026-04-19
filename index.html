@@ -332,6 +332,15 @@
 
     <div class="modal-overlay" id="yazi-modal"><div class="report-modal"><span onclick="document.getElementById('yazi-modal').style.display='none'" style="position:absolute; right:20px; font-size:1.5rem; cursor:pointer;">&times;</span><h3 id="modal-baslik"></h3><div id="modal-icerik" style="text-align:left; line-height:1.6;"></div></div></div>
 
+    <div id="game-overlay" style="display:none; position:fixed; inset:0; background:black; z-index:9999;">
+        <div style="position:absolute; top:15px; left:15px; z-index:10000; display:flex; gap:10px;">
+            <button onclick="oyunKapat()" style="background:rgba(255,255,255,0.2); border:2px solid white; color:white; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:bold; backdrop-filter:blur(10px); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-arrow-left"></i> ← MERKEZE DÖN
+            </button>
+        </div>
+        <iframe id="game-frame" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+
     <footer>&copy; 2026 Barış İlkan - Dijital Eğitim Üssü</footer>
 
     <script>
@@ -404,19 +413,24 @@
 
             db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById('haftanin-oyunu-karti').setAttribute("href", d.url); document.getElementById('vitrin-baslik').innerText = d.baslik || "HAFTANIN OYUNU"; } });
             db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>h+=`<span style="margin-right:100px; display:inline-block;">📢 ${d.data().metin}</span>`); if(h) document.getElementById('duyuru-alani').innerHTML=h; });
-            // PANEL KUMANDASI: AKIL ZEKA KARTINI GÜNCELLE (Sadece link değişir, tasarım bozulmaz)
+            // PANEL KUMANDASI: AKIL ZEKA VE ROBOTİK (oyunAc ile çalışır)
             db.collection("site_ayarlari").doc("vitrin_akilzeka").onSnapshot(doc => {
                 if(doc.exists) {
                     const kart = document.querySelector('a[data-name="akıl zeka"]');
-                    if(kart) kart.setAttribute("href", doc.data().link);
+                    if(kart) {
+                        kart.removeAttribute("href"); // Sayfa yenilemeyi önle
+                        kart.onclick = () => oyunAc(doc.data().link, "Akıl Zeka");
+                    }
                 }
             });
 
-            // PANEL KUMANDASI: ROBOTİK KARTINI GÜNCELLE (Sadece link değişir, tasarım bozulmaz)
             db.collection("site_ayarlari").doc("vitrin_robotik").onSnapshot(doc => {
                 if(doc.exists) {
                     const kart = document.querySelector('a[data-name="robotik"]');
-                    if(kart) kart.setAttribute("href", doc.data().link);
+                    if(kart) {
+                        kart.removeAttribute("href");
+                        kart.onclick = () => oyunAc(doc.data().link, "Robotik");
+                    }
                 }
             });
 
@@ -552,6 +566,22 @@
                 });
                 area.innerHTML = h;
             }
+
+            window.oyunAc = function(url, baslik) {
+                const overlay = document.getElementById('game-overlay');
+                const frame = document.getElementById('game-frame');
+                frame.src = url;
+                overlay.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Ana sayfayı kilitle
+            };
+
+            window.oyunKapat = function() {
+                const overlay = document.getElementById('game-overlay');
+                const frame = document.getElementById('game-frame');
+                frame.src = '';
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Ana sayfayı serbest bırak
+            };
 
             window.yaziAc = function(id, baslik) { 
                 document.getElementById('modal-baslik').innerText = baslik; 
