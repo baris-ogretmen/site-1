@@ -139,6 +139,10 @@
         
         .modal-overlay#yazi-modal { display: none; }
         
+        .kat-btn { background: white; border: 2px solid #e2e8f0; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; color: #64748b; transition: 0.3s; margin: 5px; }
+        .kat-btn:hover { border-color: var(--ana-renk); color: var(--ana-renk); }
+        .kat-btn.aktif { background: var(--ana-renk); color: white; border-color: var(--ana-renk); box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3); }
+
         footer { text-align: center; color: #64748b; font-size: 0.9rem; padding: 20px; margin-top: 50px; border-top: 1px solid #eee; }
     </style>
 </head>
@@ -248,6 +252,20 @@
         <div class="section-container"><div class="section-title"><i class="fas fa-bolt"></i> GÜNCEL İÇERİKLER</div></div>
         <div class="grid" id="proje-alani"></div>
 
+        <div class="section-container" style="margin-top: 40px;">
+            <div class="section-title ozel" style="background: var(--koyu);"><i class="fas fa-filter"></i> İÇERİKLERİ KEŞFET</div>
+        </div>
+        <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;" id="kategori-butonlari">
+            <button onclick="kategoriFiltrele('Tümü', this)" class="kat-btn aktif">Tümü</button>
+            <button onclick="kategoriFiltrele('Akıl Zeka', this)" class="kat-btn">🧠 Akıl Zeka</button>
+            <button onclick="kategoriFiltrele('Robotik', this)" class="kat-btn">🤖 Robotik</button>
+            <button onclick="kategoriFiltrele('Anaokulu', this)" class="kat-btn">🧸 Anaokulu</button>
+            <button onclick="kategoriFiltrele('Özel Eğitim', this)" class="kat-btn">🧩 Özel Eğitim</button>
+        </div>
+        <div class="grid" id="dinamik-icerik-alani">
+            <div style="width:100%; text-align:center; padding:20px; color:#666;">Yükleniyor...</div>
+        </div>
+
     </div>
 
     <div class="floating-container">
@@ -354,7 +372,65 @@
 
             db.collection("site_ayarlari").doc("haftanin_oyunu").onSnapshot(doc => { if(doc.exists) { const d = doc.data(); document.getElementById('haftanin-oyunu-karti').setAttribute("href", d.url); document.getElementById('vitrin-baslik').innerText = d.baslik || "HAFTANIN OYUNU"; } });
             db.collection("duyurular").orderBy("tarih", "desc").onSnapshot(s => { let h=""; s.forEach(d=>h+=`<span style="margin-right:100px; display:inline-block;">📢 ${d.data().metin}</span>`); if(h) document.getElementById('duyuru-alani').innerHTML=h; });
-            db.collection("projeler").orderBy("tarih", "desc").limit(6).onSnapshot(s => { let h=""; s.forEach(d=>{const p=d.data(); h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori}</p></div></a>`}); if(h) document.getElementById('proje-alani').innerHTML=h; });
+            // PANEL KUMANDASI: AKIL ZEKA KARTINI GÜNCELLE
+            db.collection("site_ayarlari").doc("vitrin_akilzeka").onSnapshot(doc => {
+                if(doc.exists) {
+                    const d = doc.data();
+                    const kart = document.querySelector('a[data-name="akıl zeka"]');
+                    if(kart) {
+                        kart.setAttribute("href", d.link);
+                        kart.querySelector('h3').innerText = d.baslik;
+                        kart.querySelector('p').innerText = d.aciklama || "Akıl ve Zeka Oyunu";
+                    }
+                }
+            });
+
+            // PANEL KUMANDASI: ROBOTİK KARTINI GÜNCELLE
+            db.collection("site_ayarlari").doc("vitrin_robotik").onSnapshot(doc => {
+                if(doc.exists) {
+                    const d = doc.data();
+                    const kart = document.querySelector('a[data-name="robotik"]');
+                    if(kart) {
+                        kart.setAttribute("href", d.link);
+                        kart.querySelector('h3').innerText = d.baslik;
+                        kart.querySelector('p').innerText = d.aciklama || "Robotik Atölyesi";
+                    }
+                }
+            });
+
+            // 2. DİNAMİK İÇERİK FİLTRELEME MOTORU
+            let tumDinamikIcerikler = [];
+            db.collection("projeler").orderBy("tarih", "desc").onSnapshot(s => { 
+                tumDinamikIcerikler = [];
+                s.forEach(d => { tumDinamikIcerikler.push(d.data()); });
+                
+                kategoriFiltrele('Tümü', document.querySelector('.kat-btn.aktif'));
+                
+                let h=""; 
+                tumDinamikIcerikler.slice(0, 6).forEach(p => {
+                    h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
+                }); 
+                if(h) document.getElementById('proje-alani').innerHTML=h;
+            });
+
+            window.kategoriFiltrele = function(secilenKategori, btn) {
+                document.querySelectorAll('.kat-btn').forEach(b => b.classList.remove('aktif'));
+                if(btn) btn.classList.add('aktif');
+
+                let filtrelenmis = (secilenKategori === 'Tümü') 
+                    ? tumDinamikIcerikler 
+                    : tumDinamikIcerikler.filter(p => p.kategori === secilenKategori);
+
+                let h = "";
+                filtrelenmis.forEach(p => {
+                    h+=`<a href="${p.link}" class="resource-card searchable" style="border-left:5px solid var(--ana-renk);" data-name="${p.baslik.toLowerCase()}">
+                            <div class="rc-icon"><i class="fas ${p.icon}"></i></div>
+                            <div style="flex:1;"><h4>${p.baslik}</h4><p>${p.aciklama || p.kategori}</p></div>
+                            <div class="rc-btn">AÇ</div>
+                        </a>`;
+                });
+                document.getElementById('dinamik-icerik-alani').innerHTML = h || '<div style="width:100%; text-align:center; padding:20px; color:#999;">Bu kategoride henüz içerik yok.</div>';
+            }
             
             db.collection("yazilar").orderBy("tarih", "desc").onSnapshot(s => { 
                 let h=""; 
