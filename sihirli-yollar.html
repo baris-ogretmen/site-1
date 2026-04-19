@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihirli Yollar: Bilye Macerası - Final Sürüm</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0b1120; /* Daha koyu, derin uzay/gece mavisi */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            background-color: #0f172a;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.1); /* Hafif neon yansıma */
+        }
+
+        /* Glassmorphism Üst UI Paneli */
+        #header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+
+        .hud-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+        }
+
+        .hud-label {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-family: 'Fredoka One', cursive;
+            font-size: 22px;
+            color: #f8fafc;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #combo-display {
+            color: #fbbf24;
+            display: none;
+            text-shadow: 0 0 10px #d97706, 2px 2px 0 #000;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Hız Kaydırıcısı (Slider) Özelleştirmesi */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .speed-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 11px;
+            color: #38bdf8;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100px;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px #00f0ff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        #ink-container {
+            flex-grow: 1;
+            margin: 5px 15px;
+            height: 22px;
+            background-color: #0f172a;
+            border-radius: 11px;
+            border: 2px solid #64748b;
+            overflow: hidden;
+            position: relative;
+            min-width: 100px;
+        }
+
+        #ink-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #3b82f6, #00f0ff);
+            transition: width 0.1s linear;
+        }
+
+        .rainbow-bg {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            background-size: 200% 200%;
+            animation: rainbowMove 2s linear infinite;
+        }
+
+        @keyframes rainbowMove {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        #ink-text {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            text-align: center;
+            line-height: 22px;
+            font-size: 13px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            font-family: 'Fredoka One', cursive;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn-red { background-color: #ef4444; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-red:active { transform: translateY(4px); box-shadow: 0 0 0 #b91c1c; }
+
+        .btn-blue { background-color: #3b82f6; box-shadow: 0 4px 0 #1d4ed8; }
+        .btn-blue:active { transform: translateY(4px); box-shadow: 0 0 0 #1d4ed8; }
+
+        .btn-purple { background-color: #a855f7; box-shadow: 0 4px 0 #7e22ce; }
+        .btn-purple:active { transform: translateY(4px); box-shadow: 0 0 0 #7e22ce; }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        /* Arkaplan Grid Deseni */
+        .grid-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Ana Menü Ekranı */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 17, 32, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        #main-menu h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 58px;
+            color: #ffffff;
+            margin: 0 0 5px 0;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.8), 0 0 40px rgba(0, 240, 255, 0.4);
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 2px;
+        }
+
+        #main-menu p {
+            font-size: 20px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+
+        .kademe-btn {
+            font-family: 'Fredoka One', cursive;
+            width: 85%;
+            max-width: 360px;
+            padding: 18px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-radius: 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kademe-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-20deg); transition: 0.5s;
+        }
+        .kademe-btn:hover::before { left: 150%; }
+        .kademe-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.4); }
+        .kademe-btn:active { transform: translateY(0); }
+
+        .btn-anaokulu { background: linear-gradient(135deg, #f43f5e, #fb923c); }
+        .btn-ilkokul { background: linear-gradient(135deg, #3b82f6, #2dd4bf); }
+        .btn-ortaokul { background: linear-gradient(135deg, #8b5cf6, #c026d3); }
+
+        .kademe-desc {
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            display: block;
+            font-weight: normal;
+            color: rgba(255,255,255,0.8);
+            margin-top: 3px;
+        }
+
+        /* Alt İkonlar */
+        .bucket-label {
+            position: absolute;
+            bottom: 15px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 30px;
+            color: white;
+            pointer-events: none;
+            transform: translateX(-50%);
+            filter: drop-shadow(0px 0px 10px rgba(255,255,255,0.4));
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Oyun İçi Arayüz -->
+        <div id="header">
+            <div class="hud-box">
+                <span class="hud-label">Puan</span>
+                <span class="hud-value" id="score">0 <span id="combo-display">x2</span></span>
+            </div>
+            
+            <div id="ink-container">
+                <div id="ink-bar"></div>
+                <div id="ink-text" id="ink-label">Mürekkep</div>
+            </div>
+
+            <!-- Yeni Eklenen Dinamik Hız Ayarı -->
+            <div class="slider-container">
+                <div class="speed-header">
+                    <span>Hız Modu</span>
+                    <span id="speed-val">1.0x</span>
+                </div>
+                <input type="range" id="speed-slider" min="0.5" max="3" step="0.1" value="1">
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-purple" id="pen-btn">Kalem: Kaygan</button>
+                <button class="btn btn-red" id="clear-btn">Sil</button>
+                <button class="btn btn-blue" id="menu-btn">Menü</button>
+            </div>
+        </div>
+        
+        <div id="canvas-container">
+            <div class="grid-bg"></div>
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- Etiketler -->
+            <div class="bucket-label" style="left: 12.5%;">❤️</div>
+            <div class="bucket-label" style="left: 37.5%;">💙</div>
+            <div class="bucket-label" style="left: 62.5%;">💚</div>
+            <div class="bucket-label" style="left: 87.5%;">💛</div>
+
+            <!-- Ana Menü -->
+            <div id="main-menu">
+                <h1>SİHİRLİ<br>YOLLAR</h1>
+                <p>Eğlenceye Başlamak İçin Kademe Seçin:</p>
+                
+                <button class="kademe-btn btn-anaokulu" onclick="startGame('ANAOKULU')">
+                    <div>
+                        👶 ANAOKULU
+                        <span class="kademe-desc">Sınırsız Çizim, Stressiz Eğlence</span>
+                    </div>
+                </button>
+                
+                <button class="kademe-btn btn-ilkokul" onclick="startGame('İLKOKUL')">
+                    <div>
+                        🎒 İLKOKUL
+                        <span class="kademe-desc">Sınırlı Mürekkep, Zeka Geliştirici</span>
+                    </div>
+                </button>
+                
+                <button class="kademe-btn btn-ortaokul" onclick="startGame('ORTAOKUL')">
+                    <div>
+                        🎓 ORTAOKUL
+                        <span class="kademe-desc">Neon Engeller, El-Göz Koordinasyonu</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elementleri
+        const scoreEl = document.getElementById('score');
+        const comboDisplayEl = document.getElementById('combo-display');
+        const inkBarEl = document.getElementById('ink-bar');
+        const inkTextEl = document.getElementById('ink-text');
+        const penBtn = document.getElementById('pen-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const menuBtn = document.getElementById('menu-btn');
+        const mainMenu = document.getElementById('main-menu');
+        
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValEl = document.getElementById('speed-val');
+
+        // Oyun Çözünürlüğü
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 1200;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Renkler (Glow efektleri artırıldı)
+        const COLORS = [
+            { main: '#ff3333', drop: '#990000', glow: 'rgba(255, 51, 51, 0.6)' },   // 0: Kırmızı
+            { main: '#3399ff', drop: '#004080', glow: 'rgba(51, 153, 255, 0.6)' },  // 1: Mavi
+            { main: '#33cc33', drop: '#006600', glow: 'rgba(51, 204, 51, 0.6)' },   // 2: Yeşil
+            { main: '#ffcc00', drop: '#997a00', glow: 'rgba(255, 204, 0, 0.6)' }    // 3: Sarı
+        ];
+
+        // --- KADEME (ZORLUK) YAPILANDIRMASI ---
+        const KADEMELER = {
+            'ANAOKULU': { 
+                maxInk: Infinity, 
+                spawnerSpeed: 1.5, 
+                spawnRate: 150, 
+                gravityMod: 0.4, 
+                obstacles: [] 
+            },
+            'İLKOKUL': { 
+                maxInk: 2500, 
+                spawnerSpeed: 2.5, 
+                spawnRate: 110, 
+                gravityMod: 0.6, 
+                obstacles: [] 
+            },
+            'ORTAOKUL': { 
+                maxInk: 1500, 
+                spawnerSpeed: 4.0, 
+                spawnRate: 80, 
+                gravityMod: 0.8, 
+                obstacles: [{x: 400, y: 550, r: 60, moveSpeed: 3, dir: 1}] 
+            }
+        };
+
+        let currentKademe = 'ANAOKULU';
+        let gameState = 'MENU'; 
+
+        // Oyun Değişkenleri
+        let score = 0;
+        let maxInk = Infinity;
+        let currentInk = maxInk;
+        let combo = 0;
+        let globalSpeedMultiplier = 1.0; // HIZ SLIDER DEĞİŞKENİ
+        let currentPenType = 0; // 0: Kaygan, 1: Zıpzıp, 2: Roket
+        
+        let particles = [];
+        let userLines = [];
+        let confettis = [];
+        let floatingTexts = []; 
+        let activeObstacles = [];
+        let drawSparks = []; // Sihirli çizim kıvılcımları
+        
+        const SUBSTEPS = 3; 
+        let currentGravity = 0.6 / SUBSTEPS;
+        let particleIdCounter = 0;
+        let frameCount = 0;
+
+        const BUCKETS = [
+            { x: 0, width: 200, color: 0 },
+            { x: 200, width: 200, color: 1 },
+            { x: 400, width: 200, color: 2 },
+            { x: 600, width: 200, color: 3 }
+        ];
+
+        let spawner = { x: 400, y: 50, direction: 1, baseSpeed: 2, baseInterval: 120, nextSpawnTime: 0, currentColor: 0 };
+
+        // --- HIZ AYARI (SLIDER EVENT) ---
+        speedSlider.addEventListener('input', (e) => {
+            globalSpeedMultiplier = parseFloat(e.target.value);
+            speedValEl.innerText = globalSpeedMultiplier.toFixed(1) + 'x';
+        });
+
+        // --- ETKİLEŞİM YÖNETİMİ ---
+        let isDrawing = false;
+        let lastDrawPoint = null;
+
+        function getPos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = GAME_WIDTH / rect.width;
+            const scaleY = GAME_HEIGHT / rect.height;
+            let clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            let clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function startDrawing(e) {
+            if (gameState !== 'PLAYING' || currentInk <= 0) return;
+            isDrawing = true;
+            lastDrawPoint = getPos(e);
+        }
+
+        function drawLine(e) {
+            if (!isDrawing || gameState !== 'PLAYING') return;
+            e.preventDefault(); 
+            
+            let currentPoint = getPos(e);
+            let dx = currentPoint.x - lastDrawPoint.x;
+            let dy = currentPoint.y - lastDrawPoint.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 15) {
+                if (currentInk !== Infinity) {
+                    if (currentInk - dist < 0) {
+                        stopDrawing();
+                        return;
+                    }
+                    currentInk -= dist;
+                }
+
+                userLines.push({ x1: lastDrawPoint.x, y1: lastDrawPoint.y, x2: currentPoint.x, y2: currentPoint.y, length: dist, type: currentPenType });
+                updateInkBar();
+                
+                // Görsel Şölen: Çizim yaparken sihirli kıvılcımlar saç
+                let sparkColor = currentPenType === 1 ? '#22c55e' : (currentPenType === 2 ? '#f97316' : '#00f0ff');
+                for(let i=0; i<3; i++) {
+                    drawSparks.push({
+                        x: currentPoint.x + (Math.random()-0.5)*10,
+                        y: currentPoint.y + (Math.random()-0.5)*10,
+                        vx: (Math.random()-0.5)*4,
+                        vy: (Math.random()-0.5)*4,
+                        life: 1.0,
+                        size: Math.random()*3 + 1,
+                        color: sparkColor
+                    });
+                }
+
+                lastDrawPoint = currentPoint;
+            }
+        }
+
+        function stopDrawing() { isDrawing = false; lastDrawPoint = null; }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', drawLine);
+        window.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, {passive: false});
+        canvas.addEventListener('touchmove', drawLine, {passive: false});
+        window.addEventListener('touchend', stopDrawing);
+
+        const PEN_TYPES = [
+            { name: "Kalem: Kaygan", color: "#a855f7", shadow: "#7e22ce" },
+            { name: "Kalem: Zıpzıp", color: "#22c55e", shadow: "#15803d" },
+            { name: "Kalem: Roket", color: "#f97316", shadow: "#c2410c" }
+        ];
+
+        penBtn.addEventListener('click', () => {
+            currentPenType = (currentPenType + 1) % 3;
+            penBtn.innerText = PEN_TYPES[currentPenType].name;
+            penBtn.style.backgroundColor = PEN_TYPES[currentPenType].color;
+            penBtn.style.boxShadow = `0 4px 0 ${PEN_TYPES[currentPenType].shadow}`;
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if(gameState === 'PLAYING') {
+                userLines = [];
+                if(currentInk !== Infinity) currentInk = maxInk; 
+                updateInkBar();
+            }
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'MENU';
+            mainMenu.style.display = 'flex';
+        });
+
+        // --- OYUN BAŞLATMA ---
+        window.startGame = function(kademeKey) {
+            currentKademe = kademeKey;
+            let cfg = KADEMELER[kademeKey];
+            
+            score = 0;
+            maxInk = cfg.maxInk;
+            currentInk = maxInk;
+            spawner.baseSpeed = cfg.spawnerSpeed;
+            spawner.baseInterval = cfg.spawnRate;
+            currentGravity = cfg.gravityMod / SUBSTEPS;
+            activeObstacles = JSON.parse(JSON.stringify(cfg.obstacles));
+            
+            userLines = []; particles = []; confettis = [];
+            floatingTexts = []; drawSparks = []; combo = 0;
+            
+            // Başlangıç için hızı sıfırla (İsteğe bağlı, isterseniz koruyabilirsiniz)
+            speedSlider.value = 1.0;
+            globalSpeedMultiplier = 1.0;
+            speedValEl.innerText = "1.0x";
+            
+            updateUI();
+            gameState = 'PLAYING';
+            mainMenu.style.display = 'none';
+        }
+
+        function updateUI() {
+            let baseScoreText = `${score}`;
+            if (combo > 1) {
+                comboDisplayEl.style.display = 'inline-block';
+                comboDisplayEl.innerText = `x${combo} KOMBO!`;
+            } else {
+                comboDisplayEl.style.display = 'none';
+            }
+            scoreEl.innerHTML = `${baseScoreText} <span id="combo-display" style="${combo > 1 ? 'display:inline-block;' : 'display:none;'}">x${combo} KOMBO!</span>`;
+            updateInkBar();
+        }
+
+        function updateInkBar() {
+            if (currentInk === Infinity) {
+                inkBarEl.style.width = '100%';
+                inkBarEl.className = 'rainbow-bg';
+                inkTextEl.innerText = "Sınırsız Çizim";
+            } else {
+                inkBarEl.className = '';
+                const percentage = Math.max(0, (currentInk / maxInk) * 100);
+                inkBarEl.style.width = percentage + '%';
+                inkTextEl.innerText = "Mürekkep";
+                if(percentage < 25) inkBarEl.style.background = '#ef4444';
+                else inkBarEl.style.background = 'linear-gradient(90deg, #3b82f6, #00f0ff)';
+            }
+        }
+
+        function addFloatingText(x, y, text, color) {
+            floatingTexts.push({ x, y, text, color, life: 1.0, vy: -2 });
+        }
+
+        // --- FİZİK MOTORU VE MANTIK ---
+        function spawnMarble() {
+            let colorType = Math.floor(Math.random() * 4);
+            let speedMod = globalSpeedMultiplier; // İlk çıkış hızı
+            let p = {
+                id: particleIdCounter++, x: spawner.x, y: spawner.y + 20,
+                oldX: spawner.x + (Math.random() - 0.5) * 4 * speedMod, 
+                oldY: spawner.y + 20,
+                radius: 18, color: colorType, trail: [] 
+            };
+            particles.push(p);
+            spawner.currentColor = Math.floor(Math.random() * 4);
+        }
+
+        function resolveLineCollision(p, line) {
+            let dx = line.x2 - line.x1; let dy = line.y2 - line.y1;
+            let len2 = dx * dx + dy * dy; if (len2 === 0) return;
+            let t = Math.max(0, Math.min(1, ((p.x - line.x1) * dx + (p.y - line.y1) * dy) / len2));
+            let closestX = line.x1 + t * dx; let closestY = line.y1 + t * dy;
+            let distX = p.x - closestX; let distY = p.y - closestY;
+            let dist2 = distX * distX + distY * distY;
+            let collisionRadius = p.radius + 4; 
+
+            if (dist2 < collisionRadius * collisionRadius) {
+                let dist = Math.sqrt(dist2);
+                let nx = distX / dist; let ny = distY / dist;
+                if (dist === 0) { nx = -dy / Math.sqrt(len2); ny = dx / Math.sqrt(len2); }
+                p.x += nx * (collisionRadius - dist); p.y += ny * (collisionRadius - dist);
+                let vx = p.x - p.oldX; let vy = p.y - p.oldY;
+                let dot = vx * nx + vy * ny;
+                
+                // Kalem Tipine Göre Fizik
+                if (line.type === 1) { // Zıpzıp (Trambolin) - Çok yüksek sekme
+                    p.oldX = p.x - (vx - 2.8 * dot * nx); 
+                    p.oldY = p.y - (vy - 2.8 * dot * ny);
+                } else if (line.type === 2) { // Roket (Bant) - Çizgi yönünde güçlü fırlat
+                    let len = Math.sqrt(len2);
+                    let tx = dx / len; let ty = dy / len;
+                    let pushDir = (vx * tx + vy * ty) > 0 ? 1 : -1; // Topun gidiş yönüne ivme ver
+                    p.oldX = p.x - (vx - 2 * dot * nx) * 0.99 - (tx * pushDir * 2.5);
+                    p.oldY = p.y - (vy - 2 * dot * ny) * 0.99 - (ty * pushDir * 2.5);
+                } else { // Normal Kaygan Yol - Enerji kaybetmez, sürtünme çok az
+                    p.oldX = p.x - (vx - 2 * dot * nx) * 0.99; 
+                    p.oldY = p.y - (vy - 2 * dot * ny) * 0.99;
+                }
+            }
+        }
+
+        function resolveCircleCollision(p, obs) {
+            let dx = p.x - obs.x; let dy = p.y - obs.y;
+            let dist2 = dx * dx + dy * dy; let minDist = p.radius + obs.r;
+
+            if (dist2 < minDist * minDist) {
+                let dist = Math.sqrt(dist2);
+                let nx = dx / dist; let ny = dy / dist;
+                p.x += nx * (minDist - dist); p.y += ny * (minDist - dist);
+                let vx = p.x - p.oldX; let vy = p.y - p.oldY;
+                let dot = vx * nx + vy * ny;
+                p.oldX = p.x - (vx - 2 * dot * nx) * 1.5; 
+                p.oldY = p.y - (vy - 2 * dot * ny) * 1.5;
+                createConfetti(p.x, p.y, p.color, 3);
+            }
+        }
+
+        function createConfetti(x, y, colorIndex, count = 15) {
+            for(let i = 0; i < count; i++) {
+                confettis.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 12 * globalSpeedMultiplier, 
+                    vy: (Math.random() - 1) * 12 * globalSpeedMultiplier,
+                    size: Math.random() * 8 + 4, color: COLORS[colorIndex].main, life: 1.0
+                });
+            }
+        }
+
+        function updateLogic() {
+            if(gameState !== 'PLAYING') return;
+            frameCount++;
+
+            // Hız çarpanı uygulanan dinamikler
+            let activeSpeed = spawner.baseSpeed * globalSpeedMultiplier;
+            let activeInterval = Math.max(20, spawner.baseInterval / globalSpeedMultiplier);
+            let activeGravity = currentGravity * globalSpeedMultiplier;
+
+            // Spawner Hareketi
+            spawner.x += activeSpeed * spawner.direction;
+            if (spawner.x > GAME_WIDTH - 50 || spawner.x < 50) spawner.direction *= -1;
+
+            if (frameCount >= spawner.nextSpawnTime) {
+                spawnMarble();
+                spawner.nextSpawnTime = frameCount + activeInterval;
+            }
+
+            for (let obs of activeObstacles) {
+                if (obs.moveSpeed) {
+                    obs.x += obs.moveSpeed * globalSpeedMultiplier * obs.dir;
+                    if(obs.x > GAME_WIDTH - 150 || obs.x < 150) obs.dir *= -1;
+                }
+            }
+
+            // Fizik Döngüsü
+            for (let s = 0; s < SUBSTEPS; s++) {
+                for (let p of particles) {
+                    let vx = (p.x - p.oldX) * 0.99; let vy = (p.y - p.oldY) * 0.99;
+                    p.oldX = p.x; p.oldY = p.y;
+                    p.x += vx; p.y += vy + activeGravity;
+
+                    if (p.x < p.radius) { p.x = p.radius; p.oldX = p.x + vx * 0.5; }
+                    if (p.x > GAME_WIDTH - p.radius) { p.x = GAME_WIDTH - p.radius; p.oldX = p.x + vx * 0.5; }
+                }
+
+                for (let p of particles) {
+                    for (let line of userLines) resolveLineCollision(p, line);
+                    for (let obs of activeObstacles) resolveCircleCollision(p, obs);
+                }
+            }
+
+            // Bilye kuyrukları (Hıza göre daha sık kayıt alır)
+            if(frameCount % Math.max(1, Math.floor(3 / globalSpeedMultiplier)) === 0) {
+                for (let p of particles) {
+                    p.trail.push({x: p.x, y: p.y});
+                    if(p.trail.length > 6) p.trail.shift();
+                }
+            }
+
+            // Çizim Kıvılcımları Mantığı
+            for (let i = drawSparks.length - 1; i >= 0; i--) {
+                let s = drawSparks[i];
+                s.x += s.vx; s.y += s.vy; s.life -= 0.05;
+                if(s.life <= 0) drawSparks.splice(i, 1);
+            }
+
+            // Kutulara Giriş
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                if (p.y > GAME_HEIGHT - 60) {
+                    let bucketIndex = Math.floor(p.x / 200);
+
+                    if(bucketIndex >= 0 && bucketIndex < 4) {
+                        if (p.color === BUCKETS[bucketIndex].color) {
+                            combo++;
+                            let points = 10 * combo;
+                            score += points;
+                            
+                            if(currentInk !== Infinity) currentInk = Math.min(maxInk, currentInk + 200);
+                            
+                            addFloatingText(p.x, p.y - 40, `+${points}`, "#22c55e");
+                            if(combo >= 3) addFloatingText(p.x, p.y - 70, `Harika!`, "#fbbf24");
+                            
+                            let confettiCount = currentKademe === 'ANAOKULU' ? 30 : (15 + combo * 5);
+                            createConfetti(p.x, p.y, p.color, confettiCount);
+                            
+                        } else {
+                            combo = 0;
+                            addFloatingText(p.x, p.y - 40, "Yanlış Kutu!", "#94a3b8");
+                        }
+                    }
+
+                    particles.splice(i, 1);
+                    updateUI();
+                }
+            }
+
+            // Uçuşan Yazılar & Konfetiler
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y += ft.vy; ft.life -= 0.015;
+                if(ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            for (let i = confettis.length - 1; i >= 0; i--) {
+                let c = confettis[i];
+                c.x += c.vx; c.y += c.vy; c.vy += 0.2 * globalSpeedMultiplier; c.life -= 0.02 * globalSpeedMultiplier;
+                if (c.life <= 0) confettis.splice(i, 1);
+            }
+        }
+
+        // --- RENDER (ÇİZİM) ---
+        function draw() {
+            // Şeffaf arka planla ufak bir iz bırakarak temizleme (Hareket bulanıklığı)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Alt Kutular
+            for (let b of BUCKETS) {
+                ctx.fillStyle = COLORS[b.color].drop;
+                ctx.fillRect(b.x, GAME_HEIGHT - 80, b.width, 80);
+                
+                // Kutuların üst kısımlarına neon şerit (Glow)
+                ctx.shadowColor = COLORS[b.color].glow;
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = COLORS[b.color].main;
+                ctx.fillRect(b.x, GAME_HEIGHT - 80, b.width, 10);
+                ctx.shadowBlur = 0; // Kapat
+                
+                ctx.strokeStyle = '#0b1120';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(b.x, GAME_HEIGHT - 80, b.width, 80);
+            }
+
+            // Hareketli Engeller (Ortaokul Modu)
+            for (let obs of activeObstacles) {
+                let pulse = Math.sin(frameCount * 0.1) * 5;
+                
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.r + pulse, 0, Math.PI * 2);
+                ctx.fillStyle = '#c026d3';
+                ctx.shadowColor = '#d946ef';
+                ctx.shadowBlur = 25;
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.r * 0.7, 0, Math.PI * 2);
+                ctx.fillStyle = '#fdf4ff';
+                ctx.fill();
+            }
+
+            // Kullanıcı Çizgileri (Sihirli Yollar)
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            for (let line of userLines) {
+                let lineColor = '#00f0ff'; // Kaygan
+                if (line.type === 1) lineColor = '#22c55e'; // Zıpzıp
+                if (line.type === 2) lineColor = '#f97316'; // Roket
+
+                ctx.strokeStyle = lineColor; ctx.shadowColor = lineColor;
+                ctx.shadowBlur = 20; ctx.lineWidth = 8;
+                ctx.beginPath(); ctx.moveTo(line.x1, line.y1); ctx.lineTo(line.x2, line.y2); ctx.stroke();
+                
+                ctx.shadowBlur = 0; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.stroke();
+            }
+
+            // Çizim Kıvılcımları
+            for (let s of drawSparks) {
+                ctx.fillStyle = s.color || '#00f0ff';
+                ctx.globalAlpha = s.life;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            if (isDrawing && lastDrawPoint) {
+                ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(lastDrawPoint.x, lastDrawPoint.y, 6, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Bilyeler ve İzleri
+            for (let p of particles) {
+                // Enerji Kuyruğu (Trail) - Yumuşak silinme
+                if(p.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+                    for(let i=1; i<p.trail.length; i++) {
+                        ctx.lineTo(p.trail[i].x, p.trail[i].y);
+                    }
+                    ctx.lineTo(p.x, p.y);
+                    ctx.strokeStyle = COLORS[p.color].glow;
+                    ctx.lineWidth = p.radius * 1.8;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+                }
+
+                // YENİ: 3D Radial Gradient Bilyeler
+                let grad = ctx.createRadialGradient(
+                    p.x - p.radius * 0.3, p.y - p.radius * 0.3, p.radius * 0.1, 
+                    p.x, p.y, p.radius
+                );
+                grad.addColorStop(0, '#ffffff'); // Işık vuran yer
+                grad.addColorStop(0.3, COLORS[p.color].main); // Ana renk
+                grad.addColorStop(1, COLORS[p.color].drop); // Gölge
+
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+                
+                // İnce Siyah Çerçeve
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+            }
+
+            // Üstteki Spawner (Boru)
+            ctx.fillStyle = '#334155'; ctx.fillRect(spawner.x - 35, 0, 70, 45); // Kutu
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(spawner.x - 40, 35, 80, 15); // Ağız
+            
+            // İçinde bekleyen top (3D Gradient ile)
+            let ngrad = ctx.createRadialGradient(spawner.x-3, 20-3, 1.5, spawner.x, 20, 12);
+            ngrad.addColorStop(0, '#ffffff');
+            ngrad.addColorStop(0.3, COLORS[spawner.currentColor].main);
+            ngrad.addColorStop(1, COLORS[spawner.currentColor].drop);
+            ctx.fillStyle = ngrad;
+            ctx.beginPath(); ctx.arc(spawner.x, 20, 12, 0, Math.PI*2); ctx.fill();
+
+            // Konfetiler
+            for (let c of confettis) {
+                ctx.fillStyle = c.color; ctx.globalAlpha = c.life;
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Uçuşan Yazılar
+            ctx.font = "bold 28px 'Fredoka One'";
+            ctx.textAlign = "center";
+            for (let ft of floatingTexts) {
+                ctx.fillStyle = ft.color;
+                ctx.globalAlpha = ft.life;
+                // Yazıların siyah dış çizgisi (okunabilirlik için)
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(0,0,0,' + ft.life + ')';
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillText(ft.text, ft.x, ft.y);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function gameLoop() {
+            updateLogic();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Başlangıç
+        updateInkBar();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
