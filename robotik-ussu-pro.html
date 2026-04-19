@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Barış Öğretmen | Robotik Kodlama Üssü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --scratch-blue: #4c97ff;
+            --scratch-purple: #9966ff;
+            --scratch-pink: #cf63cf;
+            --mblock-cyan: #06b6d4;
+            --codeorg-green: #22c55e;
+            --codeorg-orange: #ff9900;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .header-glow {
+            box-shadow: 0 4px 30px rgba(6, 182, 212, 0.3);
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid var(--mblock-cyan);
+        }
+
+        .block-category {
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            margin-top: 15px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+        }
+
+        .code-block {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            touch-action: manipulation;
+            font-size: 0.9rem;
+        }
+
+        .code-block:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.1); }
+        .code-block:active { transform: scale(0.95); }
+
+        .block-motion { background-color: var(--scratch-blue); }
+        .block-looks { background-color: var(--scratch-purple); }
+        .block-sound { background-color: var(--scratch-pink); }
+        .block-action { background-color: #a855f7; }
+        .block-control { background-color: #f59e0b; }
+        .block-loop { background-color: var(--codeorg-orange); }
+
+        #workspace {
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 2px dashed #475569;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .workspace-block {
+            margin: 4px 0;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .workspace-block .delete-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .workspace-block .delete-btn:hover { background: #ef4444; }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* SAHNE TEMALARI */
+        #stage-wrapper {
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            transition: all 0.5s ease;
+        }
+        .theme-grass { background: #86efac; background-image: linear-gradient(45deg, #4ade80 25%, transparent 25%, transparent 75%, #4ade80 75%, #4ade80), linear-gradient(45deg, #4ade80 25%, transparent 25%, transparent 75%, #4ade80 75%, #4ade80); background-size: 20px 20px; background-position: 0 0, 10px 10px; border: 4px solid #166534; }
+        .theme-sea { background: #0284c7; background-image: radial-gradient(circle at 50% 50%, #38bdf8 2px, transparent 3px); background-size: 30px 30px; border: 4px solid #082f49; }
+        .theme-space { background: #0f172a; background-image: radial-gradient(#475569 2px, transparent 2px); background-size: 20px 20px; border: 4px solid #334155; }
+        .theme-mars { background: #c2410c; background-image: radial-gradient(#9a3412 10%, transparent 10%), radial-gradient(#9a3412 10%, transparent 10%); background-size: 40px 40px; background-position: 0 0, 20px 20px; border: 4px solid #7c2d12; }
+        .theme-jungle { background: #14532d; background-image: radial-gradient(#166534 30%, transparent 30%); background-size: 25px 25px; border: 4px solid #064e3b; }
+        .theme-city { background: #334155; background-image: linear-gradient(90deg, transparent 48%, #e2e8f0 48%, #e2e8f0 52%, transparent 52%); background-size: 50px 50px; border: 4px solid #0f172a; }
+        .theme-ice { background: #bae6fd; background-image: linear-gradient(135deg, #e0f2fe 25%, transparent 25%), linear-gradient(225deg, #e0f2fe 25%, transparent 25%); background-size: 30px 30px; border: 4px solid #0369a1; }
+
+        .grid-cell { border: 1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; }
+        
+        #character-sprite {
+            width: 50px; height: 50px;
+            font-size: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            z-index: 10;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-char-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .accessory-layer {
+            position: absolute;
+            font-size: 2rem;
+            top: -20px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .speech-bubble {
+            position: absolute; top: -45px; left: 50%; transform: translateX(-50%) scale(0);
+            background: white; color: black; padding: 6px 12px; border-radius: 12px;
+            font-size: 14px; font-weight: bold; white-space: nowrap; opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20;
+            border: 2px solid #cbd5e1; box-shadow: 0 5px 15px rgba(0,0,0,0.3); pointer-events: none;
+        }
+        .speech-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid; border-color: white transparent transparent transparent; }
+        .speech-bubble.show { transform: translateX(-50%) scale(1); opacity: 1; }
+
+        #target { font-size: 2.5rem; position: absolute; animation: float 2s infinite ease-in-out alternate; }
+        .obstacle { font-size: 2.2rem; position: absolute; z-index: 5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4)); display: flex; align-items: center; justify-content: center; }
+        .star-item { font-size: 1.8rem; position: absolute; z-index: 6; animation: spin 3s linear infinite; }
+
+        @keyframes float { 0% { transform: translateY(0px); } 100% { transform: translateY(-8px); } }
+        @keyframes spin { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+
+        #code-preview { font-family: 'Fira Code', monospace; background: #020617; color: #38bdf8; font-size: 0.75rem; border-radius: 8px; padding: 12px; overflow-y: auto; border: 1px solid #1e293b; }
+        .run-btn { background: linear-gradient(to right, var(--codeorg-green), #16a34a); box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); touch-action: manipulation; }
+        .run-btn:hover { box-shadow: 0 0 30px rgba(34, 197, 94, 0.6); transform: scale(1.02); }
+        .playing-block { border: 2px solid #fff; filter: brightness(1.3) contrast(1.2); transform: scale(1.05); z-index: 5;}
+        
+        .level-btn { transition: all 0.2s; opacity: 0.6; min-width: 80px; text-align: center; }
+        .level-btn.active { opacity: 1; transform: scale(1.05); box-shadow: 0 0 10px rgba(255,255,255,0.3); border: 2px solid white; }
+
+        /* MODAL STYLES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-box { background: #1e293b; border: 2px solid #38bdf8; border-radius: 16px; padding: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .hidden { display: none !important; }
+        
+        #camera-preview { width: 100%; border-radius: 12px; background: #0f172a; margin-bottom: 10px; transform: scaleX(-1); }
+    </style>
+</head>
+<body class="p-2 md:p-3">
+
+    <!-- ÜST BİLGİ -->
+    <header class="header-glow rounded-2xl p-3 mb-2 flex flex-col md:flex-row justify-between items-center z-10 gap-2">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="bg-white p-2 rounded-xl flex items-center justify-center min-w-[50px] relative">
+                <span id="header-icon" class="text-3xl">🤖</span>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-black text-white tracking-tight">Barış Öğretmen <span class="text-mblock-cyan">Kodlama Üssü</span></h1>
+                <p class="text-slate-400 text-xs font-bold tracking-wider">İLERİ SEVİYE MAKER SİMÜLATÖRÜ</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+            <button onclick="openWorkshop()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg flex items-center gap-2 whitespace-nowrap shrink-0">
+                📸 Karakter Atölyesi
+            </button>
+            <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-600 shrink-0">
+                <span class="text-sm font-bold text-slate-300">Hazır:</span>
+                <select id="character-select" onchange="changeCharacter(this.value)" class="bg-slate-700 text-white rounded p-1 text-sm outline-none">
+                    <option value="robot">🤖 Robot</option>
+                    <option value="kedi">🐱 Kedi</option>
+                    <option value="panda">🐼 Panda</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col md:flex-row gap-3 overflow-hidden">
+        
+        <!-- SOL PANEL: BLOKLAR -->
+        <div class="w-full md:w-[280px] bg-slate-800 rounded-2xl p-3 flex flex-col shadow-xl border border-slate-700 overflow-y-auto">
+            <h2 class="text-white font-bold text-md mb-2 flex items-center gap-2 sticky top-0 bg-slate-800 z-10 pb-2 border-b border-slate-600">
+                <span>🧩</span> Blok Paleti
+            </h2>
+            
+            <div class="block-category">Hareket</div>
+            <div class="code-block block-motion" onclick="addBlock('yukari', 'Yukarı Git', '⬆️')">
+                <span class="text-lg">⬆️</span> Yukarı Git
+            </div>
+            <div class="code-block block-motion" onclick="addBlock('asagi', 'Aşağı Git', '⬇️')">
+                <span class="text-lg">⬇️</span> Aşağı Git
+            </div>
+            <div class="code-block block-motion" onclick="addBlock('saga', 'Sağa Git', '➡️')">
+                <span class="text-lg">➡️</span> Sağa Git
+            </div>
+            <div class="code-block block-motion" onclick="addBlock('sola', 'Sola Git', '⬅️')">
+                <span class="text-lg">⬅️</span> Sola Git
+            </div>
+            <div class="code-block block-motion" onclick="addBlock('ileri', 'İleri Git', '🏃‍♂️')">
+                <span class="text-lg">🏃‍♂️</span> Yönüne Git
+            </div>
+            <div class="code-block block-motion" onclick="addBlock('donSag', 'Sağa Dön', '↪️')">
+                <span class="text-lg">↪️</span> Sağa Dön
+            </div>
+
+            <div class="block-category">Görünüm & Donanım</div>
+            <div class="code-block block-looks" onclick="openTextModal()">
+                <span class="text-lg">💬</span> Özel Mesaj Söyle...
+            </div>
+            <div class="code-block block-looks" onclick="addBlock('buyu', 'Büyü', '🔍')">
+                <span class="text-lg">🔍</span> Büyü
+            </div>
+            <div class="code-block block-sound" onclick="addBlock('ses', 'Ses Çıkar', '🔊')">
+                <span class="text-lg">🔊</span> Ses Çıkar
+            </div>
+            <div class="code-block block-action" onclick="addBlock('led', 'Işık Yak', '💡')">
+                <span class="text-lg">💡</span> Işık Yak
+            </div>
+
+            <div class="block-category">Döngü</div>
+            <div class="code-block block-loop" onclick="addBlock('tekrarla2', '2 Kez Tekrarla', '🔁')">
+                <span class="text-lg">🔁</span> Öncekini 2x Yap
+            </div>
+            <div class="code-block block-loop" onclick="addBlock('tekrarla3', '3 Kez Tekrarla', '🔁')">
+                <span class="text-lg">🔁</span> Öncekini 3x Yap
+            </div>
+        </div>
+
+        <!-- ORTA PANEL: ÇALIŞMA ALANI -->
+        <div class="w-full md:flex-1 flex flex-col gap-3">
+            <div id="workspace" class="flex-1 p-3 shadow-xl">
+                <div class="code-block block-control cursor-default opacity-90 w-full max-w-[280px]">
+                    <span class="text-xl">🏁</span> Başla
+                </div>
+                <div id="script-container" class="ml-4 border-l-4 border-slate-500 pl-4 min-h-[50px] flex flex-col items-start pb-4">
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="runCode()" class="run-btn flex-1 text-white font-black text-xl py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <span>▶️</span> BAŞLAT
+                </button>
+                <button onclick="clearWorkspace()" class="bg-slate-600 hover:bg-slate-500 text-white font-bold px-4 rounded-xl transition-all shadow-lg flex items-center justify-center border border-slate-500">
+                    🗑️
+                </button>
+            </div>
+        </div>
+
+        <!-- SAĞ PANEL: SAHNE VE KOD -->
+        <div class="w-full md:w-[320px] flex flex-col gap-3">
+            
+            <div class="bg-slate-800 rounded-2xl p-2 border border-slate-700 shadow-xl flex flex-col">
+                <div class="flex flex-col gap-2 mb-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-300 font-bold text-sm">🎮 Görev Sahnesi</span>
+                        <span id="star-counter" class="text-xs bg-codeorg-orange px-2 py-1 rounded text-white font-bold hidden">⭐ 0/0</span>
+                    </div>
+                    <!-- Seviye Seçimi (10 Seviye) -->
+                    <div class="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+                        <button onclick="loadLevel(1)" id="btn-lvl-1" class="level-btn bg-codeorg-green px-2 py-1 rounded text-white text-xs font-bold">1. Düz</button>
+                        <button onclick="loadLevel(2)" id="btn-lvl-2" class="level-btn bg-blue-500 px-2 py-1 rounded text-white text-xs font-bold">2. Duvar</button>
+                        <button onclick="loadLevel(3)" id="btn-lvl-3" class="level-btn bg-codeorg-orange px-2 py-1 rounded text-white text-xs font-bold">3. Yıldız</button>
+                        <button onclick="loadLevel(4)" id="btn-lvl-4" class="level-btn bg-red-500 px-2 py-1 rounded text-white text-xs font-bold">4. Labirent</button>
+                        <button onclick="loadLevel(5)" id="btn-lvl-5" class="level-btn bg-cyan-500 px-2 py-1 rounded text-white text-xs font-bold">5. Okyanus</button>
+                        <button onclick="loadLevel(6)" id="btn-lvl-6" class="level-btn bg-purple-600 px-2 py-1 rounded text-white text-xs font-bold">6. Uzay</button>
+                        <button onclick="loadLevel(7)" id="btn-lvl-7" class="level-btn bg-orange-700 px-2 py-1 rounded text-white text-xs font-bold">7. Mars</button>
+                        <button onclick="loadLevel(8)" id="btn-lvl-8" class="level-btn bg-green-800 px-2 py-1 rounded text-white text-xs font-bold">8. Orman</button>
+                        <button onclick="loadLevel(9)" id="btn-lvl-9" class="level-btn bg-slate-600 px-2 py-1 rounded text-white text-xs font-bold">9. Şehir</button>
+                        <button onclick="loadLevel(10)" id="btn-lvl-10" class="level-btn bg-sky-300 px-2 py-1 rounded text-blue-900 text-xs font-bold">10. Buzul</button>
+                    </div>
+                </div>
+
+                <!-- Oyun Alanı -->
+                <div id="stage-wrapper" class="w-full aspect-square theme-grass">
+                    <div id="character-sprite">
+                        <span id="char-emoji">🤖</span>
+                        <div id="accessory-layer" class="accessory-layer hidden"></div>
+                        <div id="speech-bubble" class="speech-bubble">Merhaba!</div>
+                    </div>
+                    <div id="target">🔋</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-2xl p-2 border border-slate-700 shadow-xl flex-1 flex flex-col min-h-[150px]">
+                <span class="text-slate-300 font-bold text-xs mb-1 flex items-center gap-2">
+                    <span class="text-mblock-cyan">⚙️</span> C++ Önizleme
+                </span>
+                <div id="code-preview" class="flex-1">
+<pre><code id="cpp-code">void setup() {
+  robot.begin();
+}
+void loop() {}</code></pre>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL: ÖZEL MESAJ SÖYLE -->
+    <div id="text-modal" class="modal-overlay hidden">
+        <div class="modal-box flex flex-col gap-4">
+            <h3 class="text-white font-bold text-lg">💬 Ne Söylemek İstersin?</h3>
+            <input type="text" id="custom-text-input" placeholder="Örn: Merhaba Dünya!" class="p-3 rounded-lg bg-slate-700 text-white border border-slate-500 outline-none w-full font-bold">
+            <div class="flex gap-2">
+                <button onclick="closeTextModal()" class="flex-1 bg-slate-600 text-white p-2 rounded-lg font-bold">İptal</button>
+                <button onclick="saveCustomText()" class="flex-1 bg-scratch-purple text-white p-2 rounded-lg font-bold shadow-lg">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: KARAKTER ATÖLYESİ (KAMERA & GARDIROP) -->
+    <div id="workshop-modal" class="modal-overlay hidden">
+        <div class="modal-box flex flex-col gap-4 w-full max-w-[450px]">
+            <h3 class="text-white font-black text-xl text-center border-b border-slate-600 pb-2">📸 Karakter Atölyesi</h3>
+            
+            <!-- Sekmeler -->
+            <div class="flex gap-2 bg-slate-800 p-1 rounded-lg">
+                <button onclick="switchTab('foto')" id="tab-foto" class="flex-1 bg-slate-600 text-white py-1 rounded text-sm font-bold">Fotoğraf</button>
+                <button onclick="switchTab('aksesuar')" id="tab-aksesuar" class="flex-1 text-slate-400 py-1 rounded text-sm font-bold">Gardırop</button>
+            </div>
+
+            <!-- Fotoğraf Sekmesi -->
+            <div id="foto-section" class="flex flex-col gap-3">
+                <div class="relative">
+                    <video id="camera-preview" autoplay playsinline class="hidden"></video>
+                    <canvas id="camera-canvas" class="hidden"></canvas>
+                    <div id="camera-placeholder" class="w-full aspect-video bg-slate-900 rounded-12 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-600 rounded-xl mb-2">
+                        <span class="text-4xl mb-2">📷</span>
+                        <span class="text-sm">Kamera Kapalı</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-start-cam" onclick="startCamera()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg font-bold text-sm">Kamerayı Aç</button>
+                    <button id="btn-take-photo" onclick="takePhoto()" class="flex-1 bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg font-bold text-sm hidden">Çek 📸</button>
+                </div>
+                <div class="text-center text-slate-400 text-xs my-1">- VEYA -</div>
+                <input type="file" id="file-upload" accept="image/*" onchange="handleFileUpload(event)" class="hidden">
+                <button onclick="document.getElementById('file-upload').click()" class="w-full bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg font-bold text-sm border border-slate-500">
+                    📂 Galeriden Seç
+                </button>
+            </div>
+
+            <!-- Aksesuar Sekmesi -->
+            <div id="aksesuar-section" class="hidden grid grid-cols-4 gap-3 py-4">
+                <button onclick="setAccessory('👑')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">👑</button>
+                <button onclick="setAccessory('🎩')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🎩</button>
+                <button onclick="setAccessory('🕶️')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🕶️</button>
+                <button onclick="setAccessory('🎀')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🎀</button>
+                <button onclick="setAccessory('🎓')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🎓</button>
+                <button onclick="setAccessory('🤡')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🤡</button>
+                <button onclick="setAccessory('🎧')" class="text-4xl hover:scale-125 transition-transform bg-slate-700 p-3 rounded-xl border border-slate-600">🎧</button>
+                <button onclick="setAccessory('')" class="text-sm font-bold hover:scale-110 transition-transform bg-red-900/50 text-red-300 p-3 rounded-xl border border-red-700">Çıkar</button>
+            </div>
+
+            <button onclick="closeWorkshop()" class="w-full bg-red-500 text-white p-2 rounded-lg font-bold mt-2">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SES MOTORU ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function playSound(type) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'step') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'bip') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(1000, now);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.2, now + 0.2); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { 
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.type = 'sine'; o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.value = freq;
+                    g.gain.setValueAtTime(0.2, now + i*0.1); g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.3);
+                    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.3);
+                });
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'star') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.linearRampToValueAtTime(1800, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        // --- UYGULAMA MANTIĞI & DURUM ---
+        let scriptArray = [];
+        let isRunning = false;
+        let currentLevel = 1;
+        const TOTAL_LEVELS = 10;
+        
+        let currentChar = 'robot'; 
+        let customImageSrc = null; // Kendi fotoğrafı için base64
+        let charAccessory = ''; // Seçili aksesuar
+        let charScale = 1; 
+
+        const GRID_SIZE = 5;
+        let robotX = 0, robotY = 0, robotDir = 0; 
+        let targetX = 4, targetY = 4;
+        let obstacles = [];
+        let stars = []; 
+        let collectedStars = 0;
+
+        const charData = {
+            robot: { emoji: '🤖', target: '🔋', name: 'Arduino' },
+            kedi:  { emoji: '🐱', target: '🐟', name: 'Scratch' },
+            panda: { emoji: '🐼', target: '🎋', name: 'mBot' },
+            custom: { emoji: '👤', target: '🏆', name: 'Kahraman' }
+        };
+
+        // --- KAMERA VE MODAL İŞLEMLERİ ---
+        let stream = null;
+        
+        function openWorkshop() {
+            playSound('click');
+            document.getElementById('workshop-modal').classList.remove('hidden');
+            switchTab('foto');
+        }
+        function closeWorkshop() {
+            playSound('click');
+            stopCamera();
+            document.getElementById('workshop-modal').classList.add('hidden');
+        }
+        function switchTab(tab) {
+            playSound('click');
+            document.getElementById('tab-foto').classList.replace('bg-slate-600', 'bg-transparent');
+            document.getElementById('tab-aksesuar').classList.replace('bg-slate-600', 'bg-transparent');
+            document.getElementById('tab-foto').classList.add(tab==='foto' ? 'bg-slate-600' : 'text-slate-400');
+            document.getElementById('tab-aksesuar').classList.add(tab==='aksesuar' ? 'bg-slate-600' : 'text-slate-400');
+            
+            document.getElementById('foto-section').classList.toggle('hidden', tab !== 'foto');
+            document.getElementById('aksesuar-section').classList.toggle('hidden', tab !== 'aksesuar');
+            
+            if(tab !== 'foto') stopCamera();
+        }
+
+        async function startCamera() {
+            playSound('click');
+            const video = document.getElementById('camera-preview');
+            const placeholder = document.getElementById('camera-placeholder');
+            const btnStart = document.getElementById('btn-start-cam');
+            const btnTake = document.getElementById('btn-take-photo');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btnStart.classList.add('hidden');
+                btnTake.classList.remove('hidden');
+            } catch (err) {
+                alert("Kameraya erişilemedi! Tarayıcı izinlerini kontrol edin.");
+            }
+        }
+
+        function stopCamera() {
+            if(stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            document.getElementById('camera-preview').classList.add('hidden');
+            document.getElementById('camera-placeholder').classList.remove('hidden');
+            document.getElementById('btn-start-cam').classList.remove('hidden');
+            document.getElementById('btn-take-photo').classList.add('hidden');
+        }
+
+        function takePhoto() {
+            playSound('click');
+            const video = document.getElementById('camera-preview');
+            const canvas = document.getElementById('camera-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            // Aynalama efekti düzeltmesi
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0);
+            
+            customImageSrc = canvas.toDataURL('image/png');
+            applyCustomCharacter();
+            closeWorkshop();
+        }
+
+        function handleFileUpload(event) {
+            playSound('click');
+            const file = event.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    customImageSrc = e.target.result;
+                    applyCustomCharacter();
+                    closeWorkshop();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function applyCustomCharacter() {
+            currentChar = 'custom';
+            document.getElementById('character-select').value = 'robot'; // Dropdownu sıfırla ama custom kal
+            const emojiSpan = document.getElementById('char-emoji');
+            
+            if(customImageSrc) {
+                emojiSpan.innerHTML = `<img src="${customImageSrc}" class="custom-char-img">`;
+            } else {
+                emojiSpan.innerText = '👤';
+            }
+            
+            document.getElementById('target').innerText = charData['custom'].target;
+            document.getElementById('header-icon').innerText = '😎';
+            updateCppCode();
+        }
+
+        function changeCharacter(val) {
+            if(isRunning) return;
+            currentChar = val;
+            customImageSrc = null; // Hazır seçilirse custom sıfırlanır
+            document.getElementById('char-emoji').innerText = charData[val].emoji;
+            document.getElementById('char-emoji').innerHTML = charData[val].emoji; // reset html
+            document.getElementById('target').innerText = charData[val].target;
+            document.getElementById('header-icon').innerText = charData[val].emoji;
+            playSound('click');
+            updateCppCode();
+        }
+
+        function setAccessory(acc) {
+            playSound('click');
+            charAccessory = acc;
+            const accLayer = document.getElementById('accessory-layer');
+            if(acc === '') {
+                accLayer.classList.add('hidden');
+                accLayer.innerText = '';
+            } else {
+                accLayer.classList.remove('hidden');
+                accLayer.innerText = acc;
+            }
+            closeWorkshop();
+        }
+
+        // --- ÖZEL MESAJ MODALI ---
+        let pendingCustomMessage = "";
+        function openTextModal() {
+            if(isRunning) return;
+            playSound('click');
+            document.getElementById('custom-text-input').value = "";
+            document.getElementById('text-modal').classList.remove('hidden');
+            setTimeout(()=> document.getElementById('custom-text-input').focus(), 100);
+        }
+        function closeTextModal() {
+            playSound('click');
+            document.getElementById('text-modal').classList.add('hidden');
+        }
+        function saveCustomText() {
+            let val = document.getElementById('custom-text-input').value.trim();
+            if(!val) val = "Merhaba!";
+            closeTextModal();
+            addBlock(`mesaj|${val}`, `"${val}" De`, '💬');
+        }
+
+        // --- SEVİYE YÜKLEME (10 SEVİYE) ---
+        function loadLevel(level) {
+            if(isRunning) return;
+            currentLevel = level;
+            playSound('click');
+            
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-lvl-${level}`).classList.add('active');
+
+            const stage = document.getElementById('stage-wrapper');
+            stage.className = 'w-full aspect-square relative'; // Temizle
+            
+            obstacles = []; stars = []; collectedStars = 0; charScale = 1;
+            robotX = 0; robotY = 0; robotDir = 0; // Default reset
+            targetX = 4; targetY = 4;
+
+            if(level === 1) { // Düz
+                stage.classList.add('theme-grass');
+            } 
+            else if(level === 2) { // Duvar
+                stage.classList.add('theme-grass'); targetY = 0; robotY = 4;
+                obstacles = [{x:2,y:0,icon:'🧱'},{x:2,y:1,icon:'🧱'},{x:2,y:2,icon:'🧱'},{x:2,y:3,icon:'🧱'}]; 
+            }
+            else if(level === 3) { // Yıldızlar
+                stage.classList.add('theme-grass');
+                stars = [{x:2,y:0, c:false}, {x:2,y:2, c:false}, {x:0,y:4, c:false}]; 
+            }
+            else if(level === 4) { // Labirent
+                stage.classList.add('theme-grass'); targetY = 2; robotY = 2;
+                obstacles = [{x:1,y:1,icon:'🧱'},{x:1,y:2,icon:'🧱'},{x:1,y:3,icon:'🧱'},{x:3,y:1,icon:'🧱'},{x:3,y:2,icon:'🧱'},{x:3,y:3,icon:'🧱'}];
+                stars = [{x:2,y:0, c:false}, {x:2,y:4, c:false}];
+            }
+            else if(level === 5) { // Okyanus
+                stage.classList.add('theme-sea'); robotDir = 90;
+                obstacles = [{x:1,y:1,icon:'🚢', css:'obstacle-ship'},{x:2,y:3,icon:'🚢', css:'obstacle-ship'},{x:3,y:1,icon:'🚢', css:'obstacle-ship'},{x:4,y:2,icon:'🚢', css:'obstacle-ship'}];
+                stars = [{x:0,y:4, c:false}, {x:4,y:0, c:false}];
+            }
+            else if(level === 6) { // Uzay
+                stage.classList.add('theme-space'); targetX = 2; targetY = 2;
+                obstacles = [{x:1,y:1,icon:'☄️'}, {x:2,y:1,icon:'☄️'}, {x:3,y:1,icon:'☄️'}, {x:1,y:3,icon:'☄️'}, {x:2,y:3,icon:'☄️'}, {x:3,y:3,icon:'☄️'}, {x:1,y:2,icon:'☄️'}];
+                stars = [{x:4,y:0, c:false}, {x:4,y:4, c:false}, {x:0,y:4, c:false}];
+            }
+            else if(level === 7) { // Mars
+                stage.classList.add('theme-mars'); targetX = 0; targetY = 4; robotX = 4; robotY = 0; robotDir = 180;
+                obstacles = [{x:1,y:0,icon:'👽'}, {x:3,y:2,icon:'🪨'}, {x:1,y:4,icon:'🪨'}, {x:2,y:3,icon:'👽'}];
+                stars = [{x:4,y:4, c:false}, {x:0,y:0, c:false}];
+            }
+            else if(level === 8) { // Orman
+                stage.classList.add('theme-jungle'); targetX = 2; targetY = 0; robotX = 2; robotY = 4; robotDir = 270;
+                obstacles = [{x:0,y:2,icon:'🌲'}, {x:1,y:2,icon:'🌲'}, {x:3,y:2,icon:'🌲'}, {x:4,y:2,icon:'🌲'}]; // Orta yol açık
+                stars = [{x:2,y:2, c:false}];
+            }
+            else if(level === 9) { // Şehir/Trafik
+                stage.classList.add('theme-city'); targetX = 4; targetY = 2; robotX = 0; robotY = 2;
+                obstacles = [{x:1,y:1,icon:'🚗'}, {x:1,y:3,icon:'🚙'}, {x:3,y:0,icon:'🚕'}, {x:3,y:4,icon:'🚓'}];
+                stars = [{x:2,y:1, c:false}, {x:2,y:3, c:false}];
+            }
+            else if(level === 10) { // Buzul
+                stage.classList.add('theme-ice'); targetX = 4; targetY = 0; robotX = 0; robotY = 4; robotDir = 0;
+                obstacles = [{x:1,y:4,icon:'🐧'}, {x:2,y:2,icon:'🧊'}, {x:3,y:0,icon:'🐧'}, {x:4,y:2,icon:'🧊'}];
+                stars = [{x:0,y:0, c:false}, {x:4,y:4, c:false}, {x:2,y:4, c:false}, {x:4,y:2, c:false}];
+            }
+            
+            clearWorkspace(); 
+        }
+
+        // --- BLOK İŞLEMLERİ ---
+        function addBlock(command, name, icon) {
+            if (isRunning) return;
+            playSound('click');
+            const id = Date.now();
+            scriptArray.push({ id, command, name, icon });
+            renderWorkspace();
+            updateCppCode();
+            const ws = document.getElementById('workspace');
+            ws.scrollTop = ws.scrollHeight;
+        }
+
+        function removeBlock(id) {
+            if (isRunning) return;
+            playSound('click');
+            scriptArray = scriptArray.filter(b => b.id !== id);
+            renderWorkspace();
+            updateCppCode();
+        }
+
+        function clearWorkspace() {
+            if (isRunning) return;
+            scriptArray = [];
+            resetStage();
+            renderWorkspace();
+            updateCppCode();
+        }
+
+        function renderWorkspace() {
+            const container = document.getElementById('script-container');
+            container.innerHTML = '';
+            
+            scriptArray.forEach((block) => {
+                const div = document.createElement('div');
+                let bgClass = '';
+                if(['ileri','geri','donSag','donSol','yukari','asagi','saga','sola'].includes(block.command)) bgClass = 'block-motion';
+                else if(block.command.startsWith('mesaj') || block.command==='buyu' || block.command==='kucul') bgClass = 'block-looks';
+                else if(['ses'].includes(block.command)) bgClass = 'block-sound';
+                else if(block.command.startsWith('tekrarla')) bgClass = 'block-loop';
+                else bgClass = 'block-action';
+                
+                div.className = `code-block workspace-block ${bgClass} shadow-md`;
+                div.id = `ws-${block.id}`;
+                div.innerHTML = `
+                    <span class="text-xl">${block.icon}</span> 
+                    <span class="flex-1">${block.name}</span>
+                    <div class="delete-btn" onclick="event.stopPropagation(); removeBlock(${block.id})">❌</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateCppCode() {
+            const codeEl = document.getElementById('cpp-code');
+            let obj = charData[currentChar].name;
+            
+            let codeStr = `void setup() {\n  ${obj}.begin();\n`;
+            if(scriptArray.some(b=>b.command==='led')) codeStr += `  pinMode(LED_BUILTIN, OUTPUT);\n`;
+            if(scriptArray.some(b=>b.command.startsWith('mesaj'))) codeStr += `  lcd.begin(16, 2);\n`;
+            codeStr += `}\n\nvoid loop() {\n`;
+            
+            if (scriptArray.length === 0) {
+                codeStr += "  // Blokları sürükleyin...\n";
+            } else {
+                scriptArray.forEach(b => {
+                    if (b.command === 'ileri') codeStr += `  ${obj}.moveForward(1);\n`;
+                    if (b.command === 'yukari') codeStr += `  ${obj}.moveNorth(1);\n`;
+                    if (b.command === 'asagi') codeStr += `  ${obj}.moveSouth(1);\n`;
+                    if (b.command === 'saga') codeStr += `  ${obj}.moveEast(1);\n`;
+                    if (b.command === 'sola') codeStr += `  ${obj}.moveWest(1);\n`;
+                    if (b.command === 'donSag') codeStr += `  ${obj}.turnRight(90);\n`;
+                    if (b.command === 'led') codeStr += `  digitalWrite(LED_BUILTIN, HIGH);\n  delay(500);\n`;
+                    if (b.command === 'ses') codeStr += `  ${obj}.playSound();\n`;
+                    if (b.command.startsWith('mesaj')) {
+                        let text = b.command.split('|')[1];
+                        codeStr += `  lcd.print("${text}");\n`;
+                    }
+                    if (b.command === 'buyu') codeStr += `  ${obj}.setScale(1.5);\n`;
+                    if (b.command === 'kucul') codeStr += `  ${obj}.setScale(0.5);\n`;
+                    if (b.command === 'tekrarla2') codeStr += `  // Öncekini 2x yap\n`;
+                    if (b.command === 'tekrarla3') codeStr += `  // Öncekini 3x yap\n`;
+                });
+                codeStr += "  while(true); // Dur\n";
+            }
+            codeStr += "}";
+            codeEl.innerText = codeStr;
+        }
+
+        // --- SAHNE ÇİZİMİ ---
+        function initStage() {
+            const container = document.getElementById('stage-wrapper');
+            for(let i=0; i<25; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                container.appendChild(cell);
+            }
+            loadLevel(1);
+            window.addEventListener('resize', updateStageVisuals);
+        }
+
+        function resetStage() {
+            // Seviyeye göre pozisyon sıfırlama
+            if(currentLevel===1||currentLevel===3||currentLevel===6) { robotX=0; robotY=0; robotDir=0; }
+            else if(currentLevel===2) { robotX=0; robotY=4; robotDir=0; }
+            else if(currentLevel===4) { robotX=0; robotY=2; robotDir=0; }
+            else if(currentLevel===5) { robotX=0; robotY=0; robotDir=90; }
+            else if(currentLevel===7) { robotX=4; robotY=0; robotDir=180; }
+            else if(currentLevel===8) { robotX=2; robotY=4; robotDir=270; }
+            else if(currentLevel===9) { robotX=0; robotY=2; robotDir=0; }
+            else if(currentLevel===10) { robotX=0; robotY=4; robotDir=0; }
+            
+            charScale = 1;
+            stars.forEach(s => s.c = false);
+            collectedStars = 0;
+            updateStarCounter();
+            updateStageVisuals();
+        }
+
+        function updateStarCounter() {
+            const counter = document.getElementById('star-counter');
+            if(stars.length > 0) {
+                counter.classList.remove('hidden');
+                counter.innerText = `⭐ ${collectedStars}/${stars.length}`;
+            } else {
+                counter.classList.add('hidden');
+            }
+        }
+
+        function updateStageVisuals() {
+            const container = document.getElementById('stage-wrapper');
+            if(!container) return;
+            const cellW = container.clientWidth / 5;
+            const cellH = container.clientHeight / 5;
+            
+            const targetEl = document.getElementById('target');
+            targetEl.style.left = `${(targetX * cellW) + (cellW/2) - 20}px`;
+            targetEl.style.top = `${(targetY * cellH) + (cellH/2) - 20}px`;
+
+            document.querySelectorAll('.obstacle, .star-item').forEach(el => el.remove());
+            
+            obstacles.forEach(obs => {
+                let el = document.createElement('div');
+                el.className = `obstacle ${obs.css || ''}`;
+                el.innerText = obs.icon;
+                el.style.left = `${(obs.x * cellW) + (cellW/2) - 18}px`;
+                el.style.top = `${(obs.y * cellH) + (cellH/2) - 18}px`;
+                container.appendChild(el);
+            });
+
+            stars.forEach(star => {
+                if(!star.c) {
+                    let el = document.createElement('div');
+                    el.className = 'star-item';
+                    el.innerText = '⭐';
+                    el.style.left = `${(star.x * cellW) + (cellW/2) - 15}px`;
+                    el.style.top = `${(star.y * cellH) + (cellH/2) - 15}px`;
+                    container.appendChild(el);
+                }
+            });
+
+            const charEl = document.getElementById('character-sprite');
+            charEl.style.left = `${(robotX * cellW) + (cellW/2) - 25}px`; // 50px width ortalama
+            charEl.style.top = `${(robotY * cellH) + (cellH/2) - 25}px`;
+            
+            let scX = 1; let rot = 0;
+            if (robotDir === 0) rot = 0; 
+            if (robotDir === 90) rot = 90; 
+            if (robotDir === 180) { rot = 0; scX = -1; } 
+            if (robotDir === 270) rot = -90; 
+            
+            // Eğer resimli karakterse dönmesin, sadece emoji kedi/panda dönmesin
+            if(currentChar === 'custom' || currentChar === 'kedi' || currentChar === 'panda'){
+                if(robotDir === 90 || robotDir === 270) rot = 0; 
+            }
+
+            charEl.style.transform = `rotate(${rot}deg) scaleX(${scX}) scale(${charScale})`;
+        }
+
+        // --- YÜRÜTME MOTORU ---
+        async function runCode() {
+            if (isRunning || scriptArray.length === 0) return;
+            isRunning = true;
+            resetStage();
+            
+            for (let i = 0; i < scriptArray.length; i++) {
+                const block = scriptArray[i];
+                const blockEl = document.getElementById(`ws-${block.id}`);
+                if(blockEl) blockEl.classList.add('playing-block');
+                
+                if (block.command.startsWith('tekrarla')) {
+                    let times = parseInt(block.command.replace('tekrarla', ''));
+                    if (i > 0) {
+                        let prevBlock = scriptArray[i-1];
+                        for(let t=0; t<times; t++){
+                            await executeCommand(prevBlock.command);
+                            if(!isRunning) break; 
+                        }
+                    } else {
+                        playSound('error'); await sleep(300);
+                    }
+                } else {
+                    await executeCommand(block.command);
+                }
+                
+                if(blockEl) blockEl.classList.remove('playing-block');
+                if(!isRunning) break; 
+                
+                // Kazanma
+                if (robotX === targetX && robotY === targetY) {
+                    if(stars.length > 0 && collectedStars < stars.length) {
+                        showSpeech("Yıldızlar Eksik! 🥺"); playSound('error'); isRunning = false; break;
+                    } else {
+                        playSound('win'); showSpeech("BAŞARDIM! 🎉");
+                        confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+                        
+                        if(currentLevel < TOTAL_LEVELS) {
+                            setTimeout(() => { loadLevel(currentLevel + 1); }, 3500); 
+                        } else {
+                            setTimeout(() => { showSpeech("TÜM GÖREVLER BİTTİ! 🏆"); }, 2000);
+                        }
+                        break;
+                    }
+                }
+            }
+            isRunning = false;
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function executeCommand(cmd) {
+            let delay = 450;
+            let nextX = robotX; let nextY = robotY; let willMove = false;
+            
+            if (cmd === 'ileri') {
+                if(robotDir === 0) nextX++; else if(robotDir === 90) nextY++; else if(robotDir === 180) nextX--; else if(robotDir === 270) nextY--;
+                willMove = true;
+            }
+            else if (cmd === 'yukari') { nextY--; robotDir = 270; willMove = true; }
+            else if (cmd === 'asagi') { nextY++; robotDir = 90; willMove = true; }
+            else if (cmd === 'saga') { nextX++; robotDir = 0; willMove = true; }
+            else if (cmd === 'sola') { nextX--; robotDir = 180; willMove = true; }
+            
+            else if (cmd === 'donSag') { robotDir = (robotDir + 90) % 360; playSound('click'); delay = 300; }
+            else if (cmd === 'donSol') { robotDir = (robotDir - 90 + 360) % 360; playSound('click'); delay = 300; }
+
+            else if (cmd.startsWith('mesaj')) {
+                let text = cmd.split('|')[1];
+                showSpeech(text);
+                playSound('click'); delay = 1000;
+            }
+            else if (cmd === 'buyu') { charScale = Math.min(charScale + 0.5, 2); playSound('click'); delay=400; }
+            else if (cmd === 'kucul') { charScale = Math.max(charScale - 0.5, 0.5); playSound('click'); delay=400; }
+            else if (cmd === 'ses') { playSound('bip'); delay = 500; }
+            else if (cmd === 'led') {
+                const charEl = document.getElementById('character-sprite');
+                charEl.style.filter = 'drop-shadow(0 0 30px yellow) brightness(1.5)';
+                playSound('click'); setTimeout(() => charEl.style.filter = 'drop-shadow(0 5px 5px rgba(0,0,0,0.5))', 400);
+            }
+
+            if (willMove) {
+                let isCollision = false;
+                if (nextX < 0 || nextX > 4 || nextY < 0 || nextY > 4) isCollision = true; 
+                else if (obstacles.some(o => o.x === nextX && o.y === nextY)) isCollision = true; 
+                
+                if (isCollision) {
+                    playSound('error');
+                    const charEl = document.getElementById('character-sprite');
+                    charEl.style.filter = 'drop-shadow(0 0 20px red) brightness(1.5)';
+                    setTimeout(() => charEl.style.filter = 'drop-shadow(0 5px 5px rgba(0,0,0,0.5))', 300);
+                    isRunning = false; delay = 500;
+                } else {
+                    robotX = nextX; robotY = nextY; playSound('step');
+                    
+                    let starIndex = stars.findIndex(s => s.x === robotX && s.y === robotY && !s.c);
+                    if(starIndex > -1) {
+                        stars[starIndex].c = true; collectedStars++; playSound('star'); updateStarCounter();
+                    }
+                }
+            }
+
+            updateStageVisuals();
+            await sleep(delay);
+        }
+
+        function showSpeech(text) {
+            const bubble = document.getElementById('speech-bubble');
+            bubble.innerText = text; bubble.classList.add('show');
+            setTimeout(() => bubble.classList.remove('show'), 2000);
+        }
+
+        window.onload = initStage;
+    </script>
+</body>
+</html>
