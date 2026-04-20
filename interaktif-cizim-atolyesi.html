@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>İnteraktif Çizim Atölyesi</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --primary: #4A90E2;
@@ -137,6 +138,54 @@
             border-radius: 0 0 20px 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .step-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .step-controls button {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 8px 15px;
+            font-size: 0.95rem;
+        }
+        
+        .step-controls button:hover {
+            background: #e2e8f0;
+        }
+
+        .step-controls button.btn-next {
+            background: #4A90E2;
+            color: white;
+        }
+        
+        .step-controls button.btn-next:hover {
+            background: #357abd;
+        }
+
+        .step-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #stepCounter {
+            font-weight: 900;
+            color: #475569;
+            min-width: 100px;
+            text-align: center;
         }
 
         canvas {
@@ -207,6 +256,13 @@
             <div class="canvas-title">İzle ve Öğren 👀</div>
             <div class="canvas-container">
                 <canvas id="animCanvas" width="800" height="800"></canvas>
+            </div>
+            
+            <div class="step-controls">
+                <button id="btnPrev" onclick="prevStep()">⬅️ Geri</button>
+                <button id="btnReplay" onclick="replayStep()">🔄 Tekrar</button>
+                <span id="stepCounter">Adım: 0 / 0</span>
+                <button id="btnNext" onclick="nextStep()" class="btn-next">İleri ➡️</button>
             </div>
         </div>
 
@@ -331,150 +387,178 @@
         };
 
         // ==========================================
-        // 2. ANIMATION ENGINE (Teacher Canvas)
+        // 2. ADIM ADIM ANİMASYON MOTORU (Öğretmen Tahtası)
         // ==========================================
         const animCanvas = document.getElementById('animCanvas');
         const ctxAnim = animCanvas.getContext('2d');
         const svgNS = "http://www.w3.org/2000/svg";
         
-        let currentOutlines = [];
-        let currentFills = [];
-        let loopStartTime = null;
-        let animationFrameId = null;
-        
-        let T_OUTLINE = 0;
-        let T_PAUSE = 600;
-        let T_FILL_START = 0;
-        let T_HOLD_START = 0;
-        let T_HOLD = 2000;
-        let T_FADEOUT_START = 0;
-        let T_FADEOUT = 1000;
-        let TOTAL_TIME = 0;
+        let allSteps = [];
+        let currentStepIndex = 0;
+        let isAnimating = false;
+        let animationStartTime = 0;
+        let animFrameId = null;
+
+        function loadAnimal(animalKey) {
+            const data = animalsData[animalKey];
+            allSteps = [];
+            currentStepIndex = 0;
+            isAnimating = false;
+
+            // Önce dış çizgiler
+            data.outlines.forEach(o => {
+                const path = document.createElementNS(svgNS, "path");
+                path.setAttribute("d", o.d);
+                let length = path.getTotalLength();
+                allSteps.push({
+                    ...o,
+                    isFill: false,
+                    path2D: new Path2D(o.d),
+                    length: length,
+                    duration: Math.max(1500, length * 5) // Çizim hızı belirgin şekilde yavaşlatıldı
+                });
+            });
+
+            // Sonra boyamalar
+            data.fills.forEach(f => {
+                allSteps.push({
+                    ...f,
+                    isFill: true,
+                    path2D: new Path2D(f.d),
+                    duration: 1000 // Boyama süresi
+                });
+            });
+
+            updateStepUI();
+            clearTeacherCanvas();
+        }
 
         function easeInOutSine(x) {
             return -(Math.cos(Math.PI * x) - 1) / 2;
         }
 
-        function loadAnimal(animalKey) {
-            const data = animalsData[animalKey];
-            currentOutlines = [];
-            currentFills = [];
-            
-            let currentTime = 0;
-
-            // Prepare outlines and calc times
-            data.outlines.forEach(o => {
-                const p = document.createElementNS(svgNS, "path");
-                p.setAttribute("d", o.d);
-                let length = p.getTotalLength();
-                let duration = Math.max(300, length * 2.5); // Drawing speed
-                
-                currentOutlines.push({
-                    ...o,
-                    length: length,
-                    duration: duration,
-                    startTime: currentTime,
-                    endTime: currentTime + duration,
-                    path2D: new Path2D(o.d)
-                });
-                currentTime += duration + 50; // 50ms pause between strokes
-            });
-
-            T_OUTLINE = currentTime;
-            T_FILL_START = T_OUTLINE + T_PAUSE;
-            
-            let maxFillEnd = 0;
-            data.fills.forEach(f => {
-                let startTime = T_FILL_START + (f.order - 1) * 350;
-                let duration = 600;
-                let endTime = startTime + duration;
-                if (endTime > maxFillEnd) maxFillEnd = endTime;
-
-                currentFills.push({
-                    ...f,
-                    startTime: startTime,
-                    duration: duration,
-                    endTime: endTime,
-                    path2D: new Path2D(f.d)
-                });
-            });
-
-            T_HOLD_START = maxFillEnd;
-            T_FADEOUT_START = T_HOLD_START + T_HOLD;
-            TOTAL_TIME = T_FADEOUT_START + T_FADEOUT;
-
-            // Reset animation loop
-            loopStartTime = null;
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        function clearTeacherCanvas() {
             ctxAnim.clearRect(0, 0, 800, 800);
-            renderAnimation(performance.now());
         }
 
-        function renderAnimation(timestamp) {
-            if (!loopStartTime) loopStartTime = timestamp;
-            let elapsed = timestamp - loopStartTime;
-
-            if (elapsed > TOTAL_TIME) {
-                loopStartTime = timestamp;
-                elapsed = 0;
-            }
-
-            ctxAnim.clearRect(0, 0, 800, 800);
-
-            let globalAlpha = 1;
-            if (elapsed > T_FADEOUT_START) {
-                globalAlpha = 1 - ((elapsed - T_FADEOUT_START) / T_FADEOUT);
-            }
-            globalAlpha = Math.max(0, globalAlpha);
-
-            // 1. Fills
-            if (elapsed > T_OUTLINE) {
-                currentFills.forEach(f => {
-                    if (elapsed >= f.startTime) {
-                        let fillProgress = 1;
-                        if (elapsed < f.endTime) {
-                            fillProgress = easeInOutSine((elapsed - f.startTime) / f.duration);
-                        }
-                        ctxAnim.globalAlpha = fillProgress * globalAlpha;
-
-                        if (f.type === 'stroke') {
-                            ctxAnim.strokeStyle = f.color;
-                            ctxAnim.lineWidth = f.lineWidth || 4;
-                            ctxAnim.lineCap = 'round';
-                            ctxAnim.lineJoin = 'round';
-                            ctxAnim.setLineDash([]);
-                            ctxAnim.stroke(f.path2D);
-                        } else {
-                            ctxAnim.fillStyle = f.color;
-                            ctxAnim.fill(f.path2D);
-                        }
-                    }
-                });
-            }
-
-            // 2. Outlines
-            ctxAnim.globalAlpha = globalAlpha; 
-            ctxAnim.strokeStyle = '#2f3542'; 
-            ctxAnim.lineWidth = 4;
-            ctxAnim.lineCap = 'round';
-            ctxAnim.lineJoin = 'round';
-
-            currentOutlines.forEach(o => {
-                if (elapsed >= o.startTime) {
-                    if (elapsed >= o.endTime) {
+        function drawUpToCurrent() {
+            clearTeacherCanvas();
+            for (let i = 0; i < currentStepIndex; i++) {
+                let step = allSteps[i];
+                if (step.isFill) {
+                    if (step.type === 'stroke') {
+                        ctxAnim.strokeStyle = step.color;
+                        ctxAnim.lineWidth = step.lineWidth || 6;
+                        ctxAnim.lineCap = 'round';
+                        ctxAnim.lineJoin = 'round';
                         ctxAnim.setLineDash([]);
-                        ctxAnim.stroke(o.path2D);
+                        ctxAnim.stroke(step.path2D);
                     } else {
-                        let progress = easeInOutSine((elapsed - o.startTime) / o.duration);
-                        let currentLength = progress * o.length;
-                        ctxAnim.setLineDash([o.length, o.length]);
-                        ctxAnim.lineDashOffset = o.length - currentLength;
-                        ctxAnim.stroke(o.path2D);
+                        ctxAnim.globalAlpha = 1;
+                        ctxAnim.fillStyle = step.color;
+                        ctxAnim.fill(step.path2D);
+                    }
+                } else {
+                    ctxAnim.globalAlpha = 1;
+                    ctxAnim.strokeStyle = step.color || '#2f3542';
+                    ctxAnim.lineWidth = step.lineWidth || 6;
+                    ctxAnim.lineCap = 'round';
+                    ctxAnim.lineJoin = 'round';
+                    ctxAnim.setLineDash([]);
+                    ctxAnim.stroke(step.path2D);
+                }
+            }
+        }
+
+        function animateStep(timestamp) {
+            if (!animationStartTime) animationStartTime = timestamp;
+            let elapsed = timestamp - animationStartTime;
+            let step = allSteps[currentStepIndex];
+            
+            drawUpToCurrent();
+
+            let progress = Math.min(1, elapsed / step.duration);
+            progress = easeInOutSine(progress);
+
+            if (step.isFill) {
+                ctxAnim.globalAlpha = progress;
+                if (step.type === 'stroke') {
+                    ctxAnim.strokeStyle = step.color;
+                    ctxAnim.lineWidth = step.lineWidth || 6;
+                    ctxAnim.lineCap = 'round';
+                    ctxAnim.lineJoin = 'round';
+                    ctxAnim.setLineDash([]);
+                    ctxAnim.stroke(step.path2D);
+                } else {
+                    ctxAnim.fillStyle = step.color;
+                    ctxAnim.fill(step.path2D);
+                }
+                ctxAnim.globalAlpha = 1;
+            } else {
+                ctxAnim.strokeStyle = step.color || '#2f3542';
+                ctxAnim.lineWidth = step.lineWidth || 6;
+                ctxAnim.lineCap = 'round';
+                ctxAnim.lineJoin = 'round';
+                
+                let currentLen = progress * step.length;
+                ctxAnim.setLineDash([step.length, step.length]);
+                ctxAnim.lineDashOffset = step.length - currentLen;
+                ctxAnim.stroke(step.path2D);
+            }
+
+            if (progress < 1) {
+                animFrameId = requestAnimationFrame(animateStep);
+            } else {
+                isAnimating = false;
+                currentStepIndex++;
+                updateStepUI();
+                
+                // Tamamlandığında konfeti fırlat
+                if (currentStepIndex === allSteps.length) {
+                    if(typeof confetti !== 'undefined') {
+                        confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 1000 });
                     }
                 }
-            });
+            }
+        }
 
-            animationFrameId = requestAnimationFrame(renderAnimation);
+        function nextStep() {
+            if (isAnimating) return;
+            if (currentStepIndex < allSteps.length) {
+                isAnimating = true;
+                animationStartTime = 0;
+                updateStepUI();
+                animFrameId = requestAnimationFrame(animateStep);
+            }
+        }
+
+        function prevStep() {
+            if (isAnimating || currentStepIndex === 0) return;
+            currentStepIndex--;
+            drawUpToCurrent();
+            updateStepUI();
+        }
+
+        function replayStep() {
+            if (isAnimating || currentStepIndex === 0) return;
+            currentStepIndex--;
+            nextStep();
+        }
+
+        function updateStepUI() {
+            document.getElementById('stepCounter').innerText = `Adım: ${currentStepIndex} / ${allSteps.length}`;
+            document.getElementById('btnPrev').disabled = (currentStepIndex === 0 || isAnimating);
+            document.getElementById('btnReplay').disabled = (currentStepIndex === 0 || isAnimating);
+            
+            const btnNext = document.getElementById('btnNext');
+            btnNext.disabled = isAnimating;
+            
+            if (currentStepIndex === allSteps.length) {
+                btnNext.innerText = "Bitti 🎉";
+                btnNext.disabled = true;
+            } else {
+                btnNext.innerText = "İleri ➡️";
+            }
         }
 
         // ==========================================
