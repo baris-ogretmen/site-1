@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sanal mBot - Pro Sınıf Modu</title>
+    <title>Sanal mBot - Kahraman Modu</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -20,7 +20,8 @@
             background-color: #f8fafc; 
         }
         
-        #robot { transition: top 0.5s ease-in-out, left 0.5s ease-in-out, transform 0.5s ease-in-out; }
+        #robot { transition: top 0.4s ease-out, left 0.4s ease-out, transform 0.4s ease-in-out; }
+        .rock { transition: top 0.3s ease-out, left 0.3s ease-out; }
         
         .eye { animation: blink 4s infinite; }
         @keyframes blink { 0%, 96%, 98% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
@@ -42,6 +43,13 @@
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
 
+        .punch-anim { animation: punch 0.3s ease-in-out; }
+        @keyframes punch {
+            0% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.1) translateY(-10px); }
+            100% { transform: scale(1) translateY(0); }
+        }
+
         /* Yeni Efektler */
         .black-hole {
             background: radial-gradient(circle, #000000 20%, #4c1d95 60%, transparent 80%);
@@ -53,23 +61,28 @@
             position: absolute;
             border-radius: 50%;
             pointer-events: none;
-            animation: explode 0.8s ease-out forwards;
+            animation: explode 0.6s ease-out forwards;
         }
         @keyframes explode {
             0% { transform: scale(1) translate(0, 0); opacity: 1; }
             100% { transform: scale(0) translate(var(--tx), var(--ty)); opacity: 0; }
         }
+
+        #flash-overlay { transition: opacity 0.1s; pointer-events: none; }
     </style>
 </head>
-<body class="text-slate-800 flex flex-col h-screen">
+<body class="text-slate-800 flex flex-col h-screen relative">
+
+    <!-- Kamera Flaş Efekti -->
+    <div id="flash-overlay" class="fixed inset-0 bg-white opacity-0 z-[10000]"></div>
 
     <header class="bg-cyan-800 text-white p-3 md:p-4 shadow-md flex justify-between items-center z-10">
         <div class="flex items-center gap-3">
             <div class="bg-gradient-to-br from-yellow-300 to-yellow-500 text-cyan-900 w-10 h-10 rounded-full flex items-center justify-center text-xl font-black shadow-[0_0_10px_rgba(253,224,71,0.6)]">
-                <i class="fa-solid fa-robot"></i>
+                <i class="fa-solid fa-bolt"></i>
             </div>
             <div>
-                <h1 class="text-lg md:text-xl font-black tracking-widest uppercase">Sanal mBot <span class="text-yellow-300">PRO</span></h1>
+                <h1 class="text-lg md:text-xl font-black tracking-widest uppercase">Sanal mBot <span class="text-yellow-300">KAHRAMAN</span></h1>
                 <p class="text-[10px] md:text-xs font-bold text-cyan-200">Barış Öğretmen • IoT Tabanlı Robotik</p>
             </div>
         </div>
@@ -98,7 +111,7 @@
                 <button id="btn-mode-remote" class="bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-100 p-6 rounded-2xl transition group shadow-md">
                     <i class="fa-solid fa-mobile-screen-button text-5xl text-emerald-500 mb-4 group-hover:scale-110 transition-transform"></i>
                     <h3 class="font-black text-xl text-emerald-900">Öğrenci Telefonu</h3>
-                    <p class="text-xs text-emerald-600 mt-2">Avatarını Seç ve Kodla</p>
+                    <p class="text-xs text-emerald-600 mt-2">Kameranı Aç ve Kodla</p>
                 </button>
             </div>
 
@@ -111,20 +124,34 @@
             </div>
         </div>
 
-        <!-- ÖĞRENCİ KİŞİSELLEŞTİRME EKRANI -->
+        <!-- ÖĞRENCİ KİŞİSELLEŞTİRME & FOTOĞRAF EKRANI -->
         <div id="screen-name-input" class="hidden w-full max-w-md mx-auto flex flex-col items-center bg-white p-6 rounded-3xl shadow-2xl border-4 border-emerald-100 text-center mt-6">
-            <h2 class="text-2xl font-black text-emerald-900 mb-1">Kimliğini Oluştur</h2>
-            <p class="text-sm text-gray-500 mb-6 font-bold">İsmini gir ve robotunun rengini seç.</p>
+            <h2 class="text-2xl font-black text-emerald-900 mb-1">Kahramanını Oluştur</h2>
+            <p class="text-sm text-gray-500 mb-4 font-bold">Kendi fotoğrafını çek ve robotuna ekle!</p>
             
-            <input type="text" id="input-student-name" placeholder="Adın ve Soyadın" class="w-full px-4 py-3 text-center text-xl font-bold rounded-lg border-2 border-gray-300 outline-none focus:border-emerald-500 mb-6" />
+            <!-- Avatar Upload Alanı -->
+            <div class="relative w-28 h-28 mb-4">
+                <input type="file" id="input-avatar" accept="image/*" capture="user" class="hidden" />
+                <div id="avatar-preview" class="w-full h-full rounded-full border-4 border-dashed border-emerald-400 bg-emerald-50 flex items-center justify-center cursor-pointer hover:bg-emerald-100 transition shadow-inner overflow-hidden" onclick="document.getElementById('input-avatar').click()">
+                    <div class="flex flex-col items-center text-emerald-500" id="avatar-placeholder">
+                        <i class="fa-solid fa-camera text-3xl"></i>
+                        <span class="text-[10px] font-bold mt-1">Foto Çek</span>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 right-0 bg-yellow-400 text-yellow-900 rounded-full w-8 h-8 flex items-center justify-center border-2 border-white shadow-md pointer-events-none">
+                    <i class="fa-solid fa-star text-xs"></i>
+                </div>
+            </div>
+
+            <input type="text" id="input-student-name" placeholder="Adın ve Soyadın" class="w-full px-4 py-3 text-center text-xl font-bold rounded-lg border-2 border-gray-300 outline-none focus:border-emerald-500 mb-4" />
             
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Robot Rengini Seç</p>
-            <div class="flex gap-3 mb-8 justify-center w-full">
-                <button class="color-select-btn w-12 h-12 rounded-full bg-blue-500 ring-4 ring-offset-2 ring-blue-500 transition-transform scale-110" data-color="blue" data-grad="from-blue-400 to-blue-600"></button>
-                <button class="color-select-btn w-12 h-12 rounded-full bg-red-500 ring-offset-2 hover:scale-110 transition-transform" data-color="red" data-grad="from-red-400 to-red-600"></button>
-                <button class="color-select-btn w-12 h-12 rounded-full bg-green-500 ring-offset-2 hover:scale-110 transition-transform" data-color="green" data-grad="from-green-400 to-green-600"></button>
-                <button class="color-select-btn w-12 h-12 rounded-full bg-purple-500 ring-offset-2 hover:scale-110 transition-transform" data-color="purple" data-grad="from-purple-400 to-purple-600"></button>
-                <button class="color-select-btn w-12 h-12 rounded-full bg-yellow-400 ring-offset-2 hover:scale-110 transition-transform" data-color="yellow" data-grad="from-yellow-300 to-yellow-500"></button>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Robot Gövde Rengi</p>
+            <div class="flex gap-3 mb-6 justify-center w-full">
+                <button class="color-select-btn w-10 h-10 rounded-full bg-blue-500 ring-4 ring-offset-2 ring-blue-500 transition-transform scale-110 shadow-md" data-color="blue" data-grad="from-blue-400 to-blue-600"></button>
+                <button class="color-select-btn w-10 h-10 rounded-full bg-red-500 ring-offset-2 hover:scale-110 transition-transform shadow-md" data-color="red" data-grad="from-red-400 to-red-600"></button>
+                <button class="color-select-btn w-10 h-10 rounded-full bg-green-500 ring-offset-2 hover:scale-110 transition-transform shadow-md" data-color="green" data-grad="from-green-400 to-green-600"></button>
+                <button class="color-select-btn w-10 h-10 rounded-full bg-purple-500 ring-offset-2 hover:scale-110 transition-transform shadow-md" data-color="purple" data-grad="from-purple-400 to-purple-600"></button>
+                <button class="color-select-btn w-10 h-10 rounded-full bg-slate-800 ring-offset-2 hover:scale-110 transition-transform shadow-md" data-color="black" data-grad="from-slate-700 to-slate-900"></button>
             </div>
 
             <button id="btn-start-remote" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black py-4 rounded-xl shadow-lg text-lg transition active:scale-95 uppercase tracking-wider"><i class="fa-solid fa-rocket mr-2"></i>Sınıfa Gir</button>
@@ -133,13 +160,12 @@
         <!-- AKILLI TAHTA EKRANI (ÖĞRETMEN) -->
         <div id="screen-board" class="hidden w-full h-full flex flex-col lg:flex-row gap-4">
             <div class="w-full lg:w-2/3 flex flex-col gap-4">
-                <!-- Arena -->
                 <div class="bg-white border-4 border-cyan-200 rounded-3xl shadow-xl flex flex-col overflow-hidden relative flex-1 min-h-[400px]">
                     <div class="bg-cyan-50 p-3 border-b-2 border-cyan-100 flex justify-between items-center z-10">
                         <div class="flex items-center gap-3">
                             <span class="font-bold text-cyan-800 uppercase tracking-wider"><i class="fa-solid fa-map-location-dot mr-2"></i>Görev Sahası</span>
-                            <select id="map-selector" class="text-xs font-bold bg-white border border-cyan-300 text-cyan-700 px-2 py-1 rounded outline-none cursor-pointer">
-                                <option value="0">Seviye 1: Temel Sürüş</option>
+                            <select id="map-selector" class="text-xs font-bold bg-white border border-cyan-300 text-cyan-700 px-2 py-1 rounded outline-none cursor-pointer shadow-sm">
+                                <option value="0">Seviye 1: Kırılabilir Engeller</option>
                                 <option value="1">Seviye 2: Asteroid Kuşağı</option>
                                 <option value="2">Seviye 3: Kara Delik Tuzağı</option>
                                 <option value="3">Seviye 4: Ölümcül Labirent</option>
@@ -157,23 +183,26 @@
 
                         <div id="robot" class="absolute flex flex-col items-center justify-center z-20 shadow-lg" style="width: 20%; height: 20%; top: 80%; left: 0%; transform: rotate(0deg);">
                             <div id="robot-body" class="w-4/5 h-4/5 bg-gradient-to-b from-blue-400 to-blue-600 rounded-xl border-2 border-slate-800 flex flex-col items-center justify-start pt-2 relative shadow-[inset_0_4px_4px_rgba(255,255,255,0.4)]">
-                                <div class="w-3/4 h-1/3 bg-gray-900 rounded-lg flex items-center justify-around px-1 shadow-inner border border-gray-700 relative">
+                                <!-- Öğrenci Profil Fotoğrafı (Eğer yüklendiyse buraya gelir) -->
+                                <div id="robot-avatar-img" class="absolute -top-3 w-8 h-8 rounded-full border-2 border-white shadow-lg bg-cover bg-center hidden z-30"></div>
+                                
+                                <div class="w-3/4 h-1/3 bg-gray-900 rounded-lg flex items-center justify-around px-1 shadow-inner border border-gray-700 relative z-10">
                                     <div id="left-eye" class="eye w-2.5 h-2.5 bg-cyan-300 rounded-full shadow-[0_0_5px_#67e8f9]"></div>
                                     <i id="sensor-wave" class="fa-solid fa-rss text-[8px] text-teal-400 absolute opacity-0 transition-opacity"></i>
                                     <div id="right-eye" class="eye w-2.5 h-2.5 bg-cyan-300 rounded-full shadow-[0_0_5px_#67e8f9]"></div>
                                 </div>
-                                <div class="absolute -left-1 top-1/4 w-1.5 h-1/2 bg-gray-800 rounded-l-md border border-gray-900"></div>
-                                <div class="absolute -right-1 top-1/4 w-1.5 h-1/2 bg-gray-800 rounded-r-md border border-gray-900"></div>
-                                <div id="robot-bumper" class="absolute bottom-1 w-1/2 h-1 bg-blue-900 rounded-full"></div>
+                                <div class="absolute -left-1 top-1/4 w-1.5 h-1/2 bg-gray-800 rounded-l-md border border-gray-900 z-10"></div>
+                                <div class="absolute -right-1 top-1/4 w-1.5 h-1/2 bg-gray-800 rounded-r-md border border-gray-900 z-10"></div>
+                                <div id="robot-bumper" class="absolute bottom-1 w-1/2 h-1 bg-blue-900 rounded-full z-10"></div>
                                 <!-- İsim Etiketi -->
-                                <div id="robot-name-tag" class="absolute -top-5 bg-black/70 text-white text-[8px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow opacity-0 transition-opacity">Öğrenci</div>
+                                <div id="robot-name-tag" class="absolute -top-6 bg-black/80 text-white text-[8px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow opacity-0 transition-opacity z-40">Öğrenci</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAHTA SAĞ PANEL (Öğretmen Kontrolleri) -->
+            <!-- TAHTA SAĞ PANEL -->
             <div class="w-full lg:w-1/3 flex flex-col gap-3">
                 <div class="bg-slate-800 text-white border-2 border-slate-700 rounded-2xl shadow-lg p-3 flex justify-between items-center text-center">
                     <div class="text-left">
@@ -185,15 +214,13 @@
                     </div>
                 </div>
 
-                <!-- LİDERLİK TABLOSU (Skorlar) -->
+                <!-- LİDERLİK TABLOSU -->
                 <div class="bg-gradient-to-b from-amber-100 to-orange-50 border-2 border-amber-200 rounded-2xl shadow-lg p-3 flex flex-col h-1/3 min-h-[120px]">
                     <h3 class="font-black text-amber-900 uppercase tracking-widest text-[10px] mb-2 border-b border-amber-300 pb-1 flex justify-between">
                         <span><i class="fa-solid fa-trophy text-amber-500 mr-1"></i> Liderlik Tablosu</span>
-                        <span class="text-amber-600 italic">Optimizasyon Skoru</span>
+                        <span class="text-amber-600 italic">Skor</span>
                     </h3>
-                    <div id="board-leaderboard" class="flex-1 overflow-y-auto flex flex-col gap-1 pr-1">
-                        <p class="text-center text-amber-700/50 text-[10px] mt-2 font-bold italic">Henüz görevi tamamlayan yok...</p>
-                    </div>
+                    <div id="board-leaderboard" class="flex-1 overflow-y-auto flex flex-col gap-1 pr-1"></div>
                 </div>
 
                 <!-- GELEN ALGORİTMALAR -->
@@ -205,46 +232,50 @@
         </div>
 
         <!-- TELEFON / KUMANDA EKRANI (ÖĞRENCİ) -->
-        <div id="screen-remote" class="hidden w-full max-w-md mx-auto flex flex-col gap-3 h-full pb-2">
-            <div id="remote-header-bg" class="bg-blue-100 border-2 border-blue-300 text-blue-900 rounded-2xl p-3 flex justify-between items-center shadow-sm transition-colors">
-                <div>
-                    <h3 class="font-black text-sm uppercase flex items-center gap-2">
-                        <div id="remote-avatar-color" class="w-3 h-3 rounded-full bg-blue-500 shadow-sm border border-black/20"></div>
-                        <span id="remote-student-name-display">Öğrenci</span>
-                    </h3>
-                    <p class="text-[10px] font-bold mt-1 opacity-70">Oda: <span class="code-display">---</span></p>
+        <div id="screen-remote" class="hidden w-full max-w-md mx-auto flex flex-col gap-2 h-full pb-2">
+            <div id="remote-header-bg" class="bg-blue-100 border-2 border-blue-300 text-blue-900 rounded-2xl p-2 flex justify-between items-center shadow-sm transition-colors">
+                <div class="flex items-center gap-2">
+                    <div id="remote-avatar-mini" class="w-8 h-8 rounded-full bg-blue-500 shadow-md border-2 border-white bg-cover bg-center"></div>
+                    <div>
+                        <h3 class="font-black text-xs uppercase" id="remote-student-name-display">Öğrenci</h3>
+                        <p class="text-[9px] font-bold opacity-70">Oda: <span class="code-display">---</span></p>
+                    </div>
                 </div>
                 <div class="flex flex-col items-end">
-                    <span id="my-score-display" class="text-xs font-black bg-white/50 px-2 py-0.5 rounded-full mb-1"><i class="fa-solid fa-star text-yellow-500"></i> Puan: 0</span>
-                    <button id="btn-remote-clear" class="text-[10px] font-bold text-red-600 bg-white/50 px-2 py-1 rounded shadow-sm"><i class="fa-solid fa-eraser"></i> Kodu Sil</button>
+                    <span id="my-score-display" class="text-[10px] font-black bg-white/60 px-2 py-0.5 rounded-full mb-1"><i class="fa-solid fa-star text-yellow-500"></i> 0</span>
+                    <button id="btn-remote-clear" class="text-[9px] font-bold text-red-600 bg-white/60 px-2 py-1 rounded shadow-sm"><i class="fa-solid fa-eraser"></i> Sil</button>
                 </div>
             </div>
 
-            <div class="bg-slate-50 border-2 border-slate-200 rounded-3xl shadow-inner p-2 flex-1 flex flex-col min-h-[100px] relative">
-                <div id="remote-code-sequence" class="flex-1 overflow-y-auto flex flex-col gap-1 max-h-[30vh]"></div>
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-3xl shadow-inner p-2 flex-1 flex flex-col min-h-[90px] relative">
+                <div id="remote-code-sequence" class="flex-1 overflow-y-auto flex flex-col gap-1 max-h-[25vh]"></div>
                 <button id="btn-remote-run" class="mt-2 w-full bg-gradient-to-r from-indigo-600 to-indigo-800 text-white py-3 rounded-xl font-black text-sm tracking-wider shadow-lg active:scale-95 transition-all">
                     <i class="fa-solid fa-paper-plane mr-1"></i> Tahtaya Gönder
                 </button>
             </div>
 
-            <!-- GELİŞMİŞ KOMUT PANELİ -->
+            <!-- EFSANE KOMUT PANELİ -->
             <div class="bg-white border-2 border-slate-200 rounded-3xl shadow-lg p-2">
-                <h4 class="text-[9px] font-black text-slate-400 uppercase text-center mb-1 tracking-widest">Temel Komutlar</h4>
+                
+                <h4 class="text-[9px] font-black text-slate-400 uppercase text-center mb-1 tracking-widest border-b pb-1">Hareket</h4>
                 <div class="grid grid-cols-4 gap-1 mb-2">
-                    <button class="cmd-btn code-block bg-blue-500 text-white py-2 rounded-lg font-bold border-b-2 border-blue-700 text-[10px] flex flex-col items-center gap-1 col-span-2" data-cmd="forward"><i class="fa-solid fa-arrow-up text-sm"></i>İleri 1x</button>
-                    <button class="cmd-btn code-block bg-blue-600 text-white py-2 rounded-lg font-bold border-b-2 border-blue-800 text-[10px] flex flex-col items-center gap-1" data-cmd="forward2"><i class="fa-solid fa-angles-up text-sm text-blue-200"></i>İleri 2x</button>
-                    <button class="cmd-btn code-block bg-blue-700 text-white py-2 rounded-lg font-bold border-b-2 border-blue-900 text-[10px] flex flex-col items-center gap-1" data-cmd="forward3"><i class="fa-solid fa-jet-fighter-up text-sm text-blue-200"></i>İleri 3x</button>
-                    
-                    <button class="cmd-btn code-block bg-orange-500 text-white py-2 rounded-lg font-bold border-b-2 border-orange-700 text-[10px] flex flex-col items-center gap-1 col-span-2" data-cmd="turnLeft"><i class="fa-solid fa-rotate-left text-sm"></i>Sola Dön</button>
-                    <button class="cmd-btn code-block bg-orange-400 text-white py-2 rounded-lg font-bold border-b-2 border-orange-600 text-[10px] flex flex-col items-center gap-1 col-span-2" data-cmd="turnRight"><i class="fa-solid fa-rotate-right text-sm"></i>Sağa Dön</button>
+                    <button class="cmd-btn code-block bg-blue-500 text-white py-1.5 rounded-lg font-bold border-b-2 border-blue-700 text-[10px] flex flex-col items-center gap-1 col-span-2" data-cmd="forward"><i class="fa-solid fa-arrow-up text-sm"></i>İleri Git</button>
+                    <button class="cmd-btn code-block bg-orange-500 text-white py-1.5 rounded-lg font-bold border-b-2 border-orange-700 text-[10px] flex flex-col items-center gap-1" data-cmd="turnLeft"><i class="fa-solid fa-rotate-left text-sm"></i>Sola Dön</button>
+                    <button class="cmd-btn code-block bg-orange-400 text-white py-1.5 rounded-lg font-bold border-b-2 border-orange-600 text-[10px] flex flex-col items-center gap-1" data-cmd="turnRight"><i class="fa-solid fa-rotate-right text-sm"></i>Sağa Dön</button>
                 </div>
                 
-                <h4 class="text-[9px] font-black text-slate-400 uppercase text-center mb-1 tracking-widest">Eylemler & Sensör</h4>
+                <h4 class="text-[9px] font-black text-amber-500 uppercase text-center mb-1 tracking-widest border-b pb-1"><i class="fa-solid fa-bolt"></i> Kahraman Güçleri</h4>
+                <div class="grid grid-cols-4 gap-1 mb-2">
+                    <button class="cmd-btn code-block bg-rose-600 text-white py-2 rounded-lg font-bold border-b-2 border-rose-800 text-[9px] flex flex-col items-center gap-1 col-span-2 shadow-inner" data-cmd="smash"><i class="fa-solid fa-hand-fist text-base text-rose-200"></i>Duvar Kır</button>
+                    <button class="cmd-btn code-block bg-amber-600 text-white py-2 rounded-lg font-bold border-b-2 border-amber-800 text-[9px] flex flex-col items-center gap-1 col-span-2 shadow-inner" data-cmd="kick"><i class="fa-solid fa-shoe-prints text-base text-amber-200"></i>Tekme At</button>
+                </div>
+
+                <h4 class="text-[9px] font-black text-slate-400 uppercase text-center mb-1 tracking-widest border-b pb-1">Araçlar & Sensör</h4>
                 <div class="grid grid-cols-4 gap-1">
-                    <button class="cmd-btn code-block bg-rose-500 text-white py-2 rounded-lg font-bold border-b-2 border-rose-700 text-[10px] flex flex-col items-center gap-1" data-cmd="lightRed"><i class="fa-solid fa-circle text-[10px] text-rose-200"></i>Kırmızı</button>
-                    <button class="cmd-btn code-block bg-emerald-500 text-white py-2 rounded-lg font-bold border-b-2 border-emerald-700 text-[10px] flex flex-col items-center gap-1" data-cmd="lightGreen"><i class="fa-solid fa-circle text-[10px] text-emerald-200"></i>Yeşil</button>
-                    <button class="cmd-btn code-block bg-purple-500 text-white py-2 rounded-lg font-bold border-b-2 border-purple-700 text-[10px] flex flex-col items-center gap-1" data-cmd="sound"><i class="fa-solid fa-volume-high text-[10px]"></i>Ses</button>
-                    <button class="cmd-btn code-block bg-teal-500 text-white py-2 rounded-lg font-bold border-b-2 border-teal-700 text-[10px] flex flex-col items-center gap-1" data-cmd="sensorCheck"><i class="fa-solid fa-wave-square text-[10px] text-teal-200"></i>Sensör</button>
+                    <button class="cmd-btn code-block bg-teal-500 text-white py-1.5 rounded-lg font-bold border-b-2 border-teal-700 text-[9px] flex flex-col items-center gap-1" data-cmd="sensorCheck"><i class="fa-solid fa-wave-square text-[10px]"></i>Sensör</button>
+                    <button class="cmd-btn code-block bg-emerald-500 text-white py-1.5 rounded-lg font-bold border-b-2 border-emerald-700 text-[9px] flex flex-col items-center gap-1" data-cmd="lightGreen"><i class="fa-solid fa-circle text-[10px]"></i>Y. Işık</button>
+                    <button class="cmd-btn code-block bg-purple-500 text-white py-1.5 rounded-lg font-bold border-b-2 border-purple-700 text-[9px] flex flex-col items-center gap-1" data-cmd="sound"><i class="fa-solid fa-volume-high text-[10px]"></i>Ses</button>
+                    <button class="cmd-btn code-block bg-slate-700 text-white py-1.5 rounded-lg font-bold border-b-2 border-slate-900 text-[9px] flex flex-col items-center gap-1" data-cmd="takePhoto"><i class="fa-solid fa-camera text-[10px] text-yellow-300"></i>Foto Çek</button>
                 </div>
             </div>
         </div>
@@ -255,7 +286,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Yapılandırması
+        // Firebase
         let firebaseConfig;
         try {
             firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -268,12 +299,12 @@
             };
         } catch(e) { console.error(e); }
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'baris-ogretmen-app-pro';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'baris-ogretmen-app-hero';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Global Değişkenler
+        // Durumlar
         let currentUser = null;
         let roomCode = "";
         let docRef = null;
@@ -281,29 +312,30 @@
         let isRobotRunning = false;
         let myRole = ""; 
         let myName = ""; 
-        let myColorData = { id: 'blue', grad: 'from-blue-400 to-blue-600', hex: '#3b82f6', bgClass: 'bg-blue-100', borderClass: 'border-blue-300', textClass: 'text-blue-900' };
+        let myBase64Avatar = null; // Öğrencinin yüklediği fotoğraf
+        let myColorData = { id: 'blue', grad: 'from-blue-400 to-blue-600', hex: '#3b82f6', bgClass: 'bg-blue-100', borderClass: 'border-blue-300', textClass: 'text-blue-900', bumper: 'bg-blue-900' };
         let selectedStudentName = null;
 
-        // Harita Verileri (Kara Delikler Eklendi)
+        // Haritalar (Kırılabilir objeler eklendi)
         const levels = [
-            { id: 0, maxScoreBlocks: 4, startX: 0, startY: 4, startAng: 0, rocks: [], holes: [], target: {x: 4, y: 0} }, 
-            { id: 1, maxScoreBlocks: 6, startX: 0, startY: 4, startAng: 0, rocks: [{x:2, y:4}, {x:2, y:3}, {x:2, y:2}, {x:3, y:1}], holes: [], target: {x: 4, y: 4} }, 
-            { id: 2, maxScoreBlocks: 8, startX: 2, startY: 4, startAng: 0, rocks: [{x:0, y:2}, {x:1, y:2}, {x:3, y:2}, {x:4, y:2}], holes: [{x:2, y:2}], target: {x: 2, y: 0} },
-            { id: 3, maxScoreBlocks: 10, startX: 0, startY: 4, startAng: 0, rocks: [{x:1,y:4}, {x:1,y:2}, {x:3,y:3}, {x:3,y:1}, {x:4,y:1}], holes: [{x:2,y:1}, {x:4,y:3}], target: {x:4, y:0} }
+            { id: 0, startX: 0, startY: 4, startAng: 0, rocks: [{x:1, y:4}, {x:3, y:4}, {x:4, y:2}], holes: [], target: {x: 4, y: 0} }, 
+            { id: 1, startX: 0, startY: 4, startAng: 0, rocks: [{x:2, y:4}, {x:2, y:3}, {x:2, y:2}, {x:3, y:1}], holes: [], target: {x: 4, y: 4} }, 
+            { id: 2, startX: 2, startY: 4, startAng: 0, rocks: [{x:0, y:2}, {x:1, y:2}, {x:3, y:2}, {x:4, y:2}], holes: [{x:2, y:2}], target: {x: 2, y: 0} },
+            { id: 3, startX: 0, startY: 4, startAng: 0, rocks: [{x:1,y:4}, {x:1,y:2}, {x:3,y:3}, {x:3,y:1}, {x:4,y:1}], holes: [{x:2,y:1}, {x:4,y:3}], target: {x:4, y:0} }
         ];
         let currentLevel = levels[0];
+        let runtimeRocks = []; // O anki çalışan haritadaki meteorlar (Kırılabilir/İtilebilir)
 
-        // Komut Sözlüğü (Çarpanlar Eklendi)
+        // Yeni Komutlar
         const cmdUI = {
             'forward':  { label: 'İleri Git', icon: 'fa-arrow-up', color: 'bg-blue-500', bcolor: 'border-blue-700', steps: 1, type: 'move' },
-            'forward2': { label: 'İleri 2x', icon: 'fa-angles-up', color: 'bg-blue-600', bcolor: 'border-blue-800', steps: 2, type: 'move' },
-            'forward3': { label: 'İleri 3x', icon: 'fa-jet-fighter-up', color: 'bg-blue-700', bcolor: 'border-blue-900', steps: 3, type: 'move' },
-            'backward': { label: 'Geri Gel', icon: 'fa-arrow-down', color: 'bg-blue-400', bcolor: 'border-blue-600', steps: -1, type: 'move' },
             'turnRight':{ label: 'Sağa Dön', icon: 'fa-rotate-right', color: 'bg-orange-500', bcolor: 'border-orange-700', type: 'action' },
             'turnLeft': { label: 'Sola Dön', icon: 'fa-rotate-left', color: 'bg-orange-400', bcolor: 'border-orange-600', type: 'action' },
-            'lightRed': { label: 'Kırmızı Işık', icon: 'fa-circle', color: 'bg-rose-500', bcolor: 'border-rose-700', type: 'action' },
+            'smash':    { label: 'Duvar Kır', icon: 'fa-hand-fist', color: 'bg-rose-600', bcolor: 'border-rose-800', type: 'hero' },
+            'kick':     { label: 'Tekme At', icon: 'fa-shoe-prints', color: 'bg-amber-600', bcolor: 'border-amber-800', type: 'hero' },
+            'takePhoto':{ label: 'Foto Çek', icon: 'fa-camera', color: 'bg-slate-700', bcolor: 'border-slate-900', type: 'hero' },
             'lightGreen':{label: 'Yeşil Işık', icon: 'fa-circle', color: 'bg-emerald-500', bcolor: 'border-emerald-700', type: 'action' },
-            'sound':    { label: 'Bip Sesi', icon: 'fa-volume-high', color: 'bg-purple-500', bcolor: 'border-purple-700', type: 'action' },
+            'sound':    { label: 'Ses Çıkar', icon: 'fa-volume-high', color: 'bg-purple-500', bcolor: 'border-purple-700', type: 'action' },
             'sensorCheck':{label: 'Sensör', icon: 'fa-wave-square', color: 'bg-teal-500', bcolor: 'border-teal-700', type: 'action'}
         };
 
@@ -312,26 +344,33 @@
             'red': { grad: 'from-red-400 to-red-600', hex: '#ef4444', bgClass: 'bg-red-100', borderClass: 'border-red-300', textClass: 'text-red-900', bumper: 'bg-red-900' },
             'green': { grad: 'from-green-400 to-green-600', hex: '#10b981', bgClass: 'bg-green-100', borderClass: 'border-green-300', textClass: 'text-green-900', bumper: 'bg-green-900' },
             'purple': { grad: 'from-purple-400 to-purple-600', hex: '#8b5cf6', bgClass: 'bg-purple-100', borderClass: 'border-purple-300', textClass: 'text-purple-900', bumper: 'bg-purple-900' },
-            'yellow': { grad: 'from-yellow-300 to-yellow-500', hex: '#f59e0b', bgClass: 'bg-yellow-100', borderClass: 'border-yellow-400', textClass: 'text-yellow-900', bumper: 'bg-yellow-700' }
+            'black': { grad: 'from-slate-700 to-slate-900', hex: '#334155', bgClass: 'bg-slate-200', borderClass: 'border-slate-400', textClass: 'text-slate-900', bumper: 'bg-black' }
         };
 
-        // --- BİLDİRİM & SES ---
+        // --- YARDIMCI FONKSİYONLAR ---
         function showMessage(msg, isError = false) {
             let msgBox = document.getElementById('global-toast');
-            if (!msgBox) {
-                msgBox = document.createElement('div'); msgBox.id = 'global-toast'; document.body.appendChild(msgBox);
-            }
+            if (!msgBox) { msgBox = document.createElement('div'); msgBox.id = 'global-toast'; document.body.appendChild(msgBox); }
             msgBox.innerHTML = msg;
             msgBox.className = `fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full font-bold text-sm shadow-2xl transition-all duration-300 z-[9999] text-white flex items-center gap-2 ${isError ? 'bg-rose-600' : 'bg-indigo-600'}`;
             void msgBox.offsetWidth; msgBox.style.opacity = '1'; msgBox.style.transform = 'translate(-50%, 0)';
             setTimeout(() => { msgBox.style.opacity = '0'; msgBox.style.transform = 'translate(-50%, -20px)'; }, 3000);
         }
 
+        // Flaş Efekti
+        function triggerFlash() {
+            const flash = document.getElementById('flash-overlay');
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, 150);
+        }
+
+        // Ses Motoru
         function playTone(type) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator(); const gain = ctx.createGain();
                 osc.connect(gain); gain.connect(ctx.destination);
+                
                 if (type === 'beep') {
                     osc.type = 'square'; osc.frequency.setValueAtTime(800, ctx.currentTime);
                     gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.15);
@@ -342,38 +381,67 @@
                     osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, ctx.currentTime);
                     osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
                     gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.4);
-                } else if (type === 'hole') {
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(300, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.8);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime); gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
-                    osc.start(); osc.stop(ctx.currentTime + 0.8);
+                } else if (type === 'smash') {
+                    // Duvar Kırma Sesi (Kalın Noise)
+                    osc.type = 'square'; osc.frequency.setValueAtTime(100, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(); osc.stop(ctx.currentTime + 0.2);
+                } else if (type === 'camera') {
+                    // Flaş Sesi (Kısa yüksek frekans)
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(1200, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start(); osc.stop(ctx.currentTime + 0.1);
                 }
             } catch(e) {}
         }
 
-        // --- PARTİKÜL EFEKTLERİ ---
         function createParticles(x, y, type) {
             const container = document.getElementById('particle-container');
-            const colors = type === 'success' ? ['#fde047', '#34d399', '#60a5fa', '#f472b6'] : ['#ef4444', '#f97316', '#fbbf24'];
-            const count = type === 'success' ? 30 : 15;
+            const colors = type === 'success' ? ['#fde047', '#34d399', '#60a5fa'] : ['#64748b', '#94a3b8', '#cbd5e1']; // Kaya parçaları
+            const count = type === 'success' ? 30 : 20;
             
             for(let i=0; i<count; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
+                const p = document.createElement('div'); p.className = 'particle';
                 const size = Math.random() * 8 + 4;
                 p.style.width = `${size}px`; p.style.height = `${size}px`;
                 p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                 p.style.left = `calc(${x * 20}% + 10%)`; p.style.top = `calc(${y * 20}% + 10%)`;
                 
-                const angle = Math.random() * Math.PI * 2;
-                const distance = Math.random() * 60 + 20;
-                p.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
-                p.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
-                
-                container.appendChild(p);
-                setTimeout(() => p.remove(), 800);
+                const angle = Math.random() * Math.PI * 2; const distance = Math.random() * 50 + 20;
+                p.style.setProperty('--tx', `${Math.cos(angle) * distance}px`); p.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                container.appendChild(p); setTimeout(() => p.remove(), 600);
             }
         }
+
+        // --- FOTOĞRAF KÜÇÜLTME (Avatar) ---
+        document.getElementById('input-avatar').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 100; canvas.height = 100; // Firebase limitlerine takılmamak için küçük
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Center crop
+                    const size = Math.min(img.width, img.height);
+                    const sx = (img.width - size) / 2;
+                    const sy = (img.height - size) / 2;
+                    ctx.drawImage(img, sx, sy, size, size, 0, 0, 100, 100);
+                    
+                    myBase64Avatar = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    document.getElementById('avatar-placeholder').style.display = 'none';
+                    document.getElementById('avatar-preview').style.backgroundImage = `url(${myBase64Avatar})`;
+                    document.getElementById('avatar-preview').style.borderStyle = 'solid';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
 
         // --- KİMLİK DOĞRULAMA ---
         const initAuth = async () => {
@@ -382,9 +450,7 @@
                 else await signInAnonymously(auth);
             } catch (error) { showMessage("Bağlantı hatası.", true); }
         };
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user; if (user) checkUrlForRoom();
-        });
+        onAuthStateChanged(auth, (user) => { currentUser = user; if (user) checkUrlForRoom(); });
         initAuth();
 
         function checkUrlForRoom() {
@@ -416,18 +482,24 @@
             if (name.length < 2) return showMessage("Lütfen ismini gir!", true);
             myName = name;
             
-            // Kumanda UI renklerini güncelle
             const header = document.getElementById('remote-header-bg');
-            header.className = `${myColorData.bgClass} border-2 ${myColorData.borderClass} ${myColorData.textClass} rounded-2xl p-3 flex justify-between items-center shadow-sm transition-colors`;
-            document.getElementById('remote-avatar-color').style.backgroundColor = myColorData.hex;
+            header.className = `${myColorData.bgClass} border-2 ${myColorData.borderClass} ${myColorData.textClass} rounded-2xl p-2 flex justify-between items-center shadow-sm transition-colors`;
+            
+            const miniAvatar = document.getElementById('remote-avatar-mini');
+            if (myBase64Avatar) {
+                miniAvatar.style.backgroundImage = `url(${myBase64Avatar})`;
+                miniAvatar.style.backgroundColor = 'transparent';
+            } else {
+                miniAvatar.style.backgroundColor = myColorData.hex;
+            }
             
             document.getElementById('remote-student-name-display').textContent = myName;
             document.getElementById('screen-name-input').classList.add('hidden');
             document.getElementById('screen-remote').classList.remove('hidden');
-            showMessage(`Hoş geldin, ${myName}!`);
+            showMessage(`Kahraman ${myName} savaşa hazır!`);
         });
 
-        // --- ODA YÖNETİMİ ---
+        // --- ODA YÖNETİMİ (TAHTA) ---
         async function createRoomAsBoard() {
             if (!currentUser) return showMessage("Bağlanıyor...", true);
             document.getElementById('board-loading').classList.remove('hidden');
@@ -444,12 +516,13 @@
             docRef = doc(db, 'artifacts', appId, 'public', 'data', 'robot_rooms', roomCode);
             
             try {
-                // Object tabanlı submissions
                 await setDoc(docRef, { mapLevel: 0, submissions: {}, triggerClear: 0, timestamp: Date.now() });
                 
                 document.getElementById('screen-selection').classList.add('hidden');
                 document.getElementById('screen-board').classList.remove('hidden');
-                renderMap();
+                
+                runtimeRocks = JSON.parse(JSON.stringify(currentLevel.rocks)); // Deep copy rocks
+                renderMapRuntime();
 
                 onSnapshot(docRef, (snap) => {
                     if(!snap.exists()) return;
@@ -458,7 +531,7 @@
                     if (data.mapLevel !== undefined && data.mapLevel !== currentLevel.id) {
                         currentLevel = levels[data.mapLevel];
                         document.getElementById('map-selector').value = data.mapLevel;
-                        boardResetRobot(); renderMap();
+                        boardResetRobot();
                     }
 
                     const submissions = data.submissions || {};
@@ -475,6 +548,7 @@
             finally { document.getElementById('board-loading').classList.add('hidden'); }
         }
 
+        // --- ODA YÖNETİMİ (ÖĞRENCİ) ---
         async function joinRoomAsRemote(code) {
             if (!currentUser) return showMessage("Bağlanıyor...", true);
             myRole = "remote"; roomCode = code;
@@ -490,21 +564,15 @@
                 }
 
                 const data = snap.data();
-                
-                // Öğrenci kendi skorunu/durumunu kontrol etsin
                 if (myName && data.submissions && data.submissions[myName]) {
                     const myData = data.submissions[myName];
-                    document.getElementById('my-score-display').innerHTML = `<i class="fa-solid fa-star text-yellow-500"></i> Puan: ${myData.score || 0}`;
-                    if (myData.status === 'success' && !window.hasCelebrated) {
-                        showMessage("<i class='fa-solid fa-trophy'></i> Tebrikler! Puan kazandın.");
-                        window.hasCelebrated = true;
-                    }
+                    document.getElementById('my-score-display').innerHTML = `<i class="fa-solid fa-star text-yellow-500"></i> ${myData.score || 0}`;
                 }
 
                 if (data.triggerClear > 0 && data.triggerClear > (window.lastRemoteClearTime || 0)) {
                     window.lastRemoteClearTime = data.triggerClear;
                     if (myRole === "remote" && myName !== "") {
-                        localProgram = []; window.hasCelebrated = false;
+                        localProgram = [];
                         renderSequenceToHTML(localProgram, document.getElementById('remote-code-sequence'), false);
                         showMessage("<i class='fa-solid fa-rotate-left'></i> Yeni görev başladı!");
                     }
@@ -512,12 +580,11 @@
             });
         }
 
-        // --- KUMANDA & TAHTA ETKİLEŞİMLERİ ---
+        // --- KUMANDA ETKİLEŞİMLERİ ---
         document.querySelectorAll('.cmd-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (myRole !== "remote") return;
-                // Maksimum 20 komut sınırı
-                if (localProgram.length >= 20) return showMessage("Hafıza dolu! (Max 20)", true);
+                if (localProgram.length >= 25) return showMessage("Hafıza dolu! (Max 25)", true);
                 const cmd = e.currentTarget.getAttribute('data-cmd');
                 localProgram.push(cmd);
                 renderSequenceToHTML(localProgram, document.getElementById('remote-code-sequence'), false);
@@ -537,13 +604,20 @@
             if (!docRef) return;
             if(localProgram.length === 0) return showMessage("Lütfen komut ekleyin!", true);
             try {
-                window.hasCelebrated = false; // yeni gönderim
-                const payload = { code: localProgram, color: myColorData.id, status: 'waiting', score: 0, timestamp: Date.now() };
+                const payload = { 
+                    code: localProgram, 
+                    color: myColorData.id, 
+                    avatar: myBase64Avatar || null, // Fotoğrafı yolla
+                    status: 'waiting', 
+                    score: 0, 
+                    timestamp: Date.now() 
+                };
                 await updateDoc(docRef, { [`submissions.${myName}`]: payload });
                 showMessage("<i class='fa-solid fa-paper-plane'></i> Algoritman Tahtaya Gönderildi!");
-            } catch(e) { showMessage("Gönderim hatası!", true); }
+            } catch(e) { showMessage("Gönderim hatası (Dosya büyük olabilir)!", true); }
         });
 
+        // --- TAHTA ETKİLEŞİMLERİ ---
         document.getElementById('btn-board-reset').addEventListener('click', async () => {
             if(docRef) {
                 await updateDoc(docRef, { submissions: {}, triggerClear: Date.now() });
@@ -556,7 +630,6 @@
         document.getElementById('map-selector').addEventListener('change', async (e) => {
             const newLevelId = parseInt(e.target.value);
             currentLevel = levels[newLevelId];
-            boardResetRobot(); renderMap();
             if(docRef) {
                 await updateDoc(docRef, { mapLevel: newLevelId, submissions: {}, triggerClear: Date.now() });
                 selectedStudentName = null;
@@ -569,49 +642,49 @@
         });
 
         // --- RENDER FONKSİYONLARI ---
-        function applyRobotAppearance(colorId, studentName) {
+        function applyRobotAppearance(colorId, studentName, avatarBase64) {
             const colors = colorMap[colorId] || colorMap['blue'];
             document.getElementById('robot-body').className = `w-4/5 h-4/5 bg-gradient-to-b ${colors.grad} rounded-xl border-2 border-slate-800 flex flex-col items-center justify-start pt-2 relative shadow-[inset_0_4px_4px_rgba(255,255,255,0.4)] transition-all`;
-            document.getElementById('robot-bumper').className = `absolute bottom-1 w-1/2 h-1 ${colors.bumper} rounded-full`;
+            document.getElementById('robot-bumper').className = `absolute bottom-1 w-1/2 h-1 ${colors.bumper} rounded-full z-10`;
             
             const tag = document.getElementById('robot-name-tag');
-            if (studentName) {
-                tag.textContent = studentName; tag.style.opacity = '1';
-            } else { tag.style.opacity = '0'; }
+            if (studentName) { tag.textContent = studentName; tag.style.opacity = '1'; } 
+            else { tag.style.opacity = '0'; }
+
+            const avatarImg = document.getElementById('robot-avatar-img');
+            if (avatarBase64) {
+                avatarImg.style.backgroundImage = `url(${avatarBase64})`;
+                avatarImg.classList.remove('hidden');
+            } else {
+                avatarImg.classList.add('hidden');
+            }
         }
 
         function renderTeacherPanels(submissions) {
             const listContainer = document.getElementById('board-student-list');
             const leaderContainer = document.getElementById('board-leaderboard');
-            
             const entries = Object.entries(submissions);
+            
             if(entries.length === 0) {
                 listContainer.innerHTML = '<p class="text-center text-slate-400 text-[10px] mt-4 font-bold italic">Sınıftan algoritma bekleniyor...</p>';
-                leaderContainer.innerHTML = '<p class="text-center text-amber-700/50 text-[10px] mt-2 font-bold italic">Henüz görevi tamamlayan yok...</p>';
+                leaderContainer.innerHTML = '<p class="text-center text-amber-700/50 text-[10px] mt-2 font-bold italic">Henüz skoru olan yok.</p>';
                 return;
             }
             
             listContainer.innerHTML = ''; leaderContainer.innerHTML = '';
             
-            // Liderlik Tablosunu Doldur (Sadece başarılı olanlar, skora göre)
             const successful = entries.filter(([n, d]) => d.status === 'success').sort((a, b) => b[1].score - a[1].score);
             if (successful.length > 0) {
                 successful.forEach(([name, data], idx) => {
                     const row = document.createElement('div');
                     let medal = `<span class="font-bold text-slate-400 w-4">${idx+1}.</span>`;
                     if(idx===0) medal = `<i class="fa-solid fa-medal text-yellow-500 w-4"></i>`;
-                    else if(idx===1) medal = `<i class="fa-solid fa-medal text-slate-400 w-4"></i>`;
-                    else if(idx===2) medal = `<i class="fa-solid fa-medal text-amber-600 w-4"></i>`;
-                    
                     row.className = "flex justify-between items-center text-[10px] font-bold text-amber-900 bg-white/50 px-2 py-1 rounded mb-1";
-                    row.innerHTML = `<div class="flex items-center gap-1">${medal} <span>${name}</span></div> <span class="bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">${data.score} Puan</span>`;
+                    row.innerHTML = `<div class="flex items-center gap-1">${medal} <span>${name}</span></div> <span class="bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">${data.score} P</span>`;
                     leaderContainer.appendChild(row);
                 });
-            } else {
-                leaderContainer.innerHTML = '<p class="text-center text-amber-700/50 text-[10px] mt-2 font-bold italic">Henüz görevi tamamlayan yok...</p>';
-            }
+            } else { leaderContainer.innerHTML = '<p class="text-center text-amber-700/50 text-[10px] mt-2 font-bold italic">Henüz skoru olan yok.</p>'; }
 
-            // Bekleyen / Tüm Listeyi Doldur (Sıralama: en son gönderen üstte)
             entries.sort((a,b) => (b[1].timestamp || 0) - (a[1].timestamp || 0)).forEach(([name, data]) => {
                 const btn = document.createElement('button');
                 const c = colorMap[data.color] || colorMap['blue'];
@@ -620,9 +693,12 @@
                 btn.className = `text-left bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg text-xs font-bold flex justify-between items-center transition-colors shadow-sm w-full`;
                 if (selectedStudentName === name) btn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
 
+                let avatarHtml = `<div class="w-4 h-4 rounded-full ${c.bgClass} border ${c.borderClass}"></div>`;
+                if(data.avatar) avatarHtml = `<div class="w-5 h-5 rounded-full bg-cover bg-center border border-slate-300" style="background-image:url(${data.avatar})"></div>`;
+
                 btn.innerHTML = `
                     <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full ${c.bgClass} border ${c.borderClass}"></div>
+                        ${avatarHtml}
                         <span class="text-slate-700">${name}</span>
                     </div> 
                     <div class="flex items-center gap-2">
@@ -633,9 +709,9 @@
                 btn.onclick = () => {
                     selectedStudentName = name;
                     localProgram = data.code; 
-                    applyRobotAppearance(data.color, name);
+                    applyRobotAppearance(data.color, name, data.avatar);
                     document.getElementById('btn-board-run-selected').classList.remove('hidden');
-                    boardResetRobot(false); // Rengi sıfırlama
+                    boardResetRobot(false); 
                     
                     Array.from(listContainer.children).forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
                     btn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
@@ -646,15 +722,11 @@
 
         function renderSequenceToHTML(progArray, container, isBoard) {
             container.innerHTML = '';
-            if (progArray.length === 0) {
-                container.innerHTML = `<p class="text-center text-slate-400 text-[10px] mt-4 font-bold">Komut eklenmedi.</p>`;
-                return;
-            }
+            if (progArray.length === 0) return;
             progArray.forEach((cmd, idx) => {
                 const info = cmdUI[cmd];
                 const block = document.createElement('div');
-                block.className = `${info.color} text-white px-2 py-1.5 rounded text-[10px] font-bold shadow-sm border-b-2 ${info.bcolor} flex justify-between items-center animate-[fade-in_0.2s]`;
-                block.id = `block-${isBoard?'board':'remote'}-${idx}`;
+                block.className = `${info.color} text-white px-2 py-1.5 rounded text-[10px] font-bold shadow-sm border-b-2 ${info.bcolor} flex justify-between items-center animate-[fade-in_0.1s]`;
                 let closeBtn = isBoard ? '' : `<i class="fa-solid fa-xmark hover:text-red-200 cursor-pointer p-1" onclick="window.removeCommandFromRemote(${idx})"></i>`;
                 block.innerHTML = `
                     <div class="flex items-center gap-2">
@@ -675,17 +747,21 @@
         const rightEye = document.getElementById('right-eye');
         const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-        function renderMap() {
+        function renderMapRuntime() {
             const container = document.getElementById('map-elements');
             container.innerHTML = '';
-            currentLevel.rocks.forEach(rock => {
+            
+            // Runtime rocks (kırılabilen/itilebilen meteorlar)
+            runtimeRocks.forEach((rock, idx) => {
                 const rockEl = document.createElement('div');
-                rockEl.className = 'absolute flex items-center justify-center';
+                rockEl.className = 'absolute flex items-center justify-center rock';
+                rockEl.id = `rock-${idx}`;
                 rockEl.style.width = '20%'; rockEl.style.height = '20%';
                 rockEl.style.left = `${rock.x * 20}%`; rockEl.style.top = `${rock.y * 20}%`;
                 rockEl.innerHTML = `<i class="fa-solid fa-meteor text-4xl text-slate-500 drop-shadow-md"></i>`;
                 container.appendChild(rockEl);
             });
+
             currentLevel.holes.forEach(hole => {
                 const holeEl = document.createElement('div');
                 holeEl.className = 'absolute flex items-center justify-center';
@@ -694,6 +770,7 @@
                 holeEl.innerHTML = `<div class="w-3/4 h-3/4 rounded-full black-hole shadow-[0_0_15px_#4c1d95]"></div>`;
                 container.appendChild(holeEl);
             });
+
             const targetEl = document.createElement('div');
             targetEl.className = 'absolute flex items-center justify-center animate-bounce';
             targetEl.style.width = '20%'; targetEl.style.height = '20%';
@@ -711,17 +788,30 @@
             rightEye.className = `eye w-2.5 h-2.5 ${colorClass} rounded-full shadow-[0_0_8px_${shadowClass}]`;
         }
 
-        function boardResetRobot(resetColor = true) {
+        function boardResetRobot(resetVisuals = true) {
             robotX = currentLevel.startX; robotY = currentLevel.startY; robotAngle = currentLevel.startAng;
-            robotEl.classList.remove('spin-anim', 'shake-anim');
+            robotEl.classList.remove('spin-anim', 'shake-anim', 'punch-anim');
             robotEl.style.transform = `rotate(${robotAngle}deg) scale(1)`;
             robotEl.style.opacity = '1';
             setEyeColor('bg-cyan-300', '#67e8f9');
-            if(resetColor) applyRobotAppearance('blue', null);
+            
+            // Haritayı orijinal haline geri döndür
+            runtimeRocks = JSON.parse(JSON.stringify(currentLevel.rocks));
+            renderMapRuntime();
+
+            if(resetVisuals) {
+                applyRobotAppearance('blue', null, null);
+            }
             updateRobotTransform();
         }
 
-        function isCollision(nx, ny) { return currentLevel.rocks.some(r => r.x === nx && r.y === ny); }
+        function getFrontCoords() {
+            let rad = (robotAngle % 360) * Math.PI / 180;
+            let dx = Math.round(Math.sin(rad)); let dy = -Math.round(Math.cos(rad));
+            return { x: robotX + dx, y: robotY + dy, dx, dy };
+        }
+
+        function isCollision(nx, ny) { return runtimeRocks.some(r => r.x === nx && r.y === ny); }
         function isHole(nx, ny) { return currentLevel.holes.some(h => h.x === nx && h.y === ny); }
         function isTarget(nx, ny) { return currentLevel.target.x === nx && currentLevel.target.y === ny; }
 
@@ -729,57 +819,40 @@
             if (isRobotRunning) return;
             isRobotRunning = true;
             boardResetRobot(false);
-            await delay(500);
+            await delay(400);
 
             let crashed = false, success = false;
-            let finalStatus = 'waiting';
 
             for (let i = 0; i < localProgram.length; i++) {
                 if (crashed || success) break;
                 const cmdName = localProgram[i];
                 const cmdData = cmdUI[cmdName];
                 
-                // Highlight remote block via UI simulation (tahtada kod görünmüyor, robotta görelim)
                 setEyeColor('bg-yellow-300', '#fef08a');
                 
                 if (cmdData.type === 'move') {
-                    const steps = Math.abs(cmdData.steps);
-                    const direction = Math.sign(cmdData.steps);
-                    
-                    for(let s=0; s<steps; s++) {
-                        let rad = (robotAngle % 360) * Math.PI / 180;
-                        let dx = Math.round(Math.sin(rad)) * direction; 
-                        let dy = -Math.round(Math.cos(rad)) * direction;
-                        let targetX = robotX + dx, targetY = robotY + dy;
+                    let {x: targetX, y: targetY} = getFrontCoords();
 
-                        if (targetX < 0 || targetX > 4 || targetY < 0 || targetY > 4) {
-                            playTone('error'); crashed = true; robotEl.classList.add('shake-anim'); createParticles(robotX, robotY, 'crash'); break;
-                        } else if (isCollision(targetX, targetY)) {
-                            playTone('error'); crashed = true; robotEl.classList.add('shake-anim'); createParticles(targetX, targetY, 'crash'); break;
-                        } else if (isHole(targetX, targetY)) {
-                            robotX = targetX; robotY = targetY; updateRobotTransform();
-                            playTone('hole'); crashed = true; 
-                            robotEl.style.transform = `rotate(${robotAngle + 720}deg) scale(0)`;
-                            robotEl.style.opacity = '0';
-                            break;
-                        } else { 
-                            robotX = targetX; robotY = targetY; 
-                            updateRobotTransform();
-                            await delay(300); // Adım arası ufak bekleme
-                        }
+                    if (targetX < 0 || targetX > 4 || targetY < 0 || targetY > 4) {
+                        playTone('error'); crashed = true; robotEl.classList.add('shake-anim'); createParticles(robotX, robotY, 'crash');
+                    } else if (isCollision(targetX, targetY)) {
+                        playTone('error'); crashed = true; robotEl.classList.add('shake-anim'); createParticles(targetX, targetY, 'crash');
+                    } else if (isHole(targetX, targetY)) {
+                        robotX = targetX; robotY = targetY; updateRobotTransform();
+                        playTone('hole'); crashed = true; 
+                        robotEl.style.transform = `rotate(${robotAngle + 720}deg) scale(0)`; robotEl.style.opacity = '0';
+                    } else { 
+                        robotX = targetX; robotY = targetY; updateRobotTransform();
                     }
                 } 
                 else if (cmdData.type === 'action') {
                     switch (cmdName) {
                         case 'turnRight': robotAngle += 90; updateRobotTransform(); break;
                         case 'turnLeft': robotAngle -= 90; updateRobotTransform(); break;
-                        case 'lightRed': setEyeColor('bg-rose-500', '#f43f5e'); await delay(500); break;
-                        case 'lightGreen': setEyeColor('bg-emerald-400', '#34d399'); await delay(500); break;
-                        case 'sound': playTone('beep'); await delay(300); break;
+                        case 'lightGreen': setEyeColor('bg-emerald-400', '#34d399'); await delay(300); break;
+                        case 'sound': playTone('beep'); robotEl.classList.add('punch-anim'); await delay(200); robotEl.classList.remove('punch-anim'); break;
                         case 'sensorCheck':
-                            let rad = (robotAngle % 360) * Math.PI / 180;
-                            let dx = Math.round(Math.sin(rad)); let dy = -Math.round(Math.cos(rad));
-                            const scanX = robotX + dx; const scanY = robotY + dy;
+                            let {x: scanX, y: scanY} = getFrontCoords();
                             const wave = document.getElementById('sensor-wave'); wave.style.opacity = '1';
                             await delay(300);
                             if (scanX < 0 || scanX > 4 || scanY < 0 || scanY > 4 || isCollision(scanX, scanY) || isHole(scanX, scanY)) {
@@ -789,37 +862,71 @@
                             break;
                     }
                 }
+                else if (cmdData.type === 'hero') {
+                    let {x: frontX, y: frontY, dx, dy} = getFrontCoords();
+                    
+                    switch(cmdName) {
+                        case 'smash':
+                            robotEl.classList.add('punch-anim');
+                            const smashIdx = runtimeRocks.findIndex(r => r.x === frontX && r.y === frontY);
+                            if (smashIdx > -1) {
+                                runtimeRocks.splice(smashIdx, 1); // Meteoru sil
+                                renderMapRuntime(); // Ekranı güncelle
+                                createParticles(frontX, frontY, 'crash');
+                                playTone('smash');
+                            } else {
+                                playTone('error'); // Boşa yumruk
+                            }
+                            await delay(300);
+                            robotEl.classList.remove('punch-anim');
+                            break;
+                            
+                        case 'kick':
+                            robotEl.classList.add('punch-anim');
+                            const kickIdx = runtimeRocks.findIndex(r => r.x === frontX && r.y === frontY);
+                            if (kickIdx > -1) {
+                                let pushX = frontX + dx; let pushY = frontY + dy;
+                                // Arkası boşsa ve sınırlar içindeyse it
+                                if (pushX >= 0 && pushX <= 4 && pushY >= 0 && pushY <= 4 && !isCollision(pushX, pushY) && !isHole(pushX, pushY)) {
+                                    runtimeRocks[kickIdx].x = pushX; runtimeRocks[kickIdx].y = pushY;
+                                    renderMapRuntime();
+                                    playTone('smash');
+                                } else {
+                                    playTone('error'); // İtilecek yer yok
+                                }
+                            }
+                            await delay(300);
+                            robotEl.classList.remove('punch-anim');
+                            break;
+                            
+                        case 'takePhoto':
+                            triggerFlash();
+                            playTone('camera');
+                            await delay(400);
+                            break;
+                    }
+                }
 
                 if (!crashed && isTarget(robotX, robotY)) success = true;
                 
-                await delay(400); // Komutlar arası bekleme
-                if(!crashed && !success) setEyeColor('bg-cyan-300', '#67e8f9'); // Rengi normale çevir
+                await delay(400);
+                if(!crashed && !success) setEyeColor('bg-cyan-300', '#67e8f9');
             }
             
-            let finalScore = 0;
+            let finalScore = 0; let finalStatus = 'waiting';
             if (success) {
-                finalStatus = 'success';
-                playTone('success'); 
+                finalStatus = 'success'; playTone('success'); 
                 robotEl.classList.add('spin-anim'); setEyeColor('bg-yellow-300', '#fde047');
                 createParticles(robotX, robotY, 'success');
-                
-                // Puanlama Algoritması: Optimizasyon
-                const blocksUsed = localProgram.length;
-                const optBonus = Math.max(0, (15 - blocksUsed) * 10); // Az kod yazana bonus
-                finalScore = 100 + optBonus;
-                
-                showMessage(`<i class='fa-solid fa-trophy'></i> ${studentName} Başardı! Puan: ${finalScore}`);
+                finalScore = 100 + Math.max(0, (20 - localProgram.length) * 5); // Skor
+                showMessage(`<i class='fa-solid fa-trophy'></i> ${studentName} Başardı!`);
             } else {
                 finalStatus = 'crashed';
                 showMessage(`<i class='fa-solid fa-circle-xmark'></i> ${studentName} başarısız oldu.`, true);
             }
             
-            // Veritabanını Güncelle
             if (docRef) {
-                await updateDoc(docRef, { 
-                    [`submissions.${studentName}.status`]: finalStatus,
-                    [`submissions.${studentName}.score`]: finalScore
-                });
+                await updateDoc(docRef, { [`submissions.${studentName}.status`]: finalStatus, [`submissions.${studentName}.score`]: finalScore });
             }
 
             isRobotRunning = false;
