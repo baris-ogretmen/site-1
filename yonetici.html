@@ -105,6 +105,7 @@
     <div style="display:flex; width:100%; height:100%;">
         <div class="sidebar" id="sidebar">
             <h2>Barış Hoca<br><small style="font-size:0.8rem; color:#94a3b8;">v48.0 (Orjinal)</small></h2>
+			<button class="menu-btn" style="color:#10b981;" onclick="showSection('analiz-detay')"><i class="fas fa-chart-line"></i> <b>DERİN ANALİZ</b></button>
             <button class="menu-btn active" onclick="showSection('ozet')"><i class="fas fa-chart-pie"></i> Özet</button>
             <button class="menu-btn" style="color:#fbbf24;" onclick="showSection('hikaye-yaz')"><i class="fas fa-pen-nib"></i> <b>HİKAYE YAZ</b></button>
             <button class="menu-btn" onclick="showSection('vitrin-yonetimi')"><i class="fas fa-star"></i> Vitrin Yönetimi</button>
@@ -122,7 +123,21 @@
 
         <div class="main-content" onclick="if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('show')">
 
-            <div id="ozet" class="panel-section active">
+            <div id="ozet"<div id="analiz-detay" class="panel-section">
+    <div class="card" style="border-top: 5px solid #10b981;">
+        <h3>🌍 Ziyaretçi Bölge Analizi (Şehirlere Göre)</h3>
+        <div id="bolge-listesi" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+            <div style="text-align:center; padding:20px; color:#666;">Harita verileri işleniyor...</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 5px solid #6366f1;">
+        <h3>🔥 En Çok Görüntülenen İçerikler (Popülerlik Sırası)</h3>
+        <div id="populer-icerik-siralamasi">
+            <div style="text-align:center; padding:20px; color:#666;">Sıralama hesaplanıyor...</div>
+        </div>
+    </div>
+</div> class="panel-section active">
                 <h3>📊 İstatistikler</h3>
                 <div class="stats-grid">
                     <div class="stat-card stat-blue"><div>Bugün</div><div class="stat-val" id="stat-today">0</div></div>
@@ -473,6 +488,54 @@
         }
         function enYeniOyunGetir() { db.collection("projeler").orderBy("tarih","desc").limit(1).get().then(s=>{if(!s.empty){const d=s.docs[0].data(); daireYap(d.baslik,d.link);}else{alert("Oyun yok");}}); }
         function enYeniHerseyGetir() { if(tumIceriklerCache.length>0) { const y=tumIceriklerCache[0]; daireYap(y.baslik,y.link); } else { alert("İçerik yok"); } }
+		// --- BARIŞ HOCA ANALİZ MOTORU ---
+function analizleriYukle() {
+    // 1. Bölge Analizini Getir (Firestore 'ziyaretci_konumları' koleksiyonundan)
+    db.collection("ziyaretci_konumlari").orderBy("sayi", "desc").limit(10).get().then(snap => {
+        let html = "";
+        if (snap.empty) { html = "<p style='color:#999;'>Henüz bölge verisi toplanmadı.</p>"; }
+        snap.forEach(doc => {
+            const data = doc.data();
+            html += `
+                <div style="background:#f1f5f9; padding:15px; border-radius:12px; border-left:4px solid #10b981;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#64748b;">ŞEHİR/BÖLGE</div>
+                    <div style="font-size:1.1rem; font-weight:800; color:#1e293b;">${doc.id}</div>
+                    <div style="margin-top:5px; color:#10b981; font-weight:bold;">${data.sayi} Ziyaretçi</div>
+                </div>`;
+        });
+        document.getElementById('bolge-listesi').innerHTML = html;
+    });
+
+    // 2. İçerik Popülerlik Sıralaması (En çoktan en aza)
+    // Bu veri içeriklerin içindeki 'goruntulenme' sayısından çekilir
+    db.collection("projeler").orderBy("goruntulenme", "desc").limit(15).get().then(snap => {
+        let html = "";
+        let sira = 1;
+        snap.forEach(doc => {
+            const data = doc.data();
+            const yuzde = (data.goruntulenme / 1000) * 100; // Örnek bar hesaplaması
+            html += `
+                <div style="margin-bottom:15px; background:white; padding:10px; border-radius:10px; border:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="font-weight:bold;">${sira}. ${data.baslik}</span>
+                        <span style="color:#6366f1; font-weight:800;">${data.goruntulenme || 0} İzlenme</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#f1f5f9; border-radius:10px; overflow:hidden;">
+                        <div style="width:${Math.min(yuzde, 100)}%; height:100%; background:linear-gradient(90deg, #6366f1, #a855f7);"></div>
+                    </div>
+                </div>`;
+            sira++;
+        });
+        document.getElementById('populer-icerik-siralamasi').innerHTML = html || "Veri yok.";
+    });
+}
+
+// showSection fonksiyonunu güncelle ki Analiz seçilince veriler tazelensin
+const eskiShowSection = showSection;
+showSection = function(id) {
+    eskiShowSection(id);
+    if(id === 'analiz-detay') analizleriYukle();
+}
     </script>
 </body>
 </html>
