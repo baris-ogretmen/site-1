@@ -264,10 +264,11 @@
 
         // --- AKILLI TAHTA EKRANI ---
         function TeacherDashboard({ db, user, roomData, setRoomData }) {
-            const { collection, onSnapshot } = window.FirebaseModules;
+            const { collection, onSnapshot, doc, deleteDoc, updateDoc } = window.FirebaseModules;
             const [players, setPlayers] = useState([]);
             const [matches, setMatches] = useState([]);
-            
+            const [selectedMatchView, setSelectedMatchView] = useState(null);
+
             useEffect(() => {
                 if (!roomData.code) {
                     setRoomData({ code: Math.floor(1000 + Math.random() * 9000).toString(), role: 'teacher', name: 'Öğretmen', matchId: null, gameId: null });
@@ -276,89 +277,97 @@
 
             useEffect(() => {
                 if (!user || !roomData.code) return;
-                
                 const playersRef = collection(db, 'zeka_players');
                 const matchesRef = collection(db, 'zeka_matches');
-
-                const unsubP = onSnapshot(playersRef, (snap) => setPlayers(snap.docs.map(d=>d.data()).filter(p=>p.roomCode===roomData.code)), (err) => console.error(err));
-                const unsubM = onSnapshot(matchesRef, (snap) => setMatches(snap.docs.map(d=>({id:d.id, ...d.data()})).filter(m=>m.roomCode===roomData.code)), (err) => console.error(err));
-                
+                const unsubP = onSnapshot(playersRef, (snap) => setPlayers(snap.docs.map(d=>d.data()).filter(p=>p.roomCode===roomData.code)));
+                const unsubM = onSnapshot(matchesRef, (snap) => setMatches(snap.docs.map(d=>({id:d.id, ...d.data()})).filter(m=>m.roomCode===roomData.code)));
                 return () => { unsubP(); unsubM(); };
             }, [user, roomData.code]);
 
-            if (!roomData.code) return <div className="text-white text-xl animate-pulse">Oda Kuruluyor...</div>;
-            
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${roomData.code}&color=0f172a&bgcolor=f8fafc`;
-            const activeMatches = matches.filter(m => m.status === 'active');
+            const closeMatch = async (id) => { if(confirm("Maçı sonlandırmak istiyor musunuz?")) await deleteDoc(doc(db, 'zeka_matches', id)); };
 
-            return (
-                <div className="w-full h-full flex flex-col md:flex-row gap-4 p-2 pb-8">
-                    <div className="w-full md:w-1/4 lg:w-1/5 flex flex-col gap-4">
-                        <div className="glass-panel p-4 rounded-3xl text-center shadow-[0_0_20px_rgba(6,182,212,0.3)] border-t border-neon-cyan shrink-0">
-                            <h2 className="text-gray-300 text-xs tracking-widest uppercase mb-1">Katılım PIN'i</h2>
-                            <div className="text-5xl md:text-6xl font-black text-neon-cyan tracking-widest mb-4 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]">
-                                {roomData.code}
-                            </div>
-                            <div className="bg-white p-2 rounded-xl inline-block mx-auto">
-                                <img src={qrUrl} alt="QR Code" className="w-24 h-24 md:w-32 md:h-32 object-contain" />
+            const activeMatches = matches.filter(m => m.status === 'active');
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${roomData.code}&color=0f172a&bgcolor=f8fafc`;
+
+            // Mini Mat Render Fonksiyonu
+            const renderMiniBoard = (match) => {
+                const gameInfo = GAMES.find(g => g.id === match.game);
+                return (
+                    <div className="w-full aspect-square bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-700 relative group">
+                        <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity flex items-center justify-center">
+                             <i className={`fa-solid ${gameInfo.icon} text-4xl text-${gameInfo.color.replace('neon-','')}`}></i>
+                        </div>
+                        <div className="z-10 scale-50 pointer-events-none origin-center transform">
+                            {/* Burada oyunun tipine göre çok basit bir önizleme gösteriyoruz */}
+                            <div className="grid grid-cols-4 gap-1">
+                                {Array(16).fill(0).map((_, i) => <div key={i} className="w-6 h-6 bg-white/10 rounded-sm border border-white/5"></div>)}
                             </div>
                         </div>
-                        
-                        <div className="glass-panel p-4 rounded-3xl flex-1 flex flex-col overflow-hidden border-t border-white/10 min-h-[200px]">
-                            <h3 className="text-lg font-bold mb-3 flex items-center text-neon-amber shrink-0"><i className="fa-solid fa-users mr-2"></i> Lobi ({players.length})</h3>
-                            <ul className="space-y-2 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                                {players.length === 0 && <p className="text-gray-500 text-xs italic">Öğrenci bekleniyor...</p>}
-                                {players.map((p, i) => (
-                                    <li key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
-                                        <span className="font-semibold text-white truncate max-w-[60%]">{p.name}</span>
-                                        <span className={`text-[10px] px-2 py-1 rounded-full ${p.status === 'playing' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                            {p.status === 'playing' ? 'Oyunda' : 'Hazır'}
-                                        </span>
-                                    </li>
+                        <div className="absolute bottom-1 right-1 bg-black/60 px-2 py-0.5 rounded text-[8px] font-bold text-white uppercase tracking-tighter">CANLI YAYIN</div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="w-full h-full flex flex-col md:flex-row gap-4 p-2 pb-8 overflow-hidden">
+                    <div className="w-full md:w-1/4 lg:w-1/5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                        <div className="glass-panel p-4 rounded-3xl text-center shadow-neon-cyan border-t border-neon-cyan">
+                            <h2 className="text-gray-300 text-xs tracking-widest uppercase mb-1">Giriş PIN'i</h2>
+                            <div className="text-5xl font-black text-neon-cyan mb-4">{roomData.code}</div>
+                            <img src={qrUrl} alt="QR" className="w-24 h-24 mx-auto rounded-lg bg-white p-1" />
+                        </div>
+                        <div className="glass-panel p-4 rounded-3xl flex-1 border-t border-white/10">
+                            <h3 className="text-sm font-bold mb-3 text-neon-amber uppercase tracking-widest"><i className="fa-solid fa-trophy mr-2"></i> Skor Tablosu</h3>
+                            <div className="space-y-2">
+                                {players.length === 0 ? <p className="text-gray-500 text-[10px]">Öğrenci bekleniyor...</p> : 
+                                 players.sort((a,b)=>(b.wins||0)-(a.wins||0)).map((p, i) => (
+                                    <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-xs border border-white/5">
+                                        <span className="text-white font-medium truncate w-24">#{i+1} {p.name}</span>
+                                        <span className="text-neon-green font-bold">{p.wins || 0} G</span>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="w-full md:w-3/4 lg:w-4/5 glass-panel p-4 sm:p-6 rounded-3xl border-t border-neon-rose shadow-[0_0_20px_rgba(225,29,72,0.2)] flex flex-col h-full">
-                        <div className="flex justify-between items-center mb-4 shrink-0">
-                            <h2 className="text-xl sm:text-2xl font-bold flex items-center text-neon-rose">
-                                <i className="fa-solid fa-satellite-dish animate-pulse mr-3"></i> Canlı Maç Radarı
+                    <div className="w-full md:w-3/4 lg:w-4/5 glass-panel p-4 sm:p-6 rounded-3xl border-t border-neon-rose shadow-neon-rose flex flex-col h-full">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold flex items-center text-neon-rose tracking-tighter">
+                                <i className="fa-solid fa-video animate-pulse mr-3"></i> CANLI STRATEJİ RADARI
                             </h2>
-                            <div className="bg-rose-900/50 text-rose-300 px-3 py-1 rounded-full text-xs font-bold border border-rose-500/30">
-                                {activeMatches.length} Aktif Maç
-                            </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                             {activeMatches.length === 0 ? (
-                                <div className="h-full w-full flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-2xl p-8">
-                                    <i className="fa-solid fa-ghost text-5xl mb-4 opacity-50"></i>
-                                    <p className="text-lg">Şu an devam eden bir maç yok.</p>
-                                    <p className="text-sm mt-2 text-gray-600">Öğrencilerin eşleşmesi bekleniyor...</p>
+                                <div className="h-full flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-2xl p-12">
+                                    <i className="fa-solid fa-gamepad text-5xl mb-4 opacity-20"></i>
+                                    <p className="text-center font-medium">Sınıf şu an sakin...<br/>Öğrenciler eşleşince maçlar burada belirecek.</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                     {activeMatches.map(match => {
                                         const gameInfo = GAMES.find(g => g.id === match.game);
                                         return (
-                                            <div key={match.id} className="bg-slate-800/80 rounded-xl border border-slate-600 relative overflow-hidden flex flex-col shadow-lg">
-                                                <div className={`px-2 py-1 bg-black/40 border-b border-slate-700 flex justify-between items-center`}>
-                                                    <span className={`text-[10px] font-bold uppercase text-${gameInfo.color} truncate`}>
+                                            <div key={match.id} className="bg-slate-800/80 rounded-2xl border border-slate-600 overflow-hidden shadow-2xl flex flex-col hover:border-neon-cyan transition-all group">
+                                                <div className="p-2 bg-black/40 flex justify-between items-center border-b border-slate-700">
+                                                    <span className={`text-[10px] font-black uppercase text-${gameInfo.color.replace('neon-','')}`}>
                                                         <i className={`fa-solid ${gameInfo.icon} mr-1`}></i>{gameInfo.name}
                                                     </span>
-                                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                                                    <button onClick={() => closeMatch(match.id)} className="text-rose-500 hover:text-rose-300 text-[10px] font-bold"><i className="fa-solid fa-stop-circle"></i> BİTİR</button>
                                                 </div>
-                                                <div className="p-2 flex-1 flex flex-col justify-center gap-1">
-                                                    <div className={`text-xs p-1 rounded ${match.turn === match.p1Id ? 'bg-white/10 text-white font-bold border border-white/20 shadow-sm' : 'text-gray-400'}`}>
-                                                        {match.p1Name}
+                                                <div className="p-3 bg-slate-900/50">
+                                                    {renderMiniBoard(match)}
+                                                </div>
+                                                <div className="p-3 space-y-2 border-t border-slate-700">
+                                                    <div className={`flex justify-between items-center p-1.5 rounded-lg ${match.turn === match.p1Id ? 'bg-neon-cyan/20 border border-neon-cyan/40' : ''}`}>
+                                                        <span className="text-[11px] text-white font-bold truncate">{match.p1Name}</span>
+                                                        {match.turn === match.p1Id && <i className="fa-solid fa-play text-[8px] text-neon-cyan animate-ping"></i>}
                                                     </div>
-                                                    <div className="text-center text-[10px] text-neon-rose font-black italic opacity-50">VS</div>
-                                                    <div className={`text-xs p-1 rounded ${match.turn === match.p2Id ? 'bg-white/10 text-white font-bold border border-white/20 shadow-sm' : 'text-gray-400'}`}>
-                                                        {match.p2Name}
+                                                    <div className={`flex justify-between items-center p-1.5 rounded-lg ${match.turn === match.p2Id ? 'bg-neon-rose/20 border border-neon-rose/40' : ''}`}>
+                                                        <span className="text-[11px] text-white font-bold truncate">{match.p2Name}</span>
+                                                        {match.turn === match.p2Id && <i className="fa-solid fa-play text-[8px] text-neon-rose animate-ping"></i>}
                                                     </div>
                                                 </div>
-                                                <div className={`h-1 w-full bg-${gameInfo.color} opacity-50`}></div>
                                             </div>
                                         )
                                     })}
@@ -423,10 +432,16 @@
             useEffect(() => {
                 if (!user) return;
                 const playerRef = doc(db, 'zeka_players', user.uid);
-                // Her lobiye girişte status'ü kesin idle yap (Eski bugda kalmaları önler)
-                setDoc(playerRef, { roomCode: roomData.code, name: roomData.name, status: 'idle', timestamp: Date.now() });
                 
-                return () => { deleteDoc(playerRef).catch(()=>{}); };
+                // Lobiye girildiğinde maç ID'sini ve oyun ID'sini lokalde TEMİZLE
+                setRoomData(prev => ({...prev, matchId: null, gameId: null}));
+
+                // Veritabanında durumu 'idle' olarak güncelle
+                setDoc(playerRef, { roomCode: roomData.code, name: roomData.name, status: 'idle', timestamp: Date.now() }, { merge: true });
+                
+                return () => { 
+                    // Sayfadan tamamen ayrılırsa sil, ama lobi-arena geçişinde silme
+                };
             }, [user, roomData.code]);
 
             useEffect(() => {
@@ -582,8 +597,19 @@
             };
 
             const handleSurrender = async () => {
-                if (confirm("Oyundan çıkmak istediğinize emin misiniz?")) {
-                    await deleteDoc(doc(db, 'zeka_matches', roomData.matchId));
+                if (confirm("Bu oyundan ayrılmak ve lobiye dönmek istiyor musunuz?")) {
+                    try {
+                        // Maçı veritabanından siliyoruz ki tekrar girildiğinde eski maç gelmesin
+                        await deleteDoc(doc(db, 'zeka_matches', roomData.matchId));
+                        // Oyuncunun durumunu 'idle' (boşta) yapıyoruz
+                        if (user) await updateDoc(doc(db, 'zeka_players', user.uid), { status: 'idle' });
+                        // Lokal verileri temizleyip lobiye yönlendiriyoruz
+                        setRoomData(prev => ({...prev, matchId: null, gameId: null}));
+                        setView('lobby');
+                    } catch (err) {
+                        console.error("Çıkış hatası:", err);
+                        setView('lobby'); 
+                    }
                 }
             };
 
@@ -658,20 +684,72 @@
         const btnClass = "bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-xl text-white mt-6 font-bold shadow-lg transition-colors border border-slate-500";
         const trnNext = (p1, t1, t2) => p1 ? t2 : t1;
 
-        function BoardSatranc({s, up, p1, trn, t1, t2, isBot}) {
+       function BoardSatranc({s, up, p1, trn, t1, t2, isBot}) {
             const icons = {'r':'fa-chess-rook','n':'fa-chess-knight','b':'fa-chess-bishop','q':'fa-chess-queen','k':'fa-chess-king','p':'fa-chess-pawn','R':'fa-chess-rook text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]','N':'fa-chess-knight text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]','B':'fa-chess-bishop text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]','Q':'fa-chess-queen text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]','K':'fa-chess-king text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]','P':'fa-chess-pawn text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]'};
+
+            const isPathClear = (sr, sc, er, ec, board) => {
+                const rStep = er > sr ? 1 : (er < sr ? -1 : 0);
+                const cStep = ec > sc ? 1 : (ec < sc ? -1 : 0);
+                let r = sr + rStep, c = sc + cStep;
+                while(r !== er || c !== ec) {
+                    if (board[r][c] !== null) return false;
+                    r += rStep; c += cStep;
+                }
+                return true;
+            };
+
+            const isValidMove = (piece, sr, sc, er, ec, board) => {
+                const p = piece.toLowerCase();
+                const dr = er - sr; const dc = ec - sc;
+                if (dr === 0 && dc === 0) return false; 
+                if (board[er][ec] !== null) {
+                    const targetIsWhite = board[er][ec] === board[er][ec].toUpperCase();
+                    const pieceIsWhite = piece === piece.toUpperCase();
+                    if (targetIsWhite === pieceIsWhite) return false;
+                }
+                if (p === 'p') {
+                    const dir = piece === 'P' ? -1 : 1; 
+                    const startRow = piece === 'P' ? 6 : 1;
+                    if (dc === 0 && board[er][ec] === null) { 
+                        if (dr === dir) return true;
+                        if (sr === startRow && dr === 2*dir && board[sr+dir][sc] === null) return true;
+                    } else if (Math.abs(dc) === 1 && dr === dir && board[er][ec] !== null) { 
+                        return true;
+                    }
+                    return false;
+                }
+                if (p === 'r') return (dr === 0 || dc === 0) && isPathClear(sr, sc, er, ec, board);
+                if (p === 'b') return (Math.abs(dr) === Math.abs(dc)) && isPathClear(sr, sc, er, ec, board);
+                if (p === 'q') return (dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc)) && isPathClear(sr, sc, er, ec, board);
+                if (p === 'k') return Math.abs(dr) <= 1 && Math.abs(dc) <= 1;
+                if (p === 'n') return (Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2);
+                return false;
+            };
+
             const clk = (r,c) => {
                 if(!trn) return;
                 const piece = s.board[r][c];
-                const isMyPiece = isBot ? !!piece : (piece && (p1 ? piece===piece.toUpperCase() : piece===piece.toLowerCase()));
-
+                const isWhitePlayer = p1; 
+                const pieceIsWhite = piece ? piece === piece.toUpperCase() : null;
+                const isMyPiece = isBot ? !!piece : (piece && (isWhitePlayer ? pieceIsWhite : !pieceIsWhite));
                 if(s.sel) {
-                    if(s.sel[0]===r && s.sel[1]===c) { up({...s, sel:null}, trn?t1:t2); return; } 
+                    const [sr, sc] = s.sel;
+                    if(sr === r && sc === c) { up({...s, sel:null}, trn?t1:t2); return; } 
                     if(isMyPiece && !isBot) { up({...s, sel:[r,c]}, trn?t1:t2); return; }
-                    let nb = s.board.map(x=>[...x]); nb[r][c] = nb[s.sel[0]][s.sel[1]]; nb[s.sel[0]][s.sel[1]] = null;
-                    up({board: nb, sel:null}, isBot ? t1 : trnNext(p1, t1, t2));
-                } else { if(isMyPiece) up({...s, sel:[r,c]}, trn?t1:t2); } 
+                    const selectedPiece = s.board[sr][sc];
+                    if(isValidMove(selectedPiece, sr, sc, r, c, s.board)) {
+                        let nb = s.board.map(x=>[...x]); 
+                        nb[r][c] = nb[sr][sc]; 
+                        nb[sr][sc] = null;
+                        up({board: nb, sel:null}, isBot ? t1 : trnNext(p1, t1, t2));
+                    } else {
+                        up({...s, sel:null}, trn?t1:t2);
+                    }
+                } else { 
+                    if(isMyPiece) up({...s, sel:[r,c]}, trn?t1:t2); 
+                } 
             };
+
             const disp = (p1 || isBot) ? s.board : [...s.board].reverse().map(row=>[...row].reverse());
             return (
                 <div className="flex flex-col items-center max-w-full overflow-x-auto pb-4 custom-scrollbar">
@@ -687,7 +765,7 @@
                     </div>
                 </div>
             )
-        }
+        } 
 
         function BoardMangala({s, up, p1, trn, t1, t2, isBot}) {
             const clk = (i) => {
