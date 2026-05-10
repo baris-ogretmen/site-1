@@ -3,214 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Kapsamlı Nöro-Eğitim Simülasyonu</title>
+    <title>Barış Akademi - Nöro-Eğitim ve YZ Simülasyonu</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #fff;
-        }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
 
-        /* Yükleme Ekranı */
-        #loader {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            transition: opacity 0.8s ease-out;
-            pointer-events: none;
-        }
-
-        .spinner {
-            width: 60px; height: 60px;
-            border: 3px solid transparent;
-            border-top-color: #00ffff;
-            border-right-color: #ff0055;
-            border-bottom-color: #ffff00;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-            box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
-        }
-
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.8s ease-out; pointer-events: none; }
+        .spinner { width: 60px; height: 60px; border: 3px solid transparent; border-top-color: #00ffff; border-right-color: #ff0055; border-bottom-color: #ffff00; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 25px rgba(255, 255, 255, 0.1); }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Arayüz Katmanı */
-        #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            box-sizing: border-box;
-        }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; }
+        header { text-align: center; text-shadow: 0 0 15px #00ffff; pointer-events: none; margin-top: 10px; }
+        h1 { margin: 0; font-size: 2rem; letter-spacing: 3px; color: #00ffff; font-weight: 300; }
+        .subtitle { font-size: 1.1rem; color: #aaa; letter-spacing: 1px; margin-top: 5px; }
 
-        header {
-            text-align: center;
-            text-shadow: 0 0 15px #00ffff;
-            pointer-events: none;
-            margin-top: 10px;
-        }
-        
-        h1 { margin: 0; font-size: 1.8rem; letter-spacing: 3px; color: #00ffff; font-weight: 300; }
-        .subtitle { font-size: 1rem; color: #888; letter-spacing: 1px; margin-top: 5px; }
+        #ui-toggle-btn { position: absolute; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.8); border: 1px solid #00ffff; color: #00ffff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; pointer-events: auto; transition: all 0.3s; z-index: 1000; }
+        #ui-toggle-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
 
-        /* Kontrol Paneli (Alt Kısım - Sekmeli Yapı) */
-        #controls-wrapper {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 95%;
-            max-width: 1000px;
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        #controls-wrapper { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 1100px; pointer-events: auto; display: flex; flex-direction: column; gap: 10px; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s; }
+        #controls-wrapper.hidden { transform: translate(-50%, 150%); opacity: 0; pointer-events: none; }
 
-        /* Sekme Başlıkları */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 5px;
-            flex-wrap: wrap;
-        }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap; }
+        .tab-btn { background: rgba(0, 0, 0, 0.7); border: 1px solid #555; color: #ccc; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-size: 0.95rem; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; backdrop-filter: blur(5px); }
+        .tab-btn.active { background: #00ffff; color: #000; border-color: #00ffff; font-weight: bold; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+        .tab-btn.ai-tab.active { background: #ffd700; border-color: #ffd700; box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); }
 
-        .tab-btn {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #444;
-            color: #ccc;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            backdrop-filter: blur(5px);
-        }
-
-        .tab-btn.active {
-            background: #00ffff;
-            color: #000;
-            border-color: #00ffff;
-            font-weight: bold;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-        }
-        
-        /* Yapay Zeka Sekmesi Özel Renk */
-        .tab-btn.ai-tab.active {
-            background: #ffd700;
-            border-color: #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-
-        /* Buton Grupları */
-        .control-panel {
-            background: rgba(10, 20, 30, 0.9);
-            backdrop-filter: blur(15px);
-            border-radius: 15px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            padding: 15px;
-            display: none; /* JS ile açılacak */
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            animation: fadeIn 0.5s;
-        }
-
+        .control-panel { background: rgba(10, 20, 30, 0.85); backdrop-filter: blur(15px); border-radius: 15px; border: 1px solid rgba(0, 255, 255, 0.2); padding: 15px; display: none; flex-wrap: wrap; justify-content: center; gap: 10px; animation: fadeIn 0.5s; }
         .control-panel.visible { display: flex; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #444;
-            color: #ccc;
-            padding: 12px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-            flex: 1 1 auto;
-            text-align: center;
-            min-width: 140px;
-            max-width: 220px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn:hover { background: rgba(0, 255, 255, 0.1); border-color: #00ffff; color: #fff; transform: translateY(-2px); }
-        .btn.active { background: #00ffff; color: #000; border-color: #00ffff; font-weight: bold; box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); }
+        .btn { background: rgba(255, 255, 255, 0.05); border: 1px solid #444; color: #ccc; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; flex: 1 1 auto; text-align: center; min-width: 150px; max-width: 220px; }
+        .btn:hover { background: rgba(0, 255, 255, 0.15); border-color: #00ffff; color: #fff; transform: translateY(-3px); }
+        .btn.active { background: #00ffff; color: #000; border-color: #00ffff; font-weight: bold; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
         
-        /* Kategori Renkleri */
-        .btn-anatomy { border-left: 3px solid #00aaff; }
-        .btn-problem { border-left: 3px solid #ff0055; }
+        .btn-anatomy { border-left: 4px solid #00aaff; }
+        .btn-problem { border-left: 4px solid #ff0055; }
         .btn-problem:hover { border-color: #ff0055; }
-        .btn-problem.active { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
-        
-        .btn-ai { border-left: 3px solid #ffd700; }
+        .btn-problem.active { background: #ff0055; color: white; border-color: #ff0055; box-shadow: 0 0 20px rgba(255, 0, 85, 0.5); }
+        .btn-ai { border-left: 4px solid #ffd700; }
         .btn-ai:hover { border-color: #ffd700; }
         .btn-ai.active { background: #ffd700; color: #000; border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
 
-        .dot-indicator {
-            width: 8px; height: 8px; border-radius: 50%; background: currentColor;
-            display: inline-block;
-        }
-
-        /* Bilgi Paneli (Sol Üst - Okunabilirlik için Büyütüldü) */
-        #info-panel {
-            position: absolute;
-            top: 90px;
-            left: 20px;
-            width: 380px;
-            background: rgba(5, 10, 20, 0.90);
-            border-left: 4px solid #00ffff;
-            padding: 25px;
-            border-radius: 0 12px 12px 0;
-            backdrop-filter: blur(12px);
-            pointer-events: auto;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 15px 15px 40px rgba(0,0,0,0.6);
-            max-height: 65vh;
-            overflow-y: auto;
-        }
-        
+        /* BİLGİ PANELİ TASARIMI */
+        #info-panel { position: absolute; top: 90px; left: 20px; width: 440px; background: rgba(5, 10, 15, 0.92); border-left: 5px solid #00ffff; padding: 25px; border-radius: 0 15px 15px 0; backdrop-filter: blur(15px); pointer-events: auto; transition: all 0.4s ease; box-shadow: 15px 15px 40px rgba(0,0,0,0.8); max-height: 75vh; overflow-y: auto; }
         #info-panel.ai-mode { border-left-color: #ffd700; }
         #info-panel.problem-mode { border-left-color: #ff0055; }
-        #info-panel.hidden { transform: translateX(-150%); }
-
-        /* Scrollbar Ayarı */
-        #info-panel::-webkit-scrollbar { width: 6px; }
-        #info-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        #info-panel::-webkit-scrollbar { width: 8px; }
+        #info-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         #info-panel::-webkit-scrollbar-thumb { background: rgba(0, 255, 255, 0.5); border-radius: 10px; }
 
         h2 { margin-top: 0; color: #fff; font-size: 1.5rem; margin-bottom: 5px; font-weight: 700; letter-spacing: 0.5px; }
-        .info-sub { font-size: 0.9rem; color: #00ffff; text-transform: uppercase; margin-bottom: 15px; display: block; letter-spacing: 1px; font-weight: bold; }
-        p { line-height: 1.7; font-size: 1.05rem; color: #e2e8f0; text-align: justify; }
+        .info-sub { font-size: 0.95rem; color: #00ffff; text-transform: uppercase; margin-bottom: 15px; display: block; letter-spacing: 1px; font-weight: bold; }
+        p { line-height: 1.6; font-size: 1.0rem; color: #e2e8f0; text-align: justify; margin-bottom: 12px; }
 
-        .highlight { color: #fff; font-weight: bold; border-bottom: 2px solid #00ffff; padding-bottom: 1px; }
+        .cause-box { background: rgba(255, 0, 0, 0.1); border-left: 3px solid #ff3366; padding: 12px; margin-bottom: 12px; border-radius: 4px; }
+        .solution-box { background: rgba(0, 255, 128, 0.1); border-left: 3px solid #00ff88; padding: 12px; margin-bottom: 12px; border-radius: 4px; }
+        
+        /* Renk Kodlamaları - Eşleşmeli */
+        .color-red { color: #ff3333; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
+        .color-orange { color: #ffa500; font-weight: bold; text-shadow: 0 0 5px rgba(255,165,0,0.5); }
+        .color-purple { color: #ff00ff; font-weight: bold; text-shadow: 0 0 5px rgba(255,0,255,0.5); }
+        .color-yellow { color: #ffff00; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,0,0.5); }
+        .color-green { color: #33ff33; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,0,0.5); }
+        .color-grey { color: #aaaaaa; font-weight: bold; }
+        .color-cyan { color: #00ffff; font-weight: bold; text-shadow: 0 0 8px rgba(0,255,255,0.6); }
+        .color-gold { color: #ffd700; font-weight: bold; text-shadow: 0 0 8px rgba(255,215,0,0.6); }
+        
+        .cause-text { color: #ff5577; font-weight: bold; }
+        .solution-text { color: #00ffaa; font-weight: bold; }
         .term { color: #ffd700; font-style: italic; }
 
-        /* Mobil Uyum */
+        /* KONTROL BİLGİLENDİRMESİ */
+        .controls-hint { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px; font-size: 0.85rem; border: 1px dashed #555; text-align: center; margin-bottom: 15px; color: #ccc; }
+
+        /* YZ GRAFİKLERİ (DAİRESEL) */
+        #ai-stats-container { display: none; flex-direction: row; justify-content: space-around; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .stat-box { text-align: center; width: 45%; }
+        .stat-box span { font-size: 0.8rem; color: #ccc; display: block; margin-top: 10px; font-weight: bold; }
+        
+        .flex-wrapper { display: flex; justify-content: center; }
+        .single-chart { width: 100px; justify-content: space-around; }
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #2a2a2a; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; animation: progress 1.5s ease-out forwards; }
+        
+        .traditional .circle { stroke: #ff5577; }
+        .ai-powered .circle { stroke: #ffd700; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.7)); }
+        
+        @keyframes progress { 0% { stroke-dasharray: 0 100; } }
+        .percentage { fill: #fff; font-family: 'Segoe UI', sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
+
+        /* İyileştirme Butonu */
+        #heal-btn-container { margin-top: 20px; display: none; }
+        .heal-btn { width: 100%; background: linear-gradient(90deg, #10b981, #059669); border: none; color: white; padding: 15px; border-radius: 8px; font-size: 1.0rem; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .heal-btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); }
+        .heal-btn.active-heal { background: linear-gradient(90deg, #ef4444, #b91c1c); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+
         @media (max-width: 768px) {
-            #info-panel { width: auto; right: 10px; left: 10px; top: 70px; font-size: 0.95rem; max-height: 40vh; padding: 15px; }
+            #info-panel { width: auto; right: 10px; left: 10px; top: 60px; font-size: 0.90rem; max-height: 55vh; padding: 15px; z-index: 500; }
             #controls-wrapper { bottom: 10px; width: 98%; }
-            .btn { padding: 10px; font-size: 0.8rem; min-width: 110px; }
+            .btn { padding: 8px; font-size: 0.75rem; min-width: 100px; }
             h1 { font-size: 1.3rem; }
-            .tab-btn { padding: 8px 12px; font-size: 0.75rem; }
+            #ui-toggle-btn { top: 10px; right: 10px; padding: 8px 12px; }
         }
     </style>
     
@@ -231,59 +124,86 @@
     </div>
 
     <div id="ui-layer">
+        <button id="ui-toggle-btn" onclick="toggleUI()">⬇️ Menüleri Gizle</button>
+
         <header>
-            <h1>NÖRO-EĞİTİM LABORATUVARI</h1>
-            <div class="subtitle">Anatomi, Özel Öğrenme ve Yapay Zeka Etkileşimi</div>
+            <h1>NÖRO-EĞİTİM VE YZ LABORATUVARI</h1>
+            <div class="subtitle">Anatomi, Özel Öğrenme Teşhisi ve YZ Nöroplastisite Simülasyonu</div>
         </header>
 
         <div id="info-panel">
             <h2 id="info-title">Hoş Geldiniz</h2>
-            <span id="info-sub" class="info-sub">Simülasyon Başlatıldı</span>
-            <p id="info-desc">
-                Bu simülasyon, beynin anatomik işleyişini, özel öğrenme durumlarını ve teknolojiyle etkileşimini görselleştirmek için hazırlanmıştır.
-                <br><br>
-                <b>Lütfen ekrana dokunarak veya farenizle beyni sağa-sola döndürün.</b> Alt kısımdaki sekmelerden farklı analiz modlarına geçiş yapabilirsiniz.
-            </p>
+            <span id="info-sub" class="info-sub">Sistem Hazır</span>
+            <div class="controls-hint">
+                👆 <b>Fare/Dokunma Kontrolleri:</b><br>
+                Sol Tık: <b>Döndür</b> | Sağ Tık: <b>Sağa-Sola Kaydır</b> | Tekerlek: <b>Yakınlaş/Uzaklaş</b>
+            </div>
+            <div id="info-desc">
+                <p>Eğitimde patinaj çektiğimiz noktalarda, dışarıdan görünmeyeni görmek zorundayız. Bu simülasyon; özel öğrenme durumlarının beyindeki kök nedenlerini ve <b>Yapay Zekanın (YZ) bu sorunları nasıl yeniden inşa ettiğini</b> bilimsel olarak kanıtlamak için tasarlanmıştır.</p>
+                <p>Lütfen alt kısımdaki panellerden durumları seçin ve beyni farenizle/parmağınızla döndürerek inceleyin.</p>
+            </div>
+            
+            <div id="ai-stats-container">
+                <div class="stat-box">
+                    <div class="flex-wrapper">
+                      <div class="single-chart">
+                        <svg viewBox="0 0 36 36" class="circular-chart traditional">
+                          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                          <path class="circle" stroke-dasharray="35, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                          <text x="18" y="20.35" class="percentage">%35</text>
+                        </svg>
+                      </div>
+                    </div>
+                    <span>Geleneksel Eğitim<br>(Bağlantı Hızı)</span>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="flex-wrapper">
+                      <div class="single-chart">
+                        <svg viewBox="0 0 36 36" class="circular-chart ai-powered">
+                          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                          <path class="circle" stroke-dasharray="92, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                          <text x="18" y="20.35" class="percentage">%92</text>
+                        </svg>
+                      </div>
+                    </div>
+                    <span style="color: #ffd700;">YZ Destekli Eğitim<br>(Nöroplastisite Hızı)</span>
+                </div>
+            </div>
+
+            <div id="heal-btn-container">
+                <button id="heal-btn" class="heal-btn" onclick="triggerHeal()">✨ YZ Çözümünü Simüle Et</button>
+            </div>
         </div>
 
         <div id="controls-wrapper">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('anatomy', this)">1. ANATOMİ (BEYNİ TANI)</button>
-                <button class="tab-btn" onclick="switchTab('problems', this)">2. ÖZEL DURUMLAR (NEDENLER)</button>
-                <button class="tab-btn ai-tab" onclick="switchTab('ai', this)">3. YAPAY ZEKA VE ÖĞRENME</button>
+                <button class="tab-btn active" onclick="switchTab('anatomy', this)">1. SAĞLIKLI ANATOMİ</button>
+                <button class="tab-btn" onclick="switchTab('problems', this)">2. PATİNAJ NEDENLERİ (TEŞHİS)</button>
+                <button class="tab-btn ai-tab" onclick="switchTab('ai', this)">3. YZ NÖROPLASTİSİTE AĞLARI</button>
             </div>
 
             <div id="panel-anatomy" class="control-panel visible">
-                <button class="btn btn-anatomy active" onclick="setMode('normal')">
-                    <span class="dot-indicator" style="color: #fff;"></span> Tüm Beyin
-                </button>
-                <button class="btn btn-anatomy" onclick="setMode('frontal')">
-                    <span class="dot-indicator" style="color: #0088ff;"></span> Ön Lop (Yönetici)
-                </button>
-                <button class="btn btn-anatomy" onclick="setMode('parietal')">
-                    <span class="dot-indicator" style="color: #ffaa00;"></span> Yan Lop (Duyu/Mantık)
-                </button>
-                <button class="btn btn-anatomy" onclick="setMode('occipital')">
-                    <span class="dot-indicator" style="color: #ff0055;"></span> Arka Lop (Görme)
-                </button>
-                <button class="btn btn-anatomy" onclick="setMode('temporal')">
-                    <span class="dot-indicator" style="color: #00ff44;"></span> Şakak (Hafıza/Dil)
-                </button>
+                <button class="btn btn-anatomy active" onclick="setMode('normal')"><span class="dot-indicator" style="color: #fff;"></span> Tüm Beyin</button>
+                <button class="btn btn-anatomy" onclick="setMode('frontal')"><span class="dot-indicator" style="color: #0088ff;"></span> Ön Lop (Yönetici)</button>
+                <button class="btn btn-anatomy" onclick="setMode('parietal')"><span class="dot-indicator" style="color: #ffaa00;"></span> Yan Lop (Mantık)</button>
+                <button class="btn btn-anatomy" onclick="setMode('occipital')"><span class="dot-indicator" style="color: #ff0055;"></span> Arka Lop (Görme)</button>
+                <button class="btn btn-anatomy" onclick="setMode('temporal')"><span class="dot-indicator" style="color: #00ff44;"></span> Şakak (Hafıza)</button>
             </div>
 
             <div id="panel-problems" class="control-panel">
-                <button class="btn btn-problem" onclick="setMode('dyslexia')">Özgül Öğrenme (Disleksi)</button>
+                <button class="btn btn-problem" onclick="setMode('dyslexia')">Disleksi (Okuma)</button>
+                <button class="btn btn-problem" onclick="setMode('learning_disability')">Özgül Öğrenme Güçlüğü</button>
                 <button class="btn btn-problem" onclick="setMode('adhd')">DEHB (Dikkat)</button>
                 <button class="btn btn-problem" onclick="setMode('autism')">Otizm (Duyu Ağı)</button>
                 <button class="btn btn-problem" onclick="setMode('speech')">Konuşma Güçlüğü</button>
                 <button class="btn btn-problem" onclick="setMode('intellectual')">Zihinsel Yetersizlik</button>
-                <button class="btn btn-problem" onclick="setMode('metabolic')">Metabolik Sorun</button>
                 <button class="btn btn-problem" onclick="setMode('cp')">Serebral Palsi</button>
             </div>
 
             <div id="panel-ai" class="control-panel">
-                <button class="btn btn-ai" onclick="setMode('ai_learning')">Yapay Zeka ile Öğrenme Ağı</button>
-                <button class="btn btn-ai" onclick="setMode('algorithmic')">Algoritmik / Kodlama Mantığı</button>
+                <button class="btn btn-ai" onclick="setMode('ai_learning')">YZ ile Bireyselleştirilmiş Öğrenme</button>
+                <button class="btn btn-ai" onclick="setMode('algorithmic')">Algoritmik / Kodlama Ağı</button>
             </div>
         </div>
     </div>
@@ -293,7 +213,6 @@
         import { OrbitControls } from "three/addons/controls/OrbitControls.js";
         import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-        // --- SAHNE ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
         scene.fog = new THREE.FogExp2(0x000000, 0.02);
@@ -307,149 +226,90 @@
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
-        // KONTROLLER (Manuel Döndürme Açık, Otomatik Kapalı)
+        // KONTROLLER - PAN, ZOOM VE ROTASYON AÇIK
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = false; // Video çekimi için Barış Hoca'nın kontrolüne bırakıldı.
+        controls.enableDamping = true; 
+        controls.dampingFactor = 0.05; 
+        controls.autoRotate = false; 
+        controls.enablePan = true;  // Sağ tık ile sağa-sola taşıma
+        controls.enableZoom = true; // Tekerlek ile büyütme/küçültme
         controls.target.set(0, 2, 0);
 
-        // --- IŞIKLAR ---
         scene.add(new THREE.AmbientLight(0x404040, 2));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(5, 5, 5);
-        scene.add(dirLight);
-        const spotLight = new THREE.SpotLight(0x00ffff, 3);
-        spotLight.position.set(-5, 5, 2);
-        scene.add(spotLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2); dirLight.position.set(5, 5, 5); scene.add(dirLight);
+        const spotLight = new THREE.SpotLight(0x00ffff, 3); spotLight.position.set(-5, 5, 2); scene.add(spotLight);
 
-        // --- SİMÜLASYON PARAMETRELERİ ---
-        const simulationParams = {
-            mode: 0, 
-            speed: 1.0
-        };
+        // --- GLOBAL DEĞİŞKENLER ---
+        const simulationParams = { mode: 0 };
+        let targetHealed = 0.0;
+        let currentHealed = 0.0;
 
-       // --- MATERYALLER ---
+        // --- BEYİN MATERYALİ ---
         const brainMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                mode: { value: 0 }
-            },
-            vertexShader: `
-                varying vec3 vNormal;
-                varying vec3 vViewDir;
-                varying vec3 vPos;
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    vPos = position;
-                    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-                    vViewDir = normalize(-mvPos.xyz);
-                    gl_Position = projectionMatrix * mvPos;
-                }
-            `,
+            uniforms: { time: { value: 0 }, mode: { value: 0 }, isHealed: { value: 0 } },
+            vertexShader: ` varying vec3 vNormal; varying vec3 vViewDir; varying vec3 vPos; void main() { vNormal = normalize(normalMatrix * normal); vPos = position; vec4 mvPos = modelViewMatrix * vec4(position, 1.0); vViewDir = normalize(-mvPos.xyz); gl_Position = projectionMatrix * mvPos; } `,
             fragmentShader: `
-                uniform float time;
-                uniform float mode;
-                varying vec3 vNormal;
-                varying vec3 vViewDir;
-                varying vec3 vPos;
+                uniform float time; uniform float mode; uniform float isHealed;
+                varying vec3 vNormal; varying vec3 vViewDir; varying vec3 vPos;
 
                 void main() {
                     float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.0);
-                    vec3 color = vec3(0.1, 0.3, 0.8); // Varsayılan Mavi
-                    float alpha = 0.1 + fresnel * 0.4;
+                    vec3 color = vec3(0.1, 0.3, 0.8); float alpha = 0.1 + fresnel * 0.4;
 
-                    // YÜZÜ VE BOYNU KARART (Burun ve çene parlamasın)
                     if (vPos.y < 0.5 || (vPos.y < 1.5 && vPos.z > 0.2)) {
-                        alpha = 0.01; // Neredeyse görünmez
-                        color = vec3(0.0);
+                        alpha = 0.01; color = vec3(0.0);
                     } else {
-                        // Anatomi
                         if (mode == 1.0) { if (vPos.z > 0.5 && vPos.y > 1.5) { color = vec3(0.0, 0.5, 1.0); alpha = 0.3; } else alpha = 0.05; }
                         if (mode == 2.0) { if (vPos.y > 3.0) { color = vec3(1.0, 0.7, 0.0); alpha = 0.3; } else alpha = 0.05; }
                         if (mode == 3.0) { if (vPos.z < -1.0) { color = vec3(1.0, 0.0, 0.3); alpha = 0.3; } else alpha = 0.05; }
                         if (mode == 4.0) { if (abs(vPos.x) > 1.0 && vPos.y < 2.5 && vPos.z > -1.0 && vPos.z < 1.0) { color = vec3(0.0, 1.0, 0.3); alpha = 0.3; } else alpha = 0.05; }
 
-                        // Sorunlar
-                        if (mode == 11.0) color = mix(color, vec3(1.0, 0.0, 0.0), 0.2); // Konuşma
-                        if (mode == 12.0) color = mix(color, vec3(1.0, 0.0, 0.0), 0.2); // Disleksi 
-                        if (mode == 13.0) color = mix(color, vec3(1.0, 0.5, 0.0), 0.3); // DEHB Turuncu
-                        if (mode == 14.0) color = mix(color, vec3(0.8, 0.0, 1.0), 0.4); // Otizm Mor
-                        if (mode == 15.0) color = vec3(0.2, 0.8, 0.2); // Metabolik Yeşil
-                        if (mode == 16.0) color = mix(color, vec3(1.0, 0.0, 0.0), 0.2); // CP Kırmızı
+                        vec3 problemCol = color;
+                        if (mode == 10.0) problemCol = vec3(0.3); 
+                        if (mode == 11.0) problemCol = mix(color, vec3(1.0, 0.0, 0.0), 0.2); 
+                        if (mode == 12.0) problemCol = mix(color, vec3(1.0, 0.5, 0.0), 0.2); 
+                        if (mode == 17.0) problemCol = mix(color, vec3(1.0, 0.0, 0.0), 0.3); 
+                        if (mode == 13.0) problemCol = mix(color, vec3(1.0, 0.5, 0.0), 0.3); 
+                        if (mode == 14.0) problemCol = mix(color, vec3(0.8, 0.0, 1.0), 0.4); 
+                        if (mode == 15.0) problemCol = mix(color, vec3(0.2, 0.8, 0.2), 0.3); 
+                        if (mode == 16.0) problemCol = mix(color, vec3(1.0, 0.0, 0.0), 0.2); 
                         
-                        // Yapay Zeka / Algoritma
-                        if (mode == 20.0 || mode == 21.0) color = mix(color, vec3(1.0, 0.85, 0.0), 0.5); // Altın / Cyan
-                    }
+                        if (mode == 20.0 || mode == 21.0) problemCol = mix(color, vec3(1.0, 0.85, 0.0), 0.5); 
 
+                        vec3 healedCol = mix(color, vec3(0.0, 0.8, 1.0), 0.4);
+                        color = mix(problemCol, healedCol, isHealed);
+                    }
                     gl_FragColor = vec4(color * fresnel * 2.0 + color * 0.2, alpha);
                 }
-            `,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
+            `, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending
         });
 
-        // 2. Nöronlar (Parçacıklar)
-        const particleCount = 15000;
-        const geom = new THREE.BufferGeometry();
-        const pos = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
-        const randoms = new Float32Array(particleCount);
+        // --- NÖRONLAR ---
+        const particleCount = 18000; const geom = new THREE.BufferGeometry();
+        const pos = new Float32Array(particleCount * 3); const sizes = new Float32Array(particleCount); const randoms = new Float32Array(particleCount);
 
         for(let i=0; i<particleCount; i++) {
-            const r = 3.2 * Math.cbrt(Math.random()); 
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-            
-            let px = r * Math.sin(phi) * Math.cos(theta);
-            let py = r * Math.sin(phi) * Math.sin(theta) + 2.5; 
-            let pz = r * Math.cos(phi) * 0.9 - 0.5;
+            const r = 3.2 * Math.cbrt(Math.random()); const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
+            let px = r * Math.sin(phi) * Math.cos(theta); let py = r * Math.sin(phi) * Math.sin(theta) + 2.5; let pz = r * Math.cos(phi) * 0.9 - 0.5;
 
-            // Yüz (burun/göz) ve boyun bölgesindeki nöronları tamamen kafatasına (beyne) taşı
-            if ((py < 1.5 && pz > 0.2) || py < 0.5) {
-                py += 2.0; 
-                pz -= 1.0;
-            }
+            if (Math.abs(px) < 0.25 && py > 1.0) { px = (px >= 0) ? px + 0.25 : px - 0.25; }
+            if ((py < 1.5 && pz > 0.2) || py < 0.5) { py += 2.0; pz -= 1.0; }
 
-            pos[i*3] = px;
-            pos[i*3+1] = py; 
-            pos[i*3+2] = pz;
-
-            sizes[i] = Math.random();
-            randoms[i] = Math.random();
+            pos[i*3] = px; pos[i*3+1] = py; pos[i*3+2] = pz;
+            sizes[i] = Math.random(); randoms[i] = Math.random();
         }
-        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-        geom.setAttribute('rnd', new THREE.BufferAttribute(randoms, 1));
+        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1)); geom.setAttribute('rnd', new THREE.BufferAttribute(randoms, 1));
 
         const neuronMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                globalSpeed: { value: 1.0 },
-                mode: { value: 0 },
-            },
+            uniforms: { time: { value: 0 }, globalSpeed: { value: 1.0 }, mode: { value: 0 }, isHealed: { value: 0 } },
             vertexShader: `
-                uniform float time;
-                uniform float globalSpeed;
-                uniform float mode;
-                attribute float size;
-                attribute float rnd;
-                varying float vAlpha;
-                varying vec3 vColor;
+                uniform float time; uniform float globalSpeed; uniform float mode; uniform float isHealed;
+                attribute float size; attribute float rnd; varying float vAlpha; varying vec3 vColor;
                 
                 void main() {
-                    vec3 p = position;
-                    float localSpeed = globalSpeed;
-                    float chaos = 0.0;
-                    vec3 col = vec3(0.0, 0.6, 1.0); // Varsayılan Mavi
-                    float activityLevel = 1.0;
-                    float flashIntensity = 1.0; // Yanıp sönme (Kırmızı Alarm) şiddeti
+                    vec3 p = position; float localSpeed = globalSpeed; float chaos = 0.0;
+                    vec3 col = vec3(0.0, 0.6, 1.0); float activityLevel = 1.0; float flashIntensity = 1.0;
 
-                    // --- MOD MANTIĞI ---
-
-                    // 1. ANATOMİ MODLARI
                     if (mode >= 1.0 && mode <= 4.0) {
                         activityLevel = 0.1; col = vec3(0.2); 
                         if (mode == 1.0 && p.z > 0.5 && p.y > 1.5) { activityLevel = 1.0; col = vec3(0.0, 0.6, 1.0); }
@@ -458,238 +318,198 @@
                         if (mode == 4.0 && abs(p.x) > 1.0 && p.y < 2.5 && p.z > -1.0 && p.z < 1.0) { activityLevel = 1.0; col = vec3(0.0, 1.0, 0.4); }
                     }
 
-                    // 2. ÖZEL DURUM MODLARI
+                    if (mode == 10.0) { // Zihinsel Yetersizlik
+                        localSpeed = 0.1; if(rnd > 0.4) activityLevel = 0.0; col = vec3(0.4); 
+                    }
+                    if (mode == 11.0) { // Konuşma (Kırmızı Çakar)
+                        if (p.x > 0.3 && p.y > 1.5 && p.z > 0.5) { localSpeed = 15.0; col = vec3(1.0, 0.0, 0.0); flashIntensity = 6.0; chaos=0.03; }
+                    }
+                    if (mode == 12.0) { // ÖÖG (Turuncu)
+                        if (rnd > 0.8) { localSpeed = 0.5; col = vec3(1.0, 0.5, 0.0); activityLevel = 0.6; } else { localSpeed = 1.0; col = vec3(0.0, 0.4, 0.8); }
+                    }
+                    if (mode == 17.0) { // Disleksi (Kırmızı şiddetli flaş)
+                        if (p.x > 0.2 && p.y > 1.0 && p.z < 0.0) { localSpeed = 0.1; col = vec3(0.2); } 
+                        else if (p.x > 0.3 && p.y > 1.5 && p.z > 0.5) { localSpeed = 20.0; col = vec3(1.0, 0.0, 0.0); flashIntensity = 8.0; chaos = 0.05; }
+                    }
+                    if (mode == 13.0) { // DEHB (Sarı/Turuncu)
+                        if (p.z > 0.5 && p.y > 1.5) { localSpeed = 0.1; col = vec3(0.2); activityLevel = 0.3; } 
+                        else { localSpeed = 8.0; col = vec3(1.0, 0.8, 0.0); flashIntensity = 3.0; chaos = 0.05; }
+                    }
+                    if (mode == 14.0) { // Otizm (Mor)
+                        if (p.y > 2.5) { localSpeed = 10.0; col = vec3(1.0, 0.0, 1.0); flashIntensity = 5.0; chaos = 0.06; }
+                    }
+                    if (mode == 15.0) { // Metabolik (Yeşil)
+                        localSpeed = 4.0; col = vec3(0.2, 1.0, 0.2); flashIntensity = 2.0; chaos = 0.1;
+                    }
+                    if (mode == 16.0) { // CP (Kırmızı)
+                        if (p.y > 3.0 && p.z > -0.5 && p.z < 1.0) { 
+                            if (rnd > 0.7) { col = vec3(1.0, 0.0, 0.0); localSpeed = 15.0; flashIntensity = 8.0; chaos=0.04;} else { localSpeed = 0.0; col = vec3(0.1); }
+                        }
+                    }
+
+                    // YZ İYİLEŞME
+                    vec3 healedCol = vec3(0.0, 1.0, 0.8); 
+                    if(rnd > 0.6) healedCol = vec3(1.0, 0.85, 0.0); 
                     
-                    // Zihinsel Yetersizlik (10)
-                    if (mode == 10.0) {
-                        localSpeed = 0.2; 
-                        if(rnd > 0.4) activityLevel = 0.0; // Nöronların %60'ı kapalı
-                        col = vec3(0.4); // Soluk gri
+                    if (mode >= 10.0 && mode <= 17.0) {
+                        col = mix(col, healedCol, isHealed);
+                        localSpeed = mix(localSpeed, 3.0, isHealed);
+                        activityLevel = mix(activityLevel, 1.0, isHealed);
+                        flashIntensity = mix(flashIntensity, 1.0, isHealed);
+                        chaos = mix(chaos, 0.01, isHealed);
                     }
 
-                    // Konuşma (11) - Sol Ön Broca Kırmızı Yanıp Sönme
-                    if (mode == 11.0) {
-                        if (p.x > 0.3 && p.y > 1.5 && p.z > 0.5) {
-                            localSpeed = 8.0; 
-                            col = vec3(1.0, 0.0, 0.0); // Tam kırmızı
-                            flashIntensity = 3.0; // Şiddetli flaş
-                        }
-                    }
-
-                    // Özgül Öğrenme / Disleksi (12)
-                    if (mode == 12.0) {
-                        // Sol arka (okuma ağı) sönük ve karanlık
-                        if (p.x > 0.2 && p.y > 1.0 && p.z < 0.0) {
-                            localSpeed = 0.1; 
-                            col = vec3(0.2);
-                        } 
-                        // Sol ön (Broca) aşırı kompanze ediyor, KIRMIZI YANIP SÖNÜYOR
-                        else if (p.x > 0.3 && p.y > 1.5 && p.z > 0.5) {
-                            localSpeed = 10.0; // Çok hızlı
-                            col = vec3(1.0, 0.0, 0.0); // Kırmızı alarm
-                            flashIntensity = 4.0; // Alarm efekti
-                            chaos = 0.03;
-                        }
-                    }
-
-                    // DEHB (13)
-                    if (mode == 13.0) {
-                        if (p.z > 0.5 && p.y > 1.5) { // Ön Lop (Fren)
-                            localSpeed = 0.1; col = vec3(0.2); activityLevel = 0.3; // Sönük
-                        } else { // Arka taraflar
-                            localSpeed = 5.0; col = vec3(1.0, 0.8, 0.0); // Sarı/Turuncu Hiperaktif
-                            flashIntensity = 2.0;
-                            chaos = 0.05;
-                        }
-                    }
-
-                    // Otizm (14)
-                    if (mode == 14.0) {
-                        if (p.y > 2.5) { // Duyu merkezi aşırı yüklenme
-                            localSpeed = 6.0; 
-                            col = vec3(1.0, 0.0, 1.0); // Canlı Mor
-                            flashIntensity = 3.0;
-                            chaos = 0.06;
-                        }
-                    }
-
-                    // Metabolik (15)
-                    if (mode == 15.0) { 
-                        localSpeed = 3.0;
-                        chaos = 0.15; 
-                        col = vec3(0.2, 1.0, 0.2); // Toksik Yeşil
-                        flashIntensity = 2.0;
-                    }
-
-                    // Serebral Palsi (16)
-                    if (mode == 16.0) {
-                        if (p.y > 3.0 && p.z > -0.5 && p.z < 1.0) { // Motor Korteks
-                            if (rnd > 0.7) { 
-                                col = vec3(1.0, 0.0, 0.0); // Spastik kırmızı patlamalar
-                                localSpeed = 8.0; 
-                                flashIntensity = 5.0; // En şiddetli patlama
-                            } else {
-                                localSpeed = 0.0; col = vec3(0.1); // Ölü bölgeler
-                            }
-                        }
-                    }
-
-                    // 3. YAPAY ZEKA VE KODLAMA MODLARI (20, 21)
                     if (mode == 20.0 || mode == 21.0) {
-                        if (p.y > 1.5 || p.z > 0.5) {
-                            localSpeed = 4.0;
-                            col = vec3(0.0, 1.0, 0.8); // Parlak Cyan
-                            if(rnd > 0.7) col = vec3(1.0, 0.85, 0.0); // Altın Sarısı
-                            chaos = 0.02; 
-                        } else {
-                            col = vec3(0.1, 0.3, 0.6); 
-                        }
+                        if (p.y > 1.5 || p.z > 0.5) { localSpeed = 4.0; col = vec3(0.0, 1.0, 0.8); if(rnd > 0.7) col = vec3(1.0, 0.85, 0.0); chaos = 0.02; } 
+                        else { col = vec3(0.1, 0.3, 0.6); }
                     }
 
-                    // Hareket
-                    p.x += sin(time * 5.0 + rnd * 100.0) * chaos;
-                    p.y += cos(time * 5.0 + rnd * 100.0) * chaos;
-                    
+                    p.x += sin(time * 5.0 + rnd * 100.0) * chaos; p.y += cos(time * 5.0 + rnd * 100.0) * chaos;
                     vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-                    gl_PointSize = size * (90.0 / -mvPosition.z) * activityLevel;
-                    gl_Position = projectionMatrix * mvPosition;
+                    gl_PointSize = size * (90.0 / -mvPosition.z) * activityLevel; gl_Position = projectionMatrix * mvPosition;
                     
-                    // Şiddetli Yanıp Sönme (Flashing Alarm) formülü
-                    float flashFreq = (1.0 + rnd * 2.0) * localSpeed;
+                    // Şiddetli Flaş Algoritması
+                    float flashFreq = (1.0 + rnd * 2.0) * localSpeed; 
                     float sineWave = sin(time * flashFreq * 3.0 + rnd * 10.0);
-                    vAlpha = (0.4 + 0.6 * sineWave) * activityLevel;
+                    float normalizedSine = (sineWave + 1.0) * 0.5; // 0 ile 1 arası
                     
-                    // Eğer flashIntensity yüksekse (örn: Disleksi/CP alarmı), tepe noktalarında ışığı patlat
-                    if (flashIntensity > 1.0 && sineWave > 0.8) {
-                        vAlpha *= flashIntensity;
-                    }
-
+                    vAlpha = (0.2 + 0.8 * normalizedSine) * activityLevel;
+                    if (flashIntensity > 1.0) { 
+                        vAlpha *= pow(normalizedSine, 2.0) * flashIntensity; // Çakar efekti için tepe noktasını patlat
+                    } 
                     vColor = col;
                 }
             `,
-            fragmentShader: `
-                varying float vAlpha;
-                varying vec3 vColor;
-                void main() {
-                    if (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;
-                    gl_FragColor = vec4(vColor, vAlpha);
-                }
-            `,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            fragmentShader: ` varying float vAlpha; varying vec3 vColor; void main() { if (length(gl_PointCoord - vec2(0.5)) > 0.5) discard; gl_FragColor = vec4(vColor, vAlpha); } `,
+            transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
         });
 
-        const particleSystem = new THREE.Points(geom, neuronMaterial);
-        scene.add(particleSystem);
+        const particleSystem = new THREE.Points(geom, neuronMaterial); scene.add(particleSystem);
 
-        // --- MODEL YÜKLEME ---
         const loader = new GLTFLoader();
         loader.load('https://threejs.org/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb', (gltf) => {
-            const mesh = gltf.scene.children[0];
-            mesh.material = brainMaterial;
-            mesh.scale.setScalar(1.8);
-            scene.add(mesh);
-            
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(()=>document.getElementById('loader').remove(), 800);
+            const mesh = gltf.scene.children[0]; mesh.material = brainMaterial; mesh.scale.setScalar(1.8); scene.add(mesh);
+            document.getElementById('loader').style.opacity = 0; setTimeout(()=>document.getElementById('loader').remove(), 800);
         });
 
-        // --- UI KONTROLÜ ---
-        window.switchTab = function(tabName, btnElement) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
+        // --- UI KONTROLLERİ ---
+        window.toggleUI = function() {
+            const wrapper = document.getElementById('controls-wrapper'); const btn = document.getElementById('ui-toggle-btn');
+            if(wrapper.classList.contains('hidden')) { wrapper.classList.remove('hidden'); btn.innerText = "⬇️ Menüleri Gizle"; } 
+            else { wrapper.classList.add('hidden'); btn.innerText = "⬆️ Menüleri Göster"; }
+        };
 
-            document.querySelectorAll('.control-panel').forEach(p => p.classList.remove('visible'));
-            document.getElementById('panel-' + tabName).classList.add('visible');
-
-            const infoPanel = document.getElementById('info-panel');
-            infoPanel.className = ''; 
-            if(tabName === 'ai') infoPanel.classList.add('ai-mode');
-            if(tabName === 'problems') infoPanel.classList.add('problem-mode');
+        window.triggerHeal = function() {
+            targetHealed = targetHealed > 0.5 ? 0.0 : 1.0;
+            const btn = document.getElementById('heal-btn');
+            if(targetHealed > 0.5) { btn.innerHTML = "🔴 Geri Al (Eski Sorunlu Ağ)"; btn.classList.add('active-heal'); } 
+            else { btn.innerHTML = "✨ YZ Çözümünü Simüle Et"; btn.classList.remove('active-heal'); }
         };
 
         const infoData = {
-            'normal': { t: "Normal Beyin Aktivitesi", s: "Dengeli ve Senkronize", d: "Beyin bölgeleri birbiriyle uyum içinde çalışır. Nöronlar arası iletişim <span class='term'>(Sinaptik İletim)</span> hızlı ve düzenlidir. Tüm loplar üzerine düşen görevi sorunsuz icra eder." },
-            'frontal': { t: "Ön Lop (Frontal Lobe)", s: "Yönetici Merkez", d: "Karar verme, planlama, dikkat, problem çözme ve dürtü kontrolü burada yapılır. Burası beynin 'Orkestra Şefi'dir. <span class='term'>(Prefrontal Korteks)</span> insanın gelişmiş bilişsel yeteneklerinin merkezidir." },
-            'parietal': { t: "Yan Lop (Parietal Lobe)", s: "Duyu, Mantık ve Mekan", d: "Vücudun nerede olduğunu anlama <span class='term'>(Propriyosepsiyon)</span>, dokunma, acı ve ısı gibi duyusal verileri işleme merkezidir. Ayrıca matematiksel ve algoritmik düşünmenin kilit noktalarındandır." },
-            'occipital': { t: "Arka Lop (Occipital Lobe)", s: "Görme Merkezi", d: "Gözden gelen sinyaller burada görüntüye dönüşür. Renk, şekil, hareket ve okuma sırasındaki harflerin görsel tanınması <span class='term'>(Görsel İşlemleme)</span> burada gerçekleşir." },
-            'temporal': { t: "Şakak Lobu (Temporal Lobe)", s: "Hafıza ve Dil", d: "Duyulanları anlama, yüzleri tanıma ve bilgileri kısa süreliden uzun süreli hafızaya aktarma işlemi <span class='term'>(Hipokampus)</span> burada gerçekleşir. Dil gelişiminin kalbidir." },
+            'normal': { t: "Normal Beyin", s: "Dengeli", d: "<p>Beyin bölgeleri muazzam bir uyum içindedir. <span class='color-cyan'>Mavi ve Cyan Aydınlatmalar</span>, nöronlar arası iletişimin kusursuz çalıştığını temsil eder. Sağ ve sol <span class='term'>Hemisferler (Yarımküreler)</span> görevlerini sorunsuz icra eder.</p>", heal: false },
+            'frontal': { t: "Ön Lop", s: "Yönetici Merkez", d: "<p>Planlama, karar verme ve dürtü kontrolü burada yapılır. <span class='term'>Prefrontal Korteks (Beynin orkestra şefi)</span>, insanı insan yapan üst düzey bilişsel yeteneklerin merkezidir.</p>", heal: false },
+            'parietal': { t: "Yan Lop", s: "Mantık ve Mekan", d: "<p><span class='term'>Propriyosepsiyon (Vücudun uzaydaki konumunu algılama)</span> ve dokunma duyusu burada işlenir. Matematiksel ve algoritmik düşünmenin kilit noktasıdır.</p>", heal: false },
+            'occipital': { t: "Arka Lop", s: "Görme", d: "<p>Gözden gelen sinyaller burada görüntüye dönüşür. Renk, şekil ve harflerin <span class='term'>Görsel İşlemlemesi</span> beynin bu odasında gerçekleşir.</p>", heal: false },
+            'temporal': { t: "Şakak Lobu", s: "Hafıza ve Dil", d: "<p>Duyulanları anlama, yüzleri tanıma ve bilgiyi uzun süreli hafızaya aktarma işlemi <span class='term'>Hipokampus (Hafıza Merkezi)</span> aracılığıyla burada gerçekleşir.</p>", heal: false },
             
-            // SORUNLAR (Genişletilmiş Metinler)
-            'dyslexia': { t: "Özgül Öğrenme (Disleksi)", s: "Okuma Ağında Kesinti", d: "Disleksik bir beyinde, sol yarımküredeki 'Okuma Otobanı' tam senkronize çalışmaz. Özellikle kelimeleri seslere bölme ve analiz etme alanı olan <span class='term'>(Parieto-temporal bölge)</span> ile kelimeleri bir bütün olarak hızlıca tanıyan Görsel Kelime Formu Alanı <span class='term'>(Occipito-temporal bölge - Sönük Turuncu)</span> yeterince aktif değildir. <br><br>Beyin, bu kestirme yollar yerine ön lobdaki konuşma merkezini <span class='term'>(Broca Alanı - Kırmızı Uyarı)</span> aşırı kullanarak zorlu patikalardan okumaya çalışır. Bu da okumayı yavaş ve çok yorucu hale getirir." },
-            'intellectual': { t: "Zihinsel Yetersizlik", s: "Zayıf Bağlantı Ağı", d: "Nöronlar arasındaki bilgi aktarım yolları <span class='term'>(Sinapslar)</span> sayıca azdır veya zayıftır. Bilgi aktarımı yavaş gerçekleştiği için soyut kavramları öğrenme, kavrama ve genelleme süreçlerinde gecikmeler yaşanır." },
-            'speech': { t: "Konuşma Güçlüğü", s: "Motor Planlama Hatası", d: "Düşünceler zihinde var olmasına rağmen, kelimeler ağızdan çıkmaz. Sol ön taraftaki konuşma üretim merkezi olan <span class='term'>(Broca Alanı - Kırmızı Uyarı)</span> komutları dudak ve dil kaslarına doğru sırayla iletemez <span class='term'>(Apraksi / Afazi)</span>." },
-            'adhd': { t: "DEHB (Dikkat Eksikliği)", s: "Yönetici İşlev Zafiyeti", d: "Ön Lop <span class='term'>(Prefrontal Korteks - Gri sönük alan)</span> yeterince aktif değildir. Burası beynin 'Freni' ve 'Odaklanma Merkezi'dir. Fren mekanizması zayıfladığında, beynin arka tarafındaki motor ve duyu merkezleri <span class='term'>(Sarı uyarılar)</span> aşırı uyarılır ve çocuk yerinde duramaz (Hiperaktivite)." },
-            'autism': { t: "Otizm Spektrum (OSB)", s: "Duyusal Aşırı Yüklenme", d: "Beyin, çevreden gelen uyaranları (ışık, ses, dokunma) filtreleyemez. Duyu bütünleme merkezi <span class='term'>(Parietal Lop - Mor Patlamalar)</span> aşırı aktif çalışır. Basit bir ses bile beyinde bir havai fişek gösterisi gibi yankılanır, bu da <span class='term'>(Duyusal Meltdown)</span> krizlerine yol açar." },
-            'metabolic': { t: "Metabolik Sorun", s: "Nörotoksik Etki", d: "Vücut kimyasındaki genetik bozukluklar (örn. Fenilketonüri), beyin omurilik sıvısında zararlı madde birikimine neden olur. Nöronlar düzensiz ve kaotik sinyaller üretir <span class='term'>(Yeşil toksik titreşimler)</span>." },
-            'cp': { t: "Serebral Palsi (CP)", s: "Motor Korteks Hasarı", d: "Beynin en üst kısmından geçen ve kas hareketlerini yöneten şerit halindeki <span class='term'>(Motor Korteks)</span> doğum öncesi veya sonrası hasar görmüştür. Kaslara giden sinyaller ya hiç ulaşmaz (Felç) ya da istemsiz/hatalı ateşlenir <span class='term'>(Spastisite - Kırmızı patlamalar)</span>." },
+            // BİLİMSEL VERİLER VE BİREBİR RENK EŞLEŞTİRMELERİ
+            'dyslexia': { 
+                t: "Disleksi (Okuma Bozukluğu)", s: "Okuma Ağında Kesinti", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Zeka geriliği DEĞİLDİR. Beynin dili işleme biçimindeki yapısal farklılıktır. Sol arka taraftaki <span class='term'>Parieto-temporal (Okuma Ağı)</span> sönüktür <span class='color-grey'>(Karanlık Gri)</span>. Beyin okumak için sol ön taraftaki konuşma merkezini (Broca) zorlar. Ekranda <span class='color-red'>Kırmızı Renkte Şiddetle Yanıp Sönen Flaşlar</span>, çocuğun okuma yaparken beyninin ne kadar çabuk yorulduğunu gösterir. <br><br><i>Tamamen Biter mi?</i> Hayır, yapısal olduğu için %100 sıfırlanmaz. Ancak %85-90 oranında kompanze edilir (telafi edilir).</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> Yapay Zeka destekli oyunlar, beynin karanlık arka kısmına <span class='term'>Nöroplastisite</span> sayesinde <span class='color-gold'>Altın Sarısı</span> yeni köprüler inşa eder. Yük, kırmızı alarm veren ön lobdan alınarak yeni sağlıklı ağlara dağıtılır.</div>", heal: true 
+            },
+            'learning_disability': { 
+                t: "Özgül Öğrenme Güçlüğü", s: "Bağlantı Zayıflığı", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Matematik (Diskalkuli) veya yazma (Disgrafi) alanlarını da etkiler. Ekrana yayılan <span class='color-orange'>Kesintili ve Zayıf Turuncu Işıklar</span>, bilgiyi işlerken bağlantıların <span class='term'>(Sinapsların)</span> sekteye uğradığını gösterir. Bilgi patinaj çeker.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> YZ, çocuğun tam olarak nerede patinaj çektiğini tespit eder. Zayıf ağların yerine, bilgiyi kayıpsız aktaran <span class='color-cyan'>Parlak Cyan (Turkuaz)</span> renkli yollar inşa eder. Beceri kaybı %80 oranında giderilir.</div>", heal: true 
+            },
+            'intellectual': { 
+                t: "Zihinsel Yetersizlik", s: "Zayıf Nöral Kapasite", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Nöronlar arası bilgi aktarım yolları sayıca çok az veya zayıftır. Ekranda ağın <span class='color-grey'>%60'ının Sönük ve Gri</span> olması bundandır. Öğrenme ve genelleme süreçlerinde ciddi gecikmeler yaşanır. <br><br><i>Tamamen Biter mi?</i> Hayır, zeka (IQ) kapasitesi kalıcı olarak artırılamaz.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> YZ, soyut zekayı artıramasa da, algoritmik tekrarlarla <b>günlük yaşam adaptasyonunu %60-70 oranında geliştirir</b>. Kalan nöronlar arasında maksimum verimli yeni <span class='color-gold'>Sarı/Altın</span> yollar örülür.</div>", heal: true 
+            },
+            'speech': { 
+                t: "Konuşma Güçlüğü", s: "Motor Planlama Hatası", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Düşünceler vardır ama kelimeler çıkmaz. Sol ön taraftaki <span class='color-red'>Kırmızı Şiddetli Çakar Işıklar</span>, beynin dudak ve dil kaslarına komut gönderirken yaşadığı <span class='term'>Apraksi / Afazi (İletim Tıkanıklığı)</span> durumunu temsil eder.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> YZ ses analizi araçları, çocuğun çıkardığı her mikrosesi analiz edip anında görsel geri bildirim vererek, beynin kırmızı alarm veren o bölgesini sakinleştirir ve <span class='color-cyan'>Senkronize Turkuaz</span> yollar kurar.</div>", heal: true 
+            },
+            'adhd': { 
+                t: "DEHB (Dikkat Eksikliği)", s: "Fren Zafiyeti", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Beynin 'Fren Merkezi' olan Ön Lob yeterince uyarılmaz <span class='color-grey'>(Sönük Gri Alan)</span>. Fren çalışmadığında, arka taraftaki motor merkezleri kontrolden çıkar. Arkada patlayan <span class='color-yellow'>Canlı Sarı</span> ve <span class='color-orange'>Turuncu Işıklar</span> hiperaktiviteyi simgeler.<br><br><i>Biter mi?</i> İlaç ve doğru YZ eğitimleriyle %70-80 oranında kontrol altına alınabilir, dürtüsellik yönetilir.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> YZ tabanlı oyunlaştırma, dopamin salgısını tetikleyerek sönük ön lobu aktif hale getirir. Arka taraftaki kaotik patlamalar, düzenli bir öğrenme ağına dönüşür.</div>", heal: true 
+            },
+            'autism': { 
+                t: "Otizm (OSB)", s: "Duyusal Aşırı Yüklenme", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Çevreden gelen uyaranları filtreleyemez. Parietal Loptaki <span class='color-purple'>Canlı Mor Patlamalar</span>, basit bir sesin bile beyinde nasıl bir havai fişek gösterisi <span class='term'>(Duyusal Meltdown)</span> yarattığını kanıtlar.<br><br><i>İyileşir mi?</i> Otizm iyileşmesi gereken bir hastalık değil, varoluş biçimidir (Nöroçeşitlilik). Ancak krizler %75 oranında minimize edilebilir.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> Duyusal yükü minimize eden YZ yazılımları, o <span class='color-purple'>mor kriz patlamalarını</span> yatıştırır ve beyinde odaklanılabilir <span class='color-cyan'>parlak turkuaz</span> yollar açar.</div>", heal: true 
+            },
+            'metabolic': { 
+                t: "Metabolik Sorun", s: "Nörotoksik Etki", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Genetik bozukluklar, beyin omurilik sıvısında zararlı madde birikimine neden olur. Simülasyonda beyni kaplayan <span class='color-green'>Yeşil Toksik Titreşimler</span>, nöronların bu zehirli ortamda ne kadar kaotik sinyaller ürettiğini göstermektedir.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> Tıbbi tedaviyle eş zamanlı uygulanan YZ bilişsel egzersizleri, yeşil toksik alanların yarattığı zihinsel hasarı yeni <span class='color-gold'>Altın</span> ağlar bularak %50-60 oranında kompanze eder.</div>", heal: true 
+            },
+            'cp': { 
+                t: "Serebral Palsi (CP)", s: "Motor Korteks Hasarı", 
+                d: "<div class='cause-box'><span class='cause-text'>[SEBEP]:</span> Kas hareketlerini yöneten üst şerit <span class='term'>(Motor Korteks)</span> hasarlıdır. Üstteki <span class='color-red'>Kırmızı Şimşekler</span>, kaslara giden sinyallerin hatalı ateşlenmesini <span class='term'>(Spastisite)</span> temsil eder.<br><br><i>İyileşir mi?</i> Ölü beyin dokusu (%0) yenilenmez ancak beynin diğer kısımları görevi devralmayı öğrenebilir.</div><div class='solution-box'><span class='solution-text'>[YZ ÇÖZÜMÜ]:</span> BCI (Beyin Bilgisayar Arayüzü) ve YZ göz takibi teknolojileri, o <span class='color-red'>kırmızı hasarlı korteksi</span> atlayarak beynin sağlam bölgeleri üzerinden kaslara yeni <span class='color-cyan'>turkuaz</span> ağlar örer.</div>", heal: true 
+            },
+            
+            // YZ MODLARI (GRAFİKLİ)
+            'ai_learning': { 
+                t: "YZ ile Bireyselleştirilmiş Öğrenme", s: "Gelişmiş Nöroplastisite", 
+                d: "<p>Yapay zeka algoritmalarıyla eğitim gören bir çocuğun beyninde, standart bir eğitime kıyasla muazzam bir <span class='highlight'>Nöroplastisite (Yeni Sinirsel Yollar Kurma)</span> gerçekleşir. Ekranda beliren <span class='color-gold'>Altın Sarısı</span> ve <span class='color-cyan'>Parlak Cyan</span> parlamalar, beynin kurduğu bu güçlü analitik bağlantıları temsil eder.</p>", 
+                heal: false, showStats: true 
+            },
+            'algorithmic': { 
+                t: "Algoritmik Düşünme Ağı", s: "Mantık ve Planlama", 
+                d: "<p>Kodlama öğrenme sürecinde, beynin 'Yönetici Merkezi' olan Ön Lob ile 'Mantıksal İşlem Merkezi' olan Yan Lob arasında devasa bir veri otobanı kurulur. Sistematik hata ayıklama <span class='term'>(Debugging)</span> yapan çocuğun <b>Analitik Problem Çözme Kapasitesi (Resilience)</b> geleneksel eğitime göre 2 kat artar.</p>", 
+                heal: false, showStats: true 
+            }
+        };
 
-            // YAPAY ZEKA (Yeni Sekme Verileri)
-            'ai_learning': { t: "Yapay Zeka Etkileşimi", s: "Gelişmiş Nöroplastisite", d: "Yapay zeka ile etkileşime giren, makine öğrenmesi mantığını kavrayan bir çocuğun beyninde muazzam bir <span class='highlight'>Nöroplastisite</span> (beynin esnekliği ve yeni ağlar kurma becerisi) gerçekleşir.<br><br>Altın rengi parlamalar, beynin yeni kurduğu güçlü teknolojik ve analitik sinirsel bağlantıları <span class='term'>(Sinaptik Ağlar)</span> temsil eder. Bilgi artık tek yönlü değil, çok boyutlu işlenir." },
-            'algorithmic': { t: "Algoritmik Düşünme", s: "Mantık ve Planlama Ağı", d: "Kodlama ve algoritma öğrenme sürecinde, beynin 'Yönetici Merkezi' olan <span class='term'>(Prefrontal Korteks)</span> ile 'Matematiksel/Mantıksal İşlem Merkezi' olan <span class='term'>(Parietal Lop)</span> arasında devasa bir veri otobanı <span class='term'>(Parlak Cyan ve Altın Ağlar)</span> kurulur.<br><br>Sistematik hata ayıklama <span class='term'>(Debugging)</span> süreci, çocuğun problem çözme ve soyut düşünme kapasitesini zirveye taşır." }
+        window.switchTab = function(tabName, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btnElement.classList.add('active');
+            document.querySelectorAll('.control-panel').forEach(p => p.classList.remove('visible')); document.getElementById('panel-' + tabName).classList.add('visible');
+            const infoPanel = document.getElementById('info-panel'); infoPanel.className = ''; 
+            if(tabName === 'ai') infoPanel.classList.add('ai-mode'); if(tabName === 'problems') infoPanel.classList.add('problem-mode');
         };
 
         window.setMode = function(key) {
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active')); event.currentTarget.classList.add('active');
+            targetHealed = 0.0; currentHealed = 0.0;
+            const hBtn = document.getElementById('heal-btn'); hBtn.innerHTML = "✨ YZ Çözümünü Simüle Et"; hBtn.classList.remove('active-heal');
+
             const info = infoData[key];
             if(info) {
-                document.getElementById('info-title').innerText = info.t;
-                document.getElementById('info-sub').innerText = info.s;
+                document.getElementById('info-title').innerText = info.t; document.getElementById('info-sub').innerText = info.s;
                 document.getElementById('info-desc').innerHTML = info.d;
+                document.getElementById('heal-btn-container').style.display = info.heal ? 'block' : 'none';
+                
+                const statsContainer = document.getElementById('ai-stats-container');
+                if (info.showStats) {
+                    statsContainer.style.display = 'flex';
+                    const circles = document.querySelectorAll('.circle');
+                    circles.forEach(c => { c.style.animation = 'none'; c.offsetHeight; c.style.animation = null; });
+                } else {
+                    statsContainer.style.display = 'none';
+                }
             }
 
             let modeId = 0;
-            if(key === 'normal') modeId = 0;
-            if(key === 'frontal') modeId = 1;
-            if(key === 'parietal') modeId = 2;
-            if(key === 'occipital') modeId = 3;
-            if(key === 'temporal') modeId = 4;
-            
-            if(key === 'intellectual') modeId = 10;
-            if(key === 'speech') modeId = 11;
-            if(key === 'dyslexia') modeId = 12;
-            if(key === 'adhd') modeId = 13;
-            if(key === 'autism') modeId = 14;
-            if(key === 'metabolic') modeId = 15;
-            if(key === 'cp') modeId = 16;
-            
-            if(key === 'ai_learning') modeId = 20;
-            if(key === 'algorithmic') modeId = 21;
-            
+            if(key === 'normal') modeId = 0; if(key === 'frontal') modeId = 1; if(key === 'parietal') modeId = 2;
+            if(key === 'occipital') modeId = 3; if(key === 'temporal') modeId = 4;
+            if(key === 'intellectual') modeId = 10; if(key === 'speech') modeId = 11; if(key === 'learning_disability') modeId = 12;
+            if(key === 'adhd') modeId = 13; if(key === 'autism') modeId = 14; if(key === 'metabolic') modeId = 15; if(key === 'cp') modeId = 16; if(key === 'dyslexia') modeId = 17;
+            if(key === 'ai_learning') modeId = 20; if(key === 'algorithmic') modeId = 21;
             simulationParams.mode = modeId;
         };
 
-        // --- RENDER DÖNGÜSÜ ---
         const clock = new THREE.Clock();
-
         function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            requestAnimationFrame(animate); const time = clock.getElapsedTime();
+            currentHealed += (targetHealed - currentHealed) * 0.02;
 
-            neuronMaterial.uniforms.time.value = time;
-            neuronMaterial.uniforms.mode.value = simulationParams.mode;
-            
-            brainMaterial.uniforms.time.value = time;
-            brainMaterial.uniforms.mode.value = simulationParams.mode;
+            neuronMaterial.uniforms.time.value = time; neuronMaterial.uniforms.mode.value = simulationParams.mode; neuronMaterial.uniforms.isHealed.value = currentHealed;
+            brainMaterial.uniforms.time.value = time; brainMaterial.uniforms.mode.value = simulationParams.mode; brainMaterial.uniforms.isHealed.value = currentHealed;
 
-            // Arka plandaki parçacıkların yavaşça kendi etrafında dönmesi (kameradan bağımsız)
-            particleSystem.rotation.y = time * 0.05;
-            
-            // Manuel kamera kontrolü için update (autoRotate kapalı olduğu için sadece el/fare hareketini yansıtır)
-            controls.update();
-            renderer.render(scene, camera);
+            particleSystem.rotation.y = time * 0.05; controls.update(); renderer.render(scene, camera);
         }
         animate();
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
