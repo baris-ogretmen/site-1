@@ -692,7 +692,9 @@
 
             let h="";
             tumDinamikIcerikler.slice(0, 6).forEach(p => {
-                h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
+                const gBaslik = (p.baslik || '').replace(/'/g, "\\'");
+                const gLink = (p.link || '').replace(/'/g, "\\'");
+                h+=`<a href="${p.link}" onclick="tiklamaKaydet('${gBaslik}','${gLink}')" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
             });
             document.getElementById('proje-alani').innerHTML = h || '<div style="width:100%; padding:20px; color:#999; text-align:center;">Yeni içerikler yakında.</div>';
         });
@@ -805,7 +807,22 @@
             area.innerHTML = h;
         }
 
+        // --- TIKLANMA SAYACI: hangi oyun kaç kez açıldı ---
+        window.tiklamaKaydet = function(baslik, link) {
+            try {
+                let id = (link || baslik || 'bilinmeyen').toString().replace(/^https?:\/\//, '').replace(/[^\w-]/g, '_').substring(0, 130);
+                if (!id) id = 'bilinmeyen';
+                db.collection("tiklama_istatistik").doc(id).set({
+                    baslik: baslik || '',
+                    link: link || '',
+                    sayi: firebase.firestore.FieldValue.increment(1),
+                    son_tiklama: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            } catch (e) {}
+        };
+
         window.oyunAc = function(url, baslik) {
+            tiklamaKaydet(baslik, url);
             const overlay = document.getElementById('game-overlay');
             const frame = document.getElementById('game-frame');
             frame.src = url;
