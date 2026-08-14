@@ -726,9 +726,7 @@
 
             let h="";
             tumDinamikIcerikler.slice(0, 6).forEach(p => {
-                const gBaslik = (p.baslik || '').replace(/'/g, "\\'");
-                const gLink = (p.link || '').replace(/'/g, "\\'");
-                h+=`<a href="${p.link}" onclick="tiklamaKaydet('${gBaslik}','${gLink}')" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
+                h+=`<a href="${p.link}" class="resource-card searchable" data-name="${p.baslik.toLowerCase()}"><div class="rc-icon"><i class="fas ${p.icon}"></i></div><div><h4>${p.baslik}</h4><p>${p.kategori || 'Genel'}</p></div></a>`;
             });
             document.getElementById('proje-alani').innerHTML = h || '<div style="width:100%; padding:20px; color:#999; text-align:center;">Yeni içerikler yakında.</div>';
         });
@@ -841,19 +839,50 @@
             area.innerHTML = h;
         }
 
-        // --- TIKLANMA SAYACI: hangi oyun kaç kez açıldı ---
+        // --- TIKLANMA SAYACI (sağlam): her açılış yolunu sayar, sayfa geçse bile kaybolmaz ---
+        function tiklamaId(link, baslik) {
+            let id = (link || baslik || 'bilinmeyen').toString().replace(/^https?:\/\//, '').replace(/[^\w-]/g, '_').substring(0, 130);
+            return id || 'bilinmeyen';
+        }
         window.tiklamaKaydet = function(baslik, link) {
-            try {
-                let id = (link || baslik || 'bilinmeyen').toString().replace(/^https?:\/\//, '').replace(/[^\w-]/g, '_').substring(0, 130);
-                if (!id) id = 'bilinmeyen';
-                db.collection("tiklama_istatistik").doc(id).set({
-                    baslik: baslik || '',
-                    link: link || '',
-                    sayi: firebase.firestore.FieldValue.increment(1),
-                    son_tiklama: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true }).catch(() => {});
+            try { // 1) önce yerel kuyruğa yaz → sayfa değişse bile kaybolmaz
+                const kuyruk = JSON.parse(localStorage.getItem('tiklama_kuyruk') || '[]');
+                kuyruk.push({ baslik: baslik || '', link: link || '' });
+                localStorage.setItem('tiklama_kuyruk', JSON.stringify(kuyruk));
             } catch (e) {}
+            tiklamaKuyrukGonder(); // 2) hemen göndermeyi dene
         };
+        function tiklamaKuyrukGonder() {
+            let kuyruk;
+            try { kuyruk = JSON.parse(localStorage.getItem('tiklama_kuyruk') || '[]'); } catch (e) { return; }
+            if (!kuyruk.length) return;
+            try { localStorage.setItem('tiklama_kuyruk', '[]'); } catch (e) {} // iyimser temizle
+            kuyruk.forEach(it => {
+                try {
+                    db.collection("tiklama_istatistik").doc(tiklamaId(it.link, it.baslik)).set({
+                        baslik: it.baslik || '', link: it.link || '',
+                        sayi: firebase.firestore.FieldValue.increment(1),
+                        son_tiklama: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true }).catch(() => {
+                        try { const k = JSON.parse(localStorage.getItem('tiklama_kuyruk') || '[]'); k.push(it); localStorage.setItem('tiklama_kuyruk', JSON.stringify(k)); } catch (e) {}
+                    });
+                } catch (e) {}
+            });
+        }
+        tiklamaKuyrukGonder(); // sayfa açılışında bekleyen tıklamaları gönder
+
+        // Tüm siteyi kapsayan tek dinleyici: hangi karttan açılırsa açılsın sayar
+        document.addEventListener('click', function(e) {
+            const k = e.target.closest('.resource-card, .super-card, .book-container, .search-item, .vitrin-card, #haftanin-oyunu-karti');
+            if (!k) return;
+            let link = k.getAttribute('href') || '';
+            if (!link || link === '#' || link.indexOf('javascript:') === 0) return; // scroll/oyunAc kısayolları → oyunAc zaten sayıyor, çift sayma
+            let baslik = '';
+            const h = k.querySelector('h3, h4');
+            if (h) baslik = h.innerText.trim();
+            if (!baslik) baslik = (k.getAttribute('data-name') || k.innerText.trim().slice(0, 60));
+            tiklamaKaydet(baslik, link);
+        }, true);
 
         window.oyunAc = function(url, baslik) {
             tiklamaKaydet(baslik, url);
