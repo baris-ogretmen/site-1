@@ -531,7 +531,12 @@
         try { localStorage.setItem('ob_goruldu', '1'); } catch(e) {}
     };
     (function() {
-        try { if (localStorage.getItem('ob_goruldu') !== '1') document.getElementById('onboarding').style.display = 'flex'; }
+        try {
+            if (localStorage.getItem('ob_goruldu') !== '1') {
+                document.getElementById('onboarding').style.display = 'flex';
+                localStorage.setItem('ob_goruldu', '1'); // ilk gösterimde işaretle → bir daha açılmaz
+            }
+        }
         catch(e) { document.getElementById('onboarding').style.display = 'flex'; }
     })();
 
@@ -846,7 +851,7 @@
                     link: link || '',
                     sayi: firebase.firestore.FieldValue.increment(1),
                     son_tiklama: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                }, { merge: true }).catch(() => {});
             } catch (e) {}
         };
 
@@ -925,7 +930,9 @@
             if(!ad || !iletisim || !konu) { alert("Lütfen tüm alanları doldurunuz."); return; }
             let veri = { ad_soyad: ad, konu: konu, tarih: firebase.firestore.FieldValue.serverTimestamp(), durum: "bekliyor" };
             if(iletisim.includes("@")) veri.email = iletisim; else veri.telefon = iletisim;
-            db.collection("iletisim_talepleri").add(veri).then(() => { alert("Mesajınız iletildi!"); document.getElementById('wa-modal').style.display = 'none'; });
+            db.collection("iletisim_talepleri").add(veri)
+                .then(() => { alert("Mesajınız iletildi! En kısa sürede size dönüş yapılacaktır."); document.getElementById('wa-modal').style.display = 'none'; })
+                .catch(() => { alert("Mesaj şu an gönderilemedi. Lütfen biraz sonra tekrar deneyin."); });
         }
 
         window.spinWheel = function() {
