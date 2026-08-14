@@ -114,6 +114,7 @@
             <button class="menu-btn" onclick="showSection('kitap-ekle')"><i class="fas fa-book"></i> Kitap Yönetimi</button>
             <button class="menu-btn" onclick="showSection('mesajlar')"><i class="fas fa-envelope"></i> Mesajlar <span id="msg-badge" style="display:none; background:#ef4444; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:auto;">0</span></button>
             <button class="menu-btn" onclick="showSection('duyuru-tavsiye')"><i class="fas fa-bullhorn"></i> Duyuru & Tavsiye</button>
+            <button class="menu-btn" style="color:#34d399;" onclick="showSection('denetim')"><i class="fas fa-heart-pulse"></i> İstatistik & Denetim</button>
             <button class="menu-btn" onclick="showSection('ayarlar')"><i class="fas fa-cog"></i> Ayarlar & Buton</button>
             <div style="margin-top:auto;">
                 <button onclick="if(confirm('Çıkış?')) auth.signOut()" class="menu-btn" style="color:#ef4444;"><i class="fas fa-sign-out-alt"></i> Çıkış</button>
@@ -246,6 +247,23 @@
                 <div class="card"><h3>⭐ Tavsiye Ekle</h3><input type="text" id="t-baslik" class="inp" placeholder="Başlık"><input type="text" id="t-link" class="inp" placeholder="Link"><button onclick="tavsiyeEkle()" class="btn btn-success">Ekle</button><div id="list-tavsiyeler" style="margin-top:15px;"></div></div>
             </div>
 
+            <div id="denetim" class="panel-section">
+                <h3>🩺 İstatistik & Denetim</h3>
+                <div class="card">
+                    <h3>📊 En Çok Açılan Oyunlar</h3>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-top:-5px;">Ziyaretçiler bir oyunu her açtığında sayaç artar. Hangi içerik tutuyor, hangisi hiç açılmıyor buradan görürsün.</p>
+                    <div id="denetim-toplam" style="background:var(--ana,#2563eb); color:#fff; padding:14px; border-radius:12px; text-align:center; margin:10px 0; font-weight:800;">—</div>
+                    <button onclick="denetimRaporKopyala()" class="btn btn-success" style="width:100%;">📋 Tıklanma Raporunu Kopyala</button>
+                    <div id="denetim-liste" style="margin-top:12px;"><div style="text-align:center; padding:15px; color:#666;">Yükleniyor...</div></div>
+                </div>
+                <div class="card">
+                    <h3>🔍 Bozuk Oyun Kontrolü</h3>
+                    <p style="color:#94a3b8; font-size:0.9rem; margin-top:-5px;">Tüm oyun/içerik bağlantılarını tek tek dener; kayıp (404) dosyaları bulur. Dış siteler otomatik denetlenemez, işaretlenir.</p>
+                    <button onclick="denetimKontrol()" id="denetim-basla" class="btn btn-primary" style="width:100%;">▶ Oyunları Denetle</button>
+                    <div id="denetim-sonuc" style="margin-top:12px;"></div>
+                </div>
+            </div>
+
             <div id="ayarlar" class="panel-section">
                 <div class="card" style="border:2px solid #fcd34d;">
                     <h3>🔴 Acil Buton Ayarları</h3>
@@ -300,6 +318,7 @@
             if(id==='kitap-ekle') kitaplariGetir(); 
             if(id==='yazi-yonetimi') yazilariGetirOzel();
             if(id==='vitrin-yonetimi') vitrinVerileriniGetir();
+            if(id==='denetim') denetimYukle();
         }
         function formuGuncelle() { const tur=document.querySelector('input[name="tur"]:checked').value; document.getElementById('area-detay').style.display=tur==='yazilar'?'none':'block'; document.getElementById('area-yazi').style.display=tur==='yazilar'?'block':'none'; }
 
@@ -452,6 +471,68 @@
         function testLink() { window.open(document.getElementById('set-media').value, '_blank'); }
         function icerikFiltrele() { const v=document.getElementById('search-content').value.toLowerCase(); document.querySelectorAll('#tum-icerik-listesi .list-item').forEach(i=>i.style.display=i.innerText.toLowerCase().includes(v)?'flex':'none'); }
         function istatistikGetir() { db.collection("istatistik").get().then(snap => { let g=0, a=0, t=0; const bugun=new Date().toISOString().split('T')[0]; const ay=bugun.substring(0,7); snap.forEach(d => { const s=d.data().ziyaret||0; t+=s; if(d.id.startsWith(ay)) a+=s; if(d.id===bugun) g=s; }); document.getElementById('stat-today').innerText=g; document.getElementById('stat-month').innerText=a; document.getElementById('stat-total').innerText=t; }); }
+
+        // ================= İSTATİSTİK & DENETİM =================
+        let denetimRaporMetni = "";
+        function denetimYukle() {
+            const liste = document.getElementById('denetim-liste');
+            const toplamEl = document.getElementById('denetim-toplam');
+            liste.innerHTML = '<div style="text-align:center; padding:15px; color:#666;">Yükleniyor...</div>';
+            db.collection("tiklama_istatistik").orderBy("sayi", "desc").get().then(s => {
+                if (s.empty) { toplamEl.innerText = "Henüz veri yok"; liste.innerHTML = '<div style="text-align:center; padding:15px; color:#94a3b8;">Ziyaretçiler oyun açtıkça burası dolacak.</div>'; denetimRaporMetni = ""; return; }
+                let toplam = 0; denetimRaporMetni = "TIKLANMA RAPORU\n\n"; let html = "";
+                s.forEach(d => { const v = d.data(); const say = v.sayi || 0; toplam += say; const ad = v.baslik || d.id;
+                    denetimRaporMetni += say + "\t" + ad + "\n";
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:#f1f5f9; border-radius:10px; margin-bottom:8px;"><span style="flex:1; color:#1e293b;">${ad}</span><b style="color:#2563eb; font-size:1.1rem;">${say}</b></div>`;
+                });
+                toplamEl.innerText = "Toplam " + toplam + " oyun açılışı";
+                liste.innerHTML = html;
+            }).catch(e => { liste.innerHTML = '<div style="color:#ef4444; padding:15px;">Veri okunamadı: ' + e.message + '</div>'; });
+        }
+
+        function denetimRaporKopyala() {
+            if (!denetimRaporMetni) return alert("Kopyalanacak veri yok.");
+            navigator.clipboard.writeText(denetimRaporMetni).then(() => alert("Rapor kopyalandı!"));
+        }
+
+        async function denetimKontrol() {
+            const btn = document.getElementById('denetim-basla');
+            const sonuc = document.getElementById('denetim-sonuc');
+            btn.disabled = true; btn.innerText = "Denetleniyor..."; sonuc.innerHTML = '';
+            let snap;
+            try { snap = await db.collection("projeler").get(); }
+            catch (e) { sonuc.innerHTML = '<div style="color:#ef4444; padding:15px;">Liste okunamadı.</div>'; btn.disabled = false; btn.innerText = "▶ Oyunları Denetle"; return; }
+            const items = []; snap.forEach(d => { const v = d.data(); if (v.link) items.push({ ad: v.baslik || d.id, link: v.link }); });
+            if (!items.length) { sonuc.innerHTML = '<div style="color:#94a3b8; padding:15px;">Kontrol edilecek bağlantı yok.</div>'; btn.disabled = false; btn.innerText = "▶ Oyunları Denetle"; return; }
+            let ok = 0, hata = 0, dis = 0, rapor = "OYUN SAGLIK RAPORU\n\n";
+            for (const it of items) {
+                const row = document.createElement('div');
+                row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f1f5f9; border-radius:10px; margin-bottom:8px; gap:10px;";
+                row.innerHTML = `<span style="flex:1; font-size:0.9rem; color:#1e293b;">${it.ad}</span><span style="white-space:nowrap;">⏳</span>`;
+                sonuc.appendChild(row);
+                const durum = row.querySelector('span:last-child');
+                const disMi = /^https?:\/\//i.test(it.link) && it.link.indexOf('baris-ogretmen.github.io') === -1;
+                if (disMi) { durum.innerHTML = '⚠️ dış'; durum.style.color = '#d97706'; dis++; rapor += "DIS\t" + it.ad + "\t" + it.link + "\n"; }
+                else {
+                    try {
+                        let r = await fetch(it.link, { method: 'HEAD' });
+                        if (r.status === 405) r = await fetch(it.link, { method: 'GET' });
+                        if (r.ok) { durum.innerHTML = '✅'; durum.style.color = '#16a34a'; ok++; rapor += "OK\t" + it.ad + "\n"; }
+                        else { durum.innerHTML = '❌ ' + r.status; durum.style.color = '#ef4444'; hata++; rapor += "HATA " + r.status + "\t" + it.ad + "\t" + it.link + "\n"; }
+                    } catch (e) { durum.innerHTML = '❌ ulaşılamadı'; durum.style.color = '#ef4444'; hata++; rapor += "ULASILAMADI\t" + it.ad + "\t" + it.link + "\n"; }
+                }
+                await new Promise(res => setTimeout(res, 120));
+            }
+            const ozet = document.createElement('div');
+            ozet.style.cssText = "margin-top:14px; padding:16px; background:#0f172a; color:#e2e8f0; border-radius:12px;";
+            ozet.innerHTML = `<b>Özet:</b> ✅ ${ok} çalışıyor · ❌ ${hata} sorunlu · ⚠️ ${dis} dış bağlantı`;
+            const kopyaBtn = document.createElement('button');
+            kopyaBtn.className = "btn btn-success"; kopyaBtn.style.cssText = "width:100%; margin-top:12px;"; kopyaBtn.innerText = "📋 Sağlık Raporunu Kopyala";
+            kopyaBtn.onclick = () => navigator.clipboard.writeText(rapor).then(() => alert("Rapor kopyalandı!"));
+            ozet.appendChild(kopyaBtn);
+            sonuc.appendChild(ozet);
+            btn.disabled = false; btn.innerText = "▶ Tekrar Denetle";
+        }
         
         // --- MESAJ YANITLAMA BUTONLARI (GERİ GELDİ) ---
         function mesajlariGetir() { 
