@@ -86,6 +86,40 @@
             svg { stroke: black !important; fill: none !important; }
             .border-b, .border-t { border-color: #aaa !important; }
         }
+
+        /* ============ ZİRVE KATMANI STİLLERİ ============ */
+        @keyframes zirve-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zirve-pop-in { 0% { opacity: 0; transform: translateY(24px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes zirve-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+        .zirve-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(6px); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: zirve-fade-in 0.25s ease; }
+        .zirve-modal { background: #ffffff; border-radius: 1.75rem; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px -12px rgba(30, 27, 75, 0.45); animation: zirve-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        /* Silik yardım (?) düğmesi */
+        .zirve-help-fab { position: fixed; right: 14px; bottom: 88px; z-index: 55; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #4338ca); color: white; font-weight: 900; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px -4px rgba(79, 70, 229, 0.5); opacity: 0.45; transition: opacity 0.2s, transform 0.2s; border: 2px solid rgba(255,255,255,0.6); }
+        .zirve-help-fab:hover { opacity: 1; transform: scale(1.1); }
+
+        /* Ekran modu pill */
+        .zirve-screen-pill { position: fixed; left: 14px; bottom: 88px; z-index: 55; display: flex; align-items: center; gap: 6px; background: rgba(30, 41, 59, 0.85); color: #e0e7ff; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 999px; box-shadow: 0 4px 12px -3px rgba(0,0,0,0.3); opacity: 0.5; transition: opacity 0.2s; cursor: pointer; backdrop-filter: blur(4px); user-select: none; }
+        .zirve-screen-pill:hover { opacity: 1; }
+        .zirve-screen-pill .zx { opacity: 0.6; padding: 0 2px; }
+        .zirve-screen-pill .zx:hover { opacity: 1; color: #fca5a5; }
+
+        /* AI uyarı bandı */
+        .zirve-ai-band { position: fixed; left: 50%; transform: translateX(-50%); bottom: 84px; z-index: 56; max-width: 92vw; background: linear-gradient(135deg, #1e293b, #312e81); color: #e2e8f0; border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 1rem; padding: 10px 14px; box-shadow: 0 10px 30px -8px rgba(0,0,0,0.4); display: flex; align-items: flex-start; gap: 10px; font-size: 12px; font-weight: 600; animation: zirve-pop-in 0.4s ease; }
+
+        /* Sağlık paneli rozetleri */
+        .zirve-key-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 8px 12px; margin-bottom: 8px; }
+        .zirve-status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+        /* QR kutusu */
+        .zirve-qr-box { background: white; padding: 16px; border-radius: 1rem; display: inline-block; box-shadow: inset 0 0 0 1px #e2e8f0; }
+        .zirve-qr-box img, .zirve-qr-box canvas, .zirve-qr-box table { display: block; margin: 0 auto; }
+
+        @media print {
+            .zirve-help-fab, .zirve-screen-pill, .zirve-ai-band, .zirve-overlay { display: none !important; }
+            html { zoom: 1 !important; }
+        }
     </style>
 </head>
 <body class="text-slate-800 flex justify-center">
@@ -284,6 +318,9 @@
                     </button>
                     <button onclick="copyReport()" class="bg-indigo-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center justify-center flex-1">
                         📋 Kopyala
+                    </button>
+                    <button onclick="zirvePaylasAc()" class="bg-purple-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-md hover:bg-purple-700 transition flex items-center justify-center" title="QR ile paylaş">
+                        📲 QR
                     </button>
                 </div>
 
@@ -558,22 +595,77 @@
                         Sistem Ayarları
                     </h3>
                     <p class="text-xs text-indigo-700 mb-5 font-bold p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                        Lütfen analizi başlatmadan önce geçerli bir Google Gemini API Anahtarı ve kullanmak istediğiniz modeli giriniz.
+                        Analizi başlatmak için en az bir geçerli Google Gemini API anahtarı girin. Birden fazla anahtar eklerseniz sistem kota dolduğunda otomatik olarak diğerine geçer. Model <strong>otomatik</strong> seçilir; elle yazmanıza gerek yok.
                     </p>
+
+                    <!-- API ANAHTAR REHBERİ -->
+                    <details class="mb-5 bg-white border border-indigo-100 rounded-xl overflow-hidden">
+                        <summary class="cursor-pointer select-none px-4 py-3 text-sm font-black text-indigo-800 bg-indigo-50/50 flex items-center">
+                            <span class="text-lg mr-2">📘</span> Ücretsiz API Anahtarı Nasıl Alınır? (Adım Adım)
+                        </summary>
+                        <div class="p-4 text-[13px] text-slate-700 font-medium leading-6 space-y-2">
+                            <p><strong>1.</strong> Aşağıdaki <strong>"Ücretsiz Anahtar Al"</strong> düğmesine tıklayın (Google AI Studio açılır).</p>
+                            <p><strong>2.</strong> Google hesabınızla giriş yapın.</p>
+                            <p><strong>3.</strong> <strong>"Create API key"</strong> / <strong>"API anahtarı oluştur"</strong> deyin.</p>
+                            <p><strong>4.</strong> Oluşan <span class="font-mono bg-slate-100 px-1 rounded">AIzaSy...</span> ile başlayan anahtarı kopyalayın.</p>
+                            <p><strong>5.</strong> Aşağıdaki kutuya yapıştırın ve <strong>Kaydet</strong>'e basın. Bitti! 🎉</p>
+                            <p class="text-[11px] text-indigo-600 bg-indigo-50 p-2 rounded-lg mt-2">💡 İpucu: Her satıra bir anahtar yazarak birden fazla anahtar ekleyebilirsiniz. Toplu/çok sayıda analiz yapacaksanız bu, kota kesintilerini önler.</p>
+                        </div>
+                    </details>
+
                     <div class="space-y-4 mb-6">
                         <div>
-                            <label class="block text-xs font-black text-indigo-800 mb-1">API Anahtarı (Zorunlu):</label>
-                            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full px-4 py-3 rounded-xl border-2 border-indigo-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-inner">
+                            <label class="block text-xs font-black text-indigo-800 mb-1">API Anahtar(lar)ı — her satıra bir anahtar:</label>
+                            <textarea id="apiKeysArea" rows="3" placeholder="AIzaSy...&#10;AIzaSy... (isteğe bağlı ikinci anahtar)" class="w-full px-4 py-3 rounded-xl border-2 border-indigo-200 text-sm font-mono text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-inner resize-none"></textarea>
+                            <!-- Geriye dönük uyumluluk için gizli tekli alan korunuyor -->
+                            <input type="hidden" id="apiKeyInput">
                         </div>
                         <div>
-                            <label class="block text-xs font-black text-indigo-800 mb-1">Yapay Zeka Modeli (Zorunlu):</label>
-                            <input type="text" id="modelInput" placeholder="Örn: gemini-2.5-flash" value="" class="w-full px-4 py-3 rounded-xl border-2 border-indigo-200 text-sm font-mono text-slate-700 outline-none transition shadow-inner">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-black text-indigo-800">Yapay Zeka Modeli (otomatik):</label>
+                                <button onclick="zirveModelleriYenile()" class="text-[11px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded-lg hover:bg-indigo-100 transition">🔄 Modelleri Yenile</button>
+                            </div>
+                            <select id="modelSelect" class="w-full px-4 py-3 rounded-xl border-2 border-indigo-200 text-sm font-mono text-slate-700 outline-none transition shadow-inner bg-white">
+                                <option value="">Anahtar girip kaydedin → modeller otomatik yüklenir</option>
+                            </select>
+                            <!-- Geriye dönük uyumluluk için gizli model alanı korunuyor -->
+                            <input type="hidden" id="modelInput">
+                            <p id="modelDiscoveryHint" class="text-[11px] text-slate-500 font-bold mt-1"></p>
                         </div>
                     </div>
-                    <div class="flex gap-3">
+                    <div class="flex gap-3 mb-6">
                         <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-black flex-1 shadow-lg transition transform active:scale-95">Kaydet</button>
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-xl text-sm font-black text-center flex-1 transition">Anahtar Al</a>
+                        <a href="https://aistudio.google.com/apikey" target="_blank" class="bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50 px-5 py-3 rounded-xl text-sm font-black text-center flex-1 transition">🔑 Ücretsiz Anahtar Al</a>
                     </div>
+                </div>
+
+                <!-- ANAHTAR SAĞLIK PANELİ -->
+                <div class="glass-card p-6">
+                    <h3 class="font-extrabold text-slate-800 mb-1 flex items-center text-lg">
+                        <span class="text-xl mr-2">💚</span> Anahtar Sağlık Paneli
+                    </h3>
+                    <p class="text-[11px] text-slate-500 font-bold mb-4">🟢 Hazır &nbsp; 🟡 Dakikalık kota dolu &nbsp; 🟠 Günlük kota dolu</p>
+                    <div id="keyHealthPanel" class="space-y-2">
+                        <p class="text-xs text-slate-400 font-bold text-center py-3">Henüz anahtar eklenmedi.</p>
+                    </div>
+                </div>
+
+                <!-- GELİŞTİRİCİ: UZMAN MODU QC TESTİ -->
+                <div class="glass-card p-6 bg-slate-50/50 opacity-90">
+                    <details>
+                        <summary class="cursor-pointer select-none font-black text-slate-600 text-sm flex items-center">
+                            <span class="text-lg mr-2">🧪</span> Şablon Test Modu (Uzman Modu Kalite Kontrol)
+                        </summary>
+                        <div class="mt-4">
+                            <p class="text-[12px] text-slate-500 font-medium mb-3 leading-6">Örnek bir vaka metnini <strong>tüm uzman modlarına</strong> sırayla gönderir; her yanıtın geçerli JSON olup olmadığını, zorunlu alanların (özet, risk, DSM, hedefler) dolu olup olmadığını otomatik denetler. Kota biterse "Kaldığından Devam Et" ile sürdürebilirsiniz.</p>
+                            <div class="flex gap-2 flex-wrap">
+                                <button onclick="zirveQCBaslat(false)" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-black hover:bg-slate-800 transition">▶ Testi Başlat</button>
+                                <button onclick="zirveQCBaslat(true)" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-xs font-black hover:bg-slate-100 transition">⏭ Kaldığından Devam Et</button>
+                                <button onclick="zirveQCRaporKopyala()" class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-xs font-black hover:bg-slate-100 transition">📋 Raporu Kopyala</button>
+                            </div>
+                            <div id="qcReport" class="mt-3 text-[12px] font-mono bg-white border border-slate-200 rounded-lg p-3 max-h-64 overflow-y-auto hidden"></div>
+                        </div>
+                    </details>
                 </div>
             </main>
 
@@ -600,6 +692,34 @@
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3.5 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 text-sm font-bold flex items-center min-w-max max-w-[90vw] text-center border border-slate-700">
         <span id="toastMsg"></span>
     </div>
+
+    <!-- ============ ZİRVE MODÜLLERİ ============ -->
+
+    <!-- A) İLK AÇILIŞ KARŞILAMA -->
+    <div id="zirveWelcomeOverlay" class="zirve-overlay no-print" style="display:none;">
+        <div class="zirve-modal" id="zirveWelcomeBody"></div>
+    </div>
+
+    <!-- C) QR İLE PAYLAŞ -->
+    <div id="zirveQrOverlay" class="zirve-overlay no-print" style="display:none;">
+        <div class="zirve-modal" id="zirveQrBody" style="max-width:400px;text-align:center;"></div>
+    </div>
+
+    <!-- AI UYARI BANDI -->
+    <div id="zirveAiBand" class="zirve-ai-band no-print" style="display:none;">
+        <span class="text-lg leading-none">🤖</span>
+        <div class="flex-1">Bu bir <strong>yapay zekâ</strong> aracıdır; %100 doğru olmayabilir. Klinik kararlar için mutlaka bir uzman hekime danışın ve önemli bilgileri kaynaktan teyit edin.</div>
+        <button onclick="zirveAiBandKapat()" class="text-slate-400 hover:text-white font-black text-lg leading-none px-1">×</button>
+    </div>
+
+    <!-- EKRAN MODU PILL -->
+    <div id="zirveScreenPill" class="zirve-screen-pill no-print" style="display:none;">
+        <span onclick="zirveEkranDondur()">📺 <span id="zirveScreenLabel">Oto</span></span>
+        <span class="zx" onclick="zirveScreenPillKapat()">×</span>
+    </div>
+
+    <!-- YARDIM (?) DÜĞMESİ -->
+    <button id="zirveHelpFab" class="zirve-help-fab no-print" onclick="zirveKarsilamaAc()" title="Nasıl kullanılır?">?</button>
 
     <script>
         const systemApiKey = ""; 
@@ -628,6 +748,432 @@
             'preschool': { icon: "🎨", title: "Okul Öncesi", desc: "Akran ilişkileri ve erken dönem adaptasyon." }
         };
 
+        /* ==================================================================
+           ZİRVE KATMANI ÇEKİRDEĞİ  (self-contained, vanilla JS)
+           ================================================================== */
+
+        // (1) ÇOKLU ANAHTAR API HALKASI
+        // Katmanı yeni bir projeye kopyalayınca anahtarların otomatik yüklenmesini
+        // istersen, aşağıya tırnak içinde ekle. localStorage boşsa buradan doldurulur.
+        const GOMULU_ANAHTARLAR = [
+            // "AIzaSy...",
+        ];
+
+        window.ZIRVE = window.ZIRVE || {};
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        const ZK = {
+            keys: 'zirve_api_keys', legacyKey: 'gemini_api_key', model: 'gemini_model_name',
+            models: 'zirve_models', welcome: 'zirve_karsilama_goruldu', aiband: 'zirve_aiband_kapatildi',
+            screen: 'zirve_ekran_modu', screenHidden: 'zirve_ekran_pill_gizli', qc: 'zirve_qc_progress'
+        };
+
+        let apiKeyRing = [];
+        let ringIndex = 0;
+
+        function ringLoad() {
+            let stored = [];
+            try { stored = JSON.parse(localStorage.getItem(ZK.keys) || '[]'); } catch (e) { stored = []; }
+            const legacy = localStorage.getItem(ZK.legacyKey);
+            if (legacy && !stored.includes(legacy)) stored.unshift(legacy);
+            if (stored.length === 0 && GOMULU_ANAHTARLAR.length > 0) {
+                stored = GOMULU_ANAHTARLAR.slice();
+                localStorage.setItem(ZK.keys, JSON.stringify(stored));
+            }
+            apiKeyRing = [...new Set(stored.filter(Boolean))].map(k => ({ key: k, status: 'ready', cooldownUntil: 0 }));
+            ringIndex = 0;
+        }
+        function ringSave(keysArray) {
+            const clean = [...new Set(keysArray.map(k => k.trim()).filter(Boolean))];
+            localStorage.setItem(ZK.keys, JSON.stringify(clean));
+            if (clean[0]) localStorage.setItem(ZK.legacyKey, clean[0]); else localStorage.removeItem(ZK.legacyKey);
+            ringLoad();
+        }
+        function ringHasKeys() { return apiKeyRing.length > 0; }
+        function ringRefreshStatuses() {
+            const now = Date.now();
+            apiKeyRing.forEach(k => { if (k.status === 'minute' && now > k.cooldownUntil) k.status = 'ready'; });
+        }
+        function ringNext() {
+            ringRefreshStatuses();
+            for (let i = 0; i < apiKeyRing.length; i++) {
+                const idx = (ringIndex + i) % apiKeyRing.length;
+                if (apiKeyRing[idx].status === 'ready') { ringIndex = idx; return apiKeyRing[idx]; }
+            }
+            return null;
+        }
+        function ringMark(keyObj, status, cooldownMs) {
+            keyObj.status = status;
+            if (cooldownMs) keyObj.cooldownUntil = Date.now() + cooldownMs;
+            if (apiKeyRing.length) ringIndex = (ringIndex + 1) % apiKeyRing.length;
+            renderKeyHealth();
+        }
+
+        // (5) ANAHTAR SAĞLIK PANELİ
+        function renderKeyHealth() {
+            const panel = document.getElementById('keyHealthPanel');
+            if (!panel) return;
+            ringRefreshStatuses();
+            if (apiKeyRing.length === 0) { panel.innerHTML = '<p class="text-xs text-slate-400 font-bold text-center py-3">Henüz anahtar eklenmedi.</p>'; return; }
+            const map = { ready: ['🟢', '#10b981', 'Hazır'], minute: ['🟡', '#f59e0b', 'Dakikalık kota dolu'], daily: ['🟠', '#f97316', 'Günlük kota dolu'] };
+            panel.innerHTML = apiKeyRing.map(k => {
+                const [emo, col, txt] = map[k.status] || map.ready;
+                const mask = k.key.length > 12 ? k.key.slice(0, 6) + '••••' + k.key.slice(-4) : '••••';
+                return '<div class="zirve-key-row"><div class="flex items-center gap-2"><span class="zirve-status-dot" style="background:' + col + '"></span><span class="font-mono text-xs text-slate-600">' + mask + '</span></div><span class="text-[11px] font-black" style="color:' + col + '">' + emo + ' ' + txt + '</span></div>';
+            }).join('');
+        }
+
+        // (2) CANLI MODEL KEŞFİ
+        let ZIRVE_MODELLER = { text: [] };
+        const MODEL_ALIAS = {
+            'gemini-flash-latest': 'gemini-2.5-flash', 'gemini-pro-latest': 'gemini-2.5-pro',
+            'gemini-flash-lite-latest': 'gemini-2.5-flash-lite', 'gemini-2.0-flash-latest': 'gemini-2.0-flash'
+        };
+        function kanonikModel(name) { let n = String(name).replace(/^models\//, ''); return MODEL_ALIAS[n] || n; }
+        function varsayilanModelSec(list) {
+            const tercih = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-flash'];
+            for (const t of tercih) if (list.includes(t)) return t;
+            return list.find(m => /2\.5-flash$/.test(m)) || list.find(m => /flash/.test(m)) || list[0] || 'gemini-2.5-flash';
+        }
+        function aktifModel() {
+            const saved = localStorage.getItem(ZK.model);
+            if (saved) return saved;
+            return varsayilanModelSec(ZIRVE_MODELLER.text || []) || 'gemini-2.5-flash';
+        }
+        async function modelleriKesfet() {
+            const kobj = ringNext();
+            if (!kobj) return [];
+            try {
+                const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + kobj.key);
+                if (!r.ok) throw new Error('models ' + r.status);
+                const j = await r.json();
+                const gen = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
+                const text = [...new Set(gen.filter(m => /gemini/i.test(m.name) && !/embedding|aqa|imagen/i.test(m.name)).map(m => kanonikModel(m.name)))];
+                ZIRVE_MODELLER = { text };
+                localStorage.setItem(ZK.models, JSON.stringify(ZIRVE_MODELLER));
+                return text;
+            } catch (e) { console.warn('Model keşfi hatası', e); return []; }
+        }
+
+        // (3) AKILLI HATA YÖNETİMİ + HALKA İLE GEMINI ÇAĞRISI
+        async function zirveGeminiCall(payload, opts) {
+            opts = opts || {};
+            if (!ringHasKeys()) { const e = new Error('NO_KEYS'); e.zirve = 'no_keys'; throw e; }
+            const useModel = opts.model || aktifModel();
+            let lastErr = null, strippedThinking = false;
+            const maxTries = Math.max(3, apiKeyRing.length + 2);
+            for (let attempt = 0; attempt < maxTries; attempt++) {
+                const kobj = ringNext();
+                if (!kobj) { const e = new Error('ALL_QUOTA'); e.zirve = 'all_quota'; throw e; }
+                try {
+                    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + useModel + ':generateContent?key=' + kobj.key;
+                    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => null);
+                        const msg = errData && errData.error ? (errData.error.message || '') : '';
+                        const status = res.status;
+                        if (status === 400 && /invalid|not supported|unknown name|thinking|modalit/i.test(msg) && !strippedThinking) {
+                            strippedThinking = true;
+                            if (payload.generationConfig) { delete payload.generationConfig.thinkingConfig; delete payload.generationConfig.responseModalities; }
+                            attempt--; continue;
+                        }
+                        const e = new Error(msg || ('HTTP ' + status)); e.status = status; e.body = msg;
+                        if (status === 429) { const daily = /per day|daily|PerDay/i.test(msg); ringMark(kobj, daily ? 'daily' : 'minute', daily ? 0 : 65000); lastErr = e; continue; }
+                        if (status === 503 || status === 500) { lastErr = e; await sleep(1500); continue; }
+                        if (status === 400 && /API_KEY_INVALID|API key not valid/i.test(msg)) { ringMark(kobj, 'daily', 0); e.zirve = 'key_invalid'; lastErr = e; continue; }
+                        if (status === 404) { e.zirve = 'model_404'; throw e; }
+                        throw e;
+                    }
+                    const j = await res.json();
+                    if (!j.candidates || !j.candidates[0]) { lastErr = new Error('Yapay zeka boş yanıt verdi.'); await sleep(800); continue; }
+                    return j;
+                } catch (err) {
+                    lastErr = err;
+                    if (err.zirve === 'model_404') throw err;
+                    if (err.status && err.status >= 400 && err.status < 500 && err.status !== 429) throw err;
+                    await sleep(600);
+                }
+            }
+            throw lastErr || new Error('Bilinmeyen hata');
+        }
+        function zirveHataMesaji(err) {
+            if (!err) return 'Bilinmeyen bir hata oluştu.';
+            if (err.zirve === 'no_keys') return "Önce ⚙️ Ayarlar'dan ücretsiz bir Gemini API anahtarı girin.";
+            if (err.zirve === 'all_quota') return "Tüm anahtarların kotası doldu. Biraz bekleyin veya Ayarlar'dan yeni bir anahtar ekleyin.";
+            if (err.zirve === 'model_404') return 'Seçili model bulunamadı. Ayarlar → "Modelleri Yenile" deyin.';
+            if (err.zirve === 'key_invalid') return "API anahtarı geçersiz. Ayarlar'dan doğru anahtarı girin.";
+            const s = err.status;
+            if (s === 429) return 'Kota doldu (429). Kısa bir süre sonra tekrar deneyin.';
+            if (s === 503) return 'Google sunucusu meşgul (503). Lütfen tekrar deneyin.';
+            if (s === 400) return 'İstek reddedildi (400): ' + (err.body || err.message || '');
+            if (s === 404) return "Model bulunamadı (404). Ayarlar'dan modeli yenileyin.";
+            return 'Hata: ' + (err.message || err);
+        }
+
+        // ORTAK ANALİZ PAYLOAD'I (analiz + QC testi paylaşır) + (11) DOĞRULUK SÖZLEŞMESİ (tıbbi)
+        function zirveAnalizPayload(textContent, studentName, expertMode, profileType, mediaArray) {
+            let textPrompt = 'Danışan Adı: ' + studentName + '\n\n';
+            if (textContent) textPrompt += 'Gözlem: ' + textContent;
+            if (mediaArray && mediaArray.length > 0) textPrompt += '\nLütfen ekteki tüm medya (görsel, ses veya video kareleri) dosyalarını da incele ve sentezle.';
+
+            let persona = 'Sen dünyaca ünlü, alanının en zirve otoritesi olan bir ' + expertDetails[expertMode].title + ' profesörüsün. ' + expertDetails[expertMode].desc + ' Olayları tam olarak bu disiplin penceresinden analiz edersin.';
+            if (profileType === 'adult') persona += ' Karşındaki kişi YETİŞKİN bir birey. Günlük yaşam, iş, kariyer veya ilişki problemlerini de göz önünde bulundur.';
+            else if (profileType === 'teen') persona += ' Karşındaki kişi ERGENLİK döneminde. Ergenlik krizleri, kimlik karmaşası ve akademik süreçleri göz önünde bulundur.';
+
+            const systemPrompt = persona + '\n' +
+'DOĞRULUK SÖZLEŞMESİ (TIBBİ İÇERİK): Bu bir sağlık/klinik değerlendirmedir; yanlış bilgi zarar verebilir. Asla uydurma, tahmin veya "sallamasyon" yapma. Emin olmadığın bir noktayı açıkça "kesinleştirmek için ... değerlendirmesi gerekir" diye belirt. Verdiğin her bilgi güncel bilime (DSM-5-TR, ICD-10/11, hakemli literatür) dayanmalıdır.\n' +
+'YAZIM ZENGİNLİĞİ: Açıklamalarını canlı ve anlaşılır kıl; yeri geldiğinde günlük hayattan bir metafor kullan, önemli kavramları vurgula. Ancak abartma, klinik ciddiyeti koru.\n' +
+'GÖRSEL KURAL (ZORUNLU): Kendi uzmanlık alanınla ilgili kullandığın TÜM terimleri KESİNLİKLE şu formatta yaz: **Tıbbi Terim** (*halk dilindeki anlaşılır kısa Türkçe açıklaması*). Örn: **Somatizasyon** (*ruhsal sıkıntının bedensel ağrıya dönüşmesi*).\n' +
+'AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA SONUNA İŞARET KOYMA:\n' +
+'{\n' +
+'  "kisa_ozet": "1-2 cümlelik vurucu yönetici özeti.",\n' +
+'  "iletisim_stratejisi": "Nasıl yaklaşılmalı?",\n' +
+'  "guclu_yonler": ["Güçlü yön 1", "Güçlü yön 2"],\n' +
+'  "durum_ozeti": "Kendi uzmanlık gözünden detaylı klinik özet...",\n' +
+'  "risk_durumu": { "seviye": "Yüksek/Orta/Düşük", "aciklama": "Risk faktörleri açıklaması..." },\n' +
+'  "dsm_icd_bulgulari": ["DSM-5-TR: 299.00 ...", "ICD-10: F90.0 ..."],\n' +
+'  "noro_psikolojik_altyapi": "Kök neden (nörolojik/psikolojik/anatomik)...",\n' +
+'  "ayirici_tani": ["Karışabilecek/dışlanması gereken durumlar"],\n' +
+'  "duyusal_profil_ve_diyet": ["Duyusal hassasiyet...", "Duyusal diyet önerisi..."],\n' +
+'  "bep_hedefleri": { "kisa_donemli": ["1-3 aylık hedef..."], "uzun_donemli": ["1 yıllık hedef..."] },\n' +
+'  "multidisipliner_sevkler": ["Çocuk Psikiyatrisi: ...", "Ergoterapi: ..."],\n' +
+'  "medikal_yonlendirme": "Gerekiyorsa etken maddesiyle ilaç veya tıbbi yönlendirme...",\n' +
+'  "beslenme_uyku": ["Beslenme ve uyku önerisi"],\n' +
+'  "uzman_onerileri": ["Hastane/klinisyen önerisi"],\n' +
+'  "ogretmen_stratejileri": ["Saha/yaşam stratejileri"],\n' +
+'  "veli_onerileri": ["Aile/Çevre önerileri"],\n' +
+'  "bilimsel_dayanak": ["Kaynak 1", "Kaynak 2"]\n' +
+'}';
+
+            const parts = [{ text: textPrompt }];
+            (mediaArray || []).forEach(m => parts.push({ inlineData: { mimeType: m.mimeType, data: m.data } }));
+            return { systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: 'user', parts: parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } };
+        }
+        function zirveParseJson(j) {
+            try {
+                let resText = j.candidates[0].content.parts[0].text;
+                resText = resText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const s = resText.indexOf('{'), e = resText.lastIndexOf('}');
+                if (s === -1 || e === -1) return null;
+                return JSON.parse(resText.substring(s, e + 1));
+            } catch (err) { return null; }
+        }
+
+        // (B) DÜZ METİN DÖNÜŞTÜRÜCÜ
+        window.ZIRVE.duzMetin = function (str) {
+            if (str == null) return '';
+            let s = String(str);
+            s = s.replace(/<\s*br\s*\/?\s*>/gi, '\n').replace(/<\/\s*(p|div|li|h[1-6]|tr)\s*>/gi, '\n').replace(/<\s*li[^>]*>/gi, '• ');
+            s = s.replace(/<[^>]+>/g, '');
+            const ta = document.createElement('textarea'); ta.innerHTML = s; s = ta.value;
+            s = s.replace(/^#{1,6}\s*/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/(^|[^*])\*(?!\*)([^*]+?)\*(?!\*)/g, '$1$2');
+            s = s.replace(/`([^`]+)`/g, '$1').replace(/^\s{0,3}>\s?/gm, '').replace(/^\s*[-*+]\s+/gm, '• ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+            s = s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+            return s;
+        };
+
+        // (A) İLK AÇILIŞ KARŞILAMA — bu klinik uygulamaya özel içerik
+        const ZIRVE_KARSILAMA = {
+            amblem: '🩺', baslik: 'Klinik Konsey AI',
+            altbaslik: 'Yapay zekâ destekli klinik gözlem & resmi rapor asistanı',
+            ozet: 'Bir danışan/öğrenci hakkındaki gözlemlerinizi (yazı, fotoğraf, ses, video) girin; alanında zirve bir uzman gözünden DSM-5-TR / ICD-10 kodları, risk analizi, B.E.P. hedefleri ve multidisipliner sevkler içeren resmi bir ön değerlendirme raporu oluşturun.',
+            adimlar: [
+                { i: '⚙️', t: 'Önce API anahtarını gir', d: 'Alt menüden <b>Ayarlar</b>\'a girip ücretsiz Gemini API anahtarını yapıştır. Bu olmadan analiz çalışmaz (adım adım rehber Ayarlar içinde).' },
+                { i: '👶', t: 'Profil & uzman seç', d: 'Yaş profilini (Çocuk / Ergen / Yetişkin) ve konsültasyon modunu (Psikiyatrist, Nörolog, Pedagog…) seç.' },
+                { i: '📝', t: 'Gözlemi gir', d: 'Şikâyeti/gözlemi yaz veya 🎤 sesle dikte et; istersen fotoğraf, ses ya da video ekle.' },
+                { i: '⚡', t: 'Analizi başlat', d: '"Resmi Kurul Analizini Başlat"a bas; saniyeler içinde detaylı rapor hazır.' },
+                { i: '🖨️', t: 'Yazdır, paylaş, arşivle', d: 'Raporu yazdır/PDF yap, kopyala, 📲 QR ile paylaş; tüm vakalar Arşiv\'de saklanır.' }
+            ],
+            not: 'Bu araç bir uzman ön değerlendirme yardımcısıdır; kesin tıbbi teşhis yerine geçmez, nihai karar uzman hekime aittir.'
+        };
+        function zirveKarsilamaRender() {
+            const k = ZIRVE_KARSILAMA;
+            document.getElementById('zirveWelcomeBody').innerHTML =
+              '<div style="background:linear-gradient(135deg,#1e1b4b,#4338ca,#7c3aed);padding:30px 24px;border-radius:1.75rem 1.75rem 0 0;color:white;text-align:center;">' +
+                '<div style="font-size:54px;animation:zirve-float 3s ease-in-out infinite;">' + k.amblem + '</div>' +
+                '<h2 style="font-size:1.7rem;font-weight:900;margin-top:6px;letter-spacing:-0.02em;">' + k.baslik + '</h2>' +
+                '<p style="font-size:0.78rem;font-weight:700;opacity:0.9;text-transform:uppercase;letter-spacing:0.07em;margin-top:6px;">' + k.altbaslik + '</p>' +
+              '</div>' +
+              '<div style="padding:22px 24px;">' +
+                '<p style="font-size:0.9rem;color:#334155;font-weight:600;line-height:1.65;margin-bottom:18px;">' + k.ozet + '</p>' +
+                '<div style="font-size:0.72rem;font-weight:900;color:#6366f1;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">✨ Nasıl kullanılır?</div>' +
+                '<div style="display:flex;flex-direction:column;gap:10px;">' +
+                  k.adimlar.map((a, idx) =>
+                    '<div style="display:flex;gap:12px;align-items:flex-start;background:' + (idx === 0 ? '#eef2ff' : '#f8fafc') + ';border:1px solid ' + (idx === 0 ? '#c7d2fe' : '#e2e8f0') + ';border-radius:1rem;padding:12px 14px;">' +
+                      '<div style="font-size:1.5rem;flex-shrink:0;line-height:1;">' + a.i + '</div>' +
+                      '<div><div style="font-weight:900;color:#1e293b;font-size:0.9rem;">' + (idx + 1) + '. ' + a.t + '</div>' +
+                      '<div style="font-size:0.8rem;color:#475569;font-weight:500;line-height:1.5;margin-top:2px;">' + a.d + '</div></div>' +
+                    '</div>').join('') +
+                '</div>' +
+                '<div style="margin-top:16px;background:#fef9c3;border:1px solid #fde047;border-radius:0.85rem;padding:11px 13px;font-size:0.77rem;color:#713f12;font-weight:700;">⚠️ ' + k.not + '</div>' +
+                '<button onclick="zirveKarsilamaKapat()" style="margin-top:18px;width:100%;background:linear-gradient(90deg,#4f46e5,#7c3aed);color:white;font-weight:900;padding:14px;border-radius:1rem;font-size:1rem;box-shadow:0 8px 20px -6px rgba(79,70,229,0.5);cursor:pointer;">Anladım, Başlayalım! 🚀</button>' +
+                '<button onclick="navTo(\'settings\');zirveKarsilamaKapat();" style="margin-top:8px;width:100%;background:white;border:2px solid #e2e8f0;color:#4338ca;font-weight:800;padding:11px;border-radius:1rem;font-size:0.85rem;cursor:pointer;">⚙️ Doğrudan Ayarlar\'a Git (Anahtar Gir)</button>' +
+              '</div>';
+        }
+        function zirveKarsilamaAc() { zirveKarsilamaRender(); document.getElementById('zirveWelcomeOverlay').style.display = 'flex'; }
+        function zirveKarsilamaKapat() { document.getElementById('zirveWelcomeOverlay').style.display = 'none'; localStorage.setItem(ZK.welcome, '1'); }
+
+        // (C) QR İLE PAYLAŞ
+        function qrLibYukle() {
+            return new Promise((resolve, reject) => {
+                if (window.qrcode) return resolve();
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+                s.onload = () => resolve(); s.onerror = () => reject(new Error('QR kütüphanesi yüklenemedi'));
+                document.head.appendChild(s);
+            });
+        }
+        window.ZIRVE_paylasAc = zirvePaylasAc;
+        async function zirvePaylasAc() {
+            const url = (window.PAYLAS && window.PAYLAS.url) || window.location.href;
+            const overlay = document.getElementById('zirveQrOverlay');
+            const body = document.getElementById('zirveQrBody');
+            const yerel = location.protocol === 'file:' || /^(localhost|127\.)/.test(location.hostname);
+            overlay.style.display = 'flex';
+            body.innerHTML = '<div style="padding:28px;"><div class="loader" style="margin:16px auto;"></div><p style="font-weight:700;color:#475569;">QR hazırlanıyor…</p></div>';
+            try {
+                await qrLibYukle();
+                const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+                const img = qr.createImgTag(5, 12);
+                window._zirveQrUrl = url;
+                body.innerHTML =
+                  '<div style="padding:24px 22px;">' +
+                    '<div style="font-size:1.15rem;font-weight:900;color:#1e293b;margin-bottom:4px;">📲 Bu Sayfayı Paylaş</div>' +
+                    '<p style="font-size:0.78rem;color:#64748b;font-weight:600;margin-bottom:16px;">Karşı taraf kamerayla okutup uygulamayı anında açsın.</p>' +
+                    '<div class="zirve-qr-box">' + img + '</div>' +
+                    '<div style="font-size:0.7rem;color:#94a3b8;font-weight:600;word-break:break-all;margin:14px 0;">' + url + '</div>' +
+                    (yerel ? '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:0.75rem;padding:10px;font-size:0.74rem;color:#92400e;font-weight:700;margin-bottom:12px;">⚠️ Yerel dosyadan açıldığı için bu QR başka cihazda çalışmayabilir. Önce GitHub Pages\'e yükleyin.</div>' : '') +
+                    '<div style="display:flex;gap:8px;">' +
+                      '<button onclick="zirveLinkKopyala()" style="flex:1;background:#4f46e5;color:white;font-weight:800;padding:11px;border-radius:0.85rem;font-size:0.82rem;cursor:pointer;">🔗 Linki kopyala</button>' +
+                      '<button onclick="zirveQrPngIndir()" style="flex:1;background:white;border:2px solid #e2e8f0;color:#334155;font-weight:800;padding:11px;border-radius:0.85rem;font-size:0.82rem;cursor:pointer;">🖼️ PNG indir</button>' +
+                    '</div>' +
+                    '<button onclick="document.getElementById(\'zirveQrOverlay\').style.display=\'none\'" style="margin-top:10px;width:100%;color:#94a3b8;font-weight:700;font-size:0.8rem;padding:6px;cursor:pointer;">Kapat</button>' +
+                  '</div>';
+            } catch (e) {
+                body.innerHTML = '<div style="padding:28px;"><p style="color:#ef4444;font-weight:700;">' + e.message + '. İnternet bağlantınızı kontrol edin.</p><button onclick="document.getElementById(\'zirveQrOverlay\').style.display=\'none\'" style="margin-top:14px;background:#4f46e5;color:white;padding:10px 18px;border-radius:0.75rem;font-weight:800;cursor:pointer;">Kapat</button></div>';
+            }
+        }
+        function zirveLinkKopyala() { navigator.clipboard.writeText(window._zirveQrUrl || location.href).then(() => showToast('Link kopyalandı ✅')).catch(() => showToast('Kopyalanamadı')); }
+        function zirveQrPngIndir() {
+            const imgEl = document.querySelector('#zirveQrBody .zirve-qr-box img');
+            if (!imgEl) return;
+            const size = 512, c = document.createElement('canvas'); c.width = size; c.height = size;
+            const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+            const tmp = new Image();
+            tmp.onload = () => { ctx.imageSmoothingEnabled = false; ctx.drawImage(tmp, 0, 0, size, size); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'klinik-konsey-qr.png'; a.click(); };
+            tmp.src = imgEl.src;
+        }
+        async function zirvePaylasMetin(id) {
+            const el = document.getElementById(id); if (!el) return;
+            const txt = window.ZIRVE.duzMetin(el.innerHTML);
+            if (navigator.share) { try { await navigator.share({ text: txt }); return; } catch (e) { } }
+            navigator.clipboard.writeText(txt).then(() => showToast('Metin kopyalandı ✅'));
+        }
+
+        // (4) AI UYARI BANDI
+        function zirveAiBandGoster() { if (!localStorage.getItem(ZK.aiband)) { const b = document.getElementById('zirveAiBand'); if (b) b.style.display = 'flex'; } }
+        function zirveAiBandKapat() { document.getElementById('zirveAiBand').style.display = 'none'; localStorage.setItem(ZK.aiband, '1'); }
+
+        // (6) BAĞLANTI BİLDİRİMLERİ
+        window.addEventListener('online', () => showToast('🌐 İnternet bağlantısı geri geldi.'));
+        window.addEventListener('offline', () => showToast('⚠️ İnternet bağlantısı kesildi.', 5000));
+
+        // (12) CİHAZ/EKRAN OTOMATİK UYUM
+        const ZIRVE_SCREEN_MODLARI = [
+            { id: 'oto', ad: 'Oto', zoom: null }, { id: 'tablet', ad: 'Tablet', zoom: 1 },
+            { id: 'akilli', ad: 'Akıllı Tahta', zoom: 1.35 }, { id: 'buyuk', ad: 'Büyük Tahta', zoom: 1.6 }
+        ];
+        function zirveOtoAlgila() {
+            const w = window.innerWidth, dpr = window.devicePixelRatio || 1;
+            const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+            if (w >= 2400) return 1.6;
+            if (w >= 1600 && touch && dpr <= 1.5) return 1.35;
+            return 1;
+        }
+        function zirveEkranUygula() {
+            const secili = localStorage.getItem(ZK.screen);
+            let zoom, label;
+            if (secili && secili !== 'oto') {
+                const m = ZIRVE_SCREEN_MODLARI.find(x => x.id === secili);
+                zoom = m ? m.zoom : 1; label = m ? m.ad : 'Oto';
+            } else { zoom = zirveOtoAlgila(); label = 'Oto'; }
+            document.documentElement.style.zoom = zoom;
+            const lab = document.getElementById('zirveScreenLabel'); if (lab) lab.textContent = label;
+        }
+        function zirveEkranDondur() {
+            const cur = localStorage.getItem(ZK.screen) || 'oto';
+            const order = ZIRVE_SCREEN_MODLARI.map(m => m.id);
+            const next = order[(order.indexOf(cur) + 1) % order.length];
+            localStorage.setItem(ZK.screen, next);
+            zirveEkranUygula();
+            showToast('Ekran modu: ' + ZIRVE_SCREEN_MODLARI.find(m => m.id === next).ad);
+        }
+        function zirveScreenPillKapat() { document.getElementById('zirveScreenPill').style.display = 'none'; localStorage.setItem(ZK.screenHidden, '1'); }
+        window.ZIRVE_ekranReset = function () { window._zirveZoomYedek = document.documentElement.style.zoom; document.documentElement.style.zoom = 1; };
+        window.ZIRVE_ekranGeri = function () { document.documentElement.style.zoom = window._zirveZoomYedek || ''; zirveEkranUygula(); };
+        window.addEventListener('resize', () => { const s = localStorage.getItem(ZK.screen); if (!s || s === 'oto') zirveEkranUygula(); });
+
+        // (13) UZMAN MODU QC TESTİ (bu uygulamanın yapısına uyarlanmış Şablon Test Modu)
+        const QC_ORNEK_VAKA = '7 yaşında erkek çocuk. Göz teması zayıf, ismiyle seslenince nadiren bakıyor. Tekrarlayıcı el çırpma hareketleri var. Konuşması yaşıtlarına göre geri, basit cümleler kuruyor. Rutin değişikliğinde aşırı tepki veriyor, yüksek seslerden rahatsız oluyor.';
+        const QC_ZORUNLU_ALANLAR = ['kisa_ozet', 'durum_ozeti', 'risk_durumu', 'dsm_icd_bulgulari', 'bep_hedefleri'];
+        async function zirveQCBaslat(devam) {
+            const rap = document.getElementById('qcReport');
+            rap.classList.remove('hidden');
+            const modlar = Object.keys(expertDetails);
+            let prog = {};
+            if (devam) { try { prog = JSON.parse(localStorage.getItem(ZK.qc) || '{}'); } catch (e) { prog = {}; } }
+            else { prog = {}; localStorage.removeItem(ZK.qc); }
+            rap.innerHTML = '';
+            const satir = (html) => { rap.innerHTML += html; rap.scrollTop = rap.scrollHeight; };
+            if (!ringHasKeys()) { satir('<div style="color:#dc2626;font-weight:900;">' + zirveHataMesaji({ zirve: 'no_keys' }) + '</div>'); return; }
+            satir('<div style="font-weight:900;margin-bottom:6px;">🧪 QC Testi başladı (' + modlar.length + ' uzman modu)</div>');
+            for (const mod of modlar) {
+                if (prog[mod]) { satir('<div>⏭ ' + expertDetails[mod].title + ': atlandı</div>'); continue; }
+                satir('<div>⏳ ' + expertDetails[mod].title + ' test ediliyor…</div>');
+                try {
+                    const j = await zirveGeminiCall(zirveAnalizPayload(QC_ORNEK_VAKA, 'Vaka QC', mod, 'child', []));
+                    const parsed = zirveParseJson(j);
+                    const eksik = QC_ZORUNLU_ALANLAR.filter(a => !parsed || parsed[a] == null || (Array.isArray(parsed[a]) && parsed[a].length === 0));
+                    if (!parsed) satir('<div style="color:#dc2626;">❌ ' + expertDetails[mod].title + ': JSON çözülemedi</div>');
+                    else if (eksik.length) { satir('<div style="color:#d97706;">⚠️ ' + expertDetails[mod].title + ': eksik → ' + eksik.join(', ') + '</div>'); prog[mod] = 'warn'; }
+                    else { satir('<div style="color:#059669;">✅ ' + expertDetails[mod].title + ': tamam</div>'); prog[mod] = 'ok'; }
+                    localStorage.setItem(ZK.qc, JSON.stringify(prog));
+                } catch (e) {
+                    satir('<div style="color:#dc2626;">❌ ' + expertDetails[mod].title + ': ' + zirveHataMesaji(e) + '</div>');
+                    if (e.zirve === 'all_quota' || e.status === 429) { satir('<div style="font-weight:900;color:#d97706;">⏸ Kota doldu. Sonra "Kaldığından Devam Et" ile sürdürün.</div>'); break; }
+                }
+            }
+            const ok = Object.values(prog).filter(v => v === 'ok').length;
+            const warn = Object.values(prog).filter(v => v === 'warn').length;
+            satir('<div style="margin-top:8px;font-weight:900;border-top:1px solid #e2e8f0;padding-top:6px;">📊 Özet: ✅ ' + ok + ' tamam / ⚠️ ' + warn + ' uyarı</div>');
+        }
+        function zirveQCRaporKopyala() {
+            const rap = document.getElementById('qcReport');
+            const t = rap ? rap.innerText : '';
+            if (!t) return showToast('Önce testi çalıştırın.');
+            navigator.clipboard.writeText(t).then(() => showToast('QC raporu kopyalandı ✅'));
+        }
+
+        // AYARLAR: model dropdown yönetimi
+        function populateModelSelect(list, selected) {
+            const sel = document.getElementById('modelSelect');
+            if (!sel) return;
+            if (!list || list.length === 0) { sel.innerHTML = '<option value="">Anahtar girip kaydedin → modeller otomatik yüklenir</option>'; return; }
+            sel.innerHTML = list.map(m => '<option value="' + m + '"' + (m === selected ? ' selected' : '') + '>' + m + '</option>').join('');
+        }
+        function zirveModelSecildi(v) { if (v) localStorage.setItem(ZK.model, v); }
+        async function zirveModelleriYenile() {
+            const hint = document.getElementById('modelDiscoveryHint');
+            if (!ringHasKeys()) { if (hint) hint.textContent = 'Önce bir API anahtarı girip kaydedin.'; return; }
+            if (hint) hint.textContent = '🔄 Modeller Google\'dan çekiliyor…';
+            const list = await modelleriKesfet();
+            if (list.length === 0) { if (hint) hint.textContent = '⚠️ Model listesi alınamadı (anahtar/İnternet?).'; return; }
+            let sel = localStorage.getItem(ZK.model);
+            if (!sel || !list.includes(sel)) { sel = varsayilanModelSec(list); localStorage.setItem(ZK.model, sel); }
+            populateModelSelect(list, sel);
+            if (hint) hint.textContent = '✅ ' + list.length + ' model bulundu. Aktif: ' + sel;
+        }
+
         // EKSİK FONKSİYON EKLENDİ (Tüm ekranı güvenle temizlemek için)
         function resetApp() {
             document.getElementById('studentName').value = '';
@@ -638,38 +1184,54 @@
         }
 
         function updateSystemStatus() {
-            const key = localStorage.getItem('gemini_api_key');
-            const model = localStorage.getItem('gemini_model_name');
             const banner = document.getElementById('systemStatusBanner');
             const icon = document.getElementById('systemStatusIcon');
             const title = document.getElementById('systemStatusTitle');
             const desc = document.getElementById('systemStatusDesc');
 
-            if (!key || !model) {
+            if (!ringHasKeys()) {
                 banner.className = "bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center shadow-sm transition-all mb-5 no-print";
                 icon.innerText = "⚠️";
                 title.innerText = "Sistem Hazır Değil";
                 title.className = "font-black text-red-900 text-xs uppercase tracking-widest";
-                desc.innerText = "Lütfen alt menüden 'Ayarlar' kısmına girip API Anahtarı ve Model ismini doldurun.";
+                desc.innerText = "Lütfen alt menüden 'Ayarlar' kısmına girip ücretsiz Gemini API Anahtarınızı girin. Model otomatik seçilir.";
                 desc.className = "text-xs text-red-700 font-bold mt-0.5";
             } else {
                 banner.className = "bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center shadow-sm transition-all mb-5 no-print";
                 icon.innerText = "✅";
                 title.innerText = "Sistem Analize Hazır";
                 title.className = "font-black text-emerald-900 text-xs uppercase tracking-widest";
-                desc.innerText = `API ve ${model} modeli başarıyla yapılandırıldı.`;
+                const cnt = apiKeyRing.length;
+                desc.innerText = cnt + (cnt > 1 ? ' anahtar' : ' anahtar') + " yüklü · Model: " + aktifModel() + " · analize hazır.";
                 desc.className = "text-xs text-emerald-700 font-bold mt-0.5";
             }
         }
 
         window.onload = () => {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            const savedModel = localStorage.getItem('gemini_model_name');
-            
-            if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
-            if (savedModel) document.getElementById('modelInput').value = savedModel;
+            // ZİRVE: anahtar halkasını ve modelleri yükle
+            ringLoad();
+            try { ZIRVE_MODELLER = JSON.parse(localStorage.getItem(ZK.models) || '{"text":[]}'); } catch (e) { ZIRVE_MODELLER = { text: [] }; }
+
+            // Ayarlar alanlarını doldur
+            const area = document.getElementById('apiKeysArea');
+            if (area) area.value = apiKeyRing.map(k => k.key).join('\n');
+            populateModelSelect(ZIRVE_MODELLER.text || [], aktifModel());
+            const msel = document.getElementById('modelSelect');
+            if (msel) msel.addEventListener('change', (e) => zirveModelSecildi(e.target.value));
 
             updateSystemStatus();
+            renderKeyHealth();
+
+            // ZİRVE modülleri
+            zirveEkranUygula();
+            if (!localStorage.getItem(ZK.screenHidden)) { const p = document.getElementById('zirveScreenPill'); if (p) p.style.display = 'flex'; }
+            zirveAiBandGoster();
+            if (!localStorage.getItem(ZK.welcome)) setTimeout(zirveKarsilamaAc, 400);
+
+            // Anahtar var ama model keşfedilmemişse arka planda keşfet
+            if (ringHasKeys() && (!ZIRVE_MODELLER.text || ZIRVE_MODELLER.text.length === 0)) {
+                zirveModelleriYenile();
+            }
 
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -749,14 +1311,32 @@
             window.scrollTo(0,0);
         }
 
-        function saveSettings() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            const model = document.getElementById('modelInput').value.trim();
-            if (key) localStorage.setItem('gemini_api_key', key); else localStorage.removeItem('gemini_api_key');
-            if (model) localStorage.setItem('gemini_model_name', model); else localStorage.removeItem('gemini_model_name');
-            
+        async function saveSettings() {
+            const area = document.getElementById('apiKeysArea');
+            const lines = (area ? area.value : '').split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+            ringSave(lines);
+
             updateSystemStatus();
-            showToast("Ayarlar kaydedildi! ✅");
+            renderKeyHealth();
+
+            if (!ringHasKeys()) { showToast("En az bir API anahtarı girin. ⚠️", 4000); return; }
+
+            showToast("Anahtarlar kaydedildi ✅ · Modeller yükleniyor…");
+            // Model listesini otomatik çek ve varsayılanı seç
+            const hint = document.getElementById('modelDiscoveryHint');
+            if (hint) hint.textContent = '🔄 Modeller Google\'dan çekiliyor…';
+            const list = await modelleriKesfet();
+            if (list.length > 0) {
+                let sel = localStorage.getItem(ZK.model);
+                if (!sel || !list.includes(sel)) { sel = varsayilanModelSec(list); localStorage.setItem(ZK.model, sel); }
+                populateModelSelect(list, sel);
+                if (hint) hint.textContent = '✅ ' + list.length + ' model bulundu. Aktif: ' + sel;
+                updateSystemStatus();
+                showToast("Hazır! Model otomatik seçildi: " + sel + " 🎉", 3500);
+            } else {
+                if (hint) hint.textContent = '⚠️ Model listesi alınamadı; varsayılan model kullanılacak.';
+                showToast("Anahtar kaydedildi. Model listesi çekilemedi, varsayılan kullanılacak.", 4000);
+            }
             navTo('home');
         }
 
@@ -1036,18 +1616,15 @@
         }
 
         async function startAnalysis() {
-            const key = localStorage.getItem('gemini_api_key');
-            let model = localStorage.getItem('gemini_model_name');
-            
-            if (!key || !model) { 
-                showToast("Bağlantı Hatası: Lütfen Ayarlar'dan API Anahtarı ve Model ismini doldurunuz.", 5000); 
-                navTo('settings'); 
-                return; 
+            if (!ringHasKeys()) {
+                showToast("Önce Ayarlar'dan ücretsiz bir Gemini API anahtarı girin.", 5000);
+                navTo('settings');
+                return;
             }
 
             const textContent = document.getElementById('observationText').value.trim();
             const studentName = document.getElementById('studentName').value.trim() || "İsimsiz Danışan";
-            
+
             if (!textContent && uploadedMediaArray.length === 0) return showToast("Lütfen en az bir dosya yükleyin veya not yazın.");
 
             navTo('loading');
@@ -1062,74 +1639,13 @@
             }, 1800);
 
             try {
-                let textPrompt = `Danışan Adı: ${studentName}\n\n`;
-                if (textContent) textPrompt += "Gözlem: " + textContent;
-                if (uploadedMediaArray.length > 0) textPrompt += "\nLütfen ekteki tüm medya (görsel, ses veya video kareleri) dosyalarını da incele ve sentezle.";
+                // Model henüz keşfedilmemişse arka planda dene (hata olursa varsayılana düşer)
+                if (!ZIRVE_MODELLER.text || ZIRVE_MODELLER.text.length === 0) { await modelleriKesfet(); }
 
-                let persona = `Sen dünyaca ünlü, alanının en zirve otoritesi olan bir ${expertDetails[currentExpertMode].title} profesörüsün. ${expertDetails[currentExpertMode].desc} Olayları tam olarak bu disiplin penceresinden analiz edersin.`;
-
-                if(currentProfileType === 'adult') persona += " Karşındaki kişi YETİŞKİN bir birey. Günlük yaşam, iş, kariyer veya ilişki problemlerini de göz önünde bulundur.";
-                else if(currentProfileType === 'teen') persona += " Karşındaki kişi ERGENLİK döneminde. Ergenlik krizleri, kimlik karmaşası ve akademik süreçleri göz önünde bulundur.";
-
-                const systemPrompt = `${persona}
-KESİN KURAL: Asla sallamasyon veya tahmini bilgi verme. Verdiğin her bilgi %100 bilime dayanmalıdır. 
-
-GÖRSEL KURAL (ZORUNLU):
-Kendi uzmanlık alanınla ilgili kullandığın TÜM terimleri KESİNLİKLE şu formatta yaz: **Tıbbi Terim** (*halk dilindeki anlaşılır kısa Türkçe açıklaması*). 
-Örn: **Somatizasyon** (*ruhsal sıkıntının bedensel ağrıya dönüşmesi*).
-
-AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA SONUNA İŞARET KOYMA:
-{
-  "kisa_ozet": "1-2 cümlelik vurucu yönetici özeti.",
-  "iletisim_stratejisi": "Nasıl yaklaşılmalı?",
-  "guclu_yonler": ["Güçlü yön 1", "Güçlü yön 2"],
-  "durum_ozeti": "Kendi uzmanlık gözünden detaylı klinik özet...",
-  "risk_durumu": {
-    "seviye": "Yüksek/Orta/Düşük",
-    "aciklama": "Kendine zarar verme, içe kapanma vs. risk faktörleri açıklaması..."
-  },
-  "dsm_icd_bulgulari": ["DSM-5-TR: 299.00 Otizm Spektrum Bozukluğu...", "ICD-10: F90.0..."],
-  "noro_psikolojik_altyapi": "Kendi uzmanlık pencerenden bu durumun kök nedeni (nörolojik/psikolojik/anatomik)...",
-  "ayirici_tani": ["Karışabilecek diğer durumlar (dışlanması gerekenler)"],
-  "duyusal_profil_ve_diyet": ["Görsel/İşitsel hassasiyet durumu...", "Tavsiye edilen duyusal diyet 1..."],
-  "bep_hedefleri": {
-    "kisa_donemli": ["1-3 aylık hedef 1...", "1-3 aylık hedef 2..."],
-    "uzun_donemli": ["1 yıllık hedef 1...", "1 yıllık hedef 2..."]
-  },
-  "multidisipliner_sevkler": ["Çocuk Psikiyatrisi: Medikal değerlendirme için...", "Ergoterapi: Duyu bütünleme için..."],
-  "medikal_yonlendirme": "Gerekiyorsa senin alanınla ilgili ilaç (etken maddesiyle) veya tıbbi yönlendirme...",
-  "beslenme_uyku": ["Beslenme ve uyku önerisi"],
-  "uzman_onerileri": ["Büyükşehirlerden hastane veya klinisyen önerisi"],
-  "ogretmen_stratejileri": ["Saha veya yaşam stratejileri"],
-  "veli_onerileri": ["Aile/Çevre önerileri"],
-  "bilimsel_dayanak": ["Kaynak 1", "Kaynak 2"]
-}`;
-
-                const parts = [{ text: textPrompt }];
-                uploadedMediaArray.forEach(media => {
-                    parts.push({ inlineData: { mimeType: media.mimeType, data: media.data } });
-                });
-
-                const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        contents: [{ role: "user", parts: parts }],
-                        generationConfig: { responseMimeType: "application/json", temperature: 0.1 } 
-                    })
-                });
-
-                if (!response.candidates) throw new Error("Yapay zeka boş yanıt verdi.");
-
-                let resText = response.candidates[0].content.parts[0].text;
-                resText = resText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                const startIdx = resText.indexOf('{');
-                const endIdx = resText.lastIndexOf('}');
-                if(startIdx === -1 || endIdx === -1) throw new Error("JSON_FORMAT_ERROR");
-                
-                const cleanJsonStr = resText.substring(startIdx, endIdx + 1);
-                const result = JSON.parse(cleanJsonStr);
+                const payload = zirveAnalizPayload(textContent, studentName, currentExpertMode, currentProfileType, uploadedMediaArray);
+                const response = await zirveGeminiCall(payload);
+                const result = zirveParseJson(response);
+                if (!result) throw new Error("JSON_FORMAT_ERROR");
 
                 saveToDatabase(studentName, result, currentProfileType, currentExpertMode);
                 clearInterval(loadInterval);
@@ -1138,13 +1654,11 @@ AŞAĞIDAKİ JSON FORMATINDA YANIT VER. BAŞINA SONUNA İŞARET KOYMA:
             } catch (error) {
                 console.error("Hata:", error);
                 clearInterval(loadInterval);
-                let errMsg = "Analiz yapılamadı.";
-                if (error.status === 404 || (error.message && error.message.includes("not found"))) errMsg = "Bağlantı Hatası: Model bulunamadı. Ayarları kontrol edin.";
-                else if (error.status === 400 || (error.message && error.message.includes("API_KEY_INVALID"))) errMsg = "Bağlantı Hatası: API Anahtarı geçersiz veya kısıtlanmış.";
-                else if (error.message === "JSON_FORMAT_ERROR" || error.name === "SyntaxError") errMsg = "HATA: Yapay zeka formatı bozdu. Lütfen tekrar deneyin.";
-                else errMsg = "Ağ Hatası: " + error.message;
-                showToast(errMsg, 6000); 
-                navTo('home'); 
+                let errMsg;
+                if (error.message === "JSON_FORMAT_ERROR" || error.name === "SyntaxError") errMsg = "Yapay zeka yanıtı beklenen formatta gelmedi. Lütfen tekrar deneyin.";
+                else errMsg = zirveHataMesaji(error);
+                showToast(errMsg, 6000);
+                navTo('home');
             }
         }
 
@@ -1278,11 +1792,7 @@ Lütfen yine tıbbi terimleri **Terim** (*açıklama*) formatıyla yaz.`;
         }
 
         async function runExtraAiFeature(promptText, inlineData = null) {
-            const key = localStorage.getItem('gemini_api_key');
-            let model = localStorage.getItem('gemini_model_name');
-            if(!model) model = "gemini-2.5-flash";
-            
-            if (!key) return showToast("API Ayarlarınız eksik.");
+            if (!ringHasKeys()) return showToast("Önce Ayarlar'dan ücretsiz bir Gemini API anahtarı girin.", 4000);
 
             const resultBox = document.getElementById('extraAiResultBox');
             resultBox.classList.remove('hidden');
@@ -1290,26 +1800,22 @@ Lütfen yine tıbbi terimleri **Terim** (*açıklama*) formatıyla yaz.`;
             resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             try {
+                if (!ZIRVE_MODELLER.text || ZIRVE_MODELLER.text.length === 0) { await modelleriKesfet(); }
                 const parts = [{ text: promptText }];
-                if(inlineData) parts.push({ inlineData: inlineData });
+                if (inlineData) parts.push({ inlineData: inlineData });
 
-                const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.6 } })
-                });
-
-                if (!response.candidates) throw new Error("Metin üretemedi.");
+                const response = await zirveGeminiCall({ contents: [{ role: "user", parts: parts }], generationConfig: { temperature: 0.6 } });
                 const text = response.candidates[0].content.parts[0].text;
-                
+
                 resultBox.innerHTML = `
-                    <div class="absolute top-0 right-0 p-2 border-b border-l border-indigo-100 bg-white rounded-bl-xl shadow-sm z-10">
-                        <button onclick="copyExtraAiResult()" class="text-xs text-indigo-700 font-bold px-2 py-1 hover:text-indigo-900 transition">Kopyala</button>
+                    <div class="absolute top-0 right-0 p-2 border-b border-l border-indigo-100 bg-white rounded-bl-xl shadow-sm z-10 flex gap-1">
+                        <button onclick="copyExtraAiResult()" class="text-xs text-indigo-700 font-bold px-2 py-1 hover:text-indigo-900 transition">📋 Kopyala</button>
+                        <button onclick="zirvePaylasMetin('extraAiContent')" class="text-xs text-indigo-700 font-bold px-2 py-1 hover:text-indigo-900 transition border-l border-indigo-100">📤 Paylaş</button>
                     </div>
                     <div class="font-black text-indigo-800 uppercase tracking-widest text-[10px] mb-4 border-b border-indigo-200 pb-2">✨ Uzman Tarafından Üretilen İçerik:</div>
                     <div id="extraAiContent" class="whitespace-pre-wrap font-medium text-slate-700 leading-8 relative z-0">${formatClinicalText(text)}</div>
                 `;
-            } catch (error) { resultBox.innerHTML = `<span class="text-red-500 font-bold">Hata: ${error.message}</span>`; }
+            } catch (error) { resultBox.innerHTML = `<span class="text-red-500 font-bold">${zirveHataMesaji(error)}</span>`; }
         }
 
         function generateParentMessage() {
@@ -1343,7 +1849,8 @@ Lütfen yine tıbbi terimleri **Terim** (*açıklama*) formatıyla yaz.`;
         }
 
         function copyExtraAiResult() {
-            const content = document.getElementById('extraAiContent').innerText;
+            const el = document.getElementById('extraAiContent');
+            const content = window.ZIRVE.duzMetin(el ? el.innerHTML : '');
             navigator.clipboard.writeText(content).then(() => showToast("İçerik kopyalandı! ✅")).catch(() => showToast("Kopyalama başarısız."));
         }
 
@@ -1371,7 +1878,7 @@ Lütfen yine tıbbi terimleri **Terim** (*açıklama*) formatıyla yaz.`;
             let teacher = []; document.querySelectorAll('#resTeacher li span:last-child').forEach(el => teacher.push("- " + stripHtml(el.innerHTML)));
 
             const report = `📋 KLİNİK KONSEY RAPORU\n👤 ${student}\n🩺 UZMAN: ${exp}\n\n⚡ ÖZET:\n${shortSum}\n\n⚠️ RİSK ANALİZİ:\n${risk}\n\n📝 KLİNİK ÖZET:\n${summary}\n\n🏷️ DSM-5 / TANI:\n${tags.join('\n')}\n\n🧠 KÖK NEDENLER:\n${neuro}\n\n⚖️ AYIRICI TANI:\n${diff.join('\n')}\n\n🎯 KISA DÖNEM HEDEFLER:\n${bepShort.join('\n')}\n\n🎯 UZUN DÖNEM HEDEFLER:\n${bepLong.join('\n')}\n\n🖐️ DUYUSAL DİYET:\n${sensory.join('\n')}\n\n🔄 YÖNLENDİRMELER:\n${ref.join('\n')}\n\n💊 MEDİKAL GÖRÜŞ:\n${medical}\n\n🏫 STRATEJİLER:\n${teacher.join('\n')}`;
-            navigator.clipboard.writeText(report).then(() => showToast("Kopyalandı! ✅")).catch(() => showToast("Engellendi."));
+            navigator.clipboard.writeText(window.ZIRVE.duzMetin(report)).then(() => showToast("Kopyalandı! ✅")).catch(() => showToast("Engellendi."));
         }
     </script>
 </body>
