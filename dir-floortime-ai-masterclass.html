@@ -98,10 +98,718 @@
             #print-area, #print-area * { visibility: visible; }
             #print-area { position: absolute; left: 0; top: 0; width: 100%; }
         }
+        /* ===== ZİRVE KATMANI stilleri ===== */
+        @media print { html { zoom: 1 !important; } }
+        .zirve-msg-btns { display:flex; gap:6px; margin-top:6px; }
+        .zirve-msg-btn { font-size:11px; font-weight:700; padding:3px 9px; border-radius:8px; border:1px solid rgba(148,163,184,.4); background:rgba(255,255,255,.6); color:#475569; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:.15s; }
+        .zirve-msg-btn:hover { background:#fff; color:#0f172a; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+        .zirve-msg-btn.dark { background:rgba(15,23,42,.35); border-color:rgba(255,255,255,.15); color:#e2e8f0; }
+        .zirve-msg-btn.dark:hover { background:rgba(15,23,42,.6); color:#fff; }
+
     </style>
 </head>
 <body>
     <div id="root"></div>
+
+    <!-- ZİRVE KATMANI: çekirdek + arayüz (React'ten önce yüklenir) -->
+    <script>
+/* ================= ZİRVE KATMANI — ÇEKİRDEK (vanilla) ================= */
+(function () {
+  "use strict";
+  if (window.ZIRVE_API) return; // tek sefer
+
+  /* --- 1. ÇOKLU ANAHTAR HALKASI (gömülü) ---
+     Bu katman yeni bir projeye kopyalandığında anahtarlar otomatik yüklensin
+     diye aşağıdaki diziye Gemini API anahtarlarını yazabilirsiniz.
+     localStorage boşsa buradaki anahtarlar halkaya doldurulur. */
+  var GOMULU_ANAHTARLAR = [
+    // "AIzaSy....",
+    // "AIzaSy....",
+  ];
+
+  var LS_HALKA = "zirve_api_halkasi";
+  var LS_MODEL = "gemini_model";
+  var LS_MODELLER = "zirve_modeller";
+  var ESKI_TEK = "gemini_api_key"; // geriye dönük tek anahtar
+
+  /* --- kanonik model eşlemesi ('latest' takma adları) --- */
+  var KANONIK = {
+    "gemini-flash-latest": "gemini-2.5-flash",
+    "gemini-pro-latest": "gemini-2.5-pro",
+    "gemini-flash-lite-latest": "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-latest": "gemini-2.5-flash",
+    "gemini-2.5-pro-latest": "gemini-2.5-pro",
+    "gemini-1.5-flash-latest": "gemini-1.5-flash",
+    "gemini-1.5-pro-latest": "gemini-1.5-pro",
+    "gemini-2.0-flash-latest": "gemini-2.0-flash"
+  };
+  function kanonikModel(ad) {
+    if (!ad) return "gemini-2.5-flash";
+    ad = String(ad).replace(/^models\//, "").trim();
+    return KANONIK[ad] || ad;
+  }
+
+  /* --- halka durum yönetimi --- */
+  var _halka = null; // [{key, durum, sifirla}]
+  var _don = 0;      // rotasyon indeksi
+
+  function _oku() {
+    try {
+      var ham = localStorage.getItem(LS_HALKA);
+      if (ham) return JSON.parse(ham);
+    } catch (e) {}
+    return null;
+  }
+  function _yaz() {
+    try { localStorage.setItem(LS_HALKA, JSON.stringify(_halka)); } catch (e) {}
+  }
+  function ringLoad() {
+    if (_halka) return _halka;
+    var mevcut = _oku();
+    if (mevcut && mevcut.length) {
+      _halka = mevcut;
+    } else {
+      _halka = [];
+      // gömülü anahtarlar
+      GOMULU_ANAHTARLAR.forEach(function (k) {
+        if (k && String(k).trim()) _halka.push({ key: String(k).trim(), durum: "hazir", sifirla: 0 });
+      });
+      // eski tek anahtarı taşı
+      try {
+        var eski = localStorage.getItem(ESKI_TEK);
+        if (eski && eski.trim() && !_halka.some(function (h) { return h.key === eski.trim(); })) {
+          _halka.push({ key: eski.trim(), durum: "hazir", sifirla: 0 });
+        }
+      } catch (e) {}
+      _yaz();
+    }
+    return _halka;
+  }
+  function anahtarlar() { return ringLoad().map(function (h) { return h.key; }); }
+  function birincilAnahtar() { var a = anahtarlar(); return a.length ? a[0] : ""; }
+  function anahtarEkle(k) {
+    k = String(k || "").trim();
+    if (!k) return false;
+    ringLoad();
+    if (_halka.some(function (h) { return h.key === k; })) return false;
+    _halka.push({ key: k, durum: "hazir", sifirla: 0 });
+    _yaz();
+    return true;
+  }
+  function anahtarSil(k) {
+    ringLoad();
+    _halka = _halka.filter(function (h) { return h.key !== k; });
+    _yaz();
+  }
+  function _sifirlamaKontrol() {
+    var simdi = Date.now();
+    ringLoad().forEach(function (h) {
+      if (h.durum !== "hazir" && h.sifirla && simdi >= h.sifirla) {
+        h.durum = "hazir"; h.sifirla = 0;
+      }
+    });
+  }
+  function saglik() {
+    _sifirlamaKontrol();
+    return ringLoad().map(function (h) {
+      return { key: h.key, durum: h.durum, sifirla: h.sifirla };
+    });
+  }
+  function _isaretle(k, durum, saniye) {
+    ringLoad();
+    var h = _halka.find(function (x) { return x.key === k; });
+    if (!h) return;
+    h.durum = durum;
+    if (durum === "gunluk") {
+      var t = new Date(); t.setHours(24, 0, 5, 0); // ertesi gün yerel gece yarısı
+      h.sifirla = t.getTime();
+    } else if (durum === "dakikalik") {
+      h.sifirla = Date.now() + (saniye ? saniye * 1000 : 60000);
+    } else {
+      h.sifirla = 0;
+    }
+    _yaz();
+  }
+
+  /* --- model keşfi --- */
+  function modelleriGetirCache() {
+    try {
+      var ham = localStorage.getItem(LS_MODELLER);
+      if (ham) { var o = JSON.parse(ham); if (o && o.liste && o.liste.length) return o.liste; }
+    } catch (e) {}
+    return null;
+  }
+  var VARSAYILAN_MODELLER = [
+    "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite",
+    "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"
+  ];
+  function modelSirala(a) {
+    var oncelik = function (m) {
+      var p = 0;
+      if (/2\.5/.test(m)) p -= 40; else if (/2\.0/.test(m)) p -= 30; else if (/1\.5/.test(m)) p -= 20;
+      if (/flash-lite/.test(m)) p += 2; else if (/flash/.test(m)) p += 0; else if (/pro/.test(m)) p += 1;
+      if (/exp|preview|thinking|tts|image|embedding|aqa|learnlm/.test(m)) p += 100;
+      return p;
+    };
+    return a.slice().sort(function (x, y) { return oncelik(x) - oncelik(y) || x.localeCompare(y); });
+  }
+  function modelleriKesfet(cb) {
+    var k = birincilAnahtar();
+    var yedek = modelleriGetirCache() || VARSAYILAN_MODELLER.slice();
+    if (!k) { if (cb) cb(yedek, false); return; }
+    fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(k) + "&pageSize=1000")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.models) { if (cb) cb(yedek, false); return; }
+        var liste = d.models.filter(function (m) {
+          return m.supportedGenerationMethods &&
+                 m.supportedGenerationMethods.indexOf("generateContent") !== -1 &&
+                 /^models\/gemini/.test(m.name || "");
+        }).map(function (m) { return m.name.replace(/^models\//, ""); });
+        // 'latest' takma adlarını at, kanoniklerini bırak
+        liste = liste.filter(function (m) { return !/-latest$/.test(m); });
+        liste = modelSirala(liste);
+        if (!liste.length) liste = yedek;
+        try { localStorage.setItem(LS_MODELLER, JSON.stringify({ liste: liste, t: Date.now() })); } catch (e) {}
+        if (cb) cb(liste, true);
+      })
+      .catch(function () { if (cb) cb(yedek, false); });
+  }
+
+  /* --- hata çevirisi --- */
+  function _tr(err, kod) {
+    var m = (err && err.message) || "";
+    if (kod === 404 || /not found|is not found/i.test(m)) return "Model bulunamadı (404). Ayarlar'dan geçerli bir model seçin.";
+    if (kod === 429 || /RESOURCE_EXHAUSTED|quota|rate/i.test(m)) return "Kota doldu (429). Anahtar dinlenmeye alındı; varsa başka anahtar denendi.";
+    if (kod === 503 || /overloaded|unavailable/i.test(m)) return "Sunucu şu an yoğun (503). Biraz sonra tekrar deneyin.";
+    if (kod === 400 || /invalid|INVALID_ARGUMENT/i.test(m)) return "İstek geçersiz (400). Model bu ayarı desteklemiyor olabilir.";
+    if (kod === 403 || /permission|API key not valid|invalid/i.test(m)) return "Anahtar geçersiz veya yetkisiz (403). Ayarlar'dan anahtarı kontrol edin.";
+    return "Bağlantı hatası: " + (m || "bilinmiyor");
+  }
+  function _retrySaniye(details) {
+    try {
+      if (!details) return 0;
+      for (var i = 0; i < details.length; i++) {
+        var d = details[i];
+        if (d && d.retryDelay) { var s = parseInt(String(d.retryDelay).replace(/[^0-9]/g, ""), 10); if (s) return s; }
+      }
+    } catch (e) {}
+    return 0;
+  }
+  function _gunlukMu(err) {
+    var s = JSON.stringify(err || {});
+    return /PerDay|per day|daily|GenerateRequestsPerDay/i.test(s);
+  }
+
+  /* --- gövdeden riskli alanları çıkar (invalid-argument onarımı) --- */
+  function _sadelestir(govde) {
+    var g = JSON.parse(JSON.stringify(govde || {}));
+    if (g.generationConfig) {
+      delete g.generationConfig.thinkingConfig;
+      delete g.generationConfig.responseModalities;
+      if (Object.keys(g.generationConfig).length === 0) delete g.generationConfig;
+    }
+    delete g.thinkingConfig;
+    delete g.responseModalities;
+    return g;
+  }
+
+  function _bekle(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* --- ana çağrı: halkada gez, hataları yönet --- */
+  function cagir(model, govde, opts) {
+    opts = opts || {};
+    var mdl = kanonikModel(model || localStorage.getItem(LS_MODEL));
+    _sifirlamaKontrol();
+    var keys = anahtarlar();
+    if (!keys.length) return Promise.reject(new Error("API anahtarı bulunamadı. Ayarlar'dan ekleyin."));
+
+    var sonHata = new Error("Bilinmeyen hata");
+    var toplam = keys.length;
+
+    function denemeSira(i, kalanTekrar, govdeAktif) {
+      if (i >= toplam) return Promise.reject(sonHata);
+      var k = keys[(_don + i) % toplam];
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + mdl + ":generateContent?key=" + encodeURIComponent(k);
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(govdeAktif)
+      }).then(function (res) {
+        return res.json().then(function (data) { return { res: res, data: data }; });
+      }).then(function (o) {
+        var res = o.res, data = o.data;
+        if (data && data.error) {
+          var kod = data.error.code || res.status;
+          if (kod === 400 || /INVALID_ARGUMENT/i.test(data.error.status || "")) {
+            var temiz = _sadelestir(govdeAktif);
+            if (kalanTekrar > 0 && JSON.stringify(temiz) !== JSON.stringify(govdeAktif)) {
+              return denemeSira(i, kalanTekrar - 1, temiz); // aynı anahtarla sadeleştirip tekrar
+            }
+            sonHata = new Error(_tr(data.error, 400)); throw { _next: false };
+          }
+          if (kod === 429) {
+            var sn = _retrySaniye(data.error.details);
+            _isaretle(k, _gunlukMu(data.error) ? "gunluk" : "dakikalik", sn);
+            sonHata = new Error(_tr(data.error, 429)); throw { _next: true };
+          }
+          if (kod === 503) {
+            if (kalanTekrar > 0) return _bekle(1200).then(function () { return denemeSira(i, kalanTekrar - 1, govdeAktif); });
+            sonHata = new Error(_tr(data.error, 503)); throw { _next: true };
+          }
+          if (kod === 404) { sonHata = new Error(_tr(data.error, 404)); throw { _next: false }; }
+          if (kod === 403) { sonHata = new Error(_tr(data.error, 403)); throw { _next: true }; }
+          sonHata = new Error(_tr(data.error, kod)); throw { _next: true };
+        }
+        if (!data || !data.candidates || !data.candidates.length) {
+          sonHata = new Error("Yapay zeka boş yanıt döndürdü."); throw { _next: true };
+        }
+        // başarı
+        _isaretle(k, "hazir", 0);
+        _don = (_don + i + 1) % toplam;
+        return data;
+      }).catch(function (e) {
+        if (e && e._next === false) return Promise.reject(sonHata);
+        if (e && e._next === true) return denemeSira(i + 1, opts.tekrar != null ? opts.tekrar : 1, govde);
+        // ağ hatası vb.
+        sonHata = new Error(_tr(e));
+        return denemeSira(i + 1, opts.tekrar != null ? opts.tekrar : 1, govde);
+      });
+    }
+    return denemeSira(0, opts.tekrar != null ? opts.tekrar : 1, govde);
+  }
+
+  /* metinden düz metin: candidates[0].content.parts[].text birleştir */
+  function metniAl(data) {
+    try {
+      var parts = data.candidates[0].content.parts || [];
+      return parts.map(function (p) { return p.text || ""; }).filter(Boolean).join("\n");
+    } catch (e) { return ""; }
+  }
+
+  window.ZIRVE_API = {
+    ringLoad: ringLoad,
+    anahtarlar: anahtarlar,
+    birincilAnahtar: birincilAnahtar,
+    anahtarEkle: anahtarEkle,
+    anahtarSil: anahtarSil,
+    saglik: saglik,
+    kanonikModel: kanonikModel,
+    modelleriKesfet: modelleriKesfet,
+    cagir: cagir,
+    metniAl: metniAl
+  };
+
+  /* ================= 2. window.ZIRVE — yardımcılar + kontrol kaydı ================= */
+  function duzMetin(str) {
+    if (str == null) return "";
+    var s = String(str);
+    // blok/satır etiketleri -> satır sonu
+    s = s.replace(/<\s*br\s*\/?>/gi, "\n");
+    s = s.replace(/<\s*\/\s*(p|div|li|h[1-6]|tr)\s*>/gi, "\n");
+    s = s.replace(/<\s*li[^>]*>/gi, "• ");
+    // kalan tüm etiketler
+    s = s.replace(/<[^>]+>/g, "");
+    // entity çöz
+    var ta = document.createElement("textarea"); ta.innerHTML = s; s = ta.value;
+    // Markdown temizle
+    s = s.replace(/^#{1,6}\s*/gm, "");            // ## başlık
+    s = s.replace(/\*\*([^*]+)\*\*/g, "$1");      // **kalın**
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1$2"); // *italik*
+    s = s.replace(/`([^`]+)`/g, "$1");            // `kod`
+    s = s.replace(/^\s{0,3}>\s?/gm, "");          // > alıntı
+    s = s.replace(/^\s*[-*+]\s+/gm, "• ");        // - liste
+    s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"); // [metin](link)
+    // boşluk sadeleştir
+    s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+    return s.trim();
+  }
+
+  function _toast(mesaj, tip) {
+    var d = document.createElement("div");
+    d.textContent = mesaj;
+    d.style.cssText =
+      "position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);" +
+      "background:#1e293b;color:#f8fafc;padding:12px 20px;border-radius:14px;font:600 14px/1.4 Inter,system-ui,sans-serif;" +
+      "box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:2147483000;opacity:0;transition:.3s;max-width:90vw;text-align:center;" +
+      "border-left:4px solid " + (tip === "error" ? "#ef4444" : tip === "info" ? "#38bdf8" : "#10b981");
+    document.body.appendChild(d);
+    requestAnimationFrame(function () { d.style.opacity = "1"; d.style.transform = "translateX(-50%) translateY(0)"; });
+    setTimeout(function () { d.style.opacity = "0"; d.style.transform = "translateX(-50%) translateY(20px)"; setTimeout(function () { d.remove(); }, 300); }, 2600);
+  }
+
+  function kopyala(str) {
+    var t = duzMetin(str);
+    var bitir = function () { _toast("Kopyalandı ✓", "success"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(bitir).catch(function () { _eleKopyala(t); bitir(); });
+    } else { _eleKopyala(t); bitir(); }
+  }
+  function _eleKopyala(t) {
+    try {
+      var ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+    } catch (e) {}
+  }
+  function paylas(str, baslik) {
+    var t = duzMetin(str);
+    if (navigator.share) {
+      navigator.share({ title: baslik || document.title, text: t }).catch(function () {});
+    } else { kopyala(str); }
+  }
+
+  window.ZIRVE = {
+    duzMetin: duzMetin,
+    kopyala: kopyala,
+    paylas: paylas,
+    toast: _toast
+  };
+
+  /* --- yüzen kontrol kayıt defteri --- */
+  window.ZIRVE_kontroller = window.ZIRVE_kontroller || [];
+  window.ZIRVE_kontrolKaydet = function (obj) {
+    var v = window.ZIRVE_kontroller.filter(function (k) { return k.id !== obj.id; });
+    v.push(obj);
+    window.ZIRVE_kontroller = v;
+  };
+  window.ZIRVE_kontrolleriGeriGetir = function () {
+    var liste = window.ZIRVE_kontroller || [];
+    if (liste.length) {
+      liste.forEach(function (k) { try { k.goster(); } catch (e) {} });
+      _toast("Yüzen düğmeler geri getirildi", "info");
+      return;
+    }
+    // dizi boşsa bayrakları sil + reload
+    ["zirve_ekran_pill_gizli", "zirve_karsilama_gizli", "zirve_qr_gizli"].forEach(function (b) {
+      try { localStorage.removeItem(b); } catch (e) {}
+    });
+    location.reload();
+  };
+})();
+
+    </script>
+    <script>
+/* ================= ZİRVE KATMANI — ARAYÜZ (vanilla) ================= */
+(function () {
+  "use strict";
+  if (window.__ZIRVE_UI_MOUNTED) return;
+
+  var T = window.ZIRVE ? window.ZIRVE.toast : function (m) { console.log(m); };
+
+  /* --- ortak: cam görünümlü yüzen pill üret --- */
+  function pillYap(opts) {
+    // opts: {id, ikon, etiket, bayrak, konum, tik, kapatinca}
+    var sarmal = document.createElement("div");
+    sarmal.setAttribute("data-zirve", opts.id);
+    sarmal.style.cssText =
+      "position:fixed;" + opts.konum + ";z-index:2147482000;display:flex;align-items:center;gap:6px;" +
+      "padding:7px 12px;border-radius:999px;cursor:pointer;user-select:none;" +
+      "background:rgba(255,255,255,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);" +
+      "border:1px solid rgba(148,163,184,.4);box-shadow:0 6px 18px rgba(0,0,0,.12);" +
+      "font:600 12.5px/1 Inter,system-ui,sans-serif;color:#334155;opacity:0;transform:translateY(8px);" +
+      "transition:opacity .35s ease,transform .35s ease;";
+    if (opts.silik) sarmal.style.opacity = ".55";
+
+    var ic = document.createElement("span");
+    ic.style.cssText = "display:flex;align-items:center;gap:6px;";
+    ic.innerHTML = '<span style="font-size:15px;line-height:1">' + opts.ikon + "</span>" +
+      (opts.etiket ? '<span data-etiket>' + opts.etiket + "</span>" : "");
+    ic.onclick = function (e) { e.stopPropagation(); if (opts.tik) opts.tik(); };
+    sarmal.appendChild(ic);
+
+    var kapat = document.createElement("span");
+    kapat.textContent = "×";
+    kapat.title = "Gizle";
+    kapat.style.cssText =
+      "margin-left:2px;width:18px;height:18px;min-width:18px;display:flex;align-items:center;justify-content:center;" +
+      "border-radius:50%;background:rgba(148,163,184,.28);color:#475569;font-size:15px;line-height:1;cursor:pointer;";
+    kapat.onclick = function (e) {
+      e.stopPropagation();
+      try { localStorage.setItem(opts.bayrak, "1"); } catch (er) {}
+      gizle();
+    };
+    sarmal.appendChild(kapat);
+
+    document.body.appendChild(sarmal);
+    // hover ile tam opaklık
+    sarmal.onmouseenter = function () { if (opts.silik) sarmal.style.opacity = "1"; };
+    sarmal.onmouseleave = function () { if (opts.silik) sarmal.style.opacity = ".55"; };
+
+    var acik = false;
+    function goster() {
+      try { localStorage.removeItem(opts.bayrak); } catch (er) {}
+      sarmal.style.display = "flex";
+      requestAnimationFrame(function () {
+        sarmal.style.opacity = opts.silik ? ".55" : "1";
+        sarmal.style.transform = "translateY(0)";
+      });
+      acik = true;
+    }
+    function gizle() {
+      sarmal.style.opacity = "0";
+      sarmal.style.transform = "translateY(8px)";
+      setTimeout(function () { sarmal.style.display = "none"; }, 300);
+      acik = false;
+    }
+    // ilk durum
+    var gizliMi = false;
+    try { gizliMi = localStorage.getItem(opts.bayrak) === "1"; } catch (er) {}
+    if (gizliMi) { sarmal.style.display = "none"; acik = false; }
+    else { requestAnimationFrame(function () { sarmal.style.opacity = opts.silik ? ".55" : "1"; sarmal.style.transform = "translateY(0)"; }); acik = true; }
+
+    window.ZIRVE_kontrolKaydet({
+      id: opts.id, etiket: opts.etiketAd || opts.id, ikon: opts.ikon,
+      goster: goster, gizle: gizle, acikMi: function () { return acik; },
+      etiketGuncelle: function (t) { var e = ic.querySelector("[data-etiket]"); if (e) e.textContent = t; }
+    });
+    return { sarmal: sarmal, goster: goster, gizle: gizle };
+  }
+
+  /* ================= 12. EKRAN / CİHAZ OTOMATİK UYUM ================= */
+  (function ekranModulu() {
+    var LS_OLCEK = "zirve_ekran_olcek";
+    var LS_ELLE = "zirve_ekran_elle";       // elle seçilen mod adı
+    var modlar = [
+      { ad: "Oto", olcek: null },
+      { ad: "Tablet", olcek: 1.0 },
+      { ad: "Akıllı Tahta", olcek: 1.35 },
+      { ad: "Büyük Tahta", olcek: 1.6 }
+    ];
+    function otoOlcek() {
+      var w = window.innerWidth, h = window.innerHeight;
+      var dokunmatik = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+      var dpr = window.devicePixelRatio || 1;
+      var buyuk = Math.max(w, h);
+      if (buyuk >= 2500 || (buyuk >= 1900 && dpr <= 1 && dokunmatik)) return 1.6;   // 4K / büyük tahta
+      if (buyuk >= 1500 && dokunmatik && dpr <= 1.5) return 1.35;                    // akıllı tahta
+      return 1.0;                                                                    // telefon/tablet/laptop/masaüstü
+    }
+    function uygula(olcek) {
+      try { document.documentElement.style.zoom = olcek && olcek !== 1 ? olcek : ""; } catch (e) {}
+    }
+    function aktifModAdi() {
+      var elle = null; try { elle = localStorage.getItem(LS_ELLE); } catch (e) {}
+      return elle || "Oto";
+    }
+    function guncelle() {
+      var elle = null; try { elle = localStorage.getItem(LS_ELLE); } catch (e) {}
+      var olcek;
+      if (elle) {
+        var m = modlar.find(function (x) { return x.ad === elle; });
+        olcek = m && m.olcek != null ? m.olcek : otoOlcek();
+      } else {
+        olcek = otoOlcek();
+      }
+      uygula(olcek);
+      try { localStorage.setItem(LS_OLCEK, String(olcek)); } catch (e) {}
+      if (pill && pill._etiket) pill._etiket("📺 " + (elle || "Oto"));
+    }
+
+    // açılışta hızlı uygula (pill'den önce)
+    (function () {
+      var kayit = null; try { kayit = parseFloat(localStorage.getItem(LS_OLCEK)); } catch (e) {}
+      if (kayit && !isNaN(kayit)) uygula(kayit);
+    })();
+
+    var pill = null;
+    function kur() {
+      var p = pillYap({
+        id: "ekran", ikon: "📺", etiket: "Oto", etiketAd: "Ekran modu",
+        bayrak: "zirve_ekran_pill_gizli",
+        konum: "left:14px;bottom:14px", silik: true,
+        tik: function () {
+          // elle döngü: Oto -> Tablet -> Akıllı Tahta -> Büyük Tahta -> Oto
+          var suan = aktifModAdi();
+          var i = modlar.map(function (m) { return m.ad; }).indexOf(suan);
+          var sonraki = modlar[(i + 1) % modlar.length].ad;
+          try {
+            if (sonraki === "Oto") localStorage.removeItem(LS_ELLE);
+            else localStorage.setItem(LS_ELLE, sonraki);
+          } catch (e) {}
+          guncelle();
+          T("Ekran modu: " + sonraki, "info");
+        }
+      });
+      pill = { _etiket: function (t) { var el = document.querySelector('[data-zirve="ekran"] [data-etiket]'); if (el) el.textContent = t.replace("📺 ", ""); } };
+      guncelle();
+    }
+
+    // resize/rotate: elle seçim yoksa yeniden oto
+    var zaman;
+    window.addEventListener("resize", function () {
+      clearTimeout(zaman);
+      zaman = setTimeout(function () {
+        var elle = null; try { elle = localStorage.getItem(LS_ELLE); } catch (e) {}
+        if (!elle) guncelle();
+      }, 250);
+    });
+
+    // yazdırma/PDF köprüleri
+    window.ZIRVE_ekranReset = function () { try { document.documentElement.style.zoom = ""; } catch (e) {} };
+    window.ZIRVE_ekranGeri = function () { guncelle(); };
+
+    window.__ZIRVE_ekranKur = kur;
+  })();
+
+  /* ================= MODÜL C: QR İLE PAYLAŞ ================= */
+  (function qrModulu() {
+    function qrKutuphane(cb) {
+      if (window.qrcode) { cb(true); return; }
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js";
+      s.onload = function () { cb(!!window.qrcode); };
+      s.onerror = function () { cb(false); };
+      document.head.appendChild(s);
+    }
+    function yereldeMi() {
+      var p = location.protocol, h = location.hostname;
+      return p === "file:" || h === "localhost" || h === "127.0.0.1" || h === "";
+    }
+    function ac() {
+      var url = (window.PAYLAS && window.PAYLAS.url) ? window.PAYLAS.url : window.location.href;
+      if (!navigator.onLine || yereldeMi()) {
+        T("QR için sayfanın internette (ör. GitHub Pages) yayında olması gerekir. Önce yükleyin.", "info");
+        // yine de linki gösterelim
+      }
+      qrKutuphane(function (ok) {
+        var kaplama = document.createElement("div");
+        kaplama.style.cssText = "position:fixed;inset:0;z-index:2147483200;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.72);backdrop-filter:blur(4px);";
+        kaplama.onclick = function (e) { if (e.target === kaplama) kaplama.remove(); };
+
+        var kart = document.createElement("div");
+        kart.style.cssText = "background:#fff;border-radius:22px;padding:26px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.4);font-family:Inter,system-ui,sans-serif;";
+
+        var baslik = document.createElement("div");
+        baslik.textContent = "📲 Bu sayfayı paylaş";
+        baslik.style.cssText = "font-weight:800;font-size:18px;color:#0f172a;margin-bottom:16px;";
+        kart.appendChild(baslik);
+
+        var qrKutu = document.createElement("div");
+        qrKutu.style.cssText = "background:#fff;padding:14px;border-radius:16px;display:inline-block;border:1px solid #e2e8f0;";
+        if (ok && window.qrcode) {
+          try {
+            var qr = window.qrcode(0, "M"); qr.addData(url); qr.make();
+            qrKutu.innerHTML = qr.createImgTag(5, 8);
+            var img = qrKutu.querySelector("img"); if (img) { img.style.width = "220px"; img.style.height = "220px"; img.style.imageRendering = "pixelated"; }
+          } catch (e) { qrKutu.textContent = "QR üretilemedi"; }
+        } else {
+          qrKutu.textContent = "QR kütüphanesi yüklenemedi (internet gerekli).";
+          qrKutu.style.color = "#64748b"; qrKutu.style.fontSize = "13px";
+        }
+        kart.appendChild(qrKutu);
+
+        var adres = document.createElement("div");
+        adres.textContent = url;
+        adres.style.cssText = "margin:16px 0 14px;font-size:12px;color:#475569;word-break:break-all;background:#f1f5f9;padding:8px 10px;border-radius:10px;";
+        kart.appendChild(adres);
+
+        var dugmeler = document.createElement("div");
+        dugmeler.style.cssText = "display:flex;gap:8px;";
+        var kopyaBtn = document.createElement("button");
+        kopyaBtn.textContent = "🔗 Linki kopyala";
+        kopyaBtn.style.cssText = "flex:1;padding:11px;border:0;border-radius:12px;background:#0f172a;color:#fff;font-weight:700;font-size:13px;cursor:pointer;";
+        kopyaBtn.onclick = function () { window.ZIRVE.kopyala(url); };
+        dugmeler.appendChild(kopyaBtn);
+
+        var pngBtn = document.createElement("button");
+        pngBtn.textContent = "⬇ PNG indir";
+        pngBtn.style.cssText = "flex:1;padding:11px;border:0;border-radius:12px;background:#14b8a6;color:#fff;font-weight:700;font-size:13px;cursor:pointer;" + (ok ? "" : "opacity:.5;pointer-events:none;");
+        pngBtn.onclick = function () {
+          var img = qrKutu.querySelector("img"); if (!img) return;
+          var a = document.createElement("a"); a.href = img.src; a.download = "qr-paylas.png"; a.click();
+        };
+        dugmeler.appendChild(pngBtn);
+        kart.appendChild(dugmeler);
+
+        var kapat = document.createElement("button");
+        kapat.textContent = "Kapat";
+        kapat.style.cssText = "margin-top:12px;background:none;border:0;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;";
+        kapat.onclick = function () { kaplama.remove(); };
+        kart.appendChild(kapat);
+
+        kaplama.appendChild(kart);
+        document.body.appendChild(kaplama);
+      });
+    }
+    window.ZIRVE_paylasAc = ac;
+    window.__ZIRVE_qrKur = function () {
+      pillYap({
+        id: "qr", ikon: "📲", etiket: "QR", etiketAd: "QR ile paylaş",
+        bayrak: "zirve_qr_gizli",
+        konum: "right:14px;bottom:14px", silik: false,
+        tik: ac
+      });
+    };
+  })();
+
+  /* ================= MODÜL A: YARDIM "?" (React karşılama ile köprü) ================= */
+  (function yardimModulu() {
+    window.__ZIRVE_yardimKur = function () {
+      pillYap({
+        id: "yardim", ikon: "❓", etiket: "Nasıl kullanılır", etiketAd: "Yardım",
+        bayrak: "zirve_karsilama_gizli",
+        konum: "right:14px;bottom:64px", silik: true,
+        tik: function () {
+          // React karşılama pop-up'ını yeniden aç
+          window.dispatchEvent(new CustomEvent("zirve-yardim-ac"));
+        }
+      });
+    };
+  })();
+
+  /* ================= 4. AI UYARI BANDI (bir kez, kalıcı) ================= */
+  (function uyariBandi() {
+    var BAYRAK = "zirve_ai_uyari_goruldu";
+    window.__ZIRVE_uyariKur = function () {
+      var gorulduMu = false; try { gorulduMu = localStorage.getItem(BAYRAK) === "1"; } catch (e) {}
+      if (gorulduMu) return;
+      var bant = document.createElement("div");
+      bant.style.cssText =
+        "position:fixed;left:14px;bottom:64px;z-index:2147482500;max-width:300px;" +
+        "background:rgba(30,41,59,.94);color:#e2e8f0;padding:12px 14px;border-radius:14px;" +
+        "font:500 12px/1.5 Inter,system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3);" +
+        "border-left:4px solid #f59e0b;display:flex;gap:8px;align-items:flex-start;opacity:0;transform:translateY(10px);transition:.4s;";
+      bant.innerHTML =
+        '<span style="font-size:16px;line-height:1">🤖</span>' +
+        '<span>Yanıtların bir kısmı yapay zekâ ile üretilir; <b>%100 doğru olmayabilir</b>. Önemli konularda kaynaktan teyit edin.</span>';
+      var kapat = document.createElement("span");
+      kapat.textContent = "×";
+      kapat.style.cssText = "cursor:pointer;font-size:18px;line-height:1;color:#cbd5e1;margin-left:2px;";
+      kapat.onclick = function () {
+        try { localStorage.setItem(BAYRAK, "1"); } catch (e) {}
+        bant.style.opacity = "0"; bant.style.transform = "translateY(10px)";
+        setTimeout(function () { bant.remove(); }, 400);
+      };
+      bant.appendChild(kapat);
+      document.body.appendChild(bant);
+      requestAnimationFrame(function () { bant.style.opacity = "1"; bant.style.transform = "translateY(0)"; });
+    };
+  })();
+
+  /* ================= 6. BAĞLANTI BİLDİRİMLERİ ================= */
+  (function baglanti() {
+    window.addEventListener("offline", function () { T("İnternet bağlantısı kesildi", "error"); });
+    window.addEventListener("online", function () { T("İnternet bağlantısı geri geldi", "success"); });
+  })();
+
+  /* ================= MONTAJ ================= */
+  function mount() {
+    if (window.__ZIRVE_UI_MOUNTED) return;
+    window.__ZIRVE_UI_MOUNTED = true;
+    try { window.ZIRVE_API && window.ZIRVE_API.ringLoad(); } catch (e) {}
+    window.__ZIRVE_ekranKur && window.__ZIRVE_ekranKur();
+    window.__ZIRVE_yardimKur && window.__ZIRVE_yardimKur();
+    window.__ZIRVE_qrKur && window.__ZIRVE_qrKur();
+    window.__ZIRVE_uyariKur && window.__ZIRVE_uyariKur();
+  }
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(mount, 400);
+  } else {
+    window.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 400); });
+  }
+})();
+
+    </script>
 
     <script type="text/babel" data-type="module">
        
@@ -287,6 +995,36 @@
             ]
         };
 
+        // --- ZİRVE: güvenli basit Markdown -> HTML (zengin AI cevabı) ---
+        const mdBasit = (metin) => {
+            if (metin == null) return '';
+            let s = String(metin)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // basit tablo: | a | b |\n|---|---| ...
+            s = s.replace(/(^\|.+\|\s*\n\|[\s:|-]+\|\s*\n(?:\|.*\|\s*\n?)*)/gm, (blok) => {
+                const satirlar = blok.trim().split('\n').filter(r => r.trim());
+                if (satirlar.length < 2) return blok;
+                const hucre = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+                const bas = hucre(satirlar[0]);
+                const govde = satirlar.slice(2).map(hucre);
+                let t = '<table style="border-collapse:collapse;width:100%;margin:8px 0;font-size:12px"><thead><tr>';
+                bas.forEach(c => t += `<th style="border:1px solid #cbd5e1;padding:4px 8px;background:#f1f5f9;text-align:left">${c}</th>`);
+                t += '</tr></thead><tbody>';
+                govde.forEach(r => { t += '<tr>'; r.forEach(c => t += `<td style="border:1px solid #e2e8f0;padding:4px 8px">${c}</td>`); t += '</tr>'; });
+                t += '</tbody></table>';
+                return t;
+            });
+            s = s.replace(/^###\s?(.+)$/gm, '<div style="font-weight:800;color:#0f766e;margin:6px 0 2px">$1</div>');
+            s = s.replace(/^##\s?(.+)$/gm, '<div style="font-weight:800;color:#0369a1;margin:8px 0 2px;font-size:1.02em">$1</div>');
+            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+            s = s.replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:0 4px;border-radius:4px">$1</code>');
+            s = s.replace(/^\s*[-*]\s+(.+)$/gm, '<div style="padding-left:14px;position:relative"><span style="position:absolute;left:0;color:#14b8a6">•</span>$1</div>');
+            s = s.replace(/\n/g, '<br/>');
+            s = s.replace(/(<\/(?:div|table)>)<br\/>/g, '$1');
+            return s;
+        };
+
         // --- COMPONENTS ---
         const Toast = ({ message, type, isVisible }) => (
             <div className={`toast ${isVisible ? 'show' : ''}`}>
@@ -297,37 +1035,178 @@
         );
 
         const SettingsModal = ({ isOpen, onClose, aiConfig, setAiConfig }) => {
-            const [localKey, setLocalKey] = useState(aiConfig.key);
+            const [yeniKey, setYeniKey] = useState('');
             const [localModel, setLocalModel] = useState(aiConfig.model);
+            const [saglik, setSaglik] = useState([]);
+            const [modeller, setModeller] = useState([]);
+            const [modelYukleniyor, setModelYukleniyor] = useState(false);
+            const [rehberAcik, setRehberAcik] = useState(false);
+            const [kontrolDurum, setKontrolDurum] = useState([]);
+
+            const halkayiYenile = () => {
+                try { setSaglik(window.ZIRVE_API.saglik()); } catch (e) { setSaglik([]); }
+            };
+            const kontrolleriYenile = () => {
+                const list = (window.ZIRVE_kontroller || []).map(k => ({ id: k.id, etiket: k.etiket, ikon: k.ikon, acik: k.acikMi() }));
+                setKontrolDurum(list);
+            };
+            const modelleriYukle = () => {
+                setModelYukleniyor(true);
+                window.ZIRVE_API.modelleriKesfet((liste) => { setModeller(liste || []); setModelYukleniyor(false); });
+            };
+
+            useEffect(() => {
+                if (!isOpen) return;
+                halkayiYenile();
+                kontrolleriYenile();
+                modelleriYukle();
+                const t = setInterval(() => { halkayiYenile(); kontrolleriYenile(); }, 3000);
+                return () => clearInterval(t);
+            }, [isOpen]);
 
             if (!isOpen) return null;
+
+            const anahtarEkle = () => {
+                const k = yeniKey.trim();
+                if (!k) return;
+                if (window.ZIRVE_API.anahtarEkle(k)) {
+                    setYeniKey('');
+                    halkayiYenile();
+                    const birincil = window.ZIRVE_API.birincilAnahtar();
+                    setAiConfig({ ...aiConfig, key: birincil });
+                    modelleriYukle();
+                }
+            };
+            const anahtarSil = (k) => {
+                window.ZIRVE_API.anahtarSil(k);
+                halkayiYenile();
+                setAiConfig({ ...aiConfig, key: window.ZIRVE_API.birincilAnahtar() });
+            };
             const handleSave = (e) => {
                 e.preventDefault();
-                localStorage.setItem('gemini_api_key', localKey);
                 localStorage.setItem('gemini_model', localModel);
-                setAiConfig({ key: localKey, model: localModel });
+                setAiConfig({ key: window.ZIRVE_API.birincilAnahtar(), model: localModel });
                 onClose();
+            };
+
+            const durumRozet = (d) => {
+                if (d === 'gunluk') return { ikon: '🟠', metin: 'Günlük kota' };
+                if (d === 'dakikalik') return { ikon: '🟡', metin: 'Dakikalık kota' };
+                return { ikon: '🟢', metin: 'Hazır' };
+            };
+            const kisa = (k) => k.length > 12 ? (k.slice(0, 6) + '…' + k.slice(-4)) : k;
+
+            const kontrolToggle = (id) => {
+                const k = (window.ZIRVE_kontroller || []).find(x => x.id === id);
+                if (!k) return;
+                if (k.acikMi()) k.gizle(); else k.goster();
+                setTimeout(kontrolleriYenile, 50);
+            };
+            const hepsiniAyarla = (goster) => {
+                (window.ZIRVE_kontroller || []).forEach(k => { goster ? k.goster() : k.gizle(); });
+                setTimeout(kontrolleriYenile, 50);
             };
 
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden slide-up border border-slate-200">
-                        <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto slide-up border border-slate-200">
+                        <div className="bg-slate-900 p-5 text-white flex justify-between items-center sticky top-0 z-10">
                             <h3 className="text-lg font-bold flex items-center gap-2"><i className="fa-solid fa-gear"></i> AI & Uygulama Ayarları</h3>
                             <button onClick={onClose} className="text-slate-400 hover:text-white p-2">&times;</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-5">
                             <p className="text-sm text-slate-500 bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-indigo-800">
-                                ℹ️ Eğitim okuma, sınavlar, pdf indirme, kütüphane ve seslendirme <strong>API ANAHTARI İSTEMEZ.</strong> Anahtar sadece "Canlı Vaka (Roleplay)" ve "Seçili Metni Açıkla" gibi özellikler içindir.
+                                ℹ️ Eğitim okuma, sınavlar, pdf indirme, kütüphane ve seslendirme <strong>API ANAHTARI İSTEMEZ.</strong> Anahtar sadece "Canlı Vaka (Roleplay)", "Klinik Asistan" ve "Seçili Metni Açıkla" gibi yapay zeka özellikleri içindir.
                             </p>
+
+                            {/* --- ANAHTAR HALKASI --- */}
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">Gemini API Anahtarı</label>
-                                <input type="password" value={localKey} onChange={(e) => setLocalKey(e.target.value)} placeholder="AIzaSy..." className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm" />
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Gemini API Anahtarları <span className="text-slate-400 font-medium">(birden fazla ekleyebilirsiniz)</span></label>
+                                <div className="flex gap-2">
+                                    <input type="password" value={yeniKey} onChange={(e) => setYeniKey(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); anahtarEkle(); } }}
+                                        placeholder="AIzaSy..." className="flex-1 px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm" />
+                                    <button type="button" onClick={anahtarEkle} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 rounded-lg text-sm">Ekle</button>
+                                </div>
+
+                                {/* sağlık paneli */}
+                                <div className="mt-3 space-y-2">
+                                    {saglik.length === 0 && <p className="text-xs text-slate-400 italic">Henüz anahtar yok. Yapay zeka özellikleri için en az bir anahtar ekleyin.</p>}
+                                    {saglik.map((h, i) => {
+                                        const r = durumRozet(h.durum);
+                                        return (
+                                            <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span>{r.ikon}</span>
+                                                    <span className="font-mono text-slate-600">{kisa(h.key)}</span>
+                                                    <span className="text-xs text-slate-400">{r.metin}</span>
+                                                </div>
+                                                <button type="button" onClick={() => anahtarSil(h.key)} className="text-slate-400 hover:text-red-500 text-sm px-1" title="Sil">✕</button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-2">🟢 Hazır · 🟡 Dakikalık kota · 🟠 Günlük kota. Bir anahtarın kotası dolunca diğerlerine otomatik geçilir.</p>
                             </div>
+
+                            {/* --- MODEL KEŞFİ --- */}
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">Model Adı (Serbest Giriş)</label>
-                                <input type="text" value={localModel} onChange={(e) => setLocalModel(e.target.value)} placeholder="Örn: gemini-1.5-flash" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm" required />
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-bold text-slate-700">Model</label>
+                                    <button type="button" onClick={modelleriYukle} className="text-xs text-indigo-600 font-bold hover:underline">
+                                        {modelYukleniyor ? 'Yükleniyor…' : '↻ Modelleri yenile'}
+                                    </button>
+                                </div>
+                                <select value={localModel} onChange={(e) => setLocalModel(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-indigo-500 outline-none font-mono text-sm bg-white">
+                                    {modeller.length === 0 && <option value={localModel}>{localModel}</option>}
+                                    {modeller.map((m, i) => <option key={i} value={m}>{m}</option>)}
+                                    {modeller.length > 0 && !modeller.includes(localModel) && <option value={localModel}>{localModel} (kayıtlı)</option>}
+                                </select>
+                                <p className="text-[11px] text-slate-400 mt-1">Liste Google'dan canlı çekilir; ölü modeller elenir. Anahtar eklenince otomatik güncellenir.</p>
                             </div>
+
+                            {/* --- API REHBERİ --- */}
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                <button type="button" onClick={() => setRehberAcik(!rehberAcik)} className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 text-sm font-bold text-slate-700">
+                                    <span>🔑 Ücretsiz API anahtarı nasıl alınır?</span>
+                                    <span>{rehberAcik ? '▲' : '▼'}</span>
+                                </button>
+                                {rehberAcik && (
+                                    <div className="p-4 text-sm text-slate-600 space-y-2 bg-white">
+                                        <p>1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-bold underline">aistudio.google.com/apikey</a> adresine gidin.</p>
+                                        <p>2. Google hesabınızla giriş yapın.</p>
+                                        <p>3. <strong>"Create API key"</strong> düğmesine basın.</p>
+                                        <p>4. Oluşan <span className="font-mono bg-slate-100 px-1 rounded">AIzaSy…</span> anahtarını kopyalayıp yukarıya yapıştırın ve "Ekle" deyin.</p>
+                                        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg text-xs">🎁 Ücretsiz Anahtar Al</a>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* --- YÜZEN DÜĞMELER --- */}
+                            <div className="border-t border-slate-100 pt-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-bold text-slate-700">Yüzen Düğmeler</label>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => hepsiniAyarla(true)} className="text-xs font-bold text-emerald-600 hover:underline">Hepsini Göster</button>
+                                        <button type="button" onClick={() => hepsiniAyarla(false)} className="text-xs font-bold text-slate-500 hover:underline">Hepsini Gizle</button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    {kontrolDurum.length === 0 && <p className="text-xs text-slate-400 italic">Yükleniyor…</p>}
+                                    {kontrolDurum.map((k) => (
+                                        <div key={k.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                                            <span className="text-sm text-slate-700 flex items-center gap-2"><span>{k.ikon}</span> {k.etiket}</span>
+                                            <button type="button" onClick={() => kontrolToggle(k.id)}
+                                                className={`relative w-11 h-6 rounded-full transition-colors ${k.acik ? 'bg-teal-500' : 'bg-slate-300'}`}>
+                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${k.acik ? 'translate-x-5' : ''}`}></span>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-2">Okuma sırasında rahatsız eden düğmeleri buradan kapatıp istediğinizde geri açabilirsiniz.</p>
+                            </div>
+
                             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors">Kaydet ve Kapat</button>
                         </form>
                     </div>
@@ -373,7 +1252,9 @@
         const App = () => {
             const [user, setUser] = useState(null);
             const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-const [showWelcomePopup, setShowWelcomePopup] = useState(true); // HOŞGELDİN POP-UP KONTROLÜ
+const [showWelcomePopup, setShowWelcomePopup] = useState(() => {
+    try { return localStorage.getItem('zirve_karsilama_goruldu') !== '1'; } catch (e) { return true; }
+}); // HOŞGELDİN POP-UP KONTROLÜ (kalıcı)
             
             const [activeModuleId, setActiveModuleId] = useState(0);
             const [unlockedModules, setUnlockedModules] = useState([0]); 
@@ -383,7 +1264,11 @@ const [showWelcomePopup, setShowWelcomePopup] = useState(true); // HOŞGELDİN P
             const [quizResult, setQuizResult] = useState(null); 
             const [viewMode, setViewMode] = useState('course'); 
             
-            const [aiConfig, setAiConfig] = useState({ key: localStorage.getItem('gemini_api_key') || '', model: localStorage.getItem('gemini_model') || 'gemini-1.5-flash' });
+            const [aiConfig, setAiConfig] = useState(() => {
+                let ilkKey = '';
+                try { ilkKey = (window.ZIRVE_API && window.ZIRVE_API.birincilAnahtar()) || localStorage.getItem('gemini_api_key') || ''; } catch (e) {}
+                return { key: ilkKey, model: localStorage.getItem('gemini_model') || 'gemini-2.5-flash' };
+            });
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [toast, setToast] = useState({ message: '', type: 'success', isVisible: false });
             
@@ -485,6 +1370,13 @@ const roleplayEndRef = useRef(null);
                 return () => document.removeEventListener('mousedown', handleClickOutside);
             }, [selectionPopup]);
 
+            // ZİRVE: "?" yüzen düğmesi karşılama/nasıl kullanılır pop-up'ını yeniden açar
+            useEffect(() => {
+                const ac = () => setShowWelcomePopup(true);
+                window.addEventListener('zirve-yardim-ac', ac);
+                return () => window.removeEventListener('zirve-yardim-ac', ac);
+            }, []);
+
             const saveProgress = async (unlocked, completed) => {
                 if (!user || !db) return;
                 try { await db.collection('artifacts').doc(APP_ID).collection('users').doc(user.uid).set({ unlockedModules: unlocked, completedModules: completed }, { merge: true }); } catch(e){}
@@ -542,14 +1434,13 @@ const roleplayEndRef = useRef(null);
             const triggerAssistantAi = async (message) => {
                 setIsAssistantLoading(true);
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: message }] }], systemInstruction: { parts: [{ text: "Uzman DIR Floortime süpervizörüsün. Kısa, HTML'siz, net yanıtlar ver." }] } })
+                    const sistem = "Uzman DIR Floortime klinik süpervizörüsün. Türkçe, sıcak ve net yanıt ver. Yanıtı zengin biçimlendir: **kalın** ile anahtar kavramları vurgula, gerektiğinde *italik*, kısa başlıklar, kavramları somutlaştırmak için günlük hayattan bir metafor kullan; uygun olduğunda madde listesi veya küçük bir karşılaştırma tablosu (Markdown) ekle. DOĞRULUK: Bu klinik/gelişimsel bir alandır; emin olmadığın bir bilgiyi kesin gibi sunma, uydurma. Tanı koymaz, tıbbi/ilaç tavsiyesi vermezsin; teşhis gerektiren durumlarda uzman hekime yönlendir.";
+                    const data = await window.ZIRVE_API.cagir(aiConfig.model, {
+                        contents: [{ parts: [{ text: message }] }],
+                        systemInstruction: { parts: [{ text: sistem }] }
                     });
-                    const data = await res.json();
-                    if(data.error) throw new Error(data.error.message);
-                    setAssistantMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
-                } catch (e) { setAssistantMessages(prev => [...prev, { role: 'ai', text: "Bağlantı kurulamadı." }]); } finally { setIsAssistantLoading(false); }
+                    setAssistantMessages(prev => [...prev, { role: 'ai', text: window.ZIRVE_API.metniAl(data) }]);
+                } catch (e) { setAssistantMessages(prev => [...prev, { role: 'ai', text: (e && e.message) ? e.message : "Bağlantı kurulamadı." }]); } finally { setIsAssistantLoading(false); }
             };
 
             const toggleReading = () => {
@@ -610,16 +1501,9 @@ const handleRoleplaySubmit = async (e) => {
         // ÇÖKMEYİ ÖNLEYEN ZIRHLI PROMPT MANTIGI (System Instruction yerine doğrudan context)
         const safePrompt = `SİSTEM KOMUTU: ${prof} Modül: ${activeModule.title}. Terapist sana yaklaşıyor. İyi bir Floortime hamlesi yaparsa (liderliğini takip etme, affect) regüle ol, kötüyse (zorlama, test etme) krize gir. SADECE *fiziksel eylem* ve 1-2 kelime yaz. Asla tıbbi terim kullanma.\n\nTERAPİSTİN HAMLESİ: "${userText}"\nÇOCUĞUN TEPKİSİ:`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.key}`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ contents: [{ parts: [{ text: safePrompt }] }] }) 
-        });
-        
-        const data = await res.json();
-        if(data.error) throw new Error(data.error.message);
-        
-        setRoleplayMessages(prev => [...prev, { role: 'ai', text: data.candidates[0].content.parts[0].text }]);
+        const data = await window.ZIRVE_API.cagir(aiConfig.model, { contents: [{ parts: [{ text: safePrompt }] }] });
+
+        setRoleplayMessages(prev => [...prev, { role: 'ai', text: window.ZIRVE_API.metniAl(data) }]);
         if(roleplayMessages.length === 3) addXp(50);
     } catch (err) { 
         console.error("Roleplay API Hatası:", err);
@@ -726,15 +1610,25 @@ const handleRoleplaySubmit = async (e) => {
                 <i className="fa-solid fa-graduation-cap"></i>
             </div>
             <h2 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">Masterclass'a Hoş Geldiniz!</h2>
-            <p className="text-slate-600 font-medium mb-6 leading-relaxed">
+            <p className="text-slate-600 font-medium mb-5 leading-relaxed">
                 Bu platform, <strong>DIR Floortime</strong> temel prensiplerini klinik vakalarla simüle eden interaktif bir eğitim ekosistemidir.
-                <br/><br/>
-                <span className="text-xs bg-amber-50 text-amber-800 px-4 py-3 rounded-xl block border border-amber-200 text-left space-y-2">
-                    <p><i className="fa-solid fa-circle-exclamation mr-1"></i> <strong>Yasal Uyarı:</strong> Buradaki içerikler eğitim amaçlıdır, tıbbi tavsiye yerine geçmez. Nöro-gelişimsel farklılıkların teşhisi için mutlaka uzman hekimlere başvurulmalıdır.</p>
-                    <p><i className="fa-solid fa-certificate mr-1"></i> <strong>Sertifika Bilgilendirmesi:</strong> Bu belge, katılımcının DIR Floortime modelinin temel prensiplerini, nöro-gelişimsel süreçleri ve ilişki temelli müdahale stratejilerini teorik olarak anladığını ve simülasyon ortamında başarıyla uyguladığını gösterir. Resmi bir ICDL veya Profectum terapistlik unvanı ya da klinik müdahale ruhsatı yerine geçmez.</p>
-                </span>
             </p>
-            <button onClick={() => setShowWelcomePopup(false)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
+
+            {/* Nasıl Kullanılır adımları */}
+            <div className="text-left bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4 space-y-2">
+                <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-1">🚀 Nasıl Kullanılır?</p>
+                <div className="flex gap-2 text-sm text-slate-600"><span className="font-black text-floortime-teal">1.</span> Soldaki menüden bir <strong>eğitim modülü</strong> seçin; içeriği okuyun veya "Dinle" ile sesli takip edin.</div>
+                <div className="flex gap-2 text-sm text-slate-600"><span className="font-black text-floortime-teal">2.</span> Metinde geçen terimlerin üstüne gelerek <strong>açıklamalarını</strong> görün, seçtiğiniz metni AI asistana sordurun.</div>
+                <div className="flex gap-2 text-sm text-slate-600"><span className="font-black text-floortime-teal">3.</span> Yapay zeka özellikleri (Canlı Vaka, Klinik Asistan) için önce <strong>⚙️ Ayarlar'dan ücretsiz Gemini API anahtarınızı girin</strong> (Ayarlar içindeki rehber adım adım anlatır).</div>
+                <div className="flex gap-2 text-sm text-slate-600"><span className="font-black text-floortime-teal">4.</span> Modül testini geçtikçe yeni modüller açılır, XP kazanır ve sonunda <strong>sertifikanızı</strong> alırsınız.</div>
+            </div>
+
+            <span className="text-xs bg-amber-50 text-amber-800 px-4 py-3 rounded-xl block border border-amber-200 text-left space-y-2 mb-6">
+                <p><i className="fa-solid fa-circle-exclamation mr-1"></i> <strong>Yasal Uyarı:</strong> Buradaki içerikler eğitim amaçlıdır, tıbbi tavsiye yerine geçmez. Nöro-gelişimsel farklılıkların teşhisi için mutlaka uzman hekimlere başvurulmalıdır.</p>
+                <p><i className="fa-solid fa-certificate mr-1"></i> <strong>Sertifika Bilgilendirmesi:</strong> Bu belge, katılımcının DIR Floortime modelinin temel prensiplerini teorik olarak anladığını ve simülasyon ortamında başarıyla uyguladığını gösterir. Resmi bir ICDL veya Profectum terapistlik unvanı ya da klinik müdahale ruhsatı yerine geçmez.</p>
+            </span>
+
+            <button onClick={() => { try { localStorage.setItem('zirve_karsilama_goruldu', '1'); } catch(e){} setShowWelcomePopup(false); }} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
                 Anladım, Eğitime Başla <i className="fa-solid fa-arrow-right"></i>
             </button>
         </div>
@@ -910,8 +1804,14 @@ const handleRoleplaySubmit = async (e) => {
                                         <div className="bg-slate-800/80 rounded-2xl flex flex-col h-[350px] border border-indigo-500/30 shadow-inner">
                                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                                 {roleplayMessages.map((msg, idx) => (
-                                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                                         <div className={`max-w-[85%] p-3 text-sm md:text-base rounded-xl shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-yellow-100 text-yellow-900 font-serif rounded-bl-none'}`}>{msg.text}</div>
+                                                        {msg.role === 'ai' && idx > 0 && (
+                                                            <div className="zirve-msg-btns">
+                                                                <button type="button" onClick={() => window.ZIRVE.kopyala(msg.text)} className="zirve-msg-btn dark">📋 Kopyala</button>
+                                                                <button type="button" onClick={() => window.ZIRVE.paylas(msg.text)} className="zirve-msg-btn dark">🔗 Paylaş</button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 {isRoleplayLoading && <div className="p-3 text-sm text-indigo-300 italic typing-indicator"><span></span><span></span><span></span></div>}
@@ -980,8 +1880,14 @@ const handleRoleplaySubmit = async (e) => {
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
                                 {assistantMessages.map((msg, idx) => (
-                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] p-3 rounded-xl shadow-sm ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none text-slate-700'}`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></div>
+                                    <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                        <div className={`max-w-[85%] p-3 rounded-xl shadow-sm leading-relaxed ${msg.role === 'user' ? 'bg-indigo-500 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none text-slate-700'}`} dangerouslySetInnerHTML={{ __html: msg.role === 'ai' ? mdBasit(msg.text) : msg.text.replace(/\n/g, '<br/>') }}></div>
+                                        {msg.role === 'ai' && idx > 0 && (
+                                            <div className="zirve-msg-btns">
+                                                <button type="button" onClick={() => window.ZIRVE.kopyala(msg.text)} className="zirve-msg-btn">📋 Kopyala</button>
+                                                <button type="button" onClick={() => window.ZIRVE.paylas(msg.text)} className="zirve-msg-btn">🔗 Paylaş</button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                                 {isAssistantLoading && <div className="flex justify-start"><div className="bg-white border border-slate-200 p-3 rounded-xl rounded-bl-none shadow-sm typing-indicator"><span></span><span></span><span></span></div></div>}
