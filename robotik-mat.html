@@ -58,6 +58,8 @@
   .robot{position:absolute;left:0;top:0;display:grid;place-items:center;pointer-events:none;transition:transform .28s cubic-bezier(.34,1.4,.5,1);z-index:6;filter:drop-shadow(0 6px 8px rgba(22,39,63,.3))}
   .robot .char{width:100%;height:100%;display:grid;place-items:center;transform:scale(var(--rscale,1))}
   .robot .char svg{width:80%;height:80%}
+  .robot .dir{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;transition:transform .28s cubic-bezier(.34,1.4,.5,1);z-index:2}
+  .robot .dir span{display:block;line-height:1;transform:translateY(-135%);text-shadow:0 0 3px #fff,0 0 3px #fff,0 1px 2px rgba(0,0,0,.35);font-weight:900}
   .robotLabel{position:absolute;left:0;top:0;pointer-events:none;z-index:7;display:flex;align-items:flex-end;justify-content:center}
   .robotLabel span{background:var(--robot);color:#fff;font-weight:800;font-size:clamp(10px,1.6vw,15px);padding:2px 8px;border-radius:999px;margin-bottom:2px;box-shadow:0 2px 6px rgba(0,0,0,.25);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
   .robot.blocked{animation:shake .32s}
@@ -180,7 +182,7 @@
     <div class="stage"><div id="printCap"></div><div class="matbox">
       <div class="mat" id="mat"></div>
       <div class="robotLabel" id="robotLabel"></div>
-      <div class="robot" id="robot"><div class="char"></div></div>
+      <div class="robot" id="robot"><div class="char"></div><div class="dir"><span>▲</span></div></div>
     </div></div>
 
     <div class="panel">
@@ -508,10 +510,12 @@ window.MAT_BILISIM="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEB
       var order=state.stamps[k];if(order&&!state.walls[k]){var s=stampNode(order);if(s)el.appendChild(s);}
       if(co&&!el.contains(co))el.appendChild(co);}
     var w=100/cols,h=100/rows;robotEl.style.width=w+'%';robotEl.style.height=h+'%';labelEl.style.width=w+'%';labelEl.style.height=h+'%';
-    var base='translate('+(state.robot.c*100)+'%,'+(state.robot.r*100)+'%)';var tf=base+' rotate('+(state.robot.h*90)+'deg)';
-    robotEl.style.setProperty('--tf',tf);robotEl.style.transform=tf;labelEl.style.transform=base;robotEl.style.setProperty('--rscale',rscale);
+    var base='translate('+(state.robot.c*100)+'%,'+(state.robot.r*100)+'%)';
+    robotEl.style.setProperty('--tf',base);robotEl.style.transform=base;labelEl.style.transform=base;
+    var hd=state.robot.h;charEl.style.transform='scale('+rscale+')'+(hd===3?' scaleX(-1)':'');
+    var dEl=robotEl.querySelector('.dir');if(dEl){dEl.style.transform='rotate('+(hd*90)+'deg)';var ar=dEl.querySelector('span');if(ar)ar.style.color=robotColor;}
     robotEl.style.transitionDuration=(0.16+rscale*0.20).toFixed(2)+'s';
-    var cellH=(mat.clientHeight||300)/rows;var ch=charEl.querySelector('span');if(ch)ch.style.fontSize=(cellH*0.6)+'px';
+    var cellH=(mat.clientHeight||300)/rows;var ch=charEl.querySelector('span');if(ch)ch.style.fontSize=(cellH*0.6)+'px';var ar2=dEl?dEl.querySelector('span'):null;if(ar2)ar2.style.fontSize=(cellH*0.3)+'px';
     document.getElementById('steps').textContent=Math.max(0,state.step-1);
     document.getElementById('goalChip').textContent=state.goal?'🏁 Hedef kondu':'🏁 Hedef yok';
     document.getElementById('starChip').textContent='⭐ '+state.collected+'/'+state.totalStars;}
