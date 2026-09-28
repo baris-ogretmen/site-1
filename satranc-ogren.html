@@ -416,12 +416,31 @@ body[data-scr=giant] .lbar{top:calc(70px + env(safe-area-inset-top,0px));bottom:
 
 .pieces{grid-template-columns:repeat(6,minmax(0,1fr))}.pieces button{min-width:0;overflow:hidden}.side,.gside{min-width:0}
 @media (max-width:560px){.pieces button .pc{--sq:40px}.pieces button span{font-size:.78rem}}
+
+
+/* ====== v8: gezinme, kapatma, sürüm ====== */
+.backbtn{font-size:1.2rem;font-weight:900}
+.mx{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);color:inherit;font-size:1.25rem;font-weight:900;z-index:3;display:grid;place-items:center}
+.mx:hover{background:var(--berry);color:#fff}
+.modal .box{position:relative}
+.updbtn{position:fixed;top:calc(72px + env(safe-area-inset-top,0px));right:12px;z-index:99;display:flex;align-items:center;gap:6px;background:#d62839;color:#fff;font-weight:900;border-radius:999px;padding:8px 10px 8px 14px;box-shadow:0 0 0 0 rgba(214,40,57,.7);animation:pulse 1.6s infinite}
+.updbtn button{background:none;color:#fff;font-weight:900;font-size:1rem}.updbtn .ux{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.25);font-size:.8rem}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(214,40,57,.7)}70%{box-shadow:0 0 0 14px rgba(214,40,57,0)}100%{box-shadow:0 0 0 0 rgba(214,40,57,0)}}
+.verbanner{position:fixed;top:calc(70px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:97;background:rgba(10,30,25,.95);border:2px solid var(--gold);color:var(--ivory);font-weight:900;border-radius:16px;padding:10px 14px;display:flex;gap:10px;align-items:center;max-width:94vw;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:zin .4s}
+.verbanner button{background:rgba(255,255,255,.14);color:#fff;border-radius:10px;width:30px;height:30px}
+.verbadge{position:fixed;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:60;background:rgba(10,30,25,.8);color:#9fe8b5;font-weight:900;font-size:.78rem;border-radius:10px;padding:4px 9px;border:1px solid rgba(159,232,181,.4)}
+.abar{bottom:calc(40px + env(safe-area-inset-bottom,0px))!important}
+.vtbl{width:100%;border-collapse:collapse;font-weight:800}.vtbl td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.1)}
+
+@media (max-width:560px){body.inner .brand,body.inner .top .pill{display:none}.top{gap:5px}.ibtn{width:38px;height:38px}}
+@media print{.verbadge,.updbtn,.verbanner{display:none!important}}
 @media print{.top,.abar,.lbar,.zfab,#penBar,#penLayer{display:none!important}}
 @media (max-width:560px){.profb .nm{display:none}.top{gap:6px;padding:8px 10px}.ibtn{width:40px;height:40px;font-size:1.15rem}#fsBtn{display:none}select.lvl{padding:8px 28px 8px 12px;font-size:.92rem}.lbar{left:8px;right:8px}.abar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 </style>
 </head>
 <body>
 <header class="top">
+ <button class="ibtn homebtn backbtn" id="backBtn" aria-label="Geri dön">◀</button>
  <button class="ibtn homebtn" id="homeBtn" aria-label="Ana sayfa">🏠</button>
  <div class="brand"><span class="crown">♛</span><span>Dev Satranç Akademisi</span></div>
  <div class="sp"></div>
@@ -2582,7 +2601,7 @@ addEventListener('online',netUI);addEventListener('offline',netUI);
 const UPD={tag:null,last:0};
 async function updStamp(){try{const u=BASEURL()+'?_v='+Date.now();let r=await fetch(u,{method:'HEAD',cache:'no-store'});if(!r.ok)r=await fetch(u,{cache:'no-store'});return r.headers.get('etag')||r.headers.get('last-modified')||null;}catch(e){return null;}}
 async function updCheck(){if(!/^https?:$/.test(location.protocol)||Date.now()-UPD.last<20000)return;UPD.last=Date.now();const t=await updStamp();if(!t)return;if(!UPD.tag){UPD.tag=t;return;}
- if(t!==UPD.tag&&!$('#updBar')){const b=document.createElement('div');b.id='updBar';b.className='updbar';b.innerHTML='🔄 Yeni güncelleme yayınlandı! <button class="btn sm" id="updGo">Şimdi yenile</button><button class="btn sm ghost" id="updX">Sonra</button>';document.body.appendChild(b);
+ if(t!==UPD.tag&&!$('#updBar')){const b=document.createElement('div');b.id='updBar';b.className='updbtn';b.innerHTML='<button id="updGo">🔴 Yeni sürüm yayınlandı · Yenile</button><button class="ux" id="updX" aria-label="Kapat">✕</button>';document.body.appendChild(b);
   $('#updGo').onclick=()=>location.replace(BASEURL()+'?_r='+Date.now());$('#updX').onclick=()=>b.remove();}}
 addEventListener('focus',updCheck);document.addEventListener('visibilitychange',()=>{if(!document.hidden)updCheck();});setInterval(updCheck,120000);
 /* yedekle / geri yükle */
@@ -2592,6 +2611,54 @@ function backupImport(){const inp=document.createElement('input');inp.type='file
   showResult('Yedek yüklensin mi?',`${new Date(o.tarih).toLocaleString('tr-TR')} tarihli yedek. Bu cihazdaki öğrenci, turnuva ve ilerleme bilgilerinin yerine geçer.`,0,[['✔ Evet, yükle',()=>{Object.entries(o.veri).forEach(([k,v])=>{try{localStorage.setItem(k,v);}catch(e){}});location.reload();}],['Vazgeç',()=>{}]]);}catch(e){toast('Bu dosya geçerli bir Dev Satranç yedeği değil');}};r.readAsText(f);};inp.click();}
 addEventListener('hashchange',()=>{if(/^#(liste|sonuc)=/.test(location.hash))hashImport();});
 function zirveStart(){initPWA();fabsInit();netUI();updCheck();const imp=hashImport();if(!imp&&!LS.get('zirve_karsilama_goruldu',0))setTimeout(welcome,900);}
+
+/* ================= v8: SİSTEMDE KAL — geri tuşu, ✕ kapatma, çıkış onayı ================= */
+const NAV={stack:[],pop:false,armed:false};
+const modalOpen=()=>['#mModal','#lModal','#vModal','#promo'].map(s=>$(s)).find(m=>m&&!m.classList.contains('hidden'));
+function closeModals(){let any=false;['#mModal','#lModal','#vModal'].forEach(s=>{const m=$(s);if(m&&!m.classList.contains('hidden')){m.classList.add('hidden');any=true;}});if(PEN.on){penClose();any=true;}return any;}
+function navEntry(){const scr=document.body.dataset.scr||'home';return scr==='mini'?{scr,mini:MINI.id}:{scr};}
+{const _go=go;go=function(id){const cur=navEntry();if(!NAV.pop&&id!==cur.scr&&cur.scr!=='match'){NAV.stack.push(cur);if(NAV.stack.length>40)NAV.stack.shift();try{history.pushState({dsa:1},'');}catch(e){}}_go(id);};}
+function navBack(){if(closeModals())return;if($('#giantWrap')&&$('#giantWrap').classList.contains('focus')){gFocus(false);return;}
+ let e=NAV.stack.pop();while(e&&(e.scr==='match'||e.scr===document.body.dataset.scr))e=NAV.stack.pop();NAV.pop=true;
+ try{if(!e)go('home');else if(e.scr==='mini'&&e.mini)openMini(e.mini);else go(e.scr);}finally{NAV.pop=false;}}
+addEventListener('popstate',()=>{const inner=document.body.dataset.scr&&document.body.dataset.scr!=='home';
+ if(modalOpen()||PEN.on||inner||NAV.stack.length){navBack();try{history.pushState({dsa:1},'');}catch(e){}NAV.armed=false;return;}
+ if(!NAV.armed){NAV.armed=true;toast('Uygulamadan çıkmak için bir kez daha geri basın',2400);try{history.pushState({dsa:1},'');}catch(e){}setTimeout(()=>NAV.armed=false,2500);return;}
+ history.back();});
+/* her pencereye ✕ */
+function addX(m){const box=m.querySelector('.box');if(!box||box.querySelector(':scope > .mx'))return;const x=document.createElement('button');x.className='mx';x.textContent='✕';x.setAttribute('aria-label','Kapat');
+ x.onclick=e=>{e.stopPropagation();if(m.id==='mModal'&&$('#coin'))return;m.classList.add('hidden');if(m.id==='vModal'&&$('#vClose'))$('#vClose').click();};box.prepend(x);}
+['#mModal','#lModal','#vModal'].forEach(s=>{const m=$(s);if(!m)return;addX(m);new MutationObserver(()=>{if(!m.classList.contains('hidden'))addX(m);}).observe(m,{attributes:true,childList:true,subtree:true});
+ if(s!=='#lModal')m.addEventListener('click',e=>{if(e.target===m&&!$('#coin'))m.classList.add('hidden');});});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(modalOpen()||PEN.on)){closeModals();}});
+/* ekran uykuya geçmesin (akıllı tahta / tablet) */
+const WAKE={l:null};async function wakeOn(){try{if('wakeLock'in navigator&&!WAKE.l&&!document.hidden){WAKE.l=await navigator.wakeLock.request('screen');WAKE.l.addEventListener('release',()=>WAKE.l=null);}}catch(e){}}
+addEventListener('pointerdown',wakeOn,{once:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)wakeOn();});
+
+/* ================= v8: SÜRÜM ROZETİ + AÇILIŞ BİLDİRİMİ + ÖZ-KONTROL (ZİRVE 26) ================= */
+const APP={surum:'v8',tarih:'2026-09-28',satir:2780,kb:486,onceki:{surum:'v7',satir:2713,kb:476},
+ yenilikler:['◀ Geri düğmesi: her ekrandan bir önceki ekrana dönülür','Telefon, tablet ve tarayıcının geri tuşu artık uygulamadan çıkarmaz, bir önceki ekrana götürür','Her pencerede ✕ kapatma düğmesi; dışına dokununca ya da Esc ile de kapanır','Yanlışlıkla çıkmayı önleyen “bir kez daha geri basın” uyarısı','Ders sırasında ekran uykuya geçmez (akıllı tahta ve tablet)','Sürüm rozeti, açılış bildirimi ve sistem öz-kontrolü','Yeni sürüm yayınlanınca sağ üstte kırmızı “Yenile” düğmesi']};
+const MODULLER=[['Gezinme',()=>go],['Dev Taşlar 3B',()=>G3],['3B sahneler',()=>SC],['Ses motoru',()=>Voice],['Şarkı motoru',()=>Song],['Şarkı Kutusu',()=>songsEnter],['Minikler Köşesi',()=>openMini],['Ders Akışı',()=>LESSON],
+ ['Hareket antrenmanı',()=>mvStart],['Taşları diz',()=>setupEnter],['Bulmacalar',()=>pzLoad],['Bilgi yarışması',()=>quizStart],['Bota karşı',()=>playEnter],['Turnuva',()=>tourEnter],['İsviçre sistemi',()=>swPairNext],
+ ['Karşılıklı oyun',()=>openMatch],['Soru düellosu',()=>duelEnter],['Turnuvaya hazırlık',()=>prepEnter],['Oyun sonu antrenörü',()=>MINIS.endgame],['Öğrenciler',()=>openProfiles],['Rozetler',()=>award],
+ ['QR kod',()=>qrShow],['Yedekleme',()=>backupExport],['Kalem',()=>penOpen],['Satranç motoru',()=>legal]];
+function selfCheck(){const r=MODULLER.map(([n,f])=>{let ok=false;try{const v=f();ok=typeof v==='function'||(typeof v==='object'&&v!==null);}catch(e){}return[n,ok];});
+ let dOk=0,dAll=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!/^devsatranc/.test(k))continue;dAll++;try{JSON.parse(localStorage.getItem(k));dOk++;}catch(e){}}
+ return{r,ok:r.filter(x=>x[1]).length,all:r.length,dOk,dAll};}
+function verDetail(){const c=selfCheck(),o=APP.onceki,d=APP.satir-o.satir;
+ $('#lBox').innerHTML=`<h3>📦 Sürüm ${APP.surum}</h3><p class="muted" style="margin:0 0 8px">${APP.tarih}</p>
+ <table class="vtbl"><tr><td>Önceki sürüm</td><td>${o.surum} · ${o.satir} satır · ${o.kb} KB</td></tr><tr><td>Şimdiki sürüm</td><td>${APP.surum} · ${APP.satir} satır · ${APP.kb} KB</td></tr><tr><td>Fark</td><td>${d>=0?'+':''}${d} satır · ${APP.kb-o.kb>=0?'+':''}${APP.kb-o.kb} KB</td></tr>
+ <tr><td>Modüller</td><td>🧪 ${c.ok}/${c.all} sağlam</td></tr><tr><td>Kayıtlı veriler</td><td>${c.dAll?`${c.dOk}/${c.dAll} kayıt okunabilir`:'Henüz kayıt yok'}</td></tr></table>
+ <h4 style="color:var(--maple);margin:12px 0 4px">🆕 Bu sürümdeki yenilikler</h4><ul style="font-weight:700;margin:0;padding-left:20px">${APP.yenilikler.map(y=>`<li>${y}</li>`).join('')}</ul>
+ <h4 style="color:var(--maple);margin:12px 0 4px">🧪 Modül kontrolü</h4><div class="chips sm">${c.r.map(([n,ok])=>`<span class="chip">${ok?'✅':'❌'} ${n}</span>`).join('')}</div>
+ <div class="row" style="margin-top:12px"><button class="btn" id="vdOk">Tamam</button><button class="btn alt" id="vdUpd">🔄 Güncellemeleri denetle</button></div>`;
+ $('#lModal').classList.remove('hidden');$('#vdOk').onclick=()=>$('#lModal').classList.add('hidden');$('#vdUpd').onclick=async()=>{UPD.last=0;const t=await updStamp();toast(t?'Kontrol edildi: '+(UPD.tag&&t!==UPD.tag?'yeni sürüm var!':'en güncel sürümdesin'):'Güncelleme denetimi için sayfanın internette yayınlanmış olması gerekir',2800);if(t&&UPD.tag&&t!==UPD.tag)updCheck();};}
+function verStart(){const c=selfCheck(),prev=LS.get('devsatranc_surum',null);const b=document.createElement('button');b.className='verbadge';b.textContent=`${APP.surum} ✓`;b.title='Sürüm ve sistem kontrolü';b.onclick=verDetail;document.body.appendChild(b);
+ const bn=document.createElement('div');bn.className='verbanner';const o=APP.onceki;
+ bn.innerHTML=(prev&&prev!==APP.surum?`🆕 ${prev}→${APP.surum} · Kod: ${o.satir}→${APP.satir} satır · 🧪 ${c.ok}/${c.all} modül sağlam`:`✅ ${APP.surum} · en güncel sürüm · 🧪 ${c.ok}/${c.all} modül sağlam`)+'<button aria-label="Kapat">✕</button>';
+ document.body.appendChild(bn);bn.querySelector('button').onclick=()=>bn.remove();bn.onclick=e=>{if(e.target===bn){bn.remove();verDetail();}};setTimeout(()=>bn.remove(),prev&&prev!==APP.surum?9000:4500);LS.set('devsatranc_surum',APP.surum);}
+$('#backBtn').onclick=()=>navBack();
+{const _z=zirveStart;zirveStart=function(){try{history.replaceState({dsa:0},'');history.pushState({dsa:1},'');}catch(e){}_z();verStart();};}
 
 /* ================= v2: GEZİNME, KALDIĞIN YERDEN DEVAM ================= */
 const ENTER={giant:()=>giantEnter(),move:()=>moveEnter(),setup:()=>setupEnter(),coord:()=>coordEnter(),puzzle:()=>puzzleEnter(),quiz:()=>quizStart(),play:()=>playEnter(),home:()=>homeRender(),songs:()=>songsEnter(),tour:()=>tourEnter(),prep:()=>prepEnter(),duel:()=>duelEnter(),kids:()=>kidsEnter(),lesson:()=>lessonEnter(),badges:()=>badgesEnter()};
