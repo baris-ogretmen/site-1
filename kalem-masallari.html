@@ -140,6 +140,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.2s infinite}
 @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
 .scarf{animation:scarf 1.1s ease-in-out infinite alternate}@keyframes scarf{from{transform:rotate(-6deg)}to{transform:rotate(9deg)}}
+
+.star-card{position:relative;display:flex;gap:12px;align-items:center;background:#FFF6D6;color:var(--ink);padding:10px 14px;box-shadow:0 6px 14px rgba(50,30,10,.35);transform:rotate(-1deg);border:3px dashed var(--orange)}
+.star-card svg{width:92px;height:92px;flex:none;background:#fff;border-radius:50%;border:3px solid var(--ink)}
+.star-card small{display:block;font-weight:800;font-size:13px;color:#B5620E}
+.star-card b{display:block;font:700 34px/1 var(--hand);margin:2px 0 6px}
+.star-card .paperbtn{font-size:14px;padding:4px 10px;background:var(--orange)}
+.star-card .badge{position:absolute;top:-16px;right:-10px;font-size:40px;color:#FFC83D;text-shadow:0 2px 0 var(--ink);animation:twk 1.4s ease-in-out infinite alternate}
+.levels{display:flex;flex-wrap:wrap;gap:6px}
+.levels button{font-size:14px;padding:5px 11px}
+.levels button[aria-selected="true"]{background:var(--blue);color:#fff}
+#quiz .qprog{display:flex;gap:8px;align-items:center;font:700 max(13px,1.6cqw) var(--ui)}
+#quiz .qprog i{width:1.6cqw;height:1.6cqw;min-width:10px;min-height:10px;border-radius:50%;border:2px solid var(--ink);display:inline-block}
+#quiz .qprog i.ok{background:var(--grass)}#quiz .qprog i.cur{background:var(--orange)}#quiz .qprog i.miss{background:#F4B3A6}
+#quiz .qres{font:700 5cqw/1 var(--hand)}
+#quiz .qstars{font-size:6cqw;letter-spacing:.3cqw;color:#FFC83D;text-shadow:0 2px 0 var(--ink)}
+.a-rise{animation:rise 1.3s ease-in-out infinite alternate}@keyframes rise{to{transform:translateY(-22px)}}
+.a-sweep{transform-origin:0% 50%;animation:sweep 2.6s ease-in-out infinite alternate}@keyframes sweep{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+.a-bob{transform-origin:50% 100%;animation:bobp 1.6s ease-in-out infinite alternate}@keyframes bobp{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(8px) rotate(3deg)}}
+.chr.has-book .acc-book{display:inline}
 .paused *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.prop,.eyes,.scarf,.acc-sweat{animation:none!important}.brand .under path{animation:none;stroke-dashoffset:0}}
 </style>
@@ -161,6 +180,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <button class="paperbtn" data-lang="en" aria-pressed="false">English</button>
     <button class="paperbtn" data-lang="de" aria-pressed="false">Deutsch</button>
     <button class="paperbtn ar" data-lang="ar" aria-pressed="false">العربية</button>
+    <button class="paperbtn" data-lang="ku" aria-pressed="false">Kurdî</button>
   </div>
   <div class="group">
     <button class="paperbtn" id="sndB" aria-pressed="true">Ses açık</button>
@@ -202,7 +222,13 @@ button{font:inherit;color:inherit;cursor:pointer}
     </div>
   </section>
   <aside class="shelf" id="shelfStory">
+    <div class="star-card" id="starCard">
+      <svg viewBox="-48 -212 104 104" aria-hidden="true" id="starFace"></svg>
+      <div><small>Haftanın öğrencisi</small><b>Metehan</b><button class="paperbtn" id="starB">Metehan'ın hikâyesi</button></div>
+      <span class="badge">★</span>
+    </div>
     <h2>Hikâye seç</h2>
+    <div class="levels" id="levels" role="tablist" aria-label="Kademe"></div>
     <div id="cards" class="shelf"></div>
     <details class="teacher" open><summary>Öğretmen notu</summary><div id="tnote"></div></details>
   </aside>
@@ -242,14 +268,15 @@ const circ=(cx,cy,r)=>`M${cx-r} ${cy}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 $
 const starD=(cx,cy,R,r,a0=Math.PI)=>{let d='';for(let i=0;i<10;i++){const a=a0+i*Math.PI/5,rr=i%2?r:R;d+=(i?'L':'M')+f1(cx+Math.cos(a)*rr)+' '+f1(cy+Math.sin(a)*rr);}return d+'Z';};
 const leaf=(x,y,len,ang)=>{const pts=[];for(let i=0;i<=8;i++){const t=i/8;pts.push([t*len,-Math.sin(Math.PI*t)*len*.3]);}for(let i=7;i>=1;i--){const t=i/8;pts.push([t*len,Math.sin(Math.PI*t)*len*.3]);}const c=Math.cos(ang),s=Math.sin(ang);return pts.map(([u,v])=>[x+u*c-v*s,y+u*s+v*c]);};
 /* boya desenleri */
-const COL={grass:'#8CC152',mountain:'#D08B57',sun:'#FFC83D',cloud:'#CFDDEA',wall:'#F7D9A6',roof:'#E0584F',door:'#9A6238',sky:'#8EC5EA',trunk:'#8A5A36',leaf:'#5DAE4B',gray:'#A7B2BD',red:'#E5484D',yellow:'#FFD84D',water:'#56A9E2',plank:'#C08A55',earth:'#B7773F',pink:'#F4A6C0',purple:'#9B7BD4',orange:'#F39A2B'};
+const COL={grass:'#8CC152',mountain:'#D08B57',sun:'#FFC83D',cloud:'#CFDDEA',wall:'#F7D9A6',roof:'#E0584F',door:'#9A6238',sky:'#8EC5EA',trunk:'#8A5A36',leaf:'#5DAE4B',gray:'#A7B2BD',red:'#E5484D',yellow:'#FFD84D',water:'#56A9E2',plank:'#C08A55',earth:'#B7773F',pink:'#F4A6C0',purple:'#9B7BD4',orange:'#F39A2B',blue:'#3F7FD1',navy:'#34427A',kraft:'#C9A27A',night:'#23305E',moon:'#F8E9A6',honey:'#E8A83A',germ:'#9BD35A',school:'#F2C48D',teal:'#3AA08D'};
 for(const[k,c]of Object.entries(COL)){const p=el('pattern',{id:'h-'+k,width:12,height:12,patternUnits:'userSpaceOnUse',patternTransform:'rotate(36)'},$('#defs'));el('rect',{width:12,height:12,fill:c,opacity:.55},p);el('rect',{width:7,height:12,fill:c,opacity:.95},p);}
 const fillOf=f=>f.startsWith('#')?f:`url(#h-${f})`;
 /* çizim parçaları */
 function mk(id,anim,fn){seed(id);const parts=[];const A={
  s(pts,o={}){parts.push({k:'s',d:sk(pts,o),c:o.c||INK,w:o.w||4.5});if(!o.ng)parts.push({k:'g',d:sk(pts,{...o,jit:(o.jit??2.2)*1.8}),c:o.c||INK,w:(o.w||4.5)*.42});},
  f(pts,fill,o={}){parts.push({k:'f',d:sk(pts,{closed:true,...o}),fill});},
- raw(d,fill){parts.push({k:'f',d,fill});}};fn(A);return{id,anim,parts};}
+ raw(d,fill){parts.push({k:'f',d,fill});},
+ t(x,y,txt,size=40){parts.push({k:'t',x,y,txt,size});}};fn(A);return{id,anim,parts};}
 const P={
  ground(id,x1,x2,y){return mk(id,null,A=>{const pts=[];for(let x=x1;x<x2;x+=70)pts.push([x,y+Math.sin(x*.013)*6]);pts.push([x2,y+Math.sin(x2*.013)*6]);
   A.f([...pts,[x2,910],[x1,910]],'grass',{jit:1.2});A.s(pts,{w:5});
@@ -292,8 +319,8 @@ const P={
  flower(id,x,b,col='pink'){return mk(id,'sway',A=>{A.s([[x,b],[x+3,b-40],[x,b-78]],{w:4.5,c:'#3E7D2E',ng:1});const lf=leaf(x+2,b-34,30,-.6);A.f(lf,'leaf',{jit:.5});A.s(lf,{closed:true,w:3,ng:1,jit:.5});
   for(let i=0;i<6;i++){const a=i/6*Math.PI*2,p=ell(x+Math.cos(a)*16,b-92+Math.sin(a)*16,12,12,9);A.f(p,col,{jit:.5});A.s(p,{closed:true,w:3,ng:1,jit:.5});}
   const c=ell(x,b-92,10,10,8);A.f(c,'yellow',{jit:.4});A.s(c,{closed:true,w:3,ng:1,jit:.4});});},
- flag(id,x,b){return mk(id,'wave',A=>{A.s([[x,b],[x,b-160]],{w:5,straight:true,jit:1});const r=[[x,b-160],[x+105,b-160],[x+105,b-90],[x,b-90]];A.f(r,'#E30A17',{straight:true,jit:.8});A.s(r,{straight:true,w:3.5,ng:1,jit:.8});
-  A.raw(circ(x+40,b-125,19),'#FFFFFF');A.raw(circ(x+45,b-125,15.2),'#E30A17');A.raw(starD(x+66,b-125,9,3.8),'#FFFFFF');});},
+ flag(id,x,b,k=1){return mk(id,'wave',A=>{A.s([[x,b],[x,b-160*k]],{w:5,straight:true,jit:1});const r=[[x,b-160*k],[x+105*k,b-160*k],[x+105*k,b-90*k],[x,b-90*k]];A.f(r,'#E30A17',{straight:true,jit:.8});A.s(r,{straight:true,w:3.5,ng:1,jit:.8});
+  A.raw(circ(x+40*k,b-125*k,19*k),'#FFFFFF');A.raw(circ(x+45*k,b-125*k,15.2*k),'#E30A17');A.raw(starD(x+66*k,b-125*k,9*k,3.8*k),'#FFFFFF');});},
  bird(id,x,y){return mk(id,'fly',A=>{A.s([[x-24,y],[x-12,y-12],[x,y]],{w:4,ng:1,jit:.6});A.s([[x,y],[x+12,y-12],[x+24,y]],{w:4,ng:1,jit:.6});});},
  drops(id,x,y){return mk(id,'rain',A=>{for(let i=0;i<5;i++){const dx=x-30+i*15+rnd()*6,dy=y+rnd()*30,p=[[dx,dy],[dx-5,dy+12],[dx,dy+17],[dx+5,dy+12]];A.f(p,'water',{jit:.3});A.s(p,{closed:true,w:2.5,ng:1,jit:.3});}});},
  stairs(id,from,to){return mk(id,null,A=>{const pts=[[700+40*(from-1),760-50*(from-1)]];for(let i=from;i<=to;i++){pts.push([700+40*(i-1),760-50*i],[700+40*i,760-50*i]);}A.f(pts,'earth',{straight:true,jit:.8});A.s(pts,{straight:true,w:5,jit:1});});}
@@ -327,7 +354,8 @@ const parkPen=tok=>penTo(1760,-100,480,tok,{r:28,s:1});
 const propEls=new Map();
 function buildProp(pr,instant,layer=L.draw){const g=el('g',{class:'prop','data-id':pr.id},layer);const fg=el('g',{},g),sg=el('g',{},g);const fills=[],strokes=[];let last=null;
  for(const p of pr.parts){
-  if(p.k==='f'){const e=el('path',{d:p.d,fill:fillOf(p.fill)},fg);if(!instant)e.style.opacity=0;fills.push(e);}
+  if(p.k==='t'){const e=el('text',{x:p.x,y:p.y,'text-anchor':'middle','font-family':'Caveat, Baloo 2, sans-serif','font-weight':700,'font-size':p.size,fill:INK},fg);e.textContent=p.txt;if(!instant)e.style.opacity=0;fills.push(e);}
+  else if(p.k==='f'){const e=el('path',{d:p.d,fill:fillOf(p.fill)},fg);if(!instant)e.style.opacity=0;fills.push(e);}
   else if(p.k==='s'){const e=el('path',{d:p.d,fill:'none',stroke:p.c,'stroke-width':p.w,'stroke-linecap':'round','stroke-linejoin':'round'},sg);if(!instant)e.style.visibility='hidden';last={main:e,ghost:null};strokes.push(last);}
   else{const e=el('path',{d:p.d,fill:'none',stroke:p.c,'stroke-width':p.w,'stroke-linecap':'round',opacity:.5},sg);if(!instant)e.style.visibility='hidden';if(last)last.ghost=e;}}
  propEls.get(pr.id)?.remove();propEls.set(pr.id,g);if(instant&&pr.anim)g.classList.add('a-'+pr.anim);return{g,fills,strokes};}
@@ -378,6 +406,7 @@ ${limb('arm armB',-16,-122,40,'#D9801A',11,hand(40))}
 ${face(17)}${sweat}
 ${limb('arm armA',17,-122,40,'#F7AE55',11,hand(40))}
 <g class="acc acc-water"><g transform="translate(62 -111)"><g class="wc"><path d="M4 -14 Q-14 -2 4 12" fill="none" stroke="${INK}" stroke-width="4"/><path d="M0 -16 L46 -18 L48 16 L2 16Z" fill="url(#h-sky)" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M46 -6 L78 -26" stroke="${INK}" stroke-width="10" stroke-linecap="round"/><path d="M46 -6 L78 -26" stroke="#8EC5EA" stroke-width="5" stroke-linecap="round"/><ellipse cx="82" cy="-28" rx="6" ry="10" transform="rotate(-30 82 -28)" fill="#8EC5EA" stroke="${INK}" stroke-width="3"/></g></g></g>
+<g class="acc acc-book"><g transform="translate(58 -122) rotate(-8)"><rect x="-4" y="-16" width="46" height="34" rx="3" fill="url(#h-blue)" stroke="${INK}" stroke-width="3"/><path d="M4 -8 L34 -8 M4 0 L30 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g>
 </g>`;
 const ELA=`<ellipse cx="4" cy="1" rx="38" ry="7" fill="rgba(46,49,54,.14)"/><g class="bodyb">
 ${limb('leg legB',-8,-70,58,'#2B2B33',9,shoe(62,'#E5484D'))}${limb('leg legA',8,-70,58,'#3A3A44',9,shoe(62,'#E5484D'))}
@@ -395,10 +424,11 @@ ${face(16)}
 <g class="acc acc-umbrella"><g transform="translate(46 -150)"><g class="umb"><path d="M0 30 L0 -66" stroke="${INK}" stroke-width="4.5" stroke-linecap="round"/><path d="M0 30 q0 12 -11 9" fill="none" stroke="${INK}" stroke-width="4.5" stroke-linecap="round"/>
 <path d="M-82 -62 Q0 -140 82 -62 Q62 -74 41 -62 Q20 -74 0 -62 Q-20 -74 -41 -62 Q-62 -74 -82 -62Z" fill="url(#h-yellow)" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M0 -104 L0 -62 M0 -104 Q-30 -90 -41 -62 M0 -104 Q30 -90 41 -62" fill="none" stroke="${INK}" stroke-width="2.5"/></g></g></g>
 ${limb('arm armA',16,-120,40,'#4A5263',10,hand(40))}
+<g class="acc acc-book"><g transform="translate(58 -122) rotate(-8)"><rect x="-4" y="-16" width="46" height="34" rx="3" fill="url(#h-blue)" stroke="${INK}" stroke-width="3"/><path d="M4 -8 L34 -8 M4 0 L30 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g>
 </g>`;
 function buildChar(n,html){const root=el('g',{class:'chr',id:'chr-'+n},L.chars);root.style.display='none';const pos=el('g',{},root),pop=el('g',{},pos);pop.innerHTML=html;
  CH[n]={x:-120,y:760,face:1,show:false,root,pos,pop,mc:pop.querySelector('.mc'),mo:pop.querySelector('.mo'),mi:null};}
-buildChar('can',CAN);buildChar('ela',ELA);
+
 function place(n){const c=CH[n];c.pos.setAttribute('transform',`translate(${f1(c.x)} ${f1(c.y)}) scale(${c.face*CS} ${CS})`);c.root.style.display=c.show?'':'none';}
 const setCls=(n,pre,list)=>{const r=CH[n].root;[...r.classList].filter(c=>c.startsWith(pre)).forEach(c=>r.classList.remove(c));(list||[]).forEach(a=>a&&r.classList.add(pre+a));};
 const setPose=(n,p)=>setCls(n,'pose-',[p]);const setAcc=(n,l)=>setCls(n,'has-',l);
@@ -418,106 +448,504 @@ async function carryDraw(pr,n,toX,tok){const b=buildProp(pr,false),st=b.strokes[
  try{await tween(Lt/(.3*speedMul),t=>{const l=Lt*t;m.style.strokeDashoffset=L0-l;if(g)g.style.strokeDashoffset=GL*(1-l/L0);const p=m.getPointAtLength(l);PEN.x=p.x;PEN.y=p.y;setPen();C.x=p.x-OFF;C.y=p.y;place(n);},tok);}
  finally{C.root.classList.remove('walking');sfx.scribble(false);}
  setPose(n,null);await penTo(PEN.x+20,PEN.y-30,520,tok,{r:28,s:1});await drawStroke(st,tok,Lt/L0,1);await drawBuilt(b,pr,tok,1);}
-/* hikâyeler */
+/* yeni sahne parçaları */
+const quad=(x1,y1,x2,y2)=>[[x1,y1],[x2,y1],[x2,y2],[x1,y2]];
+Object.assign(P,{
+ circle(id,x,y,r,col){return mk(id,null,A=>{const c=ell(x,y,r,r,16);A.f(c,col,{jit:1.5});A.s(c,{closed:true,w:4.5});});},
+ square(id,x,y,s,col){return mk(id,null,A=>{const h=s/2,q=quad(x-h,y-h,x+h,y+h);A.f(q,col,{straight:true,jit:1.5});A.s([...q,q[0]],{straight:true,w:4.5,jit:1.5});});},
+ triangle(id,x,y,s,col){return mk(id,null,A=>{const q=[[x,y-s*.55],[x+s/2,y+s*.45],[x-s/2,y+s*.45]];A.f(q,col,{straight:true,jit:1.5});A.s([...q,q[0]],{straight:true,w:4.5,jit:1.5});});},
+ board(id,x1,y1,x2,y2){return mk(id,null,A=>{const q=quad(x1,y1,x2,y2);A.f(q,'kraft',{straight:true,jit:2});A.s([...q,q[0]],{straight:true,w:4,jit:2});for(let i=0;i<14;i++){const px=x1+20+rnd()*(x2-x1-40),py=y1+20+rnd()*(y2-y1-40);A.raw(circ(px,py,3),'#FFFFFF');}});},
+ medal(id,x,y){return mk(id,'pulse',A=>{const r1=[[x-26,y-70],[x-8,y-70],[x+6,y-20],[x-12,y-20]],r2=[[x+8,y-70],[x+26,y-70],[x+12,y-20],[x-6,y-20]];A.f(r1,'blue',{straight:true,jit:.6});A.s([...r1,r1[0]],{straight:true,w:3,ng:1,jit:.6});A.f(r2,'red',{straight:true,jit:.6});A.s([...r2,r2[0]],{straight:true,w:3,ng:1,jit:.6});
+  const c=ell(x,y,30,30,14);A.f(c,'sun',{jit:.8});A.s(c,{closed:true,w:4,jit:.8});A.raw(starD(x,y,17,7,-Math.PI/2),'#FFF6C8');});},
+ mud(id,x,b){return mk(id,null,A=>{const m=ell(x,b+4,95,16,14,.12,5);A.f(m,'earth',{jit:1});A.s(m,{closed:true,w:3.5,jit:1});});},
+ germ(id,x,y){return mk(id,'shiver',A=>{const c=ell(x,y,24,22,12,.1,6);A.f(c,'germ',{jit:1});A.s(c,{closed:true,w:3.5,ng:1,jit:1});for(let i=0;i<8;i++){const a=i/8*Math.PI*2;A.s([[x+Math.cos(a)*24,y+Math.sin(a)*22],[x+Math.cos(a)*36,y+Math.sin(a)*33]],{w:3,ng:1,jit:.5});}
+  A.raw(circ(x-8,y-4,3.5)+circ(x+8,y-4,3.5),INK);A.s([[x-8,y+10],[x,y+5],[x+8,y+10]],{w:2.5,ng:1,jit:.3});});},
+ sink(id,x,y){return mk(id,null,A=>{const ped=quad(x-22,y+55,x+22,760);A.f(ped,'#C9D3DC',{straight:true,jit:.8});A.s([...ped,ped[0]],{straight:true,w:3.5,ng:1,jit:.8});
+  const b=[[x-95,y],[x+95,y],[x+80,y+30],[x+50,y+55],[x,y+62],[x-50,y+55],[x-80,y+30]];A.f(b,'#E8F1F7',{jit:.8});A.s(b,{closed:true,w:4,jit:.8});
+  const pipe=[[x+70,y],[x+70,y-80],[x+44,y-100],[x+6,y-96],[x,y-70]];A.s(pipe,{w:16,ng:1,jit:0});A.s(pipe,{w:9,ng:1,jit:0,c:'#C9D3DC'});A.raw(circ(x+70,y-86,9),'#E5484D');});},
+ stream(id,x,y){return mk(id,'rain',A=>{for(let i=0;i<4;i++)A.s([[x+(i%2?3:-3),y+i*16],[x+(i%2?3:-3),y+i*16+9]],{w:4,ng:1,c:'#3F7FD1',jit:.3,straight:true});});},
+ bubbles(id,x,y){return mk(id,'rise',A=>{for(let i=0;i<7;i++){const r=8+rnd()*12,c=ell(x-60+rnd()*120,y-rnd()*90,r,r,10);A.f(c,'#EAF7FF',{jit:.4});A.s(c,{closed:true,w:2.5,ng:1,c:'#56A9E2',jit:.4});}});},
+ apple(id,x,y,s=1){return mk(id,'bounce',A=>{const c=ell(x,y,26*s,24*s,14);A.f(c,'red',{jit:.8});A.s(c,{closed:true,w:4,jit:.8});A.s([[x,y-22*s],[x+4*s,y-40*s]],{w:4,ng:1,c:'#8A5A36'});const l=leaf(x+4*s,y-34*s,24*s,-.5);A.f(l,'leaf',{jit:.4});A.s(l,{closed:true,w:2.5,ng:1,jit:.4});});},
+ school(id,x,b){return mk(id,null,A=>{const w=380,h=230,l=x-w/2,r=x+w/2,t=b-h;const wall=quad(l,t,r,b);A.f(wall,'school',{straight:true});A.s([...wall,wall[0]],{straight:true});
+  const rf=quad(l-14,t-30,r+14,t);A.f(rf,'roof',{straight:true});A.s([...rf,rf[0]],{straight:true,w:4});
+  const dr=quad(x-34,b-100,x+34,b);A.f(dr,'door',{straight:true});A.s(dr,{straight:true,w:3.5});
+  for(const wx of[l+30,l+110,r-150,r-70])for(const wy of[t+30,t+110]){if(wy>t+100&&Math.abs(wx+20-x)<60)continue;const q=quad(wx,wy,wx+40,wy+50);A.f(q,'sky',{straight:true,jit:1});A.s([...q,q[0]],{straight:true,w:3,ng:1,jit:1});}
+  const ck=ell(x,t+45,22,22,12);A.f(ck,'#FFFFFF',{jit:.5});A.s(ck,{closed:true,w:3.5,ng:1,jit:.5});A.s([[x,t+45],[x,t+30],[x,t+45],[x+11,t+50]],{w:3,ng:1,jit:.2,straight:true});
+  A.s([[r-30,t-30],[r-30,t-110]],{w:4,straight:true,ng:1});const fl=quad(r-30,t-110,r+22,t-76);A.f(fl,'#E30A17',{straight:true,jit:.5});A.raw(circ(r-12,t-93,8),'#FFFFFF');A.raw(circ(r-10,t-93,6.4),'#E30A17');});},
+ book(id,x,y){return mk(id,null,A=>{const q=quad(x-45,y-16,x+45,y);A.f(q,'blue',{straight:true,jit:.8});A.s([...q,q[0]],{straight:true,w:3.5,jit:.8});A.s([[x-40,y-5],[x+40,y-5]],{w:3,ng:1,c:'#FFFFFF',jit:.3});});},
+ thought(id,x,y){return mk(id,null,A=>{const c=ell(x,y,80,52,18,.2,6);A.f(c,'#FFFFFF');A.s(c,{closed:true,w:3.5});for(const[cx,cy,r]of[[x+40,y+80,13],[x+62,y+108,8]]){const q=ell(cx,cy,r,r,8);A.f(q,'#FFFFFF',{jit:.4});A.s(q,{closed:true,w:3,ng:1,jit:.4});}
+  A.s([[x-14,y-16],[x-10,y-30],[x+6,y-32],[x+14,y-20],[x+4,y-6],[x,y+6]],{w:6,ng:1,jit:.5});A.raw(circ(x,y+22,4.5),INK);});},
+ bottle(id,x,b){return mk(id,null,A=>{const p=[[x-13,b],[x-13,b-40],[x-6,b-52],[x-6,b-62],[x+6,b-62],[x+6,b-52],[x+13,b-40],[x+13,b]];A.f(p,'sky',{straight:true,jit:.5});A.s([...p,p[0]],{straight:true,w:3,jit:.5});A.f(quad(x-7,b-70,x+7,b-62),'red',{straight:true,jit:.3});});},
+ paper(id,x,b){return mk(id,null,A=>{const c=ell(x,b-16,19,16,10,.25,5);A.f(c,'#FFFFFF',{jit:.6});A.s(c,{closed:true,w:3,jit:.6});A.s([[x-8,b-20],[x+2,b-14],[x+8,b-22]],{w:2,ng:1,jit:.3});});},
+ bin(id,x,b){return mk(id,null,A=>{const p=[[x-52,b],[x-62,b-120],[x+62,b-120],[x+52,b]];A.f(p,'leaf',{straight:true,jit:.8});A.s([...p,p[0]],{straight:true,w:4,jit:.8});const lid=quad(x-70,b-136,x+70,b-120);A.f(lid,'teal',{straight:true,jit:.5});A.s([...lid,lid[0]],{straight:true,w:3.5,ng:1,jit:.5});
+  const tr=[[x,b-92],[x+24,b-50],[x-24,b-50]];A.s([...tr,tr[0]],{straight:true,w:5,c:'#FFFFFF',ng:1,jit:.5});});},
+ pond(id,cx,y,rx,ry){return mk(id,'shimmer',A=>{const c=ell(cx,y,rx,ry,20,.04,5);A.f(c,'water',{jit:1});A.s(c,{closed:true,w:4});for(let i=0;i<3;i++){const wx=cx-rx*.5+i*rx*.4,wy=y-ry*.3+i*8;A.s([[wx,wy],[wx+14,wy-6],[wx+28,wy],[wx+42,wy-6]],{w:3,ng:1,c:'#2E7FBF',jit:.4});}});},
+ fish(id,x,y,col='orange',d=1){return mk(id,'fly',A=>{const b=ell(x,y,32,19,14);A.f(b,col,{jit:.6});A.s(b,{closed:true,w:3.5,jit:.6});const t=[[x-28*d,y],[x-52*d,y-18],[x-52*d,y+18]];A.f(t,col,{straight:true,jit:.5});A.s([...t,t[0]],{straight:true,w:3.5,ng:1,jit:.5});A.raw(circ(x+16*d,y-4,4),INK);});},
+ dropFace(id,x,y,happy){return mk(id,happy?'bounce':'shiver',A=>{const p=[[x,y-64],[x+22,y-28],[x+38,y+4],[x+30,y+30],[x,y+42],[x-30,y+30],[x-38,y+4],[x-22,y-28]];A.f(p,'water',{jit:.6});A.s(p,{closed:true,w:4,jit:.6});A.raw(circ(x-12,y,4.5)+circ(x+12,y,4.5),INK);
+  A.s(happy?[[x-12,y+14],[x,y+22],[x+12,y+14]]:[[x-12,y+22],[x,y+14],[x+12,y+22]],{w:3.5,ng:1,jit:.3});if(!happy)A.s([[x+18,y+6],[x+20,y+16]],{w:3,ng:1,c:'#3F7FD1',jit:.2});});},
+ cup(id,x,b){return mk(id,null,A=>{const p=[[x-16,b],[x-20,b-44],[x+20,b-44],[x+16,b]];A.f(p,'pink',{straight:true,jit:.5});A.s([...p,p[0]],{straight:true,w:3.5,jit:.5});});},
+ bee(id,x,y){return mk(id,'fly',A=>{for(const[wx,wy]of[[x-6,y-20],[x+8,y-18]]){const w=ell(wx,wy,10,14,10);A.f(w,'#FFFFFF',{jit:.3});A.s(w,{closed:true,w:2.5,ng:1,jit:.3});}const b=ell(x,y,22,15,12);A.f(b,'yellow',{jit:.5});A.s(b,{closed:true,w:3.5,jit:.5});
+  A.s([[x-6,y-13],[x-6,y+13]],{w:5,ng:1,jit:.3});A.s([[x+6,y-13],[x+6,y+13]],{w:5,ng:1,jit:.3});A.raw(circ(x+15,y-3,3),INK);A.s([[x-22,y],[x-30,y+2]],{w:3,ng:1,jit:.2});});},
+ hive(id,x,y){return mk(id,'sway',A=>{A.s([[x,y-60],[x,y-40]],{w:4,ng:1});for(let i=0;i<4;i++){const e=ell(x,y-24+i*24,[34,46,48,36][i],15,12);A.f(e,'honey',{jit:.6});A.s(e,{closed:true,w:3.5,ng:1,jit:.6});}A.raw(circ(x,y+30,9),INK);});},
+ jar(id,x,b){return mk(id,null,A=>{const p=[[x-34,b],[x-38,b-70],[x+38,b-70],[x+34,b]];A.f(p,'honey',{straight:true,jit:.6});A.s([...p,p[0]],{straight:true,w:4,jit:.6});const l=quad(x-40,b-86,x+40,b-70);A.f(l,'trunk',{straight:true,jit:.4});A.s([...l,l[0]],{straight:true,w:3.5,ng:1,jit:.4});A.f(quad(x-22,b-50,x+22,b-22),'#FFFFFF',{straight:true,jit:.4});});},
+ night(id){return mk(id,null,A=>{A.f(quad(-10,-10,1610,745),'night',{straight:true,jit:0});});},
+ moon(id,x,y,r,k){return mk(id,'pulse',A=>{let p;if(k==='full')p=ell(x,y,r,r,16);else{p=[];for(let i=0;i<=10;i++){const a=-Math.PI/2+i/10*Math.PI;p.push([x+r*Math.cos(a),y+r*Math.sin(a)]);}for(let i=9;i>=1;i--){const a=-Math.PI/2+i/10*Math.PI;p.push([x+r*k*Math.cos(a),y+r*Math.sin(a)]);}}
+  A.f(p,'moon',{jit:.6});A.s(p,{closed:true,w:4,jit:.6});});},
+ telescope(id,x,b){return mk(id,null,A=>{for(const dx of[-40,0,40])A.s([[x,b-105],[x+dx,b]],{w:4,straight:true,ng:1});const a=-.5,c=Math.cos(a),s=Math.sin(a),cx=x+10,cy=b-125,L=70,W=13;
+  const q=[[cx-L*c+W*s,cy-L*s-W*c],[cx+L*c+W*s,cy+L*s-W*c],[cx+L*c-W*s,cy+L*s+W*c],[cx-L*c-W*s,cy-L*s+W*c]];A.f(q,'blue',{straight:true,jit:.5});A.s([...q,q[0]],{straight:true,w:4,jit:.5});});},
+ bunting(id,x1,x2,y){return mk(id,'sway',A=>{const pts=[];for(let i=0;i<=16;i++){const t=i/16;pts.push([x1+(x2-x1)*t,y+Math.sin(t*Math.PI)*40]);}A.s(pts,{w:3.5});
+  const n=Math.floor((x2-x1)/80);for(let i=0;i<n;i++){const t=(i+.5)/n,px=x1+(x2-x1)*t,py=y+Math.sin(t*Math.PI)*40,tr=[[px-24,py],[px+24,py],[px,py+42]];A.f(tr,i%2?'#FFFFFF':'#E30A17',{straight:true,jit:.6});A.s([...tr,tr[0]],{straight:true,w:3,ng:1,jit:.6});}});},
+ balloon(id,x,y,col){return mk(id,'bounce',A=>{const b=ell(x,y,34,42,14);A.f(b,col,{jit:.6});A.s(b,{closed:true,w:4,jit:.6});A.s([[x,y+42],[x-8,y+80],[x+6,y+120],[x-4,y+160]],{w:2.5,ng:1,jit:.5});});},
+ lighthouse(id,x,b){return mk(id,null,A=>{const tw=[[x-60,b],[x-38,b-300],[x+38,b-300],[x+60,b]];A.f(tw,'#FFFFFF',{straight:true,jit:.8});
+  for(const[y1,y2]of[[b-100,b-160],[b-220,b-270]]){const k1=(b-y1)/300,k2=(b-y2)/300;A.f([[x-60+22*k1,y1],[x-60+22*k2,y2],[x+60-22*k2,y2],[x+60-22*k1,y1]],'red',{straight:true,jit:.6});}
+  A.s([...tw,tw[0]],{straight:true,w:4.5,jit:.8});const g=quad(x-52,b-316,x+52,b-300);A.f(g,'#9AA7B4',{straight:true,jit:.5});A.s([...g,g[0]],{straight:true,w:3.5,ng:1,jit:.5});
+  const lr=quad(x-28,b-370,x+28,b-316);A.f(lr,'yellow',{straight:true,jit:.5});A.s([...lr,lr[0]],{straight:true,w:4,jit:.5});const rf=[[x-42,b-370],[x,b-412],[x+42,b-370]];A.f(rf,'red',{straight:true,jit:.5});A.s([...rf,rf[0]],{straight:true,w:4,jit:.5});
+  const d=quad(x-16,b-50,x+16,b);A.f(d,'door',{straight:true,jit:.4});A.s(d,{straight:true,w:3,ng:1,jit:.4});});},
+ beam(id,x,y){return mk(id,'sweep',A=>{const t=[[x,y],[x+820,y-130],[x+820,y+70]];A.f(t,'yellow',{straight:true,jit:1});});},
+ rocks(id,x,y){return mk(id,null,A=>{for(const[dx,rx,ry]of[[-40,44,30],[20,56,40],[74,36,24]]){const r=ell(x+dx,y,rx,ry,12,.15,5);A.f(r,'gray',{jit:1});A.s(r,{closed:true,w:4,jit:1});}});},
+ boat(id,x,y){return mk(id,'bob',A=>{const h=[[x-80,y],[x+80,y],[x+55,y+36],[x-55,y+36]];A.f(h,'trunk',{straight:true,jit:.8});A.s([...h,h[0]],{straight:true,w:4,jit:.8});A.s([[x,y],[x,y-120]],{w:4.5,straight:true,ng:1});const s=[[x+5,y-115],[x+72,y-18],[x+5,y-18]];A.f(s,'#FFFFFF',{straight:true,jit:.6});A.s([...s,s[0]],{straight:true,w:3.5,ng:1,jit:.6});});},
+ tiles(id,x0,b,n,w){return mk(id,null,A=>{for(let i=0;i<n;i++){const q=quad(x0+i*w+5,b,x0+(i+1)*w-5,b+16);A.f(q,i%2?'sky':'wall',{straight:true,jit:.5});A.s([...q,q[0]],{straight:true,w:3,ng:1,jit:.5});}});},
+ block(id,x,y,col){return mk(id,null,A=>{const q=quad(x-55,y-30,x+55,y+30);A.f(q,col,{straight:true,jit:.8});A.s([...q,q[0]],{straight:true,w:4,jit:.8});A.s([[x-30,y],[x+26,y]],{w:7,ng:1,c:'#FFFFFF',jit:.3,straight:true});A.s([[x+8,y-15],[x+28,y],[x+8,y+15]],{w:7,ng:1,c:'#FFFFFF',jit:.3,straight:true});});},
+ goal(id,x,b){return mk(id,'wave',A=>{A.s([[x,b],[x,b-170]],{w:5,straight:true,jit:.6});const f=quad(x,b-170,x+84,b-114);A.f(f,'#FFFFFF',{straight:true,jit:.4});let d='';for(let i=0;i<4;i++)for(let j=0;j<2;j++)if((i+j)%2===0){const qx=x+i*21,qy=b-170+j*28;d+=`M${qx} ${qy}h21v28h-21Z`;}A.raw(d,INK);A.s([...f,f[0]],{straight:true,w:3.5,ng:1,jit:.4});});},
+ table(id,x,b,w=260){return mk(id,null,A=>{const t=quad(x-w/2,b-122,x+w/2,b-100);A.f(t,'trunk',{straight:true,jit:.6});A.s([...t,t[0]],{straight:true,w:4,jit:.6});for(const lx of[x-w/2+22,x+w/2-22])A.s([[lx,b-100],[lx,b]],{w:9,straight:true,ng:1,jit:.4});});},
+ cake(id,x,y){return mk(id,null,A=>{const bd=quad(x-80,y,x+80,y+60);A.f(bd,'pink',{straight:true,jit:.6});A.s([[x-80,y],[x-80,y+60],[x+80,y+60],[x+80,y]],{straight:true,w:4,jit:.6});const tp=ell(x,y,80,22,18);A.f(tp,'#FFF0F5',{jit:.4});A.s(tp,{closed:true,w:4,jit:.4});
+  for(const cx of[x-36,x,x+36]){A.f(quad(cx-5,y-44,cx+5,y-8),'sky',{straight:true,jit:.2});A.s([[cx-5,y-8],[cx-5,y-44],[cx+5,y-44],[cx+5,y-8]],{straight:true,w:2.5,ng:1,jit:.2});const fl=[[cx,y-66],[cx+7,y-52],[cx,y-46],[cx-7,y-52]];A.f(fl,'orange',{jit:.2});}});},
+ cuts(id,x,y){return mk(id,null,A=>{A.s([[x-78,y],[x+78,y]],{w:4,ng:1,jit:.4,straight:true});A.s([[x,y-21],[x,y+21]],{w:4,ng:1,jit:.3,straight:true});A.t(x,y-90,'1/4',46);});},
+ slice(id,x,y){return mk(id,null,A=>{const p=ell(x,y+6,32,9,12);A.f(p,'#FFFFFF',{jit:.3});A.s(p,{closed:true,w:3,ng:1,jit:.3});const w=[[x-20,y+2],[x+22,y+2],[x+12,y-26]];A.f(w,'pink',{straight:true,jit:.3});A.s([...w,w[0]],{straight:true,w:3,ng:1,jit:.3});});},
+ label(id,x,y,txt,size){return mk(id,null,A=>A.t(x,y,txt,size));}
+});
+/* yeni kahramanlar */
+const MET=`<ellipse cx="4" cy="1" rx="40" ry="7" fill="rgba(46,49,54,.14)"/><g class="bodyb">
+${limb('leg legB',-8,-74,60,'#1F2433',14,shoe(64,'#1B1B1F')+'<path d="M-8 64 L20 64" stroke="#fff" stroke-width="2.5"/>')}${limb('leg legA',9,-74,60,'#262C3D',14,shoe(64,'#1B1B1F')+'<path d="M-8 64 L20 64" stroke="#fff" stroke-width="2.5"/>')}
+${limb('arm armB',-16,-122,40,'#9EA3A9',11,'<path d="M-6 34 L8 34" stroke="#7BD35A" stroke-width="4"/>'+hand(40))}
+<path d="M-24 -130 Q0 -138 24 -130 L29 -70 Q0 -62 -29 -70 Z" fill="#AEB2B8" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M-16 -131 L0 -116 L16 -131" fill="#C4C8CD" stroke="#7BD35A" stroke-width="4" stroke-linejoin="round"/><path d="M0 -116 L0 -98" stroke="${INK}" stroke-width="2"/><circle cx="3" cy="-110" r="2.6" fill="#7BD35A"/><circle cx="3" cy="-102" r="2.6" fill="#7BD35A"/><circle cx="14" cy="-106" r="3" fill="#E5484D"/>
+<circle cx="-24" cy="-160" r="7" fill="${SKIN}" stroke="${INK}" stroke-width="3"/><circle cx="4" cy="-165" r="31" fill="${SKIN}" stroke="${INK}" stroke-width="3.5"/>
+<path d="M-30 -148 Q-36 -205 4 -206 Q44 -205 38 -150 L34 -171 Q20 -175 4 -174 Q-12 -175 -26 -171 Z" fill="#8A5530" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+<path d="M-10 -200 L-12 -176 M6 -202 L4 -176 M22 -198 L20 -176" stroke="#6B3F22" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="7" cy="-160" r="4.6" fill="#4A78B5"/><circle cx="7" cy="-160" r="2" fill="${INK}"/><circle cx="25" cy="-160" r="4.6" fill="#4A78B5"/><circle cx="25" cy="-160" r="2" fill="${INK}"/></g>
+${face(16)}
+${limb('arm armA',17,-122,40,'#B4B8BE',11,'<path d="M-6 34 L8 34" stroke="#7BD35A" stroke-width="4"/>'+hand(40))}
+<g class="acc acc-book"><g transform="translate(58 -122) rotate(-8)"><rect x="-4" y="-16" width="46" height="34" rx="3" fill="url(#h-blue)" stroke="${INK}" stroke-width="3"/></g></g>
+</g>`;
+const MIRA=ELA.replaceAll('#3D4452','#2E8B7A').replaceAll('#2F3542','#256F62').replaceAll('#4A5263','#3AA08D').replaceAll('#2B1D17','#A0522D').replaceAll('url(#h-red)','url(#h-purple)');
+const ROBO=`<ellipse cx="0" cy="1" rx="44" ry="7" fill="rgba(46,49,54,.14)"/><g class="bodyb">
+<circle cx="-22" cy="-14" r="14" fill="#555B66" stroke="${INK}" stroke-width="3.5"/><circle cx="-22" cy="-14" r="4" fill="#C9D3DC"/><circle cx="22" cy="-14" r="14" fill="#555B66" stroke="${INK}" stroke-width="3.5"/><circle cx="22" cy="-14" r="4" fill="#C9D3DC"/>
+${limb('arm armB',-34,-80,30,'#9AA7B4',8,'<circle cx="1" cy="36" r="7" fill="#F39A2B" stroke="'+INK+'" stroke-width="3"/>')}
+<rect x="-34" y="-98" width="68" height="74" rx="10" fill="url(#h-sky)" stroke="${INK}" stroke-width="3.5"/><rect x="-18" y="-82" width="36" height="22" rx="4" fill="#fff" stroke="${INK}" stroke-width="2.5"/><circle cx="-8" cy="-71" r="3.5" fill="#E5484D"/><circle cx="1" cy="-71" r="3.5" fill="#FFD84D"/><circle cx="10" cy="-71" r="3.5" fill="#7DBA4A"/>
+<rect x="-8" y="-106" width="18" height="10" fill="#9AA7B4" stroke="${INK}" stroke-width="2.5"/>
+<path d="M2 -152 L2 -170" stroke="${INK}" stroke-width="3.5"/><circle cx="2" cy="-175" r="6" fill="#E5484D" stroke="${INK}" stroke-width="2.5"/>
+<rect x="-28" y="-152" width="60" height="46" rx="10" fill="url(#h-gray)" stroke="${INK}" stroke-width="3.5"/>
+<g class="eyes"><circle cx="-8" cy="-132" r="7" fill="#FFD84D" stroke="${INK}" stroke-width="2.5"/><circle cx="14" cy="-132" r="7" fill="#FFD84D" stroke="${INK}" stroke-width="2.5"/></g>
+<rect class="mc" x="-6" y="-119" width="18" height="4" rx="2" fill="${INK}"/><rect class="mo" x="-6" y="-122" width="18" height="11" rx="3" fill="#3F7FD1" stroke="${INK}" stroke-width="2" style="display:none"/>
+${limb('arm armA',34,-80,30,'#B8C4CE',8,'<circle cx="1" cy="36" r="7" fill="#F39A2B" stroke="'+INK+'" stroke-width="3"/>')}
+</g>`;
+buildChar('robo',ROBO);buildChar('mira',MIRA);buildChar('met',MET);buildChar('can',CAN);buildChar('ela',ELA);
+$('#starFace').innerHTML=MET;
+/* simgeler */
 const IC={
  mountain:'<svg viewBox="0 0 56 56"><path d="M4 48 L28 10 L52 48Z" fill="#D08B57" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M20 22 L28 10 L36 22 L31 19 L28 24 L24 19Z" fill="#fff" stroke="#2E3136" stroke-width="2.5" stroke-linejoin="round"/></svg>',
  umbrella:'<svg viewBox="0 0 56 56"><path d="M6 28 Q28 0 50 28 Q44 24 39 28 Q33 24 28 28 Q23 24 17 28 Q11 24 6 28Z" fill="#FFD84D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M28 28 L28 46 Q28 52 22 50" fill="none" stroke="#2E3136" stroke-width="3" stroke-linecap="round"/></svg>',
  sprout:'<svg viewBox="0 0 56 56"><path d="M28 50 L28 22" stroke="#3E7D2E" stroke-width="4" stroke-linecap="round"/><path d="M28 30 Q12 30 10 16 Q26 14 28 30Z" fill="#5DAE4B" stroke="#2E3136" stroke-width="2.5"/><path d="M28 24 Q42 26 46 12 Q30 8 28 24Z" fill="#5DAE4B" stroke="#2E3136" stroke-width="2.5"/><path d="M12 50 Q28 42 44 50Z" fill="#B7773F" stroke="#2E3136" stroke-width="2.5"/></svg>',
- bridge:'<svg viewBox="0 0 56 56"><path d="M2 44 Q28 52 54 44 L54 56 L2 56Z" fill="#56A9E2"/><path d="M4 34 L52 34" stroke="#C08A55" stroke-width="8"/><path d="M4 34 L52 34 M4 34 L4 22 M52 34 L52 22 M4 22 Q28 32 52 22" fill="none" stroke="#2E3136" stroke-width="3" stroke-linecap="round"/></svg>'};
-const STORIES=[
-{icon:IC.mountain,values:['Sabır','Çalışkanlık'],
- title:{tr:'Zirveye Giden Yol',en:'The Road to the Top',de:'Der Weg zum Gipfel',ar:'الطريق إلى القمة'},
- note:{kademe:'Okul öncesi – 2. sınıf',degerler:'Sabır, çalışkanlık',beceri:'Dinleme ve anlama, olayları sıraya koyma (önce–sonra), azim',sorular:['Can yol olmadığını görünce ne hissetmiş olabilir?','Sen zor bir işte yorulunca ne yaparsın?','Zirveye kaç basamakta çıktı? Birlikte sayalım.'],etkinlik:'Çizim atölyesinde çocuklar kendi basamaklı yollarını çizsin; kahramanı o yolda yürütüp adım adım sayarak ilerlesin.'},
+ bridge:'<svg viewBox="0 0 56 56"><path d="M2 44 Q28 52 54 44 L54 56 L2 56Z" fill="#56A9E2"/><path d="M4 34 L52 34" stroke="#C08A55" stroke-width="8"/><path d="M4 34 L52 34 M4 34 L4 22 M52 34 L52 22 M4 22 Q28 32 52 22" fill="none" stroke="#2E3136" stroke-width="3" stroke-linecap="round"/></svg>',
+ shapes:'<svg viewBox="0 0 56 56"><circle cx="17" cy="18" r="11" fill="#34427A" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><rect x="30" y="8" width="20" height="20" fill="#E5484D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M28 32 L44 52 L12 52Z" fill="#FFD84D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/></svg>',
+ hands:'<svg viewBox="0 0 56 56"><path d="M14 50 L14 26 Q14 20 19 20 L19 12 Q19 7 23 7 Q27 7 27 12 L27 22 L31 22 L31 10 Q31 6 35 6 Q39 6 39 10 L39 34 Q42 28 46 30 Q48 33 44 40 L36 50Z" fill="#F6D2B0" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><circle cx="46" cy="12" r="5" fill="#EAF7FF" stroke="#56A9E2" stroke-width="2.5"/><circle cx="10" cy="14" r="4" fill="#EAF7FF" stroke="#56A9E2" stroke-width="2.5"/></svg>',
+ book:'<svg viewBox="0 0 56 56"><path d="M6 14 Q18 8 28 14 L28 48 Q18 42 6 48Z" fill="#3F7FD1" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M50 14 Q38 8 28 14 L28 48 Q38 42 50 48Z" fill="#8EC5EA" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/></svg>',
+ recycle:'<svg viewBox="0 0 56 56"><path d="M14 18 L42 18 L38 52 L18 52Z" fill="#5DAE4B" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><rect x="10" y="10" width="36" height="8" rx="2" fill="#3AA08D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M28 26 L36 40 L20 40Z" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/></svg>',
+ drop:'<svg viewBox="0 0 56 56"><path d="M28 5 Q46 28 44 38 Q42 52 28 52 Q14 52 12 38 Q10 28 28 5Z" fill="#56A9E2" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><circle cx="22" cy="36" r="2.5" fill="#2E3136"/><circle cx="34" cy="36" r="2.5" fill="#2E3136"/><path d="M22 43 Q28 47 34 43" fill="none" stroke="#2E3136" stroke-width="2.5" stroke-linecap="round"/></svg>',
+ bee:'<svg viewBox="0 0 56 56"><ellipse cx="22" cy="18" rx="8" ry="11" fill="#fff" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><ellipse cx="34" cy="17" rx="8" ry="11" fill="#fff" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><ellipse cx="28" cy="34" rx="18" ry="13" fill="#FFD84D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M22 22 L22 46 M32 22 L32 46" stroke="#2E3136" stroke-width="4"/></svg>',
+ moon:'<svg viewBox="0 0 56 56"><rect x="2" y="2" width="52" height="52" rx="10" fill="#23305E"/><path d="M34 8 A20 20 0 1 0 34 48 A15 20 0 1 1 34 8Z" fill="#F8E9A6" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><circle cx="44" cy="14" r="2.5" fill="#FFD84D"/><circle cx="46" cy="36" r="2" fill="#FFD84D"/></svg>',
+ friends:'<svg viewBox="0 0 56 56"><circle cx="18" cy="18" r="9" fill="#F6D2B0" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><circle cx="38" cy="18" r="9" fill="#F6D2B0" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M6 50 Q8 30 18 30 Q28 30 30 50Z" fill="#E5484D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M26 50 Q28 30 38 30 Q48 30 50 50Z" fill="#3AA08D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/></svg>',
+ flag:'<svg viewBox="0 0 56 56"><path d="M10 52 L10 6" stroke="#2E3136" stroke-width="3.5" stroke-linecap="round"/><rect x="10" y="8" width="40" height="27" fill="#E30A17" stroke="#2E3136" stroke-width="3"/><circle cx="25" cy="21.5" r="7.5" fill="#fff"/><circle cx="27" cy="21.5" r="6" fill="#E30A17"/><path d="M35 21.5 l-5 -1.6 l3.1 4.3 v-5.4 l-3.1 4.3z" fill="#fff"/></svg>',
+ light:'<svg viewBox="0 0 56 56"><path d="M22 52 L26 20 L34 20 L38 52Z" fill="#fff" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M24 36 L36 36 L37 44 L23 44Z" fill="#E5484D"/><rect x="24" y="10" width="12" height="10" fill="#FFD84D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M22 10 L30 3 L38 10Z" fill="#E5484D" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M38 12 L54 6 L54 22Z" fill="#FFD84D" opacity=".7"/></svg>',
+ robot:'<svg viewBox="0 0 56 56"><path d="M28 6 L28 13" stroke="#2E3136" stroke-width="3"/><circle cx="28" cy="5" r="3.5" fill="#E5484D"/><rect x="14" y="13" width="28" height="20" rx="5" fill="#A7B2BD" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><circle cx="22" cy="23" r="3.5" fill="#FFD84D"/><circle cx="34" cy="23" r="3.5" fill="#FFD84D"/><rect x="12" y="34" width="32" height="16" rx="4" fill="#8EC5EA" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/></svg>',
+ cake:'<svg viewBox="0 0 56 56"><rect x="10" y="26" width="36" height="22" fill="#F4A6C0" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><ellipse cx="28" cy="26" rx="18" ry="6" fill="#FFF0F5" stroke="#2E3136" stroke-width="3" stroke-linejoin="round"/><path d="M28 20 L28 32 M10 26 L46 26" stroke="#2E3136" stroke-width="2"/><path d="M28 8 Q32 14 28 17 Q24 14 28 8Z" fill="#F39A2B"/></svg>'};
+/* HİKÂYELER — dil sırası: [tr, en, de, ar, ku] */
+const LV=['Anaokulu','1. sınıf','2. sınıf','3. sınıf','4. sınıf'];
+const STORIES=[];
+/* ---------- ANAOKULU ---------- */
+STORIES.push({lv:0,star:1,icon:IC.shapes,values:['Çalışkanlık','Estetik'],
+ t:['Metehan ve Şekiller','Metehan and the Shapes','Metehan und die Formen','ميتهان والأشكال','Metehan û Şekil'],
+ note:{d:'Çalışkanlık, estetik (güzellik duygusu)',b:'Geometrik şekilleri tanıma (daire, kare, üçgen), sayma, renkleri ayırt etme',e:'Sınıftaki DAİRE–KARE panosuna benzer bir kraft kâğıda çocuklar şekil damgalasın; atölyede Metehan’ı şekillerin arasında yürütün.'},
  scenes:[
- {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.mountain('m',1100,760,800,500),P.sun('sun',230,165,58),P.cloud('c1',620,150,1)],chars:{can:{carryTo:430,face:1}},
-  narr:{tr:'Can, kocaman bir dağın eteğine geldi.',en:'Can came to the foot of a huge mountain.',de:'Can kam an den Fuß eines riesigen Berges.',ar:'وصل جان إلى سفح جبل كبير.'},
-  say:{who:'can',tr:'Zirveye çıkmak istiyorum! Ama yol yok…',en:'I want to reach the top! But there is no road…',de:'Ich will auf den Gipfel! Aber es gibt keinen Weg…',ar:'أريد أن أصل إلى القمة! لكن لا يوجد طريق…'}},
- {props:[P.stairs('s1',1,4)],chars:{can:{walk:[[700,760],...stairWalk(1,4)],face:1}},
-  narr:{tr:'Kalem ona bir basamak çizdi. Sonra bir tane daha.',en:'The pencil drew him a step. Then another one.',de:'Der Stift malte ihm eine Stufe. Dann noch eine.',ar:'رسم القلم له درجة. ثم درجة أخرى.'},
-  say:{who:'can',tr:'Adım adım gidersem başarırım!',en:'If I go step by step, I will make it!',de:'Schritt für Schritt schaffe ich es!',ar:'إذا مشيت خطوة خطوة، سأنجح!'}},
- {props:[P.stairs('s2',5,7),P.cloud('c2',1350,170,.8)],chars:{can:{walk:stairWalk(5,7),face:1,act:'tired',acc:['sweat']}},
-  narr:{tr:'Yol uzundu. Can yoruldu ama vazgeçmedi.',en:'The road was long. Can got tired, but he did not give up.',de:'Der Weg war lang. Can wurde müde, aber er gab nicht auf.',ar:'كان الطريق طويلاً. تعب جان لكنه لم يستسلم.'},
-  say:{who:'can',tr:'Biraz dinlenip yeniden deneyeceğim.',en:'I will rest a little and try again.',de:'Ich ruhe mich kurz aus und versuche es noch einmal.',ar:'سأرتاح قليلاً ثم أحاول من جديد.'}},
- {props:[P.stairs('s3',8,10),P.flag('fl',1140,310),P.star('st1',960,190,1),P.star('st2',1280,140,.8),P.star('st3',1420,250,1)],chars:{can:{walk:stairWalk(8,10),face:1,act:'jump',acc:[]}},
-  narr:{tr:'Sonunda zirvedeydi! Sabırla çalışan her yolu bulur.',en:'At last he was at the top! Whoever works with patience finds a way.',de:'Endlich war er oben! Wer geduldig arbeitet, findet einen Weg.',ar:'وأخيراً وصل إلى القمة! من يعمل بصبر يجد طريقه.'},
-  say:{who:'can',tr:'Yaşasın! Başardım!',en:'Hooray! I did it!',de:'Hurra! Ich habe es geschafft!',ar:'مرحى! لقد نجحت!'}}],
- quiz:{q:{tr:'Can yorulunca ne yaptı?',en:'What did Can do when he got tired?',de:'Was tat Can, als er müde war?',ar:'ماذا فعل جان عندما تعب؟'},a:1,
-  o:[{e:'🏠',tr:'Eve döndü',en:'He went home',de:'Er ging nach Hause',ar:'عاد إلى البيت'},{e:'😌',tr:'Dinlenip yeniden denedi',en:'He rested and tried again',de:'Er ruhte sich aus und versuchte es wieder',ar:'ارتاح ثم حاول من جديد'},{e:'😢',tr:'Ağladı ve bıraktı',en:'He cried and quit',de:'Er weinte und gab auf',ar:'بكى واستسلم'}]}},
-{icon:IC.umbrella,values:['Yardımseverlik','Merhamet'],
- title:{tr:'Şemsiyeli Ela',en:'Ela and the Umbrella',de:'Ela und der Regenschirm',ar:'إيلا والمظلة'},
- note:{kademe:'Okul öncesi – 2. sınıf',degerler:'Yardımseverlik, merhamet',beceri:'Empati kurma, duyguları tanıma, hava olaylarını gözlemleme',sorular:['Kedicik neden titriyordu?','Ela yardım etmeseydi ne olurdu?','Sen bugün kime nasıl yardım edebilirsin?'],etkinlik:'Sınıfta “iyilik şemsiyesi” panosu: her çocuk yaptığı bir iyiliği yağmur damlasına çizip şemsiyenin altına assın.'},
+ {clear:1,carry:'met',props:[P.ground('g',40,1560,760),P.board('bd',620,250,1300,620),P.sun('sun',1440,150,52)],chars:{met:{carryTo:420,face:1,act:'jump'}},
+  n:['Bugün sınıfta büyük bir sevinç vardı: Metehan haftanın öğrencisi seçilmişti!','There was great joy in class today: Metehan was chosen as the student of the week!','Heute war die Freude in der Klasse groß: Metehan wurde zum Schüler der Woche gewählt!','كان في الصف فرح كبير اليوم: اختير ميتهان تلميذَ الأسبوع!','Îro di polê de şahiyeke mezin hebû: Metehan wek xwendekarê hefteyê hat hilbijartin!'],
+  s:['met','Yaşasın! Hadi şekillerle resim yapalım!',"Hooray! Let's paint with shapes!",'Hurra! Lasst uns mit Formen malen!','مرحى! هيا نرسم بالأشكال!','Bijî! Werin em bi şeklan wêne çêkin!']},
+ {walkFirst:1,props:[P.circle('c1',760,340,55,'navy'),P.circle('c2',900,470,55,'navy'),P.circle('c3',1200,330,55,'navy')],chars:{met:{walk:[[540,760]],face:1}},
+  n:['Kalem yuvarlak yuvarlak döndü ve daireler çizdi.','The pencil went round and round and drew circles.','Der Stift drehte sich rund und rund und malte Kreise.','دار القلم دورةً بعد دورة ورسم دوائر.','Pênûs li dora xwe zivirî û xelek xêz kirin.'],
+  s:['met','Bu bir daire! Güneş de daire gibi yuvarlak.','This is a circle! The sun is round like a circle too.','Das ist ein Kreis! Die Sonne ist auch rund wie ein Kreis.','هذه دائرة! والشمس مستديرة مثل الدائرة أيضاً.','Ev xelek e! Roj jî wek xelekê girover e.']},
+ {props:[P.square('q1',1050,420,110,'red'),P.square('q2',720,520,90,'red')],chars:{met:{act:'wave'}},
+  n:['Sonra dört kenarı eşit olan kırmızı kareler çizdi.','Then he drew red squares with four equal sides.','Dann malte er rote Quadrate mit vier gleichen Seiten.','ثم رسم مربعات حمراء أضلاعها الأربعة متساوية.','Paşê wî çargoşeyên sor ên bi çar aliyên wekhev xêz kirin.'],
+  s:['met','Karenin dört köşesi var: bir, iki, üç, dört!','A square has four corners: one, two, three, four!','Ein Quadrat hat vier Ecken: eins, zwei, drei, vier!','للمربع أربع زوايا: واحد، اثنان، ثلاثة، أربعة!','Çargoşe çar goşeyên wê hene: yek, du, sê, çar!']},
+ {props:[P.triangle('tr',1050,307,130,'yellow'),P.medal('md',545,420),P.star('s1',300,300,1),P.star('s2',1420,420,.9),P.star('s3',1480,250,1)],chars:{met:{act:'jump'}},party:1,
+  n:['Kareyle üçgen birleşince kocaman bir ev oldu. Aferin Metehan, haftanın öğrencisi!','When the square and the triangle came together, they became a big house. Well done, Metehan, student of the week!','Als Quadrat und Dreieck zusammenkamen, wurde daraus ein großes Haus. Gut gemacht, Metehan, Schüler der Woche!','عندما اجتمع المربع والمثلث صارا بيتاً كبيراً. أحسنت يا ميتهان، يا تلميذ الأسبوع!','Dema çargoşe û sêgoşe gihîştin hev, bûn xaniyekî mezin. Aferin Metehan, xwendekarê hefteyê!'],
+  s:['met','Şekillerle her şeyi yapabiliriz!','We can make anything with shapes!','Mit Formen können wir alles bauen!','يمكننا أن نصنع أي شيء بالأشكال!','Em dikarin bi şeklan her tiştî çêkin!']}],
+ quiz:[
+  [['Metehan bu hafta ne seçildi?','What was Metehan chosen as this week?','Wozu wurde Metehan diese Woche gewählt?','ماذا اختير ميتهان هذا الأسبوع؟','Metehan vê hefteyê wek çi hat hilbijartin?'],0,[['⭐','Haftanın öğrencisi','Student of the week','Schüler der Woche','تلميذ الأسبوع','Xwendekarê hefteyê'],['🚒','İtfaiyeci','Firefighter','Feuerwehrmann','رجل إطفاء','Agirkuj'],['👨‍🍳','Aşçı','Cook','Koch','طبّاخ','Aşpêj']]],
+  [['Hangisi daire şeklindedir?','Which one is shaped like a circle?','Was hat die Form eines Kreises?','أيّها على شكل دائرة؟','Kîjan bi şeklê xelekê ye?'],2,[['📘','Kitap','A book','Ein Buch','الكتاب','Pirtûk'],['🔺','Üçgen','A triangle','Ein Dreieck','المثلث','Sêgoşe'],['☀️','Güneş','The sun','Die Sonne','الشمس','Roj']]],
+  [['Karenin kaç köşesi vardır?','How many corners does a square have?','Wie viele Ecken hat ein Quadrat?','كم زاوية للمربع؟','Çargoşe çend goşe hene?'],1,[['3️⃣','Üç','Three','Drei','ثلاث','Sê'],['4️⃣','Dört','Four','Vier','أربع','Çar'],['5️⃣','Beş','Five','Fünf','خمس','Pênc']]],
+  [['Kare ile üçgen birleşince ne oldu?','What did the square and the triangle become?','Was wurde aus dem Quadrat und dem Dreieck?','ماذا صار المربع والمثلث؟','Çargoşe û sêgoşe bûn çi?'],1,[['🚗','Araba','A car','Ein Auto','سيارة','Erebe'],['🏠','Ev','A house','Ein Haus','بيت','Xanî'],['🐟','Balık','A fish','Ein Fisch','سمكة','Masî']]]]});
+
+STORIES.push({lv:0,icon:IC.umbrella,values:['Yardımseverlik','Merhamet'],
+ t:['Şemsiyeli Ela','Ela and the Umbrella','Ela und der Regenschirm','إيلا والمظلة','Ela û Sîwan'],
+ note:{d:'Yardımseverlik, merhamet',b:'Empati kurma, duyguları tanıma, hava olaylarını gözlemleme',e:'Sınıfta “iyilik şemsiyesi” panosu: her çocuk yaptığı bir iyiliği yağmur damlasına çizip şemsiyenin altına assın.'},
  scenes:[
  {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),P.house('h',190,760,1),P.cloud('c1',700,150,1.3),P.cloud('c2',1150,120,1),P.tree('t',1260,760,1)],chars:{ela:{carryTo:540,face:1,acc:['umbrella'],pose:'hold'}},
-  narr:{tr:'Ela okula giderken gökyüzünü bulutlar kapladı.',en:'As Ela walked to school, clouds covered the sky.',de:'Als Ela zur Schule ging, bedeckten Wolken den Himmel.',ar:'بينما كانت إيلا ذاهبة إلى المدرسة، غطّت الغيوم السماء.'},
-  say:{who:'ela',tr:'Neyse ki şemsiyem yanımda!',en:'Luckily I have my umbrella!',de:'Zum Glück habe ich meinen Regenschirm!',ar:'لحسن الحظ، مظلتي معي!'}},
+  n:['Ela okula giderken gökyüzünü bulutlar kapladı.','As Ela walked to school, clouds covered the sky.','Als Ela zur Schule ging, bedeckten Wolken den Himmel.','بينما كانت إيلا ذاهبة إلى المدرسة، غطّت الغيوم السماء.','Dema Ela diçû dibistanê, ewran ezman girt.'],
+  s:['ela','Neyse ki şemsiyem yanımda!','Luckily I have my umbrella!','Zum Glück habe ich meinen Regenschirm!','لحسن الحظ، مظلتي معي!','Baş e ku sîwana min bi min re ye!']},
  {props:[P.rain('rain',80,1520,230,700),P.kitten('kit',1225,760)],chars:{},
-  narr:{tr:'Yağmur başladı. Ağacın altında küçük bir kedi titriyordu.',en:'The rain began. Under a tree, a little kitten was shivering.',de:'Der Regen begann. Unter einem Baum zitterte ein kleines Kätzchen.',ar:'بدأ المطر. تحت شجرة، كانت قطة صغيرة ترتجف.'},
-  say:{who:'ela',tr:'Zavallı yavru, çok üşümüşsün!',en:'Poor little one, you are so cold!',de:'Du armes Kleines, dir ist so kalt!',ar:'يا صغيرتي المسكينة، أنتِ تشعرين بالبرد!'}},
+  n:['Yağmur başladı. Ağacın altında küçük bir kedi titriyordu.','The rain began. Under a tree, a little kitten was shivering.','Der Regen begann. Unter einem Baum zitterte ein kleines Kätzchen.','بدأ المطر. تحت شجرة، كانت قطة صغيرة ترتجف.','Baran dest pê kir. Li bin darê pisîkeke biçûk dilerizî.'],
+  s:['ela','Zavallı yavru, çok üşümüşsün!','Poor little one, you are so cold!','Du armes Kleines, dir ist so kalt!','يا صغيرتي المسكينة، أنتِ تشعرين بالبرد!','Pisîka belengaz, tu gelek sar bûyî!']},
  {walkFirst:1,props:[P.heart('h1',1215,640,.9)],chars:{ela:{walk:[[1080,760]],face:1,acc:['umbrella','share']}},
-  narr:{tr:'Ela şemsiyesini kediyle paylaştı.',en:'Ela shared her umbrella with the kitten.',de:'Ela teilte ihren Regenschirm mit dem Kätzchen.',ar:'شاركت إيلا مظلتها مع القطة.'},
-  say:{who:'ela',tr:'Gel, birlikte ıslanmayız.',en:'Come, together we will stay dry.',de:'Komm, zusammen bleiben wir trocken.',ar:'تعالي، معاً لن نبتلّ.'}},
+  n:['Ela şemsiyesini kediyle paylaştı.','Ela shared her umbrella with the kitten.','Ela teilte ihren Regenschirm mit dem Kätzchen.','شاركت إيلا مظلتها مع القطة.','Ela sîwana xwe bi pisîkê re parve kir.'],
+  s:['ela','Gel, birlikte ıslanmayız.','Come, together we will stay dry.','Komm, zusammen bleiben wir trocken.','تعالي، معاً لن نبتلّ.','Were, em bi hev re şil nabin.']},
  {remove:['rain','h1'],props:[P.rainbow('rb',720,760,420),P.sun('sun',1450,150,55)],anims:{kit:'bounce'},chars:{ela:{acc:[],pose:null,act:'wave'}},
-  narr:{tr:'Yağmur dindi, gökkuşağı çıktı. İyilik paylaştıkça çoğalır.',en:'The rain stopped and a rainbow appeared. Kindness grows when we share it.',de:'Der Regen hörte auf und ein Regenbogen erschien. Güte wächst, wenn wir sie teilen.',ar:'توقّف المطر وظهر قوس قزح. اللطف يكبر عندما نتشاركه.'},
-  say:{who:'ela',tr:'Kedicik, artık arkadaşız!',en:'Kitty, now we are friends!',de:'Kätzchen, jetzt sind wir Freunde!',ar:'يا قطتي، الآن نحن صديقتان!'}}],
- quiz:{q:{tr:'Ela kediyi görünce ne yaptı?',en:'What did Ela do when she saw the kitten?',de:'Was tat Ela, als sie das Kätzchen sah?',ar:'ماذا فعلت إيلا عندما رأت القطة؟'},a:0,
-  o:[{e:'🌂',tr:'Şemsiyesini paylaştı',en:'She shared her umbrella',de:'Sie teilte ihren Schirm',ar:'شاركتها مظلتها'},{e:'🏃',tr:'Koşarak uzaklaştı',en:'She ran away',de:'Sie lief weg',ar:'هربت بعيداً'},{e:'🙈',tr:'Görmezden geldi',en:'She ignored it',de:'Sie beachtete es nicht',ar:'تجاهلتها'}]}},
-{icon:IC.sprout,values:['Sorumluluk','Sabır','Doğa sevgisi'],
- title:{tr:'Minik Tohum',en:'The Tiny Seed',de:'Der winzige Samen',ar:'البذرة الصغيرة'},
- note:{kademe:'Okul öncesi – 4. sınıf',degerler:'Sorumluluk, sabır, doğa sevgisi',beceri:'Gözlem yapma, canlıların ihtiyaçlarını tanıma, neden–sonuç ilişkisi kurma',sorular:['Tohum büyümek için nelere ihtiyaç duydu?','Filiz çıkana kadar Can ne yaptı?','Ağaç hangi canlılara yuva oldu?'],etkinlik:'Pamukta ya da saksıda fasulye ekip bir hafta boyunca gözlem günlüğüne çizim yapın.'},
+  n:['Yağmur dindi, gökkuşağı çıktı. İyilik paylaştıkça çoğalır.','The rain stopped and a rainbow appeared. Kindness grows when we share it.','Der Regen hörte auf und ein Regenbogen erschien. Güte wächst, wenn wir sie teilen.','توقّف المطر وظهر قوس قزح. اللطف يكبر عندما نتشاركه.','Baran sekinî û keskesor derket. Qencî dema parve dibe zêde dibe.'],
+  s:['ela','Kedicik, artık arkadaşız!','Kitty, now we are friends!','Kätzchen, jetzt sind wir Freunde!','يا قطتي، الآن نحن صديقتان!','Pisîkê, êdî em heval in!']}],
+ quiz:[
+  [['Ela kediyi görünce ne yaptı?','What did Ela do when she saw the kitten?','Was tat Ela, als sie das Kätzchen sah?','ماذا فعلت إيلا عندما رأت القطة؟','Dema Ela pisîk dît, çi kir?'],0,[['🌂','Şemsiyesini paylaştı','She shared her umbrella','Sie teilte ihren Schirm','شاركتها مظلتها','Sîwana xwe parve kir'],['🏃','Koşarak uzaklaştı','She ran away','Sie lief weg','هربت بعيداً','Reviya'],['🙈','Görmezden geldi','She ignored it','Sie beachtete es nicht','تجاهلتها','Guh neda']]],
+  [['Kedicik nerede titriyordu?','Where was the kitten shivering?','Wo zitterte das Kätzchen?','أين كانت القطة ترتجف؟','Pisîk li ku dilerizî?'],1,[['🏠','Evin içinde','Inside the house','Im Haus','داخل البيت','Di hundirê xênî de'],['🌳','Ağacın altında','Under a tree','Unter einem Baum','تحت شجرة','Li bin darê'],['🚗','Arabada','In a car','Im Auto','في السيارة','Di erebeyê de']]],
+  [['Yağmur dinince gökyüzünde ne çıktı?','What appeared in the sky when the rain stopped?','Was erschien am Himmel, als der Regen aufhörte?','ماذا ظهر في السماء عندما توقّف المطر؟','Dema baran sekinî, çi li ezmanan derket?'],2,[['🌙','Ay','The moon','Der Mond','القمر','Heyv'],['⛄','Kardan adam','A snowman','Ein Schneemann','رجل الثلج','Bûkabarfê'],['🌈','Gökkuşağı','A rainbow','Ein Regenbogen','قوس قزح','Keskesor']]],
+  [['Ela yardım edince kedi nasıl hissetti?','How did the kitten feel when Ela helped it?','Wie fühlte sich das Kätzchen, als Ela ihm half?','كيف شعرت القطة عندما ساعدتها إيلا؟','Dema Ela alîkariya pisîkê kir, pisîk çawa hîs kir?'],0,[['😊','Mutlu','Happy','Glücklich','سعيدة','Kêfxweş'],['😠','Kızgın','Angry','Wütend','غاضبة','Hêrs'],['😴','Uykulu','Sleepy','Müde','نعسانة','Xewar']]]]});
+
+STORIES.push({lv:0,icon:IC.sprout,values:['Sorumluluk','Sabır','Doğa sevgisi'],
+ t:['Minik Tohum','The Tiny Seed','Der winzige Samen','البذرة الصغيرة','Tovê Biçûk'],
+ note:{d:'Sorumluluk, sabır, doğa sevgisi',b:'Gözlem yapma, canlıların ihtiyaçlarını tanıma, neden–sonuç ilişkisi kurma',e:'Pamukta ya da saksıda fasulye ekip bir hafta boyunca gözlem günlüğüne çizim yapın.'},
  scenes:[
  {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.sun('sun',1380,165,60),P.cloud('c1',480,140,1),P.seed('sd',720,762)],chars:{can:{carryTo:520,face:1}},
-  narr:{tr:'Can bahçede minicik bir tohum buldu.',en:'Can found a tiny seed in the garden.',de:'Can fand im Garten einen winzigen Samen.',ar:'وجد جان بذرة صغيرة جداً في الحديقة.'},
-  say:{who:'can',tr:'Seni toprağa ekeceğim!',en:'I will plant you in the soil!',de:'Ich pflanze dich in die Erde!',ar:'سأزرعك في التراب!'}},
+  n:['Can bahçede minicik bir tohum buldu.','Can found a tiny seed in the garden.','Can fand im Garten einen winzigen Samen.','وجد جان بذرة صغيرة جداً في الحديقة.','Can di baxçe de tovekî pir biçûk dît.'],
+  s:['can','Seni toprağa ekeceğim!','I will plant you in the soil!','Ich pflanze dich in die Erde!','سأزرعك في التراب!','Ez ê te di axê de biçînim!']},
  {walkFirst:1,props:[P.drops('dr',722,630),P.sprout('sp1',720,745,1)],chars:{can:{walk:[[590,760]],face:1,acc:['water'],pose:'fwd',act:'water'}},
-  narr:{tr:'Her gün onu suladı ve güneşe baktı.',en:'Every day he watered it and watched the sun.',de:'Jeden Tag goss er ihn und schaute zur Sonne.',ar:'كان يسقيها كل يوم وينظر إلى الشمس.'},
-  say:{who:'can',tr:'Büyümek için suya ihtiyacın var.',en:'You need water to grow.',de:'Du brauchst Wasser, um zu wachsen.',ar:'تحتاجين إلى الماء لتكبري.'}},
+  n:['Her gün onu suladı ve güneşe baktı.','Every day he watered it and watched the sun.','Jeden Tag goss er ihn und schaute zur Sonne.','كان يسقيها كل يوم وينظر إلى الشمس.','Her roj wî av da wê û li rojê nêrî.'],
+  s:['can','Büyümek için suya ihtiyacın var.','You need water to grow.','Du brauchst Wasser, um zu wachsen.','تحتاجين إلى الماء لتكبري.','Ji bo mezin bibî, pêdiviya te bi avê heye.']},
  {remove:['dr','sp1'],props:[P.sprout('sp2',720,745,2),P.flower('f1',880,760,'pink'),P.flower('f2',960,762,'purple')],chars:{can:{acc:[],pose:null,act:'jump'}},
-  narr:{tr:'Günler geçti, küçük bir filiz çıktı.',en:'Days passed and a little sprout came out.',de:'Die Tage vergingen und ein kleiner Keimling kam heraus.',ar:'مرّت الأيام وخرج برعم صغير.'},
-  say:{who:'can',tr:'Merhaba minik filiz! Sabretmeye değdi.',en:'Hello, little sprout! Waiting was worth it.',de:'Hallo, kleiner Keimling! Das Warten hat sich gelohnt.',ar:'مرحباً أيها البرعم الصغير! الصبر كان يستحق.'}},
+  n:['Günler geçti, küçük bir filiz çıktı.','Days passed and a little sprout came out.','Die Tage vergingen und ein kleiner Keimling kam heraus.','مرّت الأيام وخرج برعم صغير.','Roj derbas bûn û şînahiyeke biçûk derket.'],
+  s:['can','Merhaba minik filiz! Sabretmeye değdi.','Hello, little sprout! Waiting was worth it.','Hallo, kleiner Keimling! Das Warten hat sich gelohnt.','مرحباً أيها البرعم الصغير! الصبر كان يستحق.','Silav şînahiya biçûk! Sebir hêja bû.']},
  {remove:['sp2'],props:[P.tree('tr',760,760,1.6,true),P.bird('b1',640,250),P.bird('b2',760,210)],chars:{can:{walk:[[470,760]],face:1,act:'jump'}},
-  narr:{tr:'Filiz koca bir ağaç oldu. Doğayı korumak hepimizin görevi.',en:"The sprout became a big tree. Protecting nature is everyone's duty.",de:'Aus dem Keimling wurde ein großer Baum. Die Natur zu schützen ist unser aller Aufgabe.',ar:'صار البرعم شجرة كبيرة. حماية الطبيعة واجبنا جميعاً.'},
-  say:{who:'can',tr:'Artık kuşlara da yuva oldun!',en:'Now you are a home for the birds too!',de:'Jetzt bist du auch ein Zuhause für die Vögel!',ar:'الآن صرتِ بيتاً للطيور أيضاً!'}}],
- quiz:{q:{tr:'Tohumun büyümesi için ne gerekir?',en:'What does a seed need to grow?',de:'Was braucht ein Samen zum Wachsen?',ar:'ماذا تحتاج البذرة لتنمو؟'},a:0,
-  o:[{e:'💧☀️',tr:'Su ve güneş',en:'Water and sun',de:'Wasser und Sonne',ar:'الماء والشمس'},{e:'🍬',tr:'Şeker',en:'Candy',de:'Süßigkeiten',ar:'الحلوى'},{e:'📺',tr:'Televizyon',en:'Television',de:'Fernsehen',ar:'التلفاز'}]}},
-{icon:IC.bridge,values:['Dostluk','Yardımseverlik'],
- title:{tr:'Dostluk Köprüsü',en:'The Friendship Bridge',de:'Die Freundschaftsbrücke',ar:'جسر الصداقة'},
- note:{kademe:'Okul öncesi – 4. sınıf',degerler:'Dostluk, yardımseverlik (iş birliği)',beceri:'İş birliği yapma, problem çözme, iletişim',sorular:['Can ile Ela’nın sorunu neydi?','Köprüyü tek başına yapmak kolay olur muydu?','Arkadaşınla birlikte yaptığın bir şeyi anlat.'],etkinlik:'Eşli çizim: iki çocuk kâğıdın iki ucundan başlayıp ortada buluşan bir köprü çizsin, sonra atölyede kahramanı o köprüden yürütsün.'},
+  n:['Filiz koca bir ağaç oldu. Doğayı korumak hepimizin görevi.',"The sprout became a big tree. Protecting nature is everyone's duty.",'Aus dem Keimling wurde ein großer Baum. Die Natur zu schützen ist unser aller Aufgabe.','صار البرعم شجرة كبيرة. حماية الطبيعة واجبنا جميعاً.','Şînahî bû dareke mezin. Parastina xwezayê erka me hemûyan e.'],
+  s:['can','Artık kuşlara da yuva oldun!','Now you are a home for the birds too!','Jetzt bist du auch ein Zuhause für die Vögel!','الآن صرتِ بيتاً للطيور أيضاً!','Êdî tu ji çûkan re jî bûyî hêlîn!']}],
+ quiz:[
+  [['Tohumun büyümesi için ne gerekir?','What does a seed need to grow?','Was braucht ein Samen zum Wachsen?','ماذا تحتاج البذرة لتنمو؟','Ji bo tov mezin bibe çi pêwîst e?'],0,[['💧','Su ve güneş','Water and sun','Wasser und Sonne','الماء والشمس','Av û roj'],['🍬','Şeker','Candy','Süßigkeiten','الحلوى','Şekir'],['📺','Televizyon','Television','Fernsehen','التلفاز','Televizyon']]],
+  [['Can tohumu nereye ekti?','Where did Can plant the seed?','Wohin pflanzte Can den Samen?','أين زرع جان البذرة؟','Can tov li ku çand?'],1,[['🪣','Bir kovaya','In a bucket','In einen Eimer','في دلو','Di satilekê de'],['🌱','Toprağa','In the soil','In die Erde','في التراب','Di axê de'],['👟','Ayakkabısına','In his shoe','In seinen Schuh','في حذائه','Di pêlava xwe de']]],
+  [['Tohumdan önce ne çıktı?','What came out of the seed first?','Was kam zuerst aus dem Samen?','ماذا خرج من البذرة أولاً؟','Pêşî çi ji tov derket?'],2,[['🍎','Elma','An apple','Ein Apfel','تفاحة','Sêv'],['🌳','Kocaman ağaç','A big tree','Ein großer Baum','شجرة كبيرة','Dareke mezin'],['🌱','Küçük bir filiz','A little sprout','Ein kleiner Keimling','برعم صغير','Şînahiyeke biçûk']]],
+  [['Ağaç en sonunda kimlere yuva oldu?','Who found a home in the tree at the end?','Wer fand am Ende ein Zuhause im Baum?','لمن صارت الشجرة بيتاً في النهاية؟','Di dawiyê de dar ji kê re bû hêlîn?'],0,[['🐦','Kuşlara','The birds','Die Vögel','الطيور','Çûk'],['🐟','Balıklara','The fish','Die Fische','الأسماك','Masî'],['🐄','İneklere','The cows','Die Kühe','الأبقار','Çêlek']]]]});
+
+STORIES.push({lv:0,icon:IC.hands,values:['Sağlıklı yaşam','Temizlik'],
+ t:['Temiz Eller','Clean Hands','Saubere Hände','أيدٍ نظيفة','Destên Paqij'],
+ note:{d:'Sağlıklı yaşam, temizlik',b:'Öz bakım becerileri, sağlıklı yaşam alışkanlığı, sayma (1–20)',e:'Lavaboda yirmiye kadar birlikte sayarak el yıkayın; ellere biraz sim sürüp sabunla yıkayarak “mikrop” deneyi yapın.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.tree('t',1300,760,1.1),P.sun('sun',230,160,55),P.mud('mud',690,760),P.circle('ball',860,736,24,'orange')],chars:{can:{carryTo:430,face:1,walk:[[660,760]],act:'jump'}},
+  n:['Can parkta top oynarken elleri çamur oldu.',"While Can was playing ball in the park, his hands got muddy.",'Als Can im Park Ball spielte, wurden seine Hände schmutzig.','بينما كان جان يلعب بالكرة في الحديقة، اتّسخت يداه بالطين.','Dema Can li parkê bi topê dilîst, destên wî bi herî bûn.'],
+  s:['can','Acıktım! Hemen bir elma yiyeyim.',"I'm hungry! Let me eat an apple right away.",'Ich habe Hunger! Ich esse gleich einen Apfel.','أنا جائع! سآكل تفاحة الآن.','Ez birçî me! Ez ê niha sêvekê bixwim.']},
+ {props:[P.germ('g1',770,590),P.germ('g2',830,665)],chars:{},
+  n:['Ama kirli ellerde gözle göremediğimiz mikroplar vardı!','But there were germs on his dirty hands that we cannot see!','Aber an den schmutzigen Händen waren Keime, die wir nicht sehen können!','لكن على يديه المتّسختين جراثيم لا نراها بأعيننا!','Lê li ser destên qirêj mîkrobên ku em nabînin hebûn!'],
+  s:['can','Eyvah! Önce ellerimi yıkamalıyım.','Oh no! I must wash my hands first.','Oh nein! Zuerst muss ich meine Hände waschen.','يا إلهي! يجب أن أغسل يديّ أولاً.','Wey! Divê pêşî ez destên xwe bişom.']},
+ {remove:['g1','g2'],walkFirst:1,props:[P.sink('sk',1000,620),P.stream('st',996,560),P.bubbles('bu',960,540)],chars:{can:{walk:[[880,760]],face:1,act:'wave'}},
+  n:['Can sabunla ellerini köpük köpük yıkadı, tam yirmi saniye.','Can washed his hands with lots of soapy bubbles, for twenty whole seconds.','Can wusch seine Hände mit viel Seifenschaum, ganze zwanzig Sekunden lang.','غسل جان يديه بالصابون والرغوة الكثيرة، عشرين ثانية كاملة.','Can bi sabûnê destên xwe bi kefeke zêde şuştin, tam bîst çirkeyan.'],
+  s:['can','Bir, iki, üç… Köpükler mikropları kaçırıyor!','One, two, three… The bubbles chase the germs away!','Eins, zwei, drei… Der Schaum vertreibt die Keime!','واحد، اثنان، ثلاثة… الرغوة تطرد الجراثيم!','Yek, du, sê… Kef mîkroban direvîne!']},
+ {remove:['st','bu'],props:[P.apple('ap',640,600),P.heart('h1',560,430,.9),P.star('s1',420,300,.8),P.star('s2',760,280,.8)],chars:{can:{walk:[[580,760]],face:1,act:'jump'}},
+  n:['Tertemiz ellerle yediği elma çok lezzetliydi. Temizlik sağlığın anahtarıdır.','The apple he ate with clean hands was delicious. Cleanliness is the key to health.','Der Apfel, den er mit sauberen Händen aß, schmeckte köstlich. Sauberkeit ist der Schlüssel zur Gesundheit.','كانت التفاحة التي أكلها بيدين نظيفتين لذيذة جداً. النظافة مفتاح الصحة.','Sêva ku wî bi destên paqij xwar gelek xweş bû. Paqijî mifteya tenduristiyê ye.'],
+  s:['can','Mmm! Temiz eller, mutlu karın!','Yum! Clean hands, happy tummy!','Mmm! Saubere Hände, glücklicher Bauch!','ممم! أيدٍ نظيفة، بطن سعيد!','Mmm! Destên paqij, zikê kêfxweş!']}],
+ quiz:[
+  [['Can’ın elleri neden kirlendi?',"Why did Can's hands get dirty?",'Warum wurden Cans Hände schmutzig?','لماذا اتّسخت يدا جان؟','Çima destên Can qirêj bûn?'],0,[['⚽','Parkta oynarken','Playing in the park','Beim Spielen im Park','أثناء اللعب في الحديقة','Dema li parkê dilîst'],['📺','Televizyon izlerken','Watching TV','Beim Fernsehen','أثناء مشاهدة التلفاز','Dema li televizyonê temaşe dikir'],['🛏️','Uyurken','While sleeping','Beim Schlafen','أثناء النوم','Dema radiza']]],
+  [['Ellerimizi kaç saniye yıkamalıyız?','For how many seconds should we wash our hands?','Wie viele Sekunden sollen wir die Hände waschen?','كم ثانية يجب أن نغسل أيدينا؟','Divê em çend çirkeyan destên xwe bişon?'],1,[['⚡','İki saniye','Two seconds','Zwei Sekunden','ثانيتين','Du çirkeyan'],['⏱️','Yirmi saniye','Twenty seconds','Zwanzig Sekunden','عشرين ثانية','Bîst çirkeyan'],['🚫','Hiç yıkamayız',"We don't wash them",'Gar nicht','لا نغسلها','Em qet naşon']]],
+  [['Mikropları ne kaçırdı?','What chased the germs away?','Was vertrieb die Keime?','ما الذي طرد الجراثيم؟','Çi mîkrob revandin?'],2,[['🍭','Şeker','Candy','Süßigkeiten','الحلوى','Şekir'],['🎈','Balon','A balloon','Ein Ballon','بالون','Balon'],['🧼','Sabun köpüğü','Soap bubbles','Seifenschaum','رغوة الصابون','Kefa sabûnê']]],
+  [['Ellerimizi ne zaman yıkarız?','When do we wash our hands?','Wann waschen wir unsere Hände?','متى نغسل أيدينا؟','Em kengî destên xwe dişon?'],0,[['🍎','Yemekten önce','Before eating','Vor dem Essen','قبل الأكل','Berî xwarinê'],['🎵','Şarkı dinlerken','While listening to songs','Beim Musikhören','أثناء سماع الأغاني','Dema li stranan guhdarî dikin'],['🌙','Sadece bayramda','Only on holidays','Nur an Feiertagen','في الأعياد فقط','Tenê di cejnan de']]]]});
+/* ---------- 1. SINIF ---------- */
+STORIES.push({lv:1,icon:IC.mountain,values:['Sabır','Çalışkanlık'],
+ t:['Zirveye Giden Yol','The Road to the Top','Der Weg zum Gipfel','الطريق إلى القمة','Rêya Serê Çiyê'],
+ note:{d:'Sabır, çalışkanlık',b:'Dinleme ve anlama, olayları sıraya koyma (önce–sonra), azim',e:'Çizim atölyesinde çocuklar kendi basamaklı yollarını çizsin; kahramanı o yolda yürütüp adım adım sayarak ilerlesin.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.mountain('m',1100,760,800,500),P.sun('sun',230,165,58),P.cloud('c1',620,150,1)],chars:{can:{carryTo:430,face:1}},
+  n:['Can, kocaman bir dağın eteğine geldi.','Can came to the foot of a huge mountain.','Can kam an den Fuß eines riesigen Berges.','وصل جان إلى سفح جبل كبير.','Can gihîşt binê çiyayekî mezin.'],
+  s:['can','Zirveye çıkmak istiyorum! Ama yol yok…','I want to reach the top! But there is no road…','Ich will auf den Gipfel! Aber es gibt keinen Weg…','أريد أن أصل إلى القمة! لكن لا يوجد طريق…','Ez dixwazim derkevim serê çiyê! Lê rê tune…']},
+ {props:[P.stairs('s1',1,4)],chars:{can:{walk:[[700,760],...stairWalk(1,4)],face:1}},
+  n:['Kalem ona bir basamak çizdi. Sonra bir tane daha.','The pencil drew him a step. Then another one.','Der Stift malte ihm eine Stufe. Dann noch eine.','رسم القلم له درجة. ثم درجة أخرى.','Pênûsê pêlikek jê re xêz kir. Paşê yeke din.'],
+  s:['can','Adım adım gidersem başarırım!','If I go step by step, I will make it!','Schritt für Schritt schaffe ich es!','إذا مشيت خطوة خطوة، سأنجح!','Ger ez gav bi gav biçim, ez ê bi ser bikevim!']},
+ {props:[P.stairs('s2',5,7),P.cloud('c2',1350,170,.8)],chars:{can:{walk:stairWalk(5,7),face:1,act:'tired',acc:['sweat']}},
+  n:['Yol uzundu. Can yoruldu ama vazgeçmedi.','The road was long. Can got tired, but he did not give up.','Der Weg war lang. Can wurde müde, aber er gab nicht auf.','كان الطريق طويلاً. تعب جان لكنه لم يستسلم.','Rê dirêj bû. Can westiya lê dev jê berneda.'],
+  s:['can','Biraz dinlenip yeniden deneyeceğim.','I will rest a little and try again.','Ich ruhe mich kurz aus und versuche es noch einmal.','سأرتاح قليلاً ثم أحاول من جديد.','Ez ê hinekî bêhna xwe vedim û dîsa biceribînim.']},
+ {props:[P.stairs('s3',8,10),P.flag('fl',1140,310),P.star('st1',960,190,1),P.star('st2',1280,140,.8),P.star('st3',1420,250,1)],chars:{can:{walk:stairWalk(8,10),face:1,act:'jump',acc:[]}},
+  n:['Sonunda zirvedeydi! Sabırla çalışan her yolu bulur.','At last he was at the top! Whoever works with patience finds a way.','Endlich war er oben! Wer geduldig arbeitet, findet einen Weg.','وأخيراً وصل إلى القمة! من يعمل بصبر يجد طريقه.','Di dawiyê de ew li serê çiyê bû! Yê ku bi sebir dixebite rêyekê dibîne.'],
+  s:['can','Yaşasın! Başardım!','Hooray! I did it!','Hurra! Ich habe es geschafft!','مرحى! لقد نجحت!','Bijî! Min ew kir!']}],
+ quiz:[
+  [['Can yorulunca ne yaptı?','What did Can do when he got tired?','Was tat Can, als er müde war?','ماذا فعل جان عندما تعب؟','Dema Can westiya çi kir?'],1,[['🏠','Eve döndü','He went home','Er ging nach Hause','عاد إلى البيت','Vegeriya malê'],['😌','Dinlenip yeniden denedi','He rested and tried again','Er ruhte sich aus und versuchte es wieder','ارتاح ثم حاول من جديد','Bêhna xwe veda û dîsa ceriband'],['😢','Ağladı ve bıraktı','He cried and quit','Er weinte und gab auf','بكى واستسلم','Giriya û dev jê berda']]],
+  [['Kalem Can’a ne çizdi?','What did the pencil draw for Can?','Was malte der Stift für Can?','ماذا رسم القلم لجان؟','Pênûsê ji Can re çi xêz kir?'],1,[['🚲','Bisiklet','A bicycle','Ein Fahrrad','دراجة','Duçerxe'],['🪜','Basamaklar','Steps','Stufen','درجات','Pêlik'],['🎈','Balon','A balloon','Einen Ballon','بالون','Balon']]],
+  [['Can zirveye ulaşınca ne yaptı?','What did Can do when he reached the top?','Was tat Can, als er oben ankam?','ماذا فعل جان عندما وصل إلى القمة؟','Dema Can gihîşt serê çiyê çi kir?'],0,[['🎉','Sevinçle zıpladı','He jumped with joy','Er sprang vor Freude','قفز فرحاً','Bi şahî banz da'],['😴','Uyudu','He slept','Er schlief','نام','Raza'],['😢','Ağladı','He cried','Er weinte','بكى','Giriya']]],
+  [['Bu hikâye bize ne öğretiyor?','What does this story teach us?','Was lehrt uns diese Geschichte?','ماذا تعلّمنا هذه القصة؟','Ev çîrok çi hînî me dike?'],2,[['🏃','Hep acele etmeyi','To always hurry','Immer zu eilen','أن نستعجل دائماً','Her tim lez bikin'],['🙈','Zor işlerden kaçmayı','To run from hard work','Vor schwerer Arbeit wegzulaufen','أن نهرب من الأعمال الصعبة','Ji karên dijwar birevin'],['🧗','Sabırla çalışmayı','To work with patience','Geduldig zu arbeiten','أن نعمل بصبر','Bi sebir bixebitin']]]]});
+
+STORIES.push({lv:1,icon:IC.bridge,values:['Dostluk','Yardımseverlik'],
+ t:['Dostluk Köprüsü','The Friendship Bridge','Die Freundschaftsbrücke','جسر الصداقة','Pira Hevaltiyê'],
+ note:{d:'Dostluk, yardımseverlik (iş birliği)',b:'İş birliği yapma, problem çözme, iletişim',e:'Eşli çizim: iki çocuk kâğıdın iki ucundan başlayıp ortada buluşan bir köprü çizsin, sonra atölyede kahramanı o köprüden yürütsün.'},
  scenes:[
  {clear:1,carry:'can',props:[P.ground('gl',40,640,760),P.river('rv',630,970,770),P.ground('gr',960,1560,760),P.sun('sun',800,150,55),P.cloud('c1',400,160,1),P.cloud('c2',1250,140,.9)],chars:{can:{carryTo:500,face:1},ela:{at:[1110,760],face:-1}},
-  narr:{tr:'Can ve Ela nehrin iki yakasında kalmıştı.',en:'Can and Ela were on the two sides of a river.',de:'Can und Ela standen auf den beiden Seiten eines Flusses.',ar:'كان جان وإيلا على ضفتي نهر.'},
-  say:{who:'can',tr:'Ela! Sana nasıl ulaşabilirim?',en:'Ela! How can I reach you?',de:'Ela! Wie komme ich zu dir?',ar:'إيلا! كيف أصل إليكِ؟'}},
+  n:['Can ve Ela nehrin iki yakasında kalmıştı.','Can and Ela were on the two sides of a river.','Can und Ela standen auf den beiden Seiten eines Flusses.','كان جان وإيلا على ضفتي نهر.','Can û Ela li her du aliyên çemekî mabûn.'],
+  s:['can','Ela! Sana nasıl ulaşabilirim?','Ela! How can I reach you?','Ela! Wie komme ich zu dir?','إيلا! كيف أصل إليكِ؟','Ela! Ez çawa dikarim bigihîjim te?']},
  {props:[P.bulb('bl',1140,440)],chars:{ela:{act:'jump'}},
-  narr:{tr:'Ela bir fikir buldu: Birlikte bir köprü çizelim!',en:"Ela had an idea: Let's draw a bridge together!",de:'Ela hatte eine Idee: Lass uns zusammen eine Brücke malen!',ar:'خطرت لإيلا فكرة: لنرسم جسراً معاً!'},
-  say:{who:'ela',tr:'Sen bir yandan, ben bir yandan!',en:'You from one side, me from the other!',de:'Du von der einen Seite, ich von der anderen!',ar:'أنت من جهة، وأنا من الجهة الأخرى!'}},
+  n:['Ela bir fikir buldu: Birlikte bir köprü çizelim!',"Ela had an idea: Let's draw a bridge together!",'Ela hatte eine Idee: Lass uns zusammen eine Brücke malen!','خطرت لإيلا فكرة: لنرسم جسراً معاً!','Ela ramanek dît: Werin em bi hev re pirekê xêz bikin!'],
+  s:['ela','Sen bir yandan, ben bir yandan!','You from one side, me from the other!','Du von der einen Seite, ich von der anderen!','أنت من جهة، وأنا من الجهة الأخرى!','Tu ji aliyekî, ez ji aliyê din!']},
  {remove:['bl'],props:[...[0,6,1,5,2,4,3].map(i=>P.plank('p'+i,640+i*46,752)),P.rail('rl',640,962,690)],chars:{can:{act:'wave'},ela:{act:'wave'}},
-  narr:{tr:'Tahtalar birer birer yan yana dizildi.',en:'The planks were placed side by side, one by one.',de:'Die Bretter wurden eins nach dem anderen nebeneinandergelegt.',ar:'وُضعت الألواح جنباً إلى جنب، واحداً تلو الآخر.'},
-  say:{who:'can',tr:'Birlikte olunca her şey daha kolay!',en:'Everything is easier when we are together!',de:'Zusammen ist alles leichter!',ar:'كل شيء أسهل عندما نكون معاً!'}},
+  n:['Tahtalar birer birer yan yana dizildi.','The planks were placed side by side, one by one.','Die Bretter wurden eins nach dem anderen nebeneinandergelegt.','وُضعت الألواح جنباً إلى جنب، واحداً تلو الآخر.','Text yek bi yek li kêleka hev hatin rêzkirin.'],
+  s:['can','Birlikte olunca her şey daha kolay!','Everything is easier when we are together!','Zusammen ist alles leichter!','كل شيء أسهل عندما نكون معاً!','Dema em bi hev re ne, her tişt hêsantir e!']},
  {walkFirst:1,props:[P.heart('h1',800,430,1.2),P.star('s1',680,420,.9),P.star('s2',920,410,.9)],chars:{can:{walk:[[640,752],[770,752]],face:1,act:'jump'},ela:{walk:[[960,752],[830,752]],face:-1,act:'jump'}},
-  narr:{tr:'Köprünün ortasında buluştular. Dostluk, en sağlam köprüdür.',en:'They met in the middle of the bridge. Friendship is the strongest bridge.',de:'Sie trafen sich in der Mitte der Brücke. Freundschaft ist die stärkste Brücke.',ar:'التقيا في منتصف الجسر. الصداقة أقوى جسر.'},
-  say:{who:'ela',tr:'Dostum, iyi ki varsın!',en:"My friend, I'm so glad you're here!",de:'Mein Freund, wie schön, dass es dich gibt!',ar:'يا صديقي، أنا سعيدة بوجودك!'}}],
- quiz:{q:{tr:'Can ve Ela köprüyü nasıl yaptı?',en:'How did Can and Ela build the bridge?',de:'Wie bauten Can und Ela die Brücke?',ar:'كيف بنى جان وإيلا الجسر؟'},a:0,
-  o:[{e:'🤝',tr:'Birlikte çalışarak',en:'By working together',de:'Indem sie zusammenarbeiteten',ar:'بالعمل معاً'},{e:'😠',tr:'Kavga ederek',en:'By fighting',de:'Indem sie stritten',ar:'بالشجار'},{e:'😴',tr:'Uyuyarak',en:'By sleeping',de:'Indem sie schliefen',ar:'بالنوم'}]}}
-];
-const PRAISE={tr:'Harikasın! Doğru cevap!',en:"Great job! That's right!",de:'Super! Das ist richtig!',ar:'أحسنت! إجابة صحيحة!'};
-const RETRY={tr:'Bir daha düşünelim!',en:"Let's think again!",de:'Denk noch einmal nach!',ar:'لنفكّر مرة أخرى!'};
-const HERO_LINE={tr:'Yuppi! Çizdiğin yol harika!',en:'Yippee! Your road is amazing!',de:'Juhu! Dein Weg ist toll!',ar:'رائع! الطريق الذي رسمته مدهش!'};
-const LANGS={tr:{code:'tr-TR',name:'Türkçe'},en:{code:'en-US',name:'İngilizce'},de:{code:'de-DE',name:'Almanca'},ar:{code:'ar-SA',name:'Arapça',rtl:1}};
-const cur={story:0,scene:0};const story=()=>STORIES[cur.story];
+  n:['Köprünün ortasında buluştular. Dostluk, en sağlam köprüdür.','They met in the middle of the bridge. Friendship is the strongest bridge.','Sie trafen sich in der Mitte der Brücke. Freundschaft ist die stärkste Brücke.','التقيا في منتصف الجسر. الصداقة أقوى جسر.','Ew li nîvê pirê gihîştin hev. Hevaltî pira herî xurt e.'],
+  s:['ela','Dostum, iyi ki varsın!',"My friend, I'm so glad you're here!",'Mein Freund, wie schön, dass es dich gibt!','يا صديقي، أنا سعيدة بوجودك!','Hevalê min, baş e ku tu heyî!']}],
+ quiz:[
+  [['Can ve Ela’nın sorunu neydi?',"What was Can and Ela's problem?",'Was war das Problem von Can und Ela?','ما كانت مشكلة جان وإيلا؟','Pirsgirêka Can û Ela çi bû?'],1,[['🌧️','Yağmurda ıslandılar','They got wet in the rain','Sie wurden im Regen nass','تبلّلا بالمطر','Di baranê de şil bûn'],['🌊','Nehrin iki yakasındaydılar','They were on two sides of a river','Sie waren auf zwei Seiten eines Flusses','كانا على ضفتي نهر','Li her du aliyên çem bûn'],['🍰','Pastaları bitti','Their cake ran out','Ihr Kuchen war alle','نفدت كعكتهما','Keka wan xelas bû']]],
+  [['Köprü fikrini kim buldu?','Who had the bridge idea?','Wer hatte die Brücken-Idee?','من خطرت له فكرة الجسر؟','Ramana pirê kê dît?'],1,[['👦','Can','Can','Can','جان','Can'],['👧','Ela','Ela','Ela','إيلا','Ela'],['🐱','Kedi','The cat','Die Katze','القطة','Pisîk']]],
+  [['Can ve Ela köprüyü nasıl yaptı?','How did Can and Ela build the bridge?','Wie bauten Can und Ela die Brücke?','كيف بنى جان وإيلا الجسر؟','Can û Ela pir çawa çêkirin?'],0,[['🤝','Birlikte çalışarak','By working together','Indem sie zusammenarbeiteten','بالعمل معاً','Bi hev re xebitîn'],['😠','Kavga ederek','By fighting','Indem sie stritten','بالشجار','Bi şer'],['😴','Uyuyarak','By sleeping','Indem sie schliefen','بالنوم','Bi xewê']]],
+  [['Köprünün ortasında ne oldu?','What happened in the middle of the bridge?','Was geschah in der Mitte der Brücke?','ماذا حدث في منتصف الجسر؟','Li nîvê pirê çi qewimî?'],2,[['💦','Suya düştüler','They fell in the water','Sie fielen ins Wasser','سقطا في الماء','Ketin avê'],['🏃','Kaçtılar','They ran away','Sie liefen weg','هربا','Revîn'],['🤗','Buluştular','They met','Sie trafen sich','التقيا','Gihîştin hev']]]]});
+
+STORIES.push({lv:1,icon:IC.book,values:['Dürüstlük','Saygı'],
+ t:['Kayıp Kitap','The Lost Book','Das verlorene Buch','الكتاب الضائع','Pirtûka Winda'],
+ note:{d:'Dürüstlük, saygı',b:'Doğru–yanlış davranışı ayırt etme, başkasının eşyasına saygı, empati',e:'Sınıfta “kayıp eşya kutusu” oluşturun; bulunan eşyayı sahibine ulaştıran çocuğa dürüstlük yıldızı verin.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.school('sc',1250,760),P.tree('t',180,760,.9),P.book('bk',700,752)],chars:{can:{carryTo:420,face:1,walk:[[640,760]]}},
+  n:['Teneffüste Can, okul bahçesinde yerde bir kitap buldu.','At break time, Can found a book on the ground in the schoolyard.','In der Pause fand Can auf dem Schulhof ein Buch auf dem Boden.','في الاستراحة، وجد جان كتاباً على الأرض في ساحة المدرسة.','Di bêhnvedanê de, Can li hewşa dibistanê pirtûkek li erdê dît.'],
+  s:['can','Ne güzel bir masal kitabı! Üstünde bir isim yazıyor: Ela.','What a lovely storybook! There is a name on it: Ela.','Was für ein schönes Märchenbuch! Da steht ein Name drauf: Ela.','يا له من كتاب قصص جميل! عليه اسم: إيلا.','Çi pirtûkeke çîrokan a xweş! Navek li ser e: Ela.']},
+ {take:['bk'],props:[P.thought('th',470,380)],chars:{can:{acc:['book'],pose:'fwd'}},
+  n:['Can bir an düşündü. Kitap çok güzeldi ama onun değildi.',"Can thought for a moment. The book was very nice, but it wasn't his.",'Can dachte kurz nach. Das Buch war sehr schön, aber es gehörte ihm nicht.','فكّر جان لحظة. كان الكتاب جميلاً جداً، لكنه لم يكن له.','Can ji bo demekê fikirî. Pirtûk gelek xweş bû, lê ya wî nebû.'],
+  s:['can','Başkasının eşyası bizim olmaz. Onu sahibine vermeliyim!',"Someone else's things are not ours. I must give it back to its owner!",'Was anderen gehört, gehört nicht uns. Ich muss es zurückgeben!','أغراض الآخرين ليست لنا. يجب أن أعيده إلى صاحبته!','Tiştên kesên din ne yên me ne. Divê ez wê bidim xwediya wê!']},
+ {remove:['th'],walkFirst:1,props:[],chars:{ela:{at:[1060,760],face:-1},can:{walk:[[900,760]],face:1}},
+  n:['Ela ağlıyordu, en sevdiği kitabını kaybetmişti. Can hemen yanına gitti.','Ela was crying; she had lost her favorite book. Can went straight to her.','Ela weinte, sie hatte ihr Lieblingsbuch verloren. Can ging sofort zu ihr.','كانت إيلا تبكي، فقد أضاعت كتابها المفضّل. ذهب جان إليها فوراً.','Ela digiriya, wê pirtûka xwe ya herî delal winda kiribû. Can tavilê çû cem wê.'],
+  s:['can','Ela, bu kitap senin mi? Bahçede buldum.','Ela, is this your book? I found it in the yard.','Ela, ist das dein Buch? Ich habe es auf dem Hof gefunden.','إيلا، هل هذا كتابك؟ وجدته في الساحة.','Ela, ev pirtûka te ye? Min ew li hewşê dît.']},
+ {props:[P.heart('h1',980,440,1),P.star('s1',820,400,.8),P.star('s2',1150,380,.8)],chars:{can:{acc:[],pose:null,act:'wave'},ela:{acc:['book'],pose:'fwd',act:'jump'}},
+  n:['Ela çok sevindi. Dürüst olmak, herkesin yüzünü güldürür.','Ela was very happy. Being honest makes everyone smile.','Ela freute sich sehr. Ehrlich zu sein bringt alle zum Lächeln.','فرحت إيلا كثيراً. الصدق يرسم البسمة على وجوه الجميع.','Ela gelek kêfxweş bû. Rastgoyî her kesî dikenîne.'],
+  s:['ela','Teşekkürler Can! Sen gerçek bir dostsun.','Thank you, Can! You are a true friend.','Danke, Can! Du bist ein echter Freund.','شكراً يا جان! أنت صديق حقيقي.','Spas Can! Tu hevalekî rastîn î.']}],
+ quiz:[
+  [['Can kitabı nerede buldu?','Where did Can find the book?','Wo fand Can das Buch?','أين وجد جان الكتاب؟','Can pirtûk li ku dît?'],0,[['🏫','Okul bahçesinde','In the schoolyard','Auf dem Schulhof','في ساحة المدرسة','Li hewşa dibistanê'],['🛒','Markette','At the market','Im Supermarkt','في السوق','Li marketê'],['🌊','Denizde','In the sea','Im Meer','في البحر','Di deryayê de']]],
+  [['Kitabın üzerinde kimin adı yazıyordu?','Whose name was on the book?','Wessen Name stand auf dem Buch?','اسم مَن كان مكتوباً على الكتاب؟','Navê kê li ser pirtûkê hebû?'],1,[['👦','Can','Can','Can','جان','Can'],['👧','Ela','Ela','Ela','إيلا','Ela'],['⭐','Metehan','Metehan','Metehan','ميتهان','Metehan']]],
+  [['Can kitabı ne yaptı?','What did Can do with the book?','Was machte Can mit dem Buch?','ماذا فعل جان بالكتاب؟','Can bi pirtûkê çi kir?'],2,[['🎒','Çantasına sakladı','He hid it in his bag','Er versteckte es in seiner Tasche','خبّأه في حقيبته','Di çenteya xwe de veşart'],['🗑️','Çöpe attı','He threw it away','Er warf es weg','رماه في القمامة','Avêt çopê'],['🤲','Sahibine verdi','He gave it to its owner','Er gab es der Besitzerin','أعاده إلى صاحبته','Da xwediya wê']]],
+  [['Can dürüst davranınca ne oldu?','What happened when Can was honest?','Was geschah, als Can ehrlich war?','ماذا حدث عندما كان جان صادقاً؟','Dema Can rastgo bû çi qewimî?'],0,[['😊','Herkes mutlu oldu','Everyone was happy','Alle waren glücklich','فرح الجميع','Her kes kêfxweş bû'],['😡','Ela kızdı','Ela got angry','Ela wurde wütend','غضبت إيلا','Ela hêrs bû'],['🌧️','Yağmur yağdı','It rained','Es regnete','أمطرت','Baran barî']]]]});
+
+/* ---------- 2. SINIF ---------- */
+STORIES.push({lv:2,icon:IC.recycle,values:['Sorumluluk','Temizlik'],
+ t:['Parktaki Çöpler','Litter in the Park','Müll im Park','القمامة في الحديقة','Çopên Parkê'],
+ note:{d:'Sorumluluk, temizlik',b:'Çevre bilinci, geri dönüşüm, iş birliği',e:'Sınıfta kâğıt, plastik ve cam için üç kutu hazırlayın; çocuklar getirdikleri atıkları doğru kutuya ayırsın.'},
+ scenes:[
+ {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),P.tree('t',1320,760,1),P.sun('sun',200,160,52),P.bottle('b1',760,760),P.bottle('b2',900,760),P.paper('pb',1040,760)],chars:{ela:{carryTo:420,face:1},can:{at:[1200,760],face:-1}},
+  n:['Ela ve Can parka geldiklerinde her yerin çöp olduğunu gördüler.','When Ela and Can came to the park, they saw litter everywhere.','Als Ela und Can in den Park kamen, sahen sie überall Müll.','عندما وصلت إيلا وجان إلى الحديقة، رأيا القمامة في كل مكان.','Dema Ela û Can hatin parkê, wan dît ku her der bi çop e.'],
+  s:['ela','Ah, zavallı park! Çiçekler bu çöplerin altında nefes alamıyor.',"Oh, poor park! The flowers can't breathe under all this litter.",'Ach, armer Park! Die Blumen können unter dem Müll nicht atmen.','آه، أيتها الحديقة المسكينة! الأزهار لا تستطيع التنفّس تحت هذه القمامة.','Ax, parka belengaz! Kulîlk di bin vê çopê de nikarin bêhnê bistînin.']},
+ {props:[P.bin('bn',580,760)],chars:{can:{act:'wave'}},
+  n:['Can, geri dönüşüm kutusunu gösterdi: Çöpler buraya!','Can pointed to the recycling bin: The litter goes here!','Can zeigte auf den Recyclingbehälter: Der Müll kommt hierher!','أشار جان إلى صندوق إعادة التدوير: القمامة تذهب إلى هنا!','Can qutiya vezîvirandinê nîşan da: Çop dikeve vir!'],
+  s:['can','Plastik şişeler geri dönüşüme gidince yeni eşyalar olur.','When plastic bottles are recycled, they become new things.','Wenn Plastikflaschen recycelt werden, entstehen neue Dinge.','عندما يُعاد تدوير الزجاجات البلاستيكية، تصبح أشياء جديدة.','Dema şûşeyên plastîk têne vezîvirandin, dibin tiştên nû.']},
+ {walkFirst:1,take:['b1','b2','pb'],props:[P.star('s1',580,560,.8)],chars:{ela:{walk:[[740,760]],face:1,act:'jump'},can:{walk:[[1000,760]],face:-1,act:'jump'}},
+  n:['İkisi birlikte bütün çöpleri topladı ve kutuya attı.','Together they picked up all the litter and put it in the bin.','Zusammen sammelten sie den ganzen Müll und warfen ihn in den Behälter.','جمعا معاً كل القمامة ووضعاها في الصندوق.','Wan bi hev re hemû çop berhev kirin û avêtin qutiyê.'],
+  s:['ela','Birlikte çalışınca iş çabucak bitti!','Working together, we finished in no time!','Zusammen waren wir ganz schnell fertig!','عندما عملنا معاً، انتهينا بسرعة!','Dema me bi hev re xebitî, kar zû qediya!']},
+ {props:[P.flower('f1',820,760,'pink'),P.flower('f2',880,762,'purple'),P.flower('f3',1100,760,'yellow'),P.bird('bd',700,300),P.heart('h1',870,440,1)],chars:{ela:{act:'jump'},can:{act:'jump'}},
+  n:['Park yeniden çiçek açtı. Çevremizi temiz tutmak hepimizin sorumluluğu.',"The park bloomed again. Keeping our surroundings clean is everyone's responsibility.",'Der Park blühte wieder auf. Unsere Umgebung sauber zu halten ist unser aller Verantwortung.','أزهرت الحديقة من جديد. الحفاظ على نظافة محيطنا مسؤولية الجميع.','Park dîsa kulîlk vekir. Paqijkirina derdora me berpirsiyariya me hemûyan e.'],
+  s:['can','Bak Ela, çiçekler bize gülümsüyor!','Look, Ela, the flowers are smiling at us!','Schau, Ela, die Blumen lächeln uns an!','انظري يا إيلا، الأزهار تبتسم لنا!','Binêre Ela, kulîlk li me dikenin!']}],
+ quiz:[
+  [['Ela ve Can parkta ne gördü?','What did Ela and Can see in the park?','Was sahen Ela und Can im Park?','ماذا رأت إيلا وجان في الحديقة؟','Ela û Can li parkê çi dîtin?'],1,[['🦁','Bir aslan','A lion','Einen Löwen','أسداً','Şêrek'],['🗑️','Her yerde çöp','Litter everywhere','Überall Müll','قمامة في كل مكان','Li her derê çop'],['🎠','Bir lunapark','A funfair','Einen Jahrmarkt','مدينة ملاهٍ','Parkeke lîstikan']]],
+  [['Plastik şişeleri nereye atmalıyız?','Where should we put plastic bottles?','Wohin gehören Plastikflaschen?','أين يجب أن نضع الزجاجات البلاستيكية؟','Divê em şûşeyên plastîk bavêjin ku?'],0,[['♻️','Geri dönüşüm kutusuna','In the recycling bin','In den Recyclingbehälter','في صندوق إعادة التدوير','Qutiya vezîvirandinê'],['🌳','Ağacın dibine','Under a tree','Unter einen Baum','تحت شجرة','Bin darê'],['🌊','Nehre','Into the river','In den Fluss','في النهر','Nav çem']]],
+  [['Çöpler toplanınca parkta ne oldu?','What happened after the litter was collected?','Was geschah, als der Müll weg war?','ماذا حدث بعد جمع القمامة؟','Piştî ku çop hatin berhevkirin çi qewimî?'],2,[['❄️','Kar yağdı','It snowed','Es schneite','تساقط الثلج','Berf barî'],['🌋','Yanardağ patladı','A volcano erupted','Ein Vulkan brach aus','ثار بركان','Volkanek teqiya'],['🌸','Çiçekler açtı','Flowers bloomed','Blumen blühten','تفتّحت الأزهار','Kulîlk vebûn']]],
+  [['Bu hikâyedeki değer hangisidir?','Which value is in this story?','Welcher Wert steckt in dieser Geschichte?','ما القيمة في هذه القصة؟','Di vê çîrokê de kîjan nirx heye?'],1,[['😴','Tembellik','Laziness','Faulheit','الكسل','Tembelî'],['🧹','Sorumluluk','Responsibility','Verantwortung','المسؤولية','Berpirsiyarî'],['😤','İnatçılık','Stubbornness','Sturheit','العناد','Serhişkî']]]]});
+
+STORIES.push({lv:2,icon:IC.drop,values:['Tasarruf','Sorumluluk'],
+ t:['Damla Damla Göl','Drop by Drop, a Lake','Tropfen für Tropfen ein See','قطرةً قطرةً تمتلئ البحيرة','Dilop bi Dilop Gol'],
+ note:{d:'Tasarruf, sorumluluk',b:'Kaynakları verimli kullanma, doğal denge, neden–sonuç',e:'Açık musluğun bir dakikada ne kadar su akıttığını bir kovayla ölçün; sonra bardakla diş fırçalamayı karşılaştırın.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.sink('sk',540,620),P.stream('st',536,560),P.sun('sun',1420,160,55),P.pond('pd',1250,800,220,48),P.fish('f1',1250,806,'orange',-1)],chars:{can:{carryTo:380,face:1,act:'wave'}},
+  n:['Can dişlerini fırçalarken musluğu açık bıraktı. Su şırıl şırıl akıyordu.','While brushing his teeth, Can left the tap running. The water kept flowing.','Beim Zähneputzen ließ Can den Wasserhahn laufen. Das Wasser plätscherte immer weiter.','ترك جان الصنبور مفتوحاً وهو يغسل أسنانه. كان الماء يتدفّق بلا توقّف.','Dema Can diranên xwe firçe dikir, lûleya avê vekirî hişt. Av bi xuşexuş diherikî.'],
+  s:['can','Fırçala, fırçala, pırıl pırıl dişler!','Brush, brush, sparkling teeth!','Putzen, putzen, blitzblanke Zähne!','فرشي، فرشي، أسنان لامعة!','Firçe, firçe, diranên biriqîn!']},
+ {props:[P.dropFace('df',800,420,false)],chars:{},
+  n:['Minik bir damla ona seslendi: Beni boşa akıtma, göldeki balıklar susuz kalıyor!',"A tiny drop called to him: Don't waste me, the fish in the lake are running out of water!",'Ein kleiner Tropfen rief ihm zu: Verschwende mich nicht, den Fischen im See geht das Wasser aus!','نادته قطرة صغيرة: لا تهدرني، فالأسماك في البحيرة يقلّ ماؤها!','Dilopeke biçûk gazî wî kir: Min bi fîro nede, masiyên golê bê av dimînin!'],
+  s:['can','Eyvah! Hiç düşünmemiştim.','Oh no! I never thought about that.','Oh nein! Daran habe ich nie gedacht.','يا إلهي! لم أفكّر في ذلك أبداً.','Wey! Min qet li ser vê nefikirîbû.']},
+ {remove:['st','df'],props:[P.cup('cp',610,620),P.dropFace('df2',800,420,true)],chars:{can:{act:'jump'}},
+  n:['Can hemen musluğu kapattı ve dişlerini bir bardak suyla fırçaladı.','Can quickly turned off the tap and brushed his teeth with just a cup of water.','Can drehte schnell den Hahn zu und putzte seine Zähne mit nur einem Becher Wasser.','أغلق جان الصنبور بسرعة ونظّف أسنانه بكوب ماء واحد فقط.','Can zû lûle girt û diranên xwe bi tenê qedehek avê firçe kirin.'],
+  s:['can','Her damla değerlidir!','Every drop is precious!','Jeder Tropfen ist wertvoll!','كل قطرة ثمينة!','Her dilop biqîmet e!']},
+ {remove:['pd','f1'],props:[P.pond('pd2',1200,800,360,70),P.fish('f2',1120,806,'orange',1),P.fish('f3',1310,800,'yellow',-1),P.flower('fl',880,760,'pink')],chars:{can:{walk:[[820,760]],face:1,act:'jump'}},
+  n:['Göl yeniden doldu, balıklar neşeyle yüzdü. Suyu tasarruflu kullanmak, doğayı korumaktır.','The lake filled up again and the fish swam happily. Saving water means protecting nature.','Der See füllte sich wieder und die Fische schwammen fröhlich. Wasser sparen heißt Natur schützen.','امتلأت البحيرة من جديد وسبحت الأسماك بفرح. الاقتصاد في الماء حمايةٌ للطبيعة.','Gol dîsa tije bû û masî bi şahî avjenî kirin. Bikaranîna avê bi teserûf parastina xwezayê ye.'],
+  s:['can','Merhaba balıklar! Artık suyunuz bol.','Hello, fish! Now you have plenty of water.','Hallo, Fische! Jetzt habt ihr genug Wasser.','مرحباً أيتها الأسماك! الآن لديكِ ماء وفير.','Silav masiyan! Êdî ava we pir e.']}],
+ quiz:[
+  [['Can diş fırçalarken ne hata yaptı?','What mistake did Can make while brushing his teeth?','Welchen Fehler machte Can beim Zähneputzen?','ما الخطأ الذي ارتكبه جان وهو يغسل أسنانه؟','Dema Can diranên xwe firçe dikir çi şaşî kir?'],0,[['🚰','Musluğu açık bıraktı','He left the tap running','Er ließ den Hahn laufen','ترك الصنبور مفتوحاً','Lûle vekirî hişt'],['🪥','Fırçasını kırdı','He broke his toothbrush','Er zerbrach seine Zahnbürste','كسر فرشاته','Firçeya xwe şikand'],['🍫','Çikolata yedi','He ate chocolate','Er aß Schokolade','أكل الشوكولاتة','Çîkolata xwar']]],
+  [['Minik damla neden üzgündü?','Why was the tiny drop sad?','Warum war der kleine Tropfen traurig?','لماذا كانت القطرة الصغيرة حزينة؟','Çima dilopa biçûk xemgîn bû?'],1,[['🎂','Doğum günü unutuldu','Its birthday was forgotten','Sein Geburtstag wurde vergessen','نُسي عيد ميلادها','Rojbûna wê hat jibîrkirin'],['🐟','Balıklar susuz kalıyordu','The fish were running out of water','Den Fischen ging das Wasser aus','كانت الأسماك يقلّ ماؤها','Masî bê av diman'],['🌙','Gece olmuştu','It was night','Es war Nacht','حلّ الليل','Şev bû']]],
+  [['Can dişlerini neyle fırçaladı?','What did Can use to brush his teeth?','Womit putzte Can seine Zähne?','بماذا نظّف جان أسنانه؟','Can diranên xwe bi çi firçe kirin?'],2,[['🛁','Dolu bir küvetle','A full bathtub','Einer vollen Badewanne','حوض ممتلئ','Bi serşokeke tije'],['🚿','Açık duşla','A running shower','Einer laufenden Dusche','دشّ مفتوح','Bi dûşeke vekirî'],['🥛','Bir bardak suyla','A cup of water','Einem Becher Wasser','كوب ماء','Bi qedehek avê']]],
+  [['Suyu tasarruflu kullanmak ne demektir?','What does saving water mean?','Was bedeutet Wasser sparen?','ماذا يعني الاقتصاد في الماء؟','Bikaranîna avê bi teserûf tê çi wateyê?'],0,[['💧','İhtiyaç kadar kullanmak','Using only what we need','Nur so viel nutzen, wie wir brauchen','أن نستعمل ما نحتاجه فقط','Bi qasî pêwîst bikar bînin'],['🙅','Hiç su içmemek','Never drinking water','Nie Wasser trinken','ألّا نشرب الماء أبداً','Qet av venexwin'],['🌊','Musluğu hep açık tutmak','Always leaving the tap open','Den Hahn immer offen lassen','ترك الصنبور مفتوحاً دائماً','Her tim lûle vekirî bihêlin']]]]});
+
+STORIES.push({lv:2,icon:IC.bee,values:['Çalışkanlık','Yardımlaşma'],
+ t:['Arı ile Çiçek','The Bee and the Flower','Die Biene und die Blume','النحلة والزهرة','Mêş û Kulîlk'],
+ note:{d:'Çalışkanlık, yardımlaşma',b:'Canlılar arası ilişki (arı–çiçek), iş bölümü, gözlem',e:'Sınıfça bir “arı kovanı” panosu yapın: her çocuk sınıf için üstlendiği bir görevi altıgen petek kartına çizsin.'},
+ scenes:[
+ {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),P.tree('t',1250,760,1.1),P.sun('sun',200,160,52),P.flower('f1',620,760,'pink'),P.flower('f2',740,762,'purple'),P.flower('f3',860,760,'yellow'),P.hive('hv',1335,650),P.bee('b1',700,560),P.bee('b2',830,520)],chars:{ela:{carryTo:380,face:1}},
+  n:['Ela bahçede vızır vızır çalışan arıları izliyordu.','Ela was watching the bees buzzing busily in the garden.','Ela beobachtete die Bienen, die im Garten fleißig summten.','كانت إيلا تراقب النحلات وهي تطنّ وتعمل بجدّ في الحديقة.','Ela li mêşên hingiv temaşe dikir ku li baxçe bi vizevız dixebitîn.'],
+  s:['ela','Küçük arılar, neden hiç durmadan uçuyorsunuz?','Little bees, why do you fly without stopping?','Kleine Bienen, warum fliegt ihr ohne Pause?','أيتها النحلات الصغيرة، لماذا تطرن بلا توقّف؟','Mêşên biçûk, çima hûn bê rawestan difirin?']},
+ {props:[P.bee('b3',1080,600),P.bee('b4',980,470)],chars:{ela:{act:'wave'}},
+  n:['Arılar çiçeklerden nektar toplayıp kovana taşıyordu. Her biri kendi işini yapıyordu.','The bees collected nectar from the flowers and carried it to the hive. Each one did its own job.','Die Bienen sammelten Nektar aus den Blüten und trugen ihn zum Bienenstock. Jede machte ihre eigene Arbeit.','كانت النحلات تجمع الرحيق من الأزهار وتحمله إلى الخلية. كلّ واحدة تقوم بعملها.','Mêşan ji kulîlkan nektar berhev dikirin û dibirin kewarê. Her yekê karê xwe dikir.'],
+  s:['ela','Hepsi birlikte ne güzel çalışıyor!','They all work so nicely together!','Wie schön sie alle zusammenarbeiten!','ما أجمل عملهنّ معاً!','Çiqas xweş hemû bi hev re dixebitin!']},
+ {walkFirst:1,props:[P.jar('jr',1170,760)],chars:{ela:{walk:[[1060,760]],face:1,act:'jump'}},
+  n:['Akşam olunca kovan tatlı balla doldu.','By evening, the hive was full of sweet honey.','Am Abend war der Bienenstock voll mit süßem Honig.','عندما حلّ المساء، امتلأت الخلية بالعسل الحلو.','Dema êvar hat, kewar bi hingivê şîrîn tije bû.'],
+  s:['ela','Demek bal, çok çalışmanın ödülüymüş!','So honey is the reward for hard work!','Honig ist also der Lohn für fleißige Arbeit!','إذن العسل هو مكافأة العمل الجادّ!','Wê demê hingiv xelata keda zêde ye!']},
+ {walkFirst:1,props:[P.flower('f4',400,760,'red'),P.flower('f5',470,762,'pink'),P.heart('h1',560,440,1),P.star('s1',680,330,.8)],chars:{ela:{walk:[[540,760]],face:1,act:'jump'}},
+  n:['Ela da arılar için yeni çiçekler dikti. Çalışkanlık ve yardımlaşma herkese mutluluk getirir.','Ela planted new flowers for the bees too. Hard work and helping each other bring joy to everyone.','Ela pflanzte auch neue Blumen für die Bienen. Fleiß und gegenseitige Hilfe machen alle glücklich.','زرعت إيلا أيضاً أزهاراً جديدة للنحل. الاجتهاد والتعاون يجلبان السعادة للجميع.','Ela jî ji bo mêşan kulîlkên nû çandin. Xebatkarî û alîkariya hevdû ji her kesî re şahî tînin.'],
+  s:['ela','Sizin için çiçek, bizim için bal. Ne güzel bir takım!','Flowers for you, honey for us. What a great team!','Blumen für euch, Honig für uns. Was für ein tolles Team!','أزهار لكِ، وعسل لنا. يا له من فريق رائع!','Kulîlk ji bo we, hingiv ji bo me. Çi tîmeke xweş!']}],
+ quiz:[
+  [['Arılar çiçeklerden ne toplar?','What do bees collect from flowers?','Was sammeln Bienen aus Blüten?','ماذا يجمع النحل من الأزهار؟','Mêşên hingiv ji kulîlkan çi berhev dikin?'],1,[['🪨','Taş','Stones','Steine','الحجارة','Kevir'],['🌼','Nektar','Nectar','Nektar','الرحيق','Nektar'],['🍂','Kuru yaprak','Dry leaves','Trockene Blätter','أوراقاً جافة','Pelên hişk']]],
+  [['Arılar topladıklarını nereye taşır?','Where do bees carry what they collect?','Wohin bringen Bienen, was sie sammeln?','إلى أين يحمل النحل ما يجمعه؟','Mêş tiştên ku berhev dikin dibin ku?'],0,[['🍯','Kovana','To the hive','Zum Bienenstock','إلى الخلية','Kewarê'],['🌊','Denize','To the sea','Ins Meer','إلى البحر','Deryayê'],['🏫','Okula','To school','Zur Schule','إلى المدرسة','Dibistanê']]],
+  [['Bal neyin ödülüdür?','What is honey the reward for?','Wofür ist Honig der Lohn?','العسل مكافأة على ماذا؟','Hingiv xelata çi ye?'],1,[['😴','Uyumanın','Sleeping','Schlafen','النوم','Xewê'],['💪','Çok çalışmanın','Hard work','Fleißiger Arbeit','العمل الجادّ','Keda zêde'],['📺','Televizyon izlemenin','Watching TV','Fernsehen','مشاهدة التلفاز','Temaşekirina televizyonê']]],
+  [['Ela arılar için ne yaptı?','What did Ela do for the bees?','Was tat Ela für die Bienen?','ماذا فعلت إيلا للنحل؟','Ela ji bo mêşan çi kir?'],2,[['🏃','Onlardan kaçtı','She ran away from them','Sie lief vor ihnen weg','هربت منها','Ji wan reviya'],['🧃','Meyve suyu içti','She drank juice','Sie trank Saft','شربت عصيراً','Ava fêkiyan vexwar'],['🌷','Yeni çiçekler dikti','She planted new flowers','Sie pflanzte neue Blumen','زرعت أزهاراً جديدة','Kulîlkên nû çandin']]]]});
+/* ---------- 3. SINIF ---------- */
+STORIES.push({lv:3,icon:IC.moon,values:['Sabır','Merak'],
+ t:['Gece Gökyüzü','The Night Sky','Der Nachthimmel','سماء الليل','Ezmanê Şevê'],
+ note:{d:'Sabır, merak (bilimsel tutum)',b:'Gözlem yapma ve kaydetme, Ay’ın evreleri (Fen Bilimleri), sıralama',e:'Bir ay boyunca her akşam Ay’ın şeklini gözlem defterine çizin; sınıfta tabloya dönüştürün.'},
+ scenes:[
+ {clear:1,props:[P.night('nt'),P.ground('g',40,1560,760),P.house('h',200,760,.9),P.moon('m1',1200,210,60,.45),P.star('a1',420,140,.6),P.star('a2',900,110,.7),P.star('a3',1450,330,.6)],chars:{can:{at:[560,760],face:1},ela:{at:[700,760],face:-1}},
+  n:['Yıldızlı bir gecede Can ile Ela gökyüzünü izliyordu.','On a starry night, Can and Ela were watching the sky.','In einer sternenklaren Nacht beobachteten Can und Ela den Himmel.','في ليلة مليئة بالنجوم، كان جان وإيلا يراقبان السماء.','Di şeveke bi stêrk de, Can û Ela li ezman temaşe dikirin.'],
+  s:['ela','Ay neden bu gece ince bir hilal gibi?','Why does the moon look like a thin crescent tonight?','Warum sieht der Mond heute wie eine dünne Sichel aus?','لماذا يبدو القمر الليلة مثل هلال رفيع؟','Çima heyv îşev wek hîveke zirav xuya dike?']},
+ {walkFirst:1,props:[P.telescope('ts',830,760)],chars:{can:{walk:[[750,760]],face:1},ela:{walk:[[620,760]],face:1}},
+  n:['Can teleskobunu kurdu. Ay’ın kendi ışığı yoktur, Güneş’in ışığını yansıtır.','Can set up his telescope. The Moon has no light of its own; it reflects the light of the Sun.','Can stellte sein Teleskop auf. Der Mond hat kein eigenes Licht, er spiegelt das Licht der Sonne.','نصب جان منظاره. القمر ليس له ضوء خاص به، بل يعكس ضوء الشمس.','Can teleskopa xwe danî. Heyv ne xwediyê ronahiya xwe ye; ew ronahiya Rojê vedigerîne.'],
+  s:['can','Ay, Dünya’nın etrafında dönerken onu farklı şekillerde görürüz.','As the Moon goes around the Earth, we see it in different shapes.','Während der Mond um die Erde kreist, sehen wir ihn in verschiedenen Formen.','بينما يدور القمر حول الأرض، نراه بأشكال مختلفة.','Dema Heyv li dora Dinyayê dizivire, em wê bi şeklên cuda dibînin.']},
+ {remove:['m1'],props:[P.moon('p1',330,210,42,.45),P.moon('p2',560,200,42,0),P.moon('p3',790,190,42,-.5),P.moon('p4',1020,200,42,'full')],chars:{ela:{act:'wave'}},
+  n:['Günler geçtikçe Ay önce hilal, sonra yarım ay, sonra dolunay oldu. Bunlara Ay’ın evreleri denir.','As the days passed, the Moon became a crescent, then a half moon, then a full moon. These are called the phases of the Moon.','Mit den Tagen wurde der Mond erst zur Sichel, dann zum Halbmond, dann zum Vollmond. Das nennt man die Mondphasen.','مع مرور الأيام صار القمر هلالاً، ثم نصف قمر، ثم بدراً. هذه تُسمّى أطوار القمر.','Bi derbasbûna rojan re Heyv pêşî bû hîv, paşê nîvheyv, paşê heyva tije. Ji van re qonaxên Heyvê tê gotin.'],
+  s:['ela','Her gece gözlem yapıp defterimize çizelim!',"Let's observe every night and draw it in our notebook!",'Lass uns jede Nacht beobachten und es in unser Heft malen!','لنراقبه كل ليلة ونرسمه في دفترنا!','Werin em her şev temaşe bikin û di deftera xwe de xêz bikin!']},
+ {props:[P.moon('fm',1300,230,75,'full'),P.star('a4',1100,380,.8),P.star('a5',160,330,.7)],chars:{can:{act:'jump'},ela:{act:'jump'}},
+  n:['Sabırla gözlem yapan Can ile Ela, gökyüzünün sırlarını keşfetti. Merak etmek, öğrenmenin ilk adımıdır.','By observing patiently, Can and Ela discovered the secrets of the sky. Curiosity is the first step of learning.','Durch geduldiges Beobachten entdeckten Can und Ela die Geheimnisse des Himmels. Neugier ist der erste Schritt zum Lernen.','بالمراقبة الصبورة اكتشف جان وإيلا أسرار السماء. الفضول هو أول خطوة في التعلّم.','Bi temaşekirina bi sebir, Can û Ela sirên ezmanan keşf kirin. Meraq gava yekem a hînbûnê ye.'],
+  s:['can','İşte dolunay! Gözlem defterimiz tamamlandı.',"There's the full moon! Our observation notebook is complete.",'Da ist der Vollmond! Unser Beobachtungsheft ist fertig.','ها هو البدر! اكتمل دفتر ملاحظاتنا.','Va ye heyva tije! Deftera me ya temaşekirinê temam bû.']}],
+ quiz:[
+  [['Ay’ın ışığı nereden gelir?',"Where does the Moon's light come from?",'Woher kommt das Licht des Mondes?','من أين يأتي ضوء القمر؟','Ronahiya Heyvê ji ku tê?'],1,[['💡','Kendi lambasından','From its own lamp','Von einer eigenen Lampe','من مصباحه الخاص','Ji lampeya xwe'],['☀️','Güneş’in ışığını yansıtır',"It reflects the Sun's light",'Es spiegelt das Sonnenlicht','يعكس ضوء الشمس','Ronahiya Rojê vedigerîne'],['⭐','Yıldızlardan düşer','It falls from the stars','Es fällt von den Sternen','يسقط من النجوم','Ji stêrkan dikeve']]],
+  [['Ay’ın farklı şekillerine ne denir?',"What are the Moon's different shapes called?",'Wie nennt man die verschiedenen Formen des Mondes?','ماذا تُسمّى أشكال القمر المختلفة؟','Ji şeklên cuda yên Heyvê re çi tê gotin?'],0,[['🌓','Ay’ın evreleri','Phases of the Moon','Mondphasen','أطوار القمر','Qonaxên Heyvê'],['🍂','Mevsimler','Seasons','Jahreszeiten','الفصول','Demsal'],['🕐','Saatler','Hours','Stunden','الساعات','Saet']]],
+  [['Hangi sıralama doğrudur?','Which order is correct?','Welche Reihenfolge ist richtig?','أيّ ترتيب صحيح؟','Kîjan rêz rast e?'],2,[['🌕','Dolunay, yarım ay, hilal','Full, half, crescent','Voll, halb, Sichel','بدر، نصف، هلال','Tije, nîv, hîv'],['🌓','Yarım ay, dolunay, hilal','Half, full, crescent','Halb, voll, Sichel','نصف، بدر، هلال','Nîv, tije, hîv'],['🌒','Hilal, yarım ay, dolunay','Crescent, half, full','Sichel, halb, voll','هلال، نصف، بدر','Hîv, nîv, tije']]],
+  [['Can ile Ela neyle gözlem yaptı?','What did Can and Ela use to observe?','Womit beobachteten Can und Ela?','ماذا استخدم جان وإيلا للمراقبة؟','Can û Ela bi çi temaşe kirin?'],1,[['🎸','Gitar','A guitar','Eine Gitarre','غيتار','Gîtar'],['🔭','Teleskop','A telescope','Ein Teleskop','منظار','Teleskop'],['☂️','Şemsiye','An umbrella','Einen Regenschirm','مظلة','Sîwan']]]]});
+
+STORIES.push({lv:3,icon:IC.friends,values:['Saygı','Dostluk'],
+ t:['Yeni Arkadaş','The New Friend','Die neue Freundin','الصديقة الجديدة','Hevala Nû'],
+ note:{d:'Saygı, dostluk',b:'Empati, farklılıklara saygı, iletişim ve kendini ifade etme',e:'Sınıftaki çocukların bildiği dillerde “merhaba” kelimesini toplayıp bir “merhaba duvarı” oluşturun.'},
+ scenes:[
+ {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),P.school('sc',1300,760),P.tree('t',160,760,.9),P.cloud('c1',700,150,1)],chars:{ela:{carryTo:380,face:1},mira:{at:[1000,760],face:-1}},
+  n:['Sınıfa yeni bir öğrenci geldi. Adı Mira’ydı ve kimseyi tanımıyordu.',"A new student came to class. Her name was Mira, and she didn't know anyone.",'Eine neue Schülerin kam in die Klasse. Sie hieß Mira und kannte niemanden.','جاءت تلميذة جديدة إلى الصف. كان اسمها ميرا، ولم تكن تعرف أحداً.','Xwendekareke nû hat polê. Navê wê Mira bû û wê kesek nas nedikir.'],
+  s:['ela','Yalnız görünüyor. Yanına gidip merhaba diyeyim.',"She looks lonely. I'll go and say hello.",'Sie sieht einsam aus. Ich gehe hin und sage Hallo.','تبدو وحيدة. سأذهب وألقي عليها التحية.','Ew bi tenê xuya dike. Ez ê biçim cem wê û silav bidim.']},
+ {walkFirst:1,props:[],chars:{ela:{walk:[[860,760]],face:1}},
+  n:['Mira başka bir şehirden gelmişti ve konuşurken biraz utanıyordu.','Mira had come from another city and felt a little shy when she spoke.','Mira kam aus einer anderen Stadt und war beim Sprechen etwas schüchtern.','جاءت ميرا من مدينة أخرى، وكانت تخجل قليلاً عندما تتكلّم.','Mira ji bajarekî din hatibû û dema diaxivî hinekî şerm dikir.'],
+  s:['mira','Merhaba… Ben Mira. Burada hiç arkadaşım yok.',"Hello… I'm Mira. I don't have any friends here.",'Hallo… Ich bin Mira. Ich habe hier keine Freunde.','مرحباً… أنا ميرا. ليس لي أصدقاء هنا.','Silav… Ez Mira me. Li vir tu hevalên min tune ne.']},
+ {props:[P.rainbow('rb',930,760,170),P.flower('f1',700,760,'pink'),P.flower('f2',1160,762,'purple')],chars:{ela:{act:'wave'},mira:{act:'jump'}},
+  n:['Ela, Mira’yı oyuna davet etti. İkisi de resim yapmayı çok seviyordu!','Ela invited Mira to play. They both loved drawing!','Ela lud Mira zum Spielen ein. Beide malten sehr gern!','دعت إيلا ميرا إلى اللعب. كانتا تحبّان الرسم كثيراً!','Ela Mira vexwend lîstikê. Herduyan jî ji wênekêşanê pir hez dikir!'],
+  s:['ela','Artık bir arkadaşın var: ben! Gel, birlikte gökkuşağı çizelim.',"Now you have a friend: me! Come, let's draw a rainbow together.",'Jetzt hast du eine Freundin: mich! Komm, wir malen zusammen einen Regenbogen.','الآن لديكِ صديقة: أنا! تعالي نرسم قوس قزح معاً.','Êdî hevalek te heye: ez! Were, em bi hev re keskesorekê xêz bikin.']},
+ {props:[P.heart('h1',930,420,1.1),P.star('s1',760,380,.8),P.star('s2',1100,370,.8)],chars:{can:{at:[620,760],face:1,act:'wave'},ela:{act:'jump'},mira:{act:'jump'}},
+  n:['Kısa sürede bütün sınıf Mira ile tanıştı. Farklılıklara saygı gösterdiğimizde dostluklar çoğalır.','Soon the whole class met Mira. When we respect our differences, friendships grow.','Bald kannte die ganze Klasse Mira. Wenn wir Unterschiede respektieren, wachsen Freundschaften.','سرعان ما تعرّف الصف كله على ميرا. عندما نحترم اختلافاتنا، تكثر الصداقات.','Di demeke kurt de hemû pol bi Mira re nas bû. Dema em rêzê li cudahiyan digirin, hevaltî zêde dibin.'],
+  s:['mira','Teşekkürler! Bu okulda kendimi evimde gibi hissediyorum.','Thank you! I feel at home in this school.','Danke! In dieser Schule fühle ich mich wie zu Hause.','شكراً! أشعر في هذه المدرسة وكأنني في بيتي.','Spas! Ez li vê dibistanê xwe wek li mala xwe hîs dikim.']}],
+ quiz:[
+  [['Mira neden yalnız görünüyordu?','Why did Mira look lonely?','Warum sah Mira einsam aus?','لماذا بدت ميرا وحيدة؟','Çima Mira bi tenê xuya dikir?'],0,[['🏫','Okulda yeniydi, kimseyi tanımıyordu','She was new and knew no one','Sie war neu und kannte niemanden','كانت جديدة ولا تعرف أحداً','Nû bû û kesek nas nedikir'],['🤒','Hastaydı','She was sick','Sie war krank','كانت مريضة','Nexweş bû'],['🍦','Dondurması düştü','Her ice cream fell','Ihr Eis fiel runter','سقطت بوظتها','Qeşa wê ket']]],
+  [['Ela, Mira için ne yaptı?','What did Ela do for Mira?','Was tat Ela für Mira?','ماذا فعلت إيلا لميرا؟','Ela ji bo Mira çi kir?'],1,[['🙈','Onu görmezden geldi','She ignored her','Sie ignorierte sie','تجاهلتها','Guh neda wê'],['👋','Selam verip oyuna davet etti','She greeted her and invited her to play','Sie grüßte sie und lud sie zum Spielen ein','حيّتها ودعتها إلى اللعب','Silav da û ew vexwend lîstikê'],['😂','Onunla alay etti','She made fun of her','Sie machte sich über sie lustig','سخرت منها','Tinaz pê kirin']]],
+  [['İki kızın ortak sevdiği şey neydi?','What did both girls love?','Was liebten beide Mädchen?','ما الشيء الذي أحبّته الفتاتان؟','Herdu keçan ji çi hez dikir?'],2,[['⚽','Futbol','Football','Fußball','كرة القدم','Futbol'],['🎮','Bilgisayar oyunu','Computer games','Computerspiele','ألعاب الحاسوب','Lîstikên komputerê'],['🎨','Resim yapmak','Drawing','Malen','الرسم','Wênekêşan']]],
+  [['Yeni gelen bir arkadaşa nasıl davranmalıyız?','How should we treat a new classmate?','Wie sollten wir ein neues Kind in der Klasse behandeln?','كيف يجب أن نعامل زميلاً جديداً؟','Divê em çawa bi hevalekî nû re tevbigerin?'],2,[['🚪','Onu dışarıda bırakarak','By leaving them out','Indem wir es ausschließen','بإبعاده','Bi derxistina wî'],['🤫','Hiç konuşmayarak','By never talking to them','Indem wir nie mit ihm sprechen','بعدم التحدث إليه أبداً','Bi qet neaxaftina bi wî re'],['🤗','Sıcak ve saygılı','Warmly and respectfully','Herzlich und respektvoll','بلطف واحترام','Bi germî û bi rêz']]]]});
+
+STORIES.push({lv:3,icon:IC.flag,values:['Vatanseverlik','İş birliği'],
+ t:['Bayram Hazırlığı','Getting Ready for the Holiday','Vorbereitung auf den Feiertag','الاستعداد للعيد','Amadekariya Cejnê'],
+ note:{d:'Vatanseverlik, iş birliği',b:'Millî bayramları tanıma, sanat etkinliği, iş birliği',e:'29 Ekim için sınıfça kırmızı–beyaz süs zinciri yapın; her halkaya çocuklar vatanları için bir dilek yazsın.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.school('sc',1250,760),P.cloud('c1',420,230,1),P.cloud('c2',900,200,.8)],chars:{can:{carryTo:400,face:1},ela:{at:[700,760],face:-1}},
+  n:['Cumhuriyet Bayramı yaklaşıyordu. Can ile Ela okulu süslemeye karar verdi.','Republic Day was coming. Can and Ela decided to decorate the school.','Der Tag der Republik rückte näher. Can und Ela beschlossen, die Schule zu schmücken.','كان عيد الجمهورية يقترب. قرّر جان وإيلا تزيين المدرسة.','Cejna Komarê nêzîk dibû. Can û Ela biryar dan ku dibistanê bixemilînin.'],
+  s:['ela','Hadi rengârenk süsler ve bayraklar hazırlayalım!',"Let's make colorful decorations and flags!",'Lass uns bunte Dekorationen und Fahnen basteln!','هيا نصنع زينة ملوّنة وأعلاماً!','Werin em xemlên rengîn û alayan amade bikin!']},
+ {props:[P.bunting('bt',60,1540,90),P.balloon('bl1',560,380,'red'),P.balloon('bl2',640,340,'#FFFFFF'),P.balloon('bl3',1500,420,'red')],chars:{can:{act:'wave'}},
+  n:['Pencereleri kırmızı beyaz süslerle, bahçeyi balonlarla donattılar.','They decorated the windows with red and white ornaments and the yard with balloons.','Sie schmückten die Fenster mit rot-weißen Girlanden und den Hof mit Luftballons.','زيّنا النوافذ بزينة حمراء وبيضاء، والساحة بالبالونات.','Wan pencere bi xemlên sor û spî û hewş bi balonan xemilandin.'],
+  s:['can','Okulumuz ne kadar güzel oldu!','How beautiful our school looks!','Wie schön unsere Schule aussieht!','ما أجمل مدرستنا!','Dibistana me çiqas xweş bû!']},
+ {walkFirst:1,props:[P.flag('fl',880,760,1.5)],chars:{can:{walk:[[750,760]],face:1},ela:{walk:[[1080,760]],face:-1}},
+  n:['Bayram sabahı herkes bahçede toplandı ve bayrağımız göndere çekildi.','On the morning of the holiday, everyone gathered in the yard and our flag was raised.','Am Morgen des Feiertags versammelten sich alle auf dem Hof und unsere Fahne wurde gehisst.','في صباح العيد اجتمع الجميع في الساحة ورُفع علمنا.','Serê sibeha cejnê her kes li hewşê kom bû û ala me hat bilindkirin.'],
+  s:['ela','Bayrağımız ne güzel dalgalanıyor!','Our flag is waving so beautifully!','Wie schön unsere Fahne weht!','ما أجمل رفرفة علمنا!','Ala me çiqas xweş pêl dide!']},
+ {props:[P.star('s1',520,300,.9),P.star('s2',1260,320,.9),P.heart('h1',900,560,.9)],chars:{can:{act:'jump'},ela:{act:'jump'}},party:1,
+  n:['Şiirler okundu, şarkılar söylendi. Vatanımızı sevmek, onun için birlikte çalışmaktır.','Poems were recited and songs were sung. Loving our country means working together for it.','Gedichte wurden vorgetragen und Lieder gesungen. Unser Land zu lieben heißt, gemeinsam dafür zu arbeiten.','أُلقيت القصائد وغُنّيت الأناشيد. حبّ الوطن يعني أن نعمل معاً من أجله.','Helbest hatin xwendin û stran hatin gotin. Hezkirina welatê me, bi hev re xebitîna ji bo wî ye.'],
+  s:['can','Cumhuriyet Bayramımız kutlu olsun!','Happy Republic Day!','Alles Gute zum Tag der Republik!','عيد جمهورية سعيد!','Cejna Komarê pîroz be!']}],
+ quiz:[
+  [['Can ile Ela hangi bayrama hazırlanıyordu?','Which holiday were Can and Ela preparing for?','Auf welchen Feiertag bereiteten sich Can und Ela vor?','لأيّ عيد كان جان وإيلا يستعدّان؟','Can û Ela xwe ji bo kîjan cejnê amade dikirin?'],0,[['🇹🇷','Cumhuriyet Bayramı','Republic Day','Tag der Republik','عيد الجمهورية','Cejna Komarê'],['🎃','Cadılar Bayramı','Halloween','Halloween','الهالوين','Halloween'],['🎄','Yılbaşı',"New Year's Eve",'Silvester','رأس السنة','Sersal']]],
+  [['Okulu neyle süslediler?','What did they decorate the school with?','Womit schmückten sie die Schule?','بماذا زيّنا المدرسة؟','Wan dibistan bi çi xemilandin?'],1,[['🍂','Kuru yapraklarla','Dry leaves','Trockenen Blättern','أوراق جافة','Pelên hişk'],['🎈','Süsler ve balonlarla','Decorations and balloons','Girlanden und Luftballons','الزينة والبالونات','Xeml û balon'],['🧦','Çoraplarla','Socks','Socken','جوارب','Gore']]],
+  [['Bayram sabahı bahçede ne oldu?','What happened in the yard on the morning of the holiday?','Was geschah am Morgen des Feiertags auf dem Hof?','ماذا حدث في الساحة صباح العيد؟','Serê sibeha cejnê li hewşê çi qewimî?'],2,[['🌧️','Yağmur yağdı','It rained','Es regnete','أمطرت','Baran barî'],['🚌','Geziye gittiler','They went on a trip','Sie machten einen Ausflug','ذهبوا في رحلة','Çûn geştê'],['🇹🇷','Bayrak göndere çekildi','The flag was raised','Die Fahne wurde gehisst','رُفع العلم','Ala hat bilindkirin']]],
+  [['Vatanımızı sevmek ne demektir?','What does loving our country mean?','Was bedeutet es, unser Land zu lieben?','ماذا يعني حبّ الوطن؟','Hezkirina welatê me tê çi wateyê?'],0,[['🤝','Onun için birlikte çalışmak','Working together for it','Gemeinsam dafür arbeiten','العمل معاً من أجله','Bi hev re ji bo wî xebitîn'],['🛌','Hiçbir şey yapmamak','Doing nothing','Nichts tun','ألّا نفعل شيئاً','Tiştek nekirin'],['🗑️','Çevreyi kirletmek','Polluting the environment','Die Umwelt verschmutzen','تلويث البيئة','Qirêjkirina derdorê']]]]});
+
+/* ---------- 4. SINIF ---------- */
+STORIES.push({lv:4,icon:IC.light,values:['Sorumluluk','Cesaret','Aile bütünlüğü'],
+ t:['Deniz Feneri','The Lighthouse','Der Leuchtturm','المنارة','Fenera Deryayê'],
+ note:{d:'Sorumluluk, cesaret, aile bütünlüğü',b:'Ana fikir bulma, sebep–sonuç, olay sıralama',e:'Çocuklar evde ya da sınıfta üstlendikleri bir sorumluluğu “fener görevi” kartına yazsın; hafta sonunda paylaşın.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,520,700),P.river('sea',480,1610,712),P.lighthouse('lh',230,700),P.cloud('c1',800,150,1.2),P.cloud('c2',1250,190,1),P.boat('bt',1260,690)],chars:{can:{carryTo:400,face:1}},
+  n:['Can, deniz feneri bekçisi dedesine yardım ediyordu. Dedesi o akşam hastalanmıştı.','Can was helping his grandfather, the lighthouse keeper. That evening his grandfather had fallen ill.','Can half seinem Großvater, dem Leuchtturmwärter. An jenem Abend war der Großvater krank geworden.','كان جان يساعد جدّه حارس المنارة. في ذلك المساء مرض جدّه.','Can alîkariya bapîrê xwe yê nobedarê fenerê dikir. Wê êvarê bapîrê wî nexweş ketibû.'],
+  s:['can','Dedeciğim, sen dinlen. Feneri bu gece ben yakacağım.',"Grandpa, you rest. I'll light the lighthouse tonight.",'Opa, ruh dich aus. Heute Nacht zünde ich den Leuchtturm an.','جدّي، استرح أنت. سأضيء المنارة الليلة.','Bapîrê delal, tu bêhna xwe vede. Îşev ez ê fenerê vêxim.']},
+ {props:[P.rain('rain',520,1560,120,640),P.rocks('rk',840,722)],chars:{},
+  n:['Birden fırtına çıktı. Uzakta bir balıkçı teknesi dalgaların arasında yolunu kaybetmişti.','Suddenly a storm broke out. Far away, a fishing boat had lost its way among the waves.','Plötzlich zog ein Sturm auf. In der Ferne hatte ein Fischerboot zwischen den Wellen den Weg verloren.','فجأةً هبّت عاصفة. في البعيد، ضلّ قارب صيد طريقه بين الأمواج.','Ji nişkê ve bahoz rabû. Li dûr, keştiyeke masîgiran di nav pêlan de rêya xwe winda kiribû.'],
+  s:['can','Tekne kayalara çarpabilir! Hemen feneri yakmalıyım.','The boat could hit the rocks! I must light the lighthouse right away.','Das Boot könnte gegen die Felsen stoßen! Ich muss sofort den Leuchtturm anzünden.','قد يصطدم القارب بالصخور! يجب أن أضيء المنارة فوراً.','Dibe ku keştî li keviran bikeve! Divê ez tavilê fenerê vêxim.']},
+ {walkFirst:1,props:[P.beam('bm',258,357)],chars:{can:{walk:[[330,700]],face:1,act:'wave'}},
+  n:['Can yüzlerce basamağı tırmanıp lambayı yaktı. Güçlü ışık karanlık denizi aydınlattı.','Can climbed hundreds of steps and lit the lamp. The strong light lit up the dark sea.','Can stieg Hunderte Stufen hinauf und zündete die Lampe an. Das starke Licht erhellte das dunkle Meer.','صعد جان مئات الدرجات وأضاء المصباح. أنار الضوء القوي البحر المظلم.','Can bi sedan pêlik hilkişiya û lampe vêxist. Ronahiya xurt deryaya tarî ronî kir.'],
+  s:['can','Işığı takip et, balıkçı amca! Güvenli liman bu tarafta.','Follow the light, fisherman! The safe harbor is this way.','Folge dem Licht, Fischer! Der sichere Hafen ist hier entlang.','اتبع الضوء أيها الصيّاد! المرفأ الآمن من هذه الجهة.','Li pey ronahiyê were, masîgirê delal! Bendera ewle li vî alî ye.']},
+ {remove:['rain','bt'],props:[P.boat('bt2',620,690),P.star('s1',700,160,.8),P.star('s2',1100,120,.8),P.heart('h1',470,430,.9)],chars:{can:{walk:[[430,700]],face:1,act:'jump'}},
+  n:['Tekne güvenle limana ulaştı. Sorumluluk almak, bazen başkalarının hayatını kurtarır.',"The boat reached the harbor safely. Taking responsibility can sometimes save other people's lives.",'Das Boot erreichte sicher den Hafen. Verantwortung zu übernehmen kann manchmal Leben retten.','وصل القارب إلى المرفأ بأمان. تحمّل المسؤولية قد ينقذ أحياناً حياة الآخرين.','Keştî bi ewlehî gihîşt benderê. Girtina berpirsiyariyê carinan jiyana kesên din xilas dike.'],
+  s:['can','Dedem gurur duyacak. Görevimi yaptım!','Grandpa will be proud. I did my duty!','Opa wird stolz sein. Ich habe meine Pflicht erfüllt!','سيفخر جدّي. لقد أدّيت واجبي!','Bapîrê min dê serbilind be. Min erka xwe kir!']}],
+ quiz:[
+  [['Can feneri neden kendisi yaktı?','Why did Can light the lighthouse himself?','Warum zündete Can den Leuchtturm selbst an?','لماذا أضاء جان المنارة بنفسه؟','Çima Can bi xwe fener vêxist?'],0,[['🤒','Dedesi hastaydı','His grandfather was ill','Sein Opa war krank','كان جدّه مريضاً','Bapîrê wî nexweş bû'],['🎮','Canı sıkılmıştı','He was bored','Ihm war langweilig','كان يشعر بالملل','Bêzar bûbû'],['🎁','Hediye istiyordu','He wanted a gift','Er wollte ein Geschenk','أراد هدية','Diyarî dixwest']]],
+  [['Balıkçı teknesi neden tehlikedeydi?','Why was the fishing boat in danger?','Warum war das Fischerboot in Gefahr?','لماذا كان قارب الصيد في خطر؟','Çima keştiya masîgiran di xeterê de bû?'],1,[['🐳','Bir balina onu yuttu','A whale swallowed it','Ein Wal verschluckte es','ابتلعه حوت','Nehengekê ew daqurtand'],['🌩️','Fırtınada yolunu kaybetti','It lost its way in the storm','Es verlor im Sturm den Weg','ضلّ طريقه في العاصفة','Di bahozê de rêya xwe winda kir'],['⛽','Yakıtı bitti','It ran out of fuel','Der Treibstoff war alle','نفد وقوده','Sotemeniya wê xelas bû']]],
+  [['Fener ışığı tekneye nasıl yardım etti?','How did the lighthouse light help the boat?','Wie half das Licht des Leuchtturms dem Boot?','كيف ساعد ضوء المنارة القارب؟','Ronahiya fenerê çawa alîkariya keştiyê kir?'],2,[['🔥','Tekneyi ısıttı','It warmed the boat','Es wärmte das Boot','دفّأ القارب','Keştî germ kir'],['🎶','Müzik çaldı','It played music','Es spielte Musik','عزف موسيقى','Muzîk lêxist'],['🧭','Güvenli yolu gösterdi','It showed the safe way','Es zeigte den sicheren Weg','أرشده إلى الطريق الآمن','Rêya ewle nîşan da']]],
+  [['Bu hikâyenin ana fikri nedir?','What is the main idea of this story?','Was ist die Hauptaussage dieser Geschichte?','ما الفكرة الرئيسية لهذه القصة؟','Fikra sereke ya vê çîrokê çi ye?'],1,[['🌊','Deniz her zaman sakindir','The sea is always calm','Das Meer ist immer ruhig','البحر هادئ دائماً','Derya her tim aram e'],['🦸','Sorumluluk almak hayat kurtarabilir','Taking responsibility can save lives','Verantwortung kann Leben retten','تحمّل المسؤولية قد ينقذ الأرواح','Berpirsiyarî dikare jiyanê xilas bike'],['🏠','Evde oturmak en iyisidir','Staying home is best','Zu Hause bleiben ist am besten','البقاء في البيت هو الأفضل','Li malê rûniştin çêtirîn e']]]]});
+
+STORIES.push({lv:4,icon:IC.robot,values:['Sabır','Çalışkanlık'],
+ t:['Robot Arkadaşım Robi','My Robot Friend Robi','Mein Roboterfreund Robi','صديقي الروبوت روبي','Hevalê min Robot Robî'],
+ note:{d:'Sabır, çalışkanlık',b:'Algoritmik düşünme, sıralama, hata ayıklama (Robotik ve Kodlama ile ilişkili)',e:'Sınıf zeminine bantla kareler yapın; bir çocuk “robot”, diğeri ok kartlarıyla “programcı” olsun. Aynı görevi blok tabanlı kodlama uygulamasında da deneyin.'},
+ scenes:[
+ {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),P.tiles('ti',515,760,6,120),P.goal('gl',1225,760)],chars:{ela:{carryTo:360,face:1},robo:{at:[575,760],face:1}},
+  n:['Ela robotik atölyesinde küçük robotu Robi’yi programlıyordu.','In the robotics workshop, Ela was programming the little robot Robi.','In der Robotik-Werkstatt programmierte Ela den kleinen Roboter Robi.','في ورشة الروبوتات، كانت إيلا تبرمج الروبوت الصغير روبي.','Di atolyeya robotîkê de, Ela robotê biçûk Robî bernameyî dikir.'],
+  s:['ela','Robi’nin görevi: bayrağa kadar gitmek!',"Robi's mission: to reach the flag!",'Robis Aufgabe: bis zur Flagge fahren!','مهمّة روبي: أن يصل إلى العلم!','Erka Robî: heta alayê biçe!']},
+ {props:[P.block('k1',560,250,'orange'),P.block('k2',700,250,'orange'),P.block('k3',840,250,'orange')],chars:{robo:{walk:[[935,760]],face:1}},
+  n:['Ela üç tane “ileri git” bloğu dizdi ve başlat tuşuna bastı.','Ela lined up three “move forward” blocks and pressed start.','Ela reihte drei „Vorwärts“-Blöcke aneinander und drückte auf Start.','رتّبت إيلا ثلاث كتل «تقدّم إلى الأمام» وضغطت زرّ البدء.','Ela sê blokên “here pêş” rêz kirin û bişkoka destpêkê pêl kir.'],
+  s:['robo','Bip bop! Hedefe ulaşamadım.',"Beep boop! I didn't reach the goal.",'Piep bop! Ich habe das Ziel nicht erreicht.','بيب بوب! لم أصل إلى الهدف.','Bîp bop! Ez negihîştim armancê.']},
+ {props:[P.block('k4',980,250,'leaf'),P.block('k5',1120,250,'leaf')],chars:{ela:{act:'wave'}},
+  n:['Ela pes etmedi. Adımları saydı ve iki blok eksik olduğunu buldu. Buna hata ayıklama denir.',"Ela didn't give up. She counted the steps and found that two blocks were missing. This is called debugging.",'Ela gab nicht auf. Sie zählte die Schritte und fand heraus, dass zwei Blöcke fehlten. Das nennt man Fehlersuche.','لم تستسلم إيلا. عدّت الخطوات ووجدت أن كتلتين ناقصتان. هذا يُسمّى تصحيح الأخطاء.','Ela dev jê berneda. Wê gav jimartin û dît ku du blok kêm in. Ji vê re dîtina şaşiyan tê gotin.'],
+  s:['ela','Beş adım gerekiyormuş! İki blok daha ekleyelim.',"It needs five steps! Let's add two more blocks.",'Es braucht fünf Schritte! Fügen wir noch zwei Blöcke hinzu.','يحتاج إلى خمس خطوات! لنُضف كتلتين أخريين.','Pênc gav pêwîst in! Werin em du blokên din zêde bikin.']},
+ {walkFirst:1,props:[P.star('s1',1175,470,1),P.star('s2',1360,380,.8),P.heart('h1',420,440,.9)],chars:{robo:{walk:[[1175,760]],face:1,act:'jump'},ela:{act:'jump'}},party:1,
+  n:['Robi bu kez tam bayrağa ulaştı! Sabırla denemek ve hatadan öğrenmek, başarının sırrıdır.','This time Robi reached the flag exactly! Trying patiently and learning from mistakes is the secret of success.','Diesmal erreichte Robi genau die Flagge! Geduldig probieren und aus Fehlern lernen ist das Geheimnis des Erfolgs.','هذه المرّة وصل روبي إلى العلم تماماً! المحاولة بصبر والتعلّم من الخطأ سرّ النجاح.','Vê carê Robî rast gihîşt alayê! Bi sebir ceribandin û ji şaşiyan hînbûn sira serkeftinê ye.'],
+  s:['robo','Görev tamamlandı! Teşekkürler Ela!','Mission complete! Thank you, Ela!','Aufgabe erfüllt! Danke, Ela!','اكتملت المهمّة! شكراً يا إيلا!','Erk temam bû! Spas Ela!']}],
+ quiz:[
+  [['Robi ilk denemede kaç adım gitti?','How many steps did Robi go on the first try?','Wie viele Schritte fuhr Robi beim ersten Versuch?','كم خطوة تقدّم روبي في المحاولة الأولى؟','Di ceribandina yekem de Robî çend gav çû?'],1,[['2️⃣','İki','Two','Zwei','خطوتين','Du'],['3️⃣','Üç','Three','Drei','ثلاث','Sê'],['5️⃣','Beş','Five','Fünf','خمس','Pênc']]],
+  [['Bayrağa ulaşmak için kaç blok gerekiyordu?','How many blocks were needed to reach the flag?','Wie viele Blöcke brauchte man bis zur Flagge?','كم كتلة كانت لازمة للوصول إلى العلم؟','Ji bo gihîştina alayê çend blok pêwîst bûn?'],2,[['🔟','On','Ten','Zehn','عشر','Deh'],['1️⃣','Bir','One','Eins','واحدة','Yek'],['5️⃣','Beş','Five','Fünf','خمس','Pênc']]],
+  [['Programdaki hatayı bulup düzeltmeye ne denir?','What is finding and fixing a mistake in a program called?','Wie nennt man das Finden und Beheben von Fehlern im Programm?','ماذا يُسمّى إيجاد الخطأ في البرنامج وإصلاحه؟','Ji dîtin û rastkirina şaşiyê di bernameyê de re çi tê gotin?'],0,[['🐞','Hata ayıklama','Debugging','Fehlersuche','تصحيح الأخطاء','Dîtina şaşiyan'],['🎨','Boyama','Painting','Malen','التلوين','Boyaxkirin'],['🎤','Şarkı söyleme','Singing','Singen','الغناء','Stran gotin']]],
+  [['Ela hata olunca ne yaptı?','What did Ela do when there was a mistake?','Was tat Ela, als ein Fehler passierte?','ماذا فعلت إيلا عندما حدث خطأ؟','Dema şaşî çêbû Ela çi kir?'],1,[['😤','Robotu attı','She threw the robot away','Sie warf den Roboter weg','رمت الروبوت','Robot avêt'],['🔁','Saydı ve yeniden denedi','She counted and tried again','Sie zählte und versuchte es erneut','عدّت وحاولت من جديد','Jimart û dîsa ceriband'],['🚪','Atölyeden çıktı','She left the workshop','Sie verließ die Werkstatt','غادرت الورشة','Ji atolyeyê derket']]]]});
+
+STORIES.push({lv:4,icon:IC.cake,values:['Adalet','Paylaşma'],
+ t:['Adil Pay','A Fair Share','Ein gerechter Anteil','القسمة العادلة','Para Dadperwer'],
+ note:{d:'Adalet, paylaşma',b:'Kesirler (bütün, yarım, çeyrek) – Matematik, eşit paylaşım, problem çözme',e:'Kâğıttan daire “pastalar” kesin; çocuklar katlayarak yarım ve çeyreği bulsun, arkadaşlarıyla adil paylaşsın.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.table('tb',800,760),P.cake('ck',800,580),P.balloon('bl1',260,300,'red'),P.balloon('bl2',1400,280,'sky')],chars:{can:{carryTo:580,face:1},met:{at:[450,760],face:1},ela:{at:[1020,760],face:-1},mira:{at:[1150,760],face:-1}},
+  n:['Can’ın doğum günüydü. Masada kocaman bir pasta vardı ve dört arkadaş toplanmıştı.',"It was Can's birthday. There was a big cake on the table, and four friends had gathered.",'Es war Cans Geburtstag. Auf dem Tisch stand ein großer Kuchen, und vier Freunde waren gekommen.','كان عيد ميلاد جان. على الطاولة كعكة كبيرة، واجتمع أربعة أصدقاء.','Rojbûna Can bû. Li ser maseyê kekeke mezin hebû û çar heval kom bûbûn.'],
+  s:['can','Pastayı nasıl paylaşalım ki herkes eşit alsın?','How should we share the cake so everyone gets the same?','Wie teilen wir den Kuchen, damit alle gleich viel bekommen?','كيف نقسم الكعكة لينال الجميع حصصاً متساوية؟','Em kekê çawa parve bikin da ku her kes wekhev bigire?']},
+ {props:[P.cuts('cu',800,580)],chars:{ela:{act:'wave'}},
+  n:['Ela pastayı ortadan ikiye, sonra yine ikiye kesti. Dört eşit parça oldu!','Ela cut the cake in half, then in half again. It made four equal pieces!','Ela schnitt den Kuchen in der Mitte durch und dann noch einmal. Es wurden vier gleiche Stücke!','قطعت إيلا الكعكة إلى نصفين، ثم إلى نصفين مرّة أخرى. صارت أربع قطع متساوية!','Ela kek ji nîvî ve kir du, paşê dîsa kir du. Bûn çar parçeyên wekhev!'],
+  s:['ela','Her parça, bütünün dörtte biri. Yani 1/4!','Each piece is one quarter of the whole. That is 1/4!','Jedes Stück ist ein Viertel vom Ganzen. Also 1/4!','كل قطعة ربع الكعكة كلّها. أي 1/4!','Her parçe çaryeka tevahiyê ye. Ango 1/4!']},
+ {remove:['ck','cu'],props:[P.slice('p1',710,632),P.slice('p2',770,632),P.slice('p3',830,632),P.slice('p4',890,632),P.label('fr',800,470,'1/4 + 1/4 + 1/4 + 1/4 = 1',46)],chars:{met:{act:'jump'}},
+  n:['Herkes bir parça aldı. Kimse diğerlerinden fazla ya da eksik almadı.','Everyone took one piece. No one got more or less than the others.','Jeder bekam ein Stück. Niemand bekam mehr oder weniger als die anderen.','أخذ كلّ واحد قطعة. لم يأخذ أحد أكثر أو أقلّ من الآخرين.','Her kesî parçeyek girt. Kesî ji yên din ne zêdetir ne jî kêmtir girt.'],
+  s:['met','Adil paylaşınca pasta daha da tatlı oluyor!','When we share fairly, the cake tastes even sweeter!','Wenn wir gerecht teilen, schmeckt der Kuchen noch süßer!','عندما نتقاسم بعدل، تصبح الكعكة أحلى!','Dema em bi dadperwerî parve dikin, kek hîn şîrîntir dibe!']},
+ {props:[P.star('s1',600,300,.9),P.star('s2',1000,300,.9),P.heart("h1",800,300,1)],chars:{can:{act:'jump'},met:{act:'jump'},ela:{act:'jump'},mira:{act:'jump'}},party:1,
+  n:['Doğum günü kahkahalarla geçti. Adalet, herkese hakkını vermektir.','The birthday was full of laughter. Justice means giving everyone their fair share.','Der Geburtstag war voller Lachen. Gerechtigkeit heißt, jedem seinen fairen Anteil zu geben.','مرّ عيد الميلاد بالضحك. العدل أن نعطي كلّ واحد حقّه.','Rojbûn bi kenan derbas bû. Dadperwerî ew e ku em mafê her kesî bidin wî.'],
+  s:['mira','İyi ki doğdun Can!','Happy birthday, Can!','Alles Gute zum Geburtstag, Can!','عيد ميلاد سعيد يا جان!','Rojbûna te pîroz be Can!']}],
+ quiz:[
+  [['Pasta kaç eşit parçaya bölündü?','Into how many equal pieces was the cake cut?','In wie viele gleiche Stücke wurde der Kuchen geteilt?','إلى كم قطعة متساوية قُسمت الكعكة؟','Kek bû çend parçeyên wekhev?'],1,[['2️⃣','İki','Two','Zwei','قطعتين','Du'],['4️⃣','Dört','Four','Vier','أربع','Çar'],['6️⃣','Altı','Six','Sechs','ست','Şeş']]],
+  [['Bir parça bütünün ne kadarıdır?','What part of the whole is one piece?','Welcher Teil des Ganzen ist ein Stück?','ما الجزء الذي تمثّله قطعة واحدة من الكعكة؟','Parçeyek çiqasê tevahiyê ye?'],1,[['½','Yarım','One half','Ein Halbes','نصف','Nîv'],['¼','Dörtte bir','One quarter','Ein Viertel','ربع','Çaryek'],['⅓','Üçte bir','One third','Ein Drittel','ثلث','Sêyek']]],
+  [['Ela pastayı nasıl dört eşit parçaya böldü?','How did Ela cut the cake into four equal pieces?','Wie teilte Ela den Kuchen in vier gleiche Stücke?','كيف قسمت إيلا الكعكة إلى أربع قطع متساوية؟','Ela kek çawa kir çar parçeyên wekhev?'],2,[['🎲','Rastgele','Randomly','Zufällig','عشوائياً','Bi rasthatinî'],['🔨','Çekiçle','With a hammer','Mit einem Hammer','بمطرقة','Bi çakûçê'],['✂️','İkiye, sonra yine ikiye','In half, then in half again','Halbiert, dann nochmal halbiert','إلى نصفين ثم نصفين مرة أخرى','Nîv, paşê dîsa nîv']]],
+  [['Adalet ne demektir?','What does justice mean?','Was bedeutet Gerechtigkeit?','ماذا يعني العدل؟','Dadperwerî tê çi wateyê?'],0,[['⚖️','Herkese hakkını vermek','Giving everyone their fair share','Jedem seinen fairen Anteil geben','إعطاء كل واحد حقّه','Mafê her kesî dayîn'],['🙋','En büyük parçayı almak','Taking the biggest piece','Das größte Stück nehmen','أخذ أكبر قطعة','Parçeya herî mezin girtin'],['🤐','Kimseye vermemek','Giving to no one','Niemandem etwas geben','عدم إعطاء أحد','Nedayîna tu kesî']]]]});
+const LI={tr:0,en:1,de:2,ar:3,ku:4};const T=a=>a[LI[curLang]]??a[0];
+const PRAISE={tr:['Aferin!','Harikasın!','Çok doğru!','Süpersin!'],en:['Well done!','Great!',"That's right!",'Super!'],de:['Gut gemacht!','Toll!','Richtig!','Super!'],ar:['أحسنت!','رائع!','صحيح!','ممتاز!'],ku:['Aferin!','Pir baş!','Rast e!','Gelek baş!']};
+const RETRY={tr:'Bir daha düşünelim!',en:"Let's think again!",de:'Denk noch einmal nach!',ar:'لنفكّر مرة أخرى!',ku:'Werin em dîsa bifikirin!'};
+const RESULT={tr:(s,n)=>`${n} sorudan ${s} tanesini ilk denemede bildin!`,en:(s,n)=>`You got ${s} of ${n} right on the first try!`,de:(s,n)=>`Du hast ${s} von ${n} Fragen beim ersten Versuch richtig!`,ar:(s,n)=>`أجبت عن ${s} من ${n} أسئلة صحيحاً من المحاولة الأولى!`,ku:(s,n)=>`Te ${s} ji ${n} pirsan di ceribandina yekem de rast bersiv da!`};
+const HERO_LINE={tr:'Yuppi! Çizdiğin yol harika!',en:'Yippee! Your road is amazing!',de:'Juhu! Dein Weg ist toll!',ar:'رائع! الطريق الذي رسمته مدهش!',ku:'Bijî! Rêya ku te xêz kir pir xweş e!'};
+const LANGS={tr:{code:'tr-TR',name:'Türkçe'},en:{code:'en-US',name:'İngilizce'},de:{code:'de-DE',name:'Almanca'},ar:{code:'ar-SA',name:'Arapça',rtl:1},ku:{code:'ku',name:'Kürtçe'}};
+const cur={story:0,scene:0,level:0};const story=()=>STORIES[cur.story];
 
 /* konuşma ve altyazı */
 let voices=[];const hasTTS='speechSynthesis' in window;
-if(hasTTS){const lv=()=>{voices=speechSynthesis.getVoices();};lv();speechSynthesis.onvoiceschanged=lv;}
-function voiceFor(l){if(!voices.length)return'default';const c=LANGS[l].code,b=c.split('-')[0];return voices.find(v=>v.lang===c)||voices.find(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(b));}
-const VOICE={narr:{pitch:1,rate:.92},can:{pitch:1.35,rate:.98},ela:{pitch:1.6,rate:1}};
+function refreshVoices(){if(!hasTTS)return;try{const v=speechSynthesis.getVoices();if(v&&v.length)voices=v;}catch(e){}}
+if(hasTTS){refreshVoices();speechSynthesis.onvoiceschanged=refreshVoices;speechSynthesis.addEventListener?.('voiceschanged',refreshVoices);}
+const nl=s=>(s||'').replace(/_/g,'-').toLowerCase();
+/* iOS Arapça sesi "ar-001" gibi etiketlerle gelir: dil kodunu esnek eşleştir, bulunan sesin kendi etiketini kullan */
+function voiceFor(l){refreshVoices();const c=nl(LANGS[l].code),b=c.split('-')[0];
+ if(!voices.length)return l==='ku'?null:'default';
+ const m=voices.filter(v=>{const x=nl(v.lang);return x===c||x===b||x.startsWith(b+'-');});
+ if(l==='ku')return m.find(v=>/kmr|ku/.test(nl(v.lang)))||null;
+ return m.find(v=>nl(v.lang)===c)||m.find(v=>v.localService)||m[0]||null;}
+const VOICE={narr:{pitch:1,rate:.92},can:{pitch:1.35,rate:.98},ela:{pitch:1.6,rate:1},met:{pitch:1.45,rate:.98},mira:{pitch:1.5,rate:1},robo:{pitch:.7,rate:.95}};
 function renderWords(box,text,lang){box.innerHTML='';box.dir=LANGS[lang].rtl?'rtl':'ltr';box.classList.toggle('ar',lang==='ar');const spans=[];let idx=0;
  text.split(/(\s+)/).forEach(tk=>{if(!tk)return;if(/^\s+$/.test(tk))box.appendChild(document.createTextNode(tk));else{const s=document.createElement('span');s.className='w';s.textContent=tk;s.dataset.a=idx;box.appendChild(s);spans.push(s);}idx+=tk.length;});
  return{byChar(ci){let k=-1;spans.forEach((s,j)=>{if(+s.dataset.a<=ci)k=j;});spans.forEach((s,j)=>s.classList.toggle('on',j===k));},byFrac(t){const i=Math.min(spans.length-1,Math.floor(t*spans.length));spans.forEach((s,j)=>s.classList.toggle('on',j===i));},clear(){spans.forEach(s=>s.classList.remove('on'));}};}
 const setCaption=t=>renderWords($('#capText'),t,curLang);
 async function speak(text,who,tok,hl){const est=(1000+text.length*65)/speedMul;const v=soundOn&&hasTTS?voiceFor(curLang):null;
- $('#capNote').textContent=(soundOn&&hasTTS&&!v)?`Bu cihazda ${LANGS[curLang].name} seslendirme bulunamadı; metin ekranda okunuyor.`:'';
+ $('#capNote').textContent=(soundOn&&hasTTS&&!v)?(curLang==='ku'?'Kürtçe seslendirme cihazlarda bulunmuyor; metin ekranda kelime kelime okunuyor.':`Bu cihazda ${LANGS[curLang].name} ses yüklü değil. iPhone/iPad: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler bölümünden ${LANGS[curLang].name} sesini indirip sayfayı yenileyin.`):'';
  mouth(who,true);
  try{if(!v){await tween(est,t=>{if(hl)hl.byFrac(t);},tok);return;}
-  await new Promise((res,rej)=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=LANGS[curLang].code;if(v!=='default')u.voice=v;const pv=VOICE[who]||VOICE.narr;u.pitch=pv.pitch;u.rate=pv.rate*(speedMul>1?1.1:speedMul<1?.9:1);
+  await new Promise((res,rej)=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);if(v!=='default'){u.voice=v;u.lang=v.lang;}else u.lang=LANGS[curLang].code;const pv=VOICE[who]||VOICE.narr;u.pitch=pv.pitch;u.rate=pv.rate*(speedMul>1?1.1:speedMul<1?.9:1);
    let fin=false;const end=()=>{if(fin)return;fin=true;clearTimeout(sf);clearInterval(ck);res();};
    u.onend=end;u.onerror=end;u.onboundary=e=>{if(hl&&e.name!=='sentence')hl.byChar(e.charIndex);};
    const sf=setTimeout(end,est*2.6+4000);
@@ -536,18 +964,18 @@ function stopAll(){RUN++;paused=false;$('#stageWrap').classList.remove('paused')
 function clearStage(){L.draw.innerHTML='';L.fx.innerHTML='';propEls.clear();for(const n in CH){Object.assign(CH[n],{show:false,x:-120,y:760,face:1});setPose(n,null);setAcc(n,[]);setAct(n,null);place(n);}hideBubble();}
 function applyAnims(s){for(const[id,a]of Object.entries(s.anims||{})){const g=propEls.get(id);if(!g)continue;[...g.classList].filter(c=>c.startsWith('a-')).forEach(c=>g.classList.remove(c));g.classList.add('a-'+a);}}
 function restoreUpTo(k){clearStage();const sc=story().scenes;let c=0;for(let i=0;i<=k;i++)if(sc[i].clear)c=i;
- for(let j=c;j<k;j++){const s=sc[j];(s.remove||[]).forEach(id=>{propEls.get(id)?.remove();propEls.delete(id);});s.props.forEach(p=>buildProp(p,true));applyAnims(s);
+ for(let j=c;j<k;j++){const s=sc[j];[...(s.remove||[]),...(s.take||[])].forEach(id=>{propEls.get(id)?.remove();propEls.delete(id);});s.props.forEach(p=>buildProp(p,true));applyAnims(s);
   for(const n in s.chars||{}){const cs=s.chars[n],C=CH[n];if(cs.show===false){C.show=false;place(n);continue;}C.show=true;
    if(cs.at){C.x=cs.at[0];C.y=cs.at[1];}if(cs.carryTo!=null){C.x=cs.carryTo;C.y=760;}if(cs.walk){const l=cs.walk[cs.walk.length-1];C.x=l[0];C.y=l[1];}if(cs.face)C.face=cs.face;
    if('acc' in cs)setAcc(n,cs.acc);if('pose' in cs)setPose(n,cs.pose);place(n);}}
  setCaption('');}
 async function pageTurn(tok){const an=[L.draw,L.chars].map(g=>g.animate([{opacity:1,transform:'translateX(0)'},{opacity:0,transform:'translateX(-60px)'}],{duration:420,easing:'ease-in',fill:'forwards'}));
  sfx.rub(true);try{await wait(420,tok);}finally{sfx.rub(false);}clearStage();an.forEach(a=>a.cancel());}
-async function titleCard(tok){const t=story().title[curLang],g=el('g',{},L.fx),tx=el('text',{x:800,y:430,'text-anchor':'middle','dominant-baseline':'middle',class:'tc'+(curLang==='ar'?' ar':'')},g);tx.textContent=t;
+async function titleCard(tok){const t=T(story().t),g=el('g',{},L.fx),tx=el('text',{x:800,y:430,'text-anchor':'middle','dominant-baseline':'middle',class:'tc'+(curLang==='ar'?' ar':'')},g);tx.textContent=t;
  const bb=tx.getBBox();tx.style.strokeDasharray='900';tx.style.strokeDashoffset='900';tx.style.fillOpacity=0;const hl=setCaption(t),sp=speak(t,'narr',tok,hl),rtl=curLang==='ar';
  await penTo(rtl?bb.x+bb.width:bb.x,bb.y+bb.height*.7,380,tok,{r:28,s:1});sfx.scribble(true);
  try{await tween(1600/speedMul,k=>{tx.style.strokeDashoffset=900*(1-k);tx.style.fillOpacity=Math.max(0,(k-.55)/.45);PEN.x=rtl?bb.x+bb.width*(1-k):bb.x+bb.width*k;PEN.y=bb.y+bb.height*(.55+.25*Math.sin(k*40));setPen();},tok);}finally{sfx.scribble(false);}
- await parkPen(tok);await allP([sp,wait(500,tok)]);await tween(400,k=>g.style.opacity=1-k,tok);g.remove();setCaption('');}
+ await parkPen(tok);if(story().star){confetti();sfx.ding();}await allP([sp,wait(500,tok)]);await tween(400,k=>g.style.opacity=1-k,tok);g.remove();setCaption('');}
 async function playScene(i,tok){const s=story().scenes[i],cs=s.chars||{};hideBubble();
  if(s.clear&&(L.draw.childNodes.length||Object.values(CH).some(c=>c.show)))await pageTurn(tok);
  for(const id of s.remove||[])await eraseProp(id,tok);
@@ -557,11 +985,14 @@ async function playScene(i,tok){const s=story().scenes[i],cs=s.chars||{};hideBub
    if('pose' in c)setPose(n,c.pose);if('acc' in c)setAcc(n,c.acc);}};
  const walks=()=>allP(Object.entries(cs).filter(([,c])=>c.walk).map(([n,c])=>walkTo(n,c.walk,tok).then(()=>{if(c.face){CH[n].face=c.face;place(n);}})));
  if(s.walkFirst){await setup();await parkPen(tok);await walks();}
+ const take=async()=>{for(const id of s.take||[]){const g=propEls.get(id);if(!g)continue;propEls.delete(id);sfx.pop();g.style.transformOrigin='50% 50%';g.style.transformBox='fill-box';await g.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.2) translateY(-40px)'}],{duration:320,easing:'ease-in'}).finished.catch(()=>{});g.remove();}};
+ if(s.walkFirst)await take();
  for(const p of(s.carry?s.props.slice(1):s.props))await drawProp(p,tok);
- applyAnims(s);if(!s.walkFirst)await setup();await parkPen(tok);
- const hl=setCaption(s.narr[curLang]);await allP([speak(s.narr[curLang],'narr',tok,hl),...(s.walkFirst?[]:[walks()])]);
+ applyAnims(s);if(!s.walkFirst){await setup();await take();}await parkPen(tok);
+ const nt=T(s.n),hl=setCaption(nt);await allP([speak(nt,'narr',tok,hl),...(s.walkFirst?[]:[walks()])]);
  for(const n in cs)if(cs[n].act)setAct(n,cs[n].act);
- if(s.say){const n=s.say.who,t=s.say[curLang];await speak(t,n,tok,showBubble(n,t));}
+ if(s.party){confetti();sfx.ding();}
+ if(s.s){const n=s.s[0],t=s.s[1+LI[curLang]];await speak(t,n,tok,showBubble(n,t));}
  await wait(500,tok);for(const n in cs){const a=cs[n].act;if(a&&a!=='tired'&&a!=='water')setAct(n,null);}}
 async function runFrom(si,withTitle){stopAll();const tok=RUN;running=true;setPlayUI();hideQuiz();cur.scene=si;updDots();
  try{restoreUpTo(si);if(withTitle)await titleCard(tok);
@@ -573,27 +1004,38 @@ function togglePause(){paused=!paused;$('#stageWrap').classList.toggle('paused',
 function setPlayUI(){const on=running&&!paused;$('#playIc').innerHTML=on?'<path d="M7 4h3v16H7zM14 4h3v16h-3z" fill="#2E3136" stroke="#2E3136" stroke-width="2" stroke-linejoin="round"/>':'<path d="M7 4l13 8-13 8z" fill="#2E3136" stroke="#2E3136" stroke-width="2" stroke-linejoin="round"/>';$('#playB').setAttribute('aria-label',on?'Duraklat':'Oynat');}
 function updDots(){const d=$('#dots');d.innerHTML='';story().scenes.forEach((_,i)=>{const b=document.createElement('button');b.className=i===cur.scene?'on':i<cur.scene?'done':'';b.setAttribute('aria-label',`Sahne ${i+1}`);b.onclick=()=>{sfx.init();runFrom(i,false);};d.appendChild(b);});}
 
-/* soru */
-const quiz=$('#quiz');function hideQuiz(){quiz.hidden=true;quiz.innerHTML='';}
-function showQuiz(){const q=story().quiz,tok=RUN;quiz.hidden=false;quiz.dir=curLang==='ar'?'rtl':'ltr';quiz.classList.toggle('ar',curLang==='ar');
- quiz.innerHTML='<p class="qq"></p><div class="qopts"></div><div class="qend" hidden><button class="paperbtn" id="qAgain">Tekrar izle</button><button class="paperbtn" id="qNext" style="background:var(--orange)">Sıradaki hikâye</button></div>';
- quiz.querySelector('.qq').textContent=q.q[curLang];
- q.o.forEach((o,i)=>{const b=document.createElement('button');b.className='qo';b.innerHTML='<span class="qe"></span><span class="qt"></span>';b.querySelector('.qe').textContent=o.e;b.querySelector('.qt').textContent=o[curLang];
-  b.onclick=()=>{if(i===q.a){b.classList.add('right');sfx.ding();confetti();quiz.querySelector('.qend').hidden=false;speak(PRAISE[curLang],'narr',RUN,null).catch(()=>{});}
-   else{b.classList.remove('wrong');void b.offsetWidth;b.classList.add('wrong');sfx.boing();speak(RETRY[curLang],'narr',RUN,null).catch(()=>{});}};quiz.querySelector('.qopts').appendChild(b);});
- quiz.querySelector('#qAgain').onclick=()=>runFrom(0,true);quiz.querySelector('#qNext').onclick=()=>selectStory((cur.story+1)%STORIES.length);
- speak(q.q[curLang],'narr',tok,null).catch(()=>{});}
+/* sorular: her hikâyede 4 soru, ilerleme, puan */
+const quiz=$('#quiz');let QS=null;function hideQuiz(){quiz.hidden=true;quiz.innerHTML='';QS=null;}
+function quizFrame(){quiz.hidden=false;quiz.dir=curLang==='ar'?'rtl':'ltr';quiz.classList.toggle('ar',curLang==='ar');}
+function showQuiz(keep){if(!keep||!QS)QS={i:0,score:0,miss:false,hist:[]};quizFrame();if(QS.i>=story().quiz.length)return showResult();
+ const [qq,a,opts]=story().quiz[QS.i],N=story().quiz.length,tok=RUN;
+ quiz.innerHTML='<div class="qprog"></div><p class="qq"></p><div class="qopts"></div>';
+ const pr=quiz.querySelector('.qprog');for(let k=0;k<N;k++){const d=document.createElement('i');d.className=k<QS.i?(QS.hist[k]?'ok':'miss'):k===QS.i?'cur':'';pr.appendChild(d);}
+ pr.appendChild(document.createTextNode(` ${QS.i+1} / ${N}`));
+ quiz.querySelector('.qq').textContent=T(qq);
+ opts.forEach((o,i)=>{const b=document.createElement('button');b.className='qo';b.innerHTML='<span class="qe"></span><span class="qt"></span>';b.querySelector('.qe').textContent=o[0];b.querySelector('.qt').textContent=o[1+LI[curLang]];
+  b.onclick=()=>{if(QS.lock)return;if(i===a){QS.lock=true;b.classList.add('right');sfx.ding();if(!QS.miss)QS.score++;QS.hist[QS.i]=!QS.miss;const pl=PRAISE[curLang]||PRAISE.tr,p=pl[QS.i%pl.length];
+    speak(p,'narr',RUN,null).catch(()=>{});setTimeout(()=>{if(!QS)return;QS.i++;QS.miss=false;QS.lock=false;showQuiz(true);},1300/Math.max(.8,speedMul));}
+   else{QS.miss=true;b.classList.remove('wrong');void b.offsetWidth;b.classList.add('wrong');sfx.boing();speak(RETRY[curLang],'narr',RUN,null).catch(()=>{});}};quiz.querySelector('.qopts').appendChild(b);});
+ speak(T(qq),'narr',tok,null).catch(()=>{});}
+function showResult(){quizFrame();const N=story().quiz.length,s=QS.score,msg=RESULT[curLang](s,N);
+ quiz.innerHTML=`<div class="qres">${s>=N-1?'🎉':'🌟'}</div><div class="qstars">${'★'.repeat(s)}<span style="color:#D9CFBF">${'★'.repeat(N-s)}</span></div><p class="qq"></p><div class="qend"><button class="paperbtn" id="qRe">Soruları tekrarla</button><button class="paperbtn" id="qAgain">Tekrar izle</button><button class="paperbtn" id="qNext" style="background:var(--orange)">Sıradaki hikâye</button></div>`;
+ quiz.querySelector('.qq').textContent=msg;if(s>=Math.ceil(N*.75)){confetti();sfx.ding();}speak(msg,'narr',RUN,null).catch(()=>{});
+ quiz.querySelector('#qRe').onclick=()=>showQuiz(false);quiz.querySelector('#qAgain').onclick=()=>runFrom(0,true);
+ quiz.querySelector('#qNext').onclick=()=>{const n=(cur.story+1)%STORIES.length;cur.level=STORIES[n].lv;selectStory(n);};}
 function confetti(){const w=$('#stageWrap'),cols=['#E5484D','#F39A2B','#FFD84D','#7DBA4A','#3F7FD1','#9B7BD4'];for(let i=0;i<60;i++){const c=document.createElement('span');c.className='conf';c.style.left=Math.random()*100+'%';c.style.background=cols[i%6];w.appendChild(c);
  c.animate([{transform:'translateY(0) rotate(0)'},{transform:`translateY(${w.clientHeight+40}px) rotate(${720*Math.random()}deg)`}],{duration:1600+Math.random()*1400,delay:Math.random()*400,easing:'cubic-bezier(.3,.6,.6,1)'}).onfinish=()=>c.remove();}}
 
-/* raf ve öğretmen notu */
-function renderShelf(){const box=$('#cards');box.innerHTML='';STORIES.forEach((s,i)=>{const b=document.createElement('button');b.className='card'+(i===cur.story?' on':'');
- b.innerHTML=`<span class="pin"></span><span class="ic">${s.icon}</span><span><b>${s.title.tr}</b><small>${s.values.join(', ')}</small><small class="gr">${s.note.kademe}</small></span>`;b.onclick=()=>{sfx.init();selectStory(i);};box.appendChild(b);});
- const n=story().note;$('#tnote').innerHTML=`<dl><dt>Kademe</dt><dd>${n.kademe}</dd><dt>Değerler</dt><dd>${n.degerler}</dd><dt>Beceriler</dt><dd>${n.beceri}</dd><dt>Sohbet soruları</dt><dd><ul>${n.sorular.map(q=>`<li>${q}</li>`).join('')}</ul></dd><dt>Sınıf etkinliği</dt><dd>${n.etkinlik}</dd></dl><p class="mm">Hikâyeler, Türkiye Yüzyılı Maarif Modeli’nin değerler çerçevesi (sabır, çalışkanlık, yardımseverlik, merhamet, sorumluluk, dostluk) gözetilerek yazıldı.</p>`;}
-function selectStory(i){if(mode!=='story')setMode('story',true);cur.story=i;renderShelf();runFrom(0,true);}
-async function intro(){stopAll();const tok=RUN;clearStage();renderWords($('#capText'),'Bir hikâye seç: kalem çizsin, kahramanlar konuşsun!','tr');
- try{await wait(400,tok);await carryDraw(P.ground('ig',40,1560,760),'can',560,tok);await drawProp(P.sun('isun',1400,170,58),tok);await drawProp(P.cloud('icl',430,150,1),tok);await drawProp(P.flower('ifl',760,760,'pink'),tok);
-  CH.ela.x=980;CH.ela.y=760;CH.ela.face=-1;popIn('ela');await parkPen(tok);setAct('can','wave');setAct('ela','wave');}
+/* raf, kademeler, öğretmen notu */
+function renderLevels(){const box=$('#levels');box.innerHTML='';LV.forEach((l,i)=>{const b=document.createElement('button');b.className='paperbtn';b.setAttribute('role','tab');b.setAttribute('aria-selected',i===cur.level);b.textContent=`${l} (${STORIES.filter(s=>s.lv===i).length})`;b.onclick=()=>{sfx.init();cur.level=i;renderShelf();};box.appendChild(b);});}
+function renderShelf(){renderLevels();const box=$('#cards');box.innerHTML='';STORIES.forEach((s,i)=>{if(s.lv!==cur.level)return;const b=document.createElement('button');b.className='card'+(i===cur.story?' on':'');
+ b.innerHTML=`<span class="pin"></span><span class="ic">${s.icon}</span><span><b>${s.star?'⭐ ':''}${s.t[0]}</b><small>${s.values.join(', ')}</small><small class="gr">${LV[s.lv]} • 4 soru</small></span>`;b.onclick=()=>{sfx.init();selectStory(i);};box.appendChild(b);});
+ const s=story(),n=s.note;$('#tnote').innerHTML=`<dl><dt>Hikâye</dt><dd>${s.t[0]} (${LV[s.lv]})</dd><dt>Değerler</dt><dd>${n.d}</dd><dt>Beceriler</dt><dd>${n.b}</dd><dt>Değerlendirme</dt><dd>Hikâye sonunda 4 soru: anlama, sıralama, çıkarım ve değer sorusu. İlk denemedeki doğrular yıldız olarak gösterilir.</dd><dt>Sınıf etkinliği</dt><dd>${n.e}</dd></dl><p class="mm">Hikâyeler, Türkiye Yüzyılı Maarif Modeli’nin değerler çerçevesi gözetilerek kademelere göre yazıldı.</p>`;}
+function selectStory(i){if(mode!=='story')setMode('story',true);cur.story=i;cur.level=STORIES[i].lv;renderShelf();runFrom(0,true);}
+$('#starB').onclick=()=>{sfx.init();selectStory(STORIES.findIndex(s=>s.star));};
+async function intro(){stopAll();const tok=RUN;clearStage();renderWords($('#capText'),'Bu haftanın yıldızı Metehan! Bir hikâye seç: kalem çizsin, kahramanlar konuşsun!','tr');
+ try{await wait(400,tok);await carryDraw(P.ground('ig',40,1560,760),'can',460,tok);await drawProp(P.sun('isun',1400,170,58),tok);await drawProp(P.cloud('icl',430,150,1),tok);await drawProp(P.flower('ifl',640,760,'pink'),tok);await drawProp(P.medal('imd',820,450),tok);
+  CH.met.x=820;CH.met.y=760;CH.met.face=-1;popIn('met');await wait(250,tok);CH.ela.x=1080;CH.ela.y=760;CH.ela.face=-1;popIn('ela');await parkPen(tok);setAct('met','jump');setAct('can','wave');setAct('ela','wave');}
  catch(e){if(!(e instanceof Cancel))console.error(e);}}
 
 /* atölye */
@@ -605,7 +1047,7 @@ function stampProp(k,id,x,y){switch(k){case'sun':return P.sun(id,x,y,55);case'cl
 function toolUI(){$$('#crayons .crayon').forEach(b=>b.setAttribute('aria-pressed',AT.tool==='pen'&&b.dataset.c===AT.color));$$('#stamps .stamp').forEach(b=>b.setAttribute('aria-pressed',AT.tool===b.dataset.k));$$('#heroes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.h===AT.hero));}
 function buildAtelierUI(){CRAY.forEach(([c,n])=>{const b=document.createElement('button');b.className='crayon';b.dataset.c=c;b.style.color=c;b.setAttribute('aria-label',n);b.innerHTML=`<span style="background:${c}"></span>`;b.onclick=()=>{AT.tool='pen';AT.color=c;toolUI();};$('#crayons').appendChild(b);});
  STAMPS.forEach(([k,e,n])=>{const b=document.createElement('button');b.className='paperbtn stamp';b.dataset.k=k;b.innerHTML=`<span class="e">${e}</span>${n}`;b.onclick=()=>{AT.tool=k;toolUI();};$('#stamps').appendChild(b);});
- [['can','👦 Can'],['ela','👧 Ela']].forEach(([h,t])=>{const b=document.createElement('button');b.className='paperbtn';b.dataset.h=h;b.textContent=t;b.onclick=()=>{const o=AT.hero;AT.hero=h;if(o!==h){CH[o].show=false;place(o);const C=CH[h];C.x=CH[o].x;C.y=CH[o].y;C.face=CH[o].face;popIn(h);}toolUI();};$('#heroes').appendChild(b);});toolUI();}
+ [['can','👦 Can'],['ela','👧 Ela'],['met','⭐ Metehan'],['mira','👧 Mira'],['robo','🤖 Robi']].forEach(([h,t])=>{const b=document.createElement('button');b.className='paperbtn';b.dataset.h=h;b.textContent=t;b.onclick=()=>{const o=AT.hero;AT.hero=h;if(o!==h){CH[o].show=false;place(o);const C=CH[h];C.x=CH[o].x;C.y=CH[o].y;C.face=CH[o].face;popIn(h);}toolUI();};$('#heroes').appendChild(b);});toolUI();}
 function enterAtelier(){clearStage();L.user.innerHTML='';AT.items=[];AT.busy=false;const tok=RUN;parkPen(tok).catch(()=>{});const C=CH[AT.hero];C.x=160;C.y=800;C.face=1;popIn(AT.hero);
  renderWords($('#capText'),'Kâğıda bir yol çiz, sonra kahramanını o yolda yürüt!','tr');}
 const toSvg=e=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
@@ -627,7 +1069,7 @@ async function heroSay(){const t=$('#sayIn').value.trim();if(!t)return;sfx.init(
 function setMode(m,skipIntro){mode=m;$$('.modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));$('#shelfStory').hidden=m!=='story';$('#shelfAtelier').hidden=m!=='atelier';$('#ctrl').hidden=m!=='story';svg.classList.toggle('drawing',m==='atelier');
  stopAll();hideQuiz();running=false;setPlayUI();$('#capNote').textContent='';if(m==='atelier'){L.user.innerHTML='';enterAtelier();}else{L.user.innerHTML='';if(!skipIntro)intro();}}
 $$('.modes button').forEach(b=>b.onclick=()=>{sfx.init();if(b.dataset.mode!==mode)setMode(b.dataset.mode);});
-$$('.langs button').forEach(b=>b.onclick=()=>{sfx.init();curLang=b.dataset.lang;$$('.langs button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(mode!=='story')return;if(!quiz.hidden)showQuiz();else if(running)runFrom(Math.min(cur.scene,story().scenes.length-1),false);});
+$$('.langs button').forEach(b=>b.onclick=()=>{sfx.init();curLang=b.dataset.lang;$$('.langs button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(mode!=='story')return;if(!quiz.hidden){if(QS&&QS.i>=story().quiz.length)showResult();else showQuiz(true);}else if(running)runFrom(Math.min(cur.scene,story().scenes.length-1),false);});
 $('#playB').onclick=()=>{sfx.init();if(running)togglePause();else if(cur.scene>=story().scenes.length||!quiz.hidden)runFrom(0,true);else runFrom(cur.scene,cur.scene===0);};
 $('#prevB').onclick=()=>{sfx.init();runFrom(Math.max(0,Math.min(cur.scene,story().scenes.length)-1),false);};
 $('#nextB').onclick=()=>{sfx.init();const n=cur.scene+1;if(n<story().scenes.length)runFrom(n,false);};
