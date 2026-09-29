@@ -268,6 +268,14 @@ body.kid #shelfAtelier>.sec:nth-child(2)>h3{display:none}
 body.kid #stamps{flex:1 1 auto;min-height:120px;overflow-y:auto}
 #heroes svg .acc,#starFace .acc{display:none}
 body.kid #shelfAtelier h2{display:none}body.kid .shelf h3{font-size:21px}
+
+#txIn{width:100%;box-sizing:border-box;font:600 16px/1.35 var(--ui);padding:8px 12px;border:2.5px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);resize:vertical}
+.hint2{margin:0;font-size:13.5px;font-weight:700;background:#FFF6D6;color:var(--ink);padding:6px 10px;border-radius:8px}
+#txMic.on{background:#E5484D;color:#fff;animation:twk .7s infinite alternate}
+.autobox{background:#FFFDF2;color:var(--ink);border:3px dashed var(--orange);border-radius:14px;padding:8px 12px;max-height:260px;overflow:auto}
+.autobox b{font:700 24px var(--hand);display:block}.autobox p{margin:4px 0;font-size:14.5px;line-height:1.35}
+body.kid #shelfAtelier>.sec:nth-child(4){width:380px}body.kid #shelfAtelier>.sec:nth-child(5){width:360px}
+body.kid .hint2{display:none}
 .paused *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.prop,.eyes,.scarf,.acc-sweat{animation:none!important}.brand .under path{animation:none;stroke-dashoffset:0}}
 </style>
@@ -369,10 +377,20 @@ body.kid #shelfAtelier h2{display:none}body.kid .shelf h3{font-size:21px}
        <div id="nhCos" class="chips"></div><div id="nhHair" class="sw"></div><div id="nhSkin" class="sw"></div></div></div>
      <button class="paperbtn big" id="nhAdd">Sahneye ekle</button>
     </details>
-    <button class="paperbtn big" id="walkB">Kahramanı yolda yürüt</button>
+    <button class="paperbtn big" id="walkB">🚶 Kahramanı yürüt</button>
+    <label class="chk"><input type="checkbox" id="storyChk" checked> 🪄 Yürürken çizdiklerimle hikâye anlatsın</label>
+    <div id="autoBox" class="autobox" hidden><b id="autoTitle"></b><div id="autoText"></div><div class="row"><button class="paperbtn" id="autoRead">🔈 Tekrar oku</button><button class="paperbtn go" id="autoSave">📸 Hikâyem'e ekle</button></div></div>
     <div class="sayrow"><input id="sayIn" placeholder="Kahramanın ne söylesin?" aria-label="Kahramanın söyleyeceği cümle"><button class="paperbtn" id="sayB">Söylet</button></div>
     <div class="row"><button class="paperbtn" id="recB">🎤 Sesimi kaydet</button><span id="recInfo" class="recinfo"></span></div>
     <button class="paperbtn" id="hideHeroB">👋 Kahramanı sahneden çıkar</button>
+   </div>
+   <div class="sec">
+    <h3>✍️ Yazarak canlandır</h3>
+    <p class="hint2">Hikâyeni yaz ya da söyle; kalem içindeki kahramanları, hayvanları, bitkileri kendisi çizsin ve hikâyeyi canlandırsın.</p>
+    <textarea id="txIn" rows="5" placeholder="Örnek: Güneşli bir günde Ayşe parka gitti. Ağacın altında bir kedi vardı. Ayşe “Merhaba pisicik!” dedi."></textarea>
+    <div id="txSamples" class="toolrow"></div>
+    <div class="row"><button class="paperbtn go" id="txGo">✨ Çiz ve canlandır</button><button class="paperbtn" id="txMic">🎙️ Söyleyerek yaz</button></div>
+    <small id="txInfo" class="recinfo"></small>
    </div>
    <div class="sec">
     <h3>Hikâyem</h3>
@@ -1507,7 +1525,7 @@ svg.addEventListener('pointerdown',e=>{if(mode!=='atelier'||AT.playing)return;sf
  else if(AT.tool==='eraser'){erasing=true;svg.setPointerCapture(e.pointerId);setEraser(p);eraseHit(e);sfx.rub(true);}
  else if(AT.tool==='fill')doFill(e);
  else if(AT.tool==='move'){const h=hitAt(e);if(!h)return;svg.setPointerCapture(e.pointerId);if(h.char){const c=CH[h.char];dragS={n:h.char,x0:c.x,y0:c.y,px:p.x,py:p.y};}else{const[tx,ty]=tOf(h.item);dragS={w:h.item,x0:tx,y0:ty,px:p.x,py:p.y};h.item.parentNode.appendChild(h.item);}}
- else if(AT.tool==='stamp'&&AT.stamp){const k=AT.stamp,d=SD[k],w=newItem(L.draw,'stamp'),id='u'+(++uid)+'_'+Date.now().toString(36),pr=stampProp(k,id,p.x,p.y,SIZES[AT.size][1],AT.color),tok=RUN;pushU({t:'add',el:w});
+ else if(AT.tool==='stamp'&&AT.stamp){const k=AT.stamp,d=SD[k],w=newItem(L.draw,'stamp');w.dataset.s=k;const id='u'+(++uid)+'_'+Date.now().toString(36),pr=stampProp(k,id,p.x,p.y,SIZES[AT.size][1],AT.color),tok=RUN;pushU({t:'add',el:w});
   AT.queue=AT.queue.then(()=>drawProp(pr,tok,w)).then(g=>{if(AT.label&&d){const bb=g.getBBox(),t=el('text',{x:bb.x+bb.width/2,y:Math.min(880,bb.y+bb.height+34),'text-anchor':'middle',class:'lbl'+(curLang==='ar'?' ar':'')},w);t.textContent=T(d.n);if(soundOn)speak(T(d.n),'narr',RUN,null).catch(()=>{});}
    saveSoon();parkT=setTimeout(()=>parkPen(RUN).catch(()=>{}),900);}).catch(()=>{});}});
 svg.addEventListener('pointermove',e=>{if(mode!=='atelier')return;const p=toSvg(e);
@@ -1518,7 +1536,7 @@ const endPtr=()=>{if(drawing){sfx.scribble(false);const d=drawing;drawing=null;i
   const r=resample(d.pts,10);d.path.setAttribute('d',sk(r.map(q=>[q.x,q.y]),{jit:0}));d.w.dataset.pts=JSON.stringify(resample(d.pts,14).map(q=>[Math.round(q.x),Math.round(q.y)]));
   const rec=AT.smart?recognize(d.pts):null;
   if(rec&&rec.type==='line'){d.path.setAttribute('d',`M${f1(rec.a.x)} ${f1(rec.a.y)} L${f1(rec.b.x)} ${f1(rec.b.y)}`);const n=Math.max(2,Math.round(Math.hypot(rec.b.x-rec.a.x,rec.b.y-rec.a.y)/14));d.w.dataset.pts=JSON.stringify(Array.from({length:n+1},(_,i)=>[Math.round(rec.a.x+(rec.b.x-rec.a.x)*i/n),Math.round(rec.a.y+(rec.b.y-rec.a.y)*i/n)]));pushU({t:'add',el:d.w});flashWord((rec.a.x+rec.b.x)/2,(rec.a.y+rec.b.y)/2-30,SHAPE_N.line);}
-  else if(rec){d.w.remove();const w=newItem(L.user,'shape'),pr=buildStamp(shapeDef(rec),'sh'+(++uid),0,0,1,AT.color),tok=RUN;pushU({t:'add',el:w});sfx.ding();
+  else if(rec){d.w.remove();const w=newItem(L.user,'shape');w.dataset.shape=rec.type;const pr=buildStamp(shapeDef(rec),'sh'+(++uid),0,0,1,AT.color),tok=RUN;pushU({t:'add',el:w});sfx.ding();
    const cx=rec.cx??rec.pts.reduce((a,q)=>a+q.x,0)/3,cy=rec.cy??rec.pts.reduce((a,q)=>a+q.y,0)/3;flashWord(cx,cy+8,SHAPE_N[rec.type]);AT.queue=AT.queue.then(()=>drawProp(pr,tok,w)).then(()=>{saveSoon();parkT=setTimeout(()=>parkPen(RUN).catch(()=>{}),900);}).catch(()=>{});}
   else pushU({t:'add',el:d.w});parkT=setTimeout(()=>parkPen(RUN).catch(()=>{}),900);}
  if(erasing){erasing=false;eraserEl.style.display='none';sfx.rub(false);saveSoon();}
@@ -1552,7 +1570,7 @@ function buildAtelierUI(){
  CRAY.forEach(([c,n])=>{const b=document.createElement('button');b.className='crayon';b.dataset.c=c;b.style.color=c;b.setAttribute('aria-label',n);b.innerHTML=`<span style="background:${c}"></span>`;b.onclick=()=>{AT.color=c;if(!['fill','stamp'].includes(AT.tool))AT.tool='pen';toolUI();};$('#crayons').appendChild(b);});
  SIZES.forEach(([w,,n],i)=>{const b=document.createElement('button');b.className='paperbtn sizeb';b.setAttribute('aria-label',n);b.innerHTML=`<span style="width:${w+2}px;height:${w+2}px"></span>`;b.onclick=()=>{AT.size=i;toolUI();};$('#sizes').appendChild(b);});
  CATS.forEach(([c,t])=>{const b=document.createElement('button');b.className='paperbtn';b.dataset.c=c;b.textContent=t;b.onclick=()=>{AT.cat=c;renderStamps();};$('#stampCats').appendChild(b);});
- BGS.forEach(([e,n,fn])=>{const b=document.createElement('button');b.className='paperbtn bgpick';b.innerHTML=`${e} ${n}`;b.onclick=()=>{sfx.init();const w=newItem(L.draw,'bg');L.draw.insertBefore(w,L.draw.firstChild);pushU({t:'add',el:w});const tok=RUN;AT.queue=AT.queue.then(()=>fn(tok,w)).then(()=>{saveSoon();parkPen(RUN).catch(()=>{});}).catch(()=>{});};$('#bgs').appendChild(b);});
+ BGS.forEach(([e,n,fn])=>{const b=document.createElement('button');b.className='paperbtn bgpick';b.innerHTML=`${e} ${n}`;b.onclick=()=>{sfx.init();const w=newItem(L.draw,'bg');w.dataset.bg=BGS.find(q=>q[1]===n)[3]||'';L.draw.insertBefore(w,L.draw.firstChild);pushU({t:'add',el:w});const tok=RUN;AT.queue=AT.queue.then(()=>fn(tok,w)).then(()=>{saveSoon();parkPen(RUN).catch(()=>{});}).catch(()=>{});};$('#bgs').appendChild(b);});
  $('#labelChk').onchange=e=>{AT.label=e.target.checked;};
  renderStamps();renderHeroes();nhInit();}
 function enterAtelier(){clearStage();AT.undo=[];AT.busy=false;const st=LS.get('km-atelier',null);
@@ -1635,13 +1653,13 @@ const _voiceFor=voiceFor;voiceFor=function(l){refreshVoices();const nm=VPREF[l];
 function voicesOf(l){refreshVoices();const b=LANGS[l].code.split('-')[0].toLowerCase();return voices.filter(v=>{const x=(v.lang||'').replace(/_/g,'-').toLowerCase();return x===b||x.startsWith(b+'-');});}
 function fillVoices(){const l=$('#vLang').value,vs=voicesOf(l),sel=$('#vSel');sel.innerHTML='<option value="">Otomatik</option>'+vs.map(v=>`<option ${VPREF[l]===v.name?'selected':''}>${v.name.replace(/[<&]/g,'')}</option>`).join('');
  const nm=LANGS[l].name;$('#vInfo').innerHTML=vs.length?`Bu cihazda ${nm} için <b>${vs.length}</b> ses bulundu.`:(l==='ku'?'Kürtçe seslendirme cihazlarda bulunmuyor; metinler ekranda kelime kelime okunur. Hikâyem bölümünde kendi sesinizi kaydedebilirsiniz.':
-  `Bu cihazda ${nm} ses <b>bulunamadı</b>. <br>• Akıllı tahtada sayfayı <b>Microsoft Edge</b> ile açın: Türkçe (Emel, Ahmet) ve Arapça doğal sesleri ücretsiz gelir.<br>• Windows: Ayarlar › Zaman ve dil › Konuşma › Ses ekle.<br>• iPhone/iPad: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler.<br>• Ses yoksa atölyede 🎤 ile kendi sesinizi kaydedebilirsiniz.`);}
+  `Bu cihazda ${nm} ses <b>bulunamadı</b>.<br>• <b>Chrome + Windows:</b> Ayarlar › Zaman ve dil › Konuşma › <b>Ses ekle</b> › ${nm==='Arapça'?'Arapça (Suudi Arabistan)':nm==='Türkçe'?'Türkçe (Türkiye)':nm} seçin, yükleyin ve Chrome'u tamamen kapatıp açın (Türkçe için “Microsoft Tolga”, Arapça için “Microsoft Naayf” görünür).<br>• Alternatif: sayfayı <b>Microsoft Edge</b> ile açın; Türkçe ve Arapça doğal sesler hazır gelir.<br>• iPhone/iPad: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler.<br>• Ses yoksa atölyede 🎤 ile kendi sesinizi kaydedebilirsiniz.`);}
 function openSettings(){const v=$('#vLang');if(!v.options.length)v.innerHTML=Object.entries(LANGS).map(([k,o])=>`<option value="${k}">${o.name}</option>`).join('');v.value=curLang;fillVoices();$('#homeUrl').value=LS.get('km-home','');$('#kidChk').checked=document.body.classList.contains('kid');$('#setDlg').showModal?.();}
 $('#vLang').onchange=fillVoices;$('#vSel').onchange=e=>{VPREF[$('#vLang').value]=e.target.value;LS.set('km-voice',VPREF);};
 $('#vTest').onclick=()=>{sfx.init();const l=$('#vLang').value,cl=curLang;curLang=l;const s={tr:'Merhaba, ben Kalem Masalları!',en:'Hello, I am Pencil Tales!',de:'Hallo, ich bin Stiftmärchen!',ar:'مرحباً، أنا حكايات القلم!',ku:'Silav, ez Çîrokên Pênûsê me!'}[l];speak(s,'narr',RUN,null).catch(()=>{}).finally(()=>{});curLang=cl;};
 $('#setClose').onclick=()=>{LS.set('km-home',$('#homeUrl').value.trim());setKid($('#kidChk').checked);$('#setDlg').close();};
 $('#setB').onclick=openSettings;
-if(hasTTS)setTimeout(()=>{refreshVoices();if(voices.length&&!voicesOf('tr').length)$('#capNote').textContent='Bu cihazda Türkçe ses bulunamadı. ⚙️ Ayarlar’a dokunun: Edge ile açma veya ses yükleme yolu orada.';},2500);
+if(hasTTS)setTimeout(()=>{refreshVoices();if(voices.length&&!voicesOf('tr').length)$('#capNote').textContent='Bu cihazda Türkçe ses bulunamadı. ⚙️ Ayarlar’a dokunun: Chrome için Windows Türkçe ses paketini yükleme adımları orada.';},2500);
 
 /* ---------- ana sisteme dön, çocuk boyu, alt dock ---------- */
 function goHome(){const u=LS.get('km-home','');if(u){try{(window.top!==window?window.top:window).location.href=u;}catch(e){window.open(u,'_top');}return;}
@@ -1655,6 +1673,163 @@ $('#dLang').onclick=()=>{const ks=Object.keys(LANGS),n=ks[(ks.indexOf(curLang)+1
 function dockUI(){$('#dMode').innerHTML=mode==='story'?'🎨<small>Atölye</small>':'📖<small>Hikâyeler</small>';$('#dSnd').innerHTML=(soundOn?'🔊':'🔇')+'<small>Ses</small>';$('#dLang').innerHTML=`🌐<small>${curLang.toUpperCase()}</small>`;}
 document.addEventListener('click',()=>setTimeout(dockUI,0),true);
 setKid(LS.get('km-kid',matchMedia('(pointer:coarse)').matches&&innerWidth>900));
+
+/* ===================== OTOMATİK HİKÂYE + YAZARAK CANLANDIR ===================== */
+const CAT_OF={};CATS.forEach(([c,,ks])=>ks.forEach(k=>{if(!CAT_OF[k])CAT_OF[k]=c;}));
+const HN_AR={can:'جان',ela:'إيلا',met:'ميتهان',mira:'ميرا',robo:'روبي'};
+const hName=id=>curLang==='ar'&&HN_AR[id]?HN_AR[id]:heroName(id);
+const lowN=(s)=>curLang==='tr'?s.toLocaleLowerCase('tr'):curLang==='de'||curLang==='ar'?s:s.toLowerCase();
+/* kategori şablonları: [anlatıcı, kahraman] — {h} kahraman, {n} nesne adı */
+const TPL={
+ hayvan:{tr:['Yolda {h}, sevimli bir {n} ile karşılaştı.','Merhaba küçük dostum! Benimle yürür müsün?'],en:['On the way, {h} met a new friend: {n}!','Hello, little friend! Will you walk with me?'],de:['Unterwegs traf {h} einen neuen Freund: {N}!','Hallo, kleiner Freund! Kommst du mit mir?'],ar:['في الطريق، قابل {h} صديقاً جديداً: {n}!','مرحباً يا صديقي الصغير! هل تمشي معي؟'],ku:['Di rê de, {h} rastî hevalekî nû hat: {n}!','Silav hevalê biçûk! Tu bi min re tê?']},
+ deniz:{tr:['{h} denize yaklaştı ve bir {n} gördü.','Deniz ne kadar mavi ve güzel!'],en:['{h} came close to the sea and saw: {n}!','The sea is so blue and beautiful!'],de:['{h} kam ans Meer und sah: {N}!','Das Meer ist so blau und schön!'],ar:['اقترب {h} من البحر ورأى: {n}!','البحر أزرق وجميل جداً!'],ku:['{h} nêzîkî deryayê bû û dît: {n}!','Derya çiqas şîn û xweş e!']},
+ bitki:{tr:['Yolun kenarında güzel bir {n} vardı.','Ne güzelsin! Seni koparmayacağım, burada büyü.'],en:['Beside the road, there was something lovely: {n}!',"You are so lovely! I won't pick you, keep growing here."],de:['Am Wegrand stand etwas Schönes: {N}!','Wie schön du bist! Ich pflücke dich nicht, wachse weiter.'],ar:['على جانب الطريق كان هناك شيء جميل: {n}!','ما أجملك! لن أقطفك، ابقَ هنا وانمُ.'],ku:['Li kêleka rê tiştekî xweş hebû: {n}!','Tu çiqas xweş î! Ez te naçinim, li vir mezin bibe.']},
+ doga:{tr:['{h} yukarı baktı ve gördü: {n}!','Doğa ne kadar harika!'],en:['{h} looked up and saw: {n}!','Nature is so wonderful!'],de:['{h} schaute nach oben und sah: {N}!','Die Natur ist wunderbar!'],ar:['نظر {h} إلى الأعلى ورأى: {n}!','الطبيعة رائعة جداً!'],ku:['{h} li jor nêrî û dît: {n}!','Xweza çiqas ecêb e!']},
+ yapi:{tr:['Biraz ilerde bir {n} duruyordu.','Ne güzel bir yer! Burada kim yaşıyor acaba?'],en:['A little further on, there was a place: {n}!','What a nice place! I wonder who lives here?'],de:['Etwas weiter vorne war ein Ort: {N}!','Was für ein schöner Ort! Wer wohnt hier wohl?'],ar:['بعد قليل ظهر مكان: {n}!','يا له من مكان جميل! من يسكن هنا يا ترى؟'],ku:['Hinekî pêştir cihek hebû: {n}!','Çi cihekî xweş! Gelo kî li vir dijî?']},
+ tasit:{tr:['Tam o sırada bir {n} geçti.','Vay! Bir gün ben de onunla yolculuk yapacağım!'],en:['Just then, something went by: {n}!','Wow! One day I will travel with it too!'],de:['Genau da fuhr etwas vorbei: {N}!','Wow! Eines Tages reise ich auch damit!'],ar:['في تلك اللحظة مرّ شيء: {n}!','واو! يوماً ما سأسافر به أنا أيضاً!'],ku:['Hema wê demê tiştek derbas bû: {n}!','Wey! Rojekê ez jî dê pê re rêwîtiyê bikim!']},
+ oyun:{tr:['{h} yerde bir {n} buldu.','Birlikte oynamak, paylaşmak demektir!'],en:['{h} found something to play with: {n}!','Playing together means sharing!'],de:['{h} fand etwas zum Spielen: {N}!','Zusammen spielen heißt teilen!'],ar:['وجد {h} شيئاً للعب: {n}!','اللعب معاً يعني المشاركة!'],ku:['{h} tiştek ji bo lîstikê dît: {n}!','Bi hev re lîstin tê wateya parvekirinê!']},
+ yemek:{tr:['Karnı acıkan {h}, bir {n} gördü.','Mmm! Yemekten önce ellerimi yıkamalıyım.'],en:['{h} was hungry and saw something tasty: {n}!','Yum! I should wash my hands before eating.'],de:['{h} hatte Hunger und sah etwas Leckeres: {N}!','Lecker! Vor dem Essen wasche ich meine Hände.'],ar:['كان {h} جائعاً ورأى شيئاً لذيذاً: {n}!','ممم! يجب أن أغسل يديّ قبل الأكل.'],ku:['{h} birçî bû û tiştekî xweş dît: {n}!','Mmm! Divê berî xwarinê ez destên xwe bişom.']},
+ sekil:{tr:['Yolda bir şekil vardı: {n}!','Bu şekli tanıyorum: {n}!'],en:['There was a shape on the road: {n}!','I know this shape: {n}!'],de:['Auf dem Weg war eine Form: {N}!','Diese Form kenne ich: {N}!'],ar:['كان على الطريق شكل: {n}!','أعرف هذا الشكل: {n}!'],ku:['Li ser rê şeklek hebû: {n}!','Ez vî şeklî nas dikim: {n}!']},
+ uzay:{tr:['{h} uzaya baktı ve gördü: {n}!','Büyüyünce astronot olacağım!'],en:['{h} looked up to space and saw: {n}!','When I grow up, I will be an astronaut!'],de:['{h} schaute ins Weltall und sah: {N}!','Wenn ich groß bin, werde ich Astronaut!'],ar:['نظر {h} إلى الفضاء ورأى: {n}!','عندما أكبر سأصبح رائد فضاء!'],ku:['{h} li fezayê nêrî û dît: {n}!','Dema ez mezin bibim, ez ê bibim astronot!']},
+ duygu:{tr:['{h} bir duygu fark etti: {n}!','Duygularımızı söylemek bizi rahatlatır.'],en:['{h} noticed a feeling: {n}!','Talking about our feelings helps us.'],de:['{h} bemerkte ein Gefühl: {N}!','Über Gefühle zu sprechen hilft uns.'],ar:['لاحظ {h} شعوراً: {n}!','الحديث عن مشاعرنا يساعدنا.'],ku:['{h} hestek dît: {n}!','Axaftina li ser hestên me alîkariya me dike.']},
+ friend:{tr:['{h}, arkadaşı {n} ile karşılaştı.','Merhaba {h}! Birlikte gidelim!'],en:['{h} met a friend: {n}!','Hi {h}! Let\'s go together!'],de:['{h} traf einen Freund: {n}!','Hallo {h}! Gehen wir zusammen!'],ar:['التقى {h} بصديقه {n}!','مرحباً يا {h}! لنذهب معاً!'],ku:['{h} rastî hevalê xwe {n} hat!','Silav {h}! Werin em bi hev re biçin!']}};
+const SAY_K={sun:['Güneş bizi ısıtıyor, ne güzel!','The sun keeps us warm, how nice!','Die Sonne wärmt uns, wie schön!','الشمس تدفئنا، ما أجمل ذلك!','Roj me germ dike, çiqas xweş!'],
+ rain:['Yağmur yağıyor, şemsiyemi açayım!',"It's raining, let me open my umbrella!",'Es regnet, ich öffne meinen Schirm!','إنها تمطر، سأفتح مظلتي!','Baran dibare, bila ez sîwana xwe vekim!'],
+ rainbow:['Gökkuşağının yedi rengi var!','A rainbow has seven colors!','Ein Regenbogen hat sieben Farben!','لقوس قزح سبعة ألوان!','Keskesor heft rengên wê hene!'],
+ bayrak:['Bayrağımız ne güzel dalgalanıyor!','Our flag is waving so beautifully!','Wie schön unsere Fahne weht!','ما أجمل رفرفة علمنا!','Ala me çiqas xweş pêl dide!'],
+ nota:['Hadi birlikte şarkı söyleyelim! La la la!',"Let's sing together! La la la!",'Lasst uns zusammen singen! La la la!','هيا نغنّي معاً! لا لا لا!','Werin em bi hev re stranan bibêjin! La la la!'],
+ moon:['İyi geceler Ay! Ne kadar parlaksın.','Good night, Moon! You are so bright.','Gute Nacht, Mond! Du bist so hell.','تصبح على خير أيها القمر! ما أشدّ لمعانك.','Şev baş Heyv! Tu çiqas ronî yî.'],
+ okul:['Okulumu çok seviyorum!','I love my school!','Ich liebe meine Schule!','أحبّ مدرستي كثيراً!','Ez ji dibistana xwe gelek hez dikim!']};
+const YER={night:['Yıldızlı bir gecede, ','on a starry night, ','in einer Sternennacht ','في ليلة مليئة بالنجوم، ','di şeveke bi stêrk de, '],sea:['Masmavi bir denizin kıyısında, ','by the blue sea, ','am blauen Meer ','على شاطئ بحر أزرق، ','li kêleka deryayeke şîn, '],space:['Uzak bir gezegende, ','on a faraway planet, ','auf einem fernen Planeten ','على كوكب بعيد، ','li gerstêrkeke dûr, '],
+ school:['Neşeli bir okulda, ','at a happy school, ','in einer fröhlichen Schule ','في مدرسة سعيدة، ','li dibistaneke kêfxweş, '],sunny:['Güneşli bir günde, ','on a sunny day, ','an einem sonnigen Tag ','في يوم مشمس، ','di rojeke tavî de, '],rainy:['Yağmurlu bir günde, ','on a rainy day, ','an einem Regentag ','في يوم ممطر، ','di rojeke baranî de, '],none:['','','','','']};
+const INTRO={tr:'Bir varmış, bir yokmuş. {y}{h} adında meraklı bir kahraman yola çıktı.',en:'Once upon a time, {y}there was a curious hero named {h}. One day, {h} set off on a journey.',de:'Es war einmal {y}ein neugieriger Held namens {h}. Eines Tages machte sich {h} auf den Weg.',ar:'كان يا ما كان، {y}بطلٌ فضولي اسمه {h}. وفي يوم من الأيام انطلق {h} في رحلة.',ku:'Hebû tunebû, {y}lehengekî meraqdar bi navê {h} hebû. Rojekê {h} ket rê.'};
+const ENDS={tr:'Yolun sonunda {h} çok mutluydu. Bugün {k} yeni şey keşfetmişti.',en:'At the end of the road, {h} was very happy. Today {h} discovered {k} new things.',de:'Am Ende des Weges war {h} sehr glücklich. Heute hat {h} {k} neue Dinge entdeckt.',ar:'في نهاية الطريق كان {h} سعيداً جداً. اكتشف اليوم {k} أشياء جديدة.',ku:'Li dawiya rê {h} gelek kêfxweş bû. Îro {h} {k} tiştên nû keşf kirin.'};
+const MORAL={hayvan:['Hayvanları sevmek ve korumak hepimizin görevidir.',"Loving and protecting animals is everyone's duty.",'Tiere zu lieben und zu schützen ist unser aller Aufgabe.','حبّ الحيوانات وحمايتها واجبنا جميعاً.','Hezkirin û parastina heywanan erka me hemûyan e.'],
+ bitki:['Doğayı korursak, doğa da bizi korur.','If we protect nature, nature protects us.','Wenn wir die Natur schützen, schützt sie uns.','إذا حمينا الطبيعة، تحمينا الطبيعة.','Ger em xwezayê biparêzin, xweza jî me diparêze.'],
+ yemek:['Sağlıklı beslenmek bizi güçlü yapar.','Eating healthy makes us strong.','Gesundes Essen macht uns stark.','الغذاء الصحي يجعلنا أقوياء.','Xwarina tendurist me xurt dike.'],
+ deniz:['Denizleri temiz tutmalıyız.','We must keep the seas clean.','Wir müssen die Meere sauber halten.','يجب أن نحافظ على نظافة البحار.','Divê em deryayan paqij bihêlin.'],
+ uzay:['Merak eden, keşfeder!','Those who wonder, discover!','Wer neugierig ist, entdeckt!','من يتساءل، يكتشف!','Yê ku meraq dike, keşf dike!'],
+ friend:['Arkadaşlarla her yol daha güzeldir.','Every road is better with friends.','Mit Freunden ist jeder Weg schöner.','كل طريق أجمل مع الأصدقاء.','Bi hevalan re her rê xweştir e.'],
+ def:['Her yolculuk yeni bir keşifle güzelleşir.','Every journey is better with a new discovery.','Jede Reise wird mit einer Entdeckung schöner.','كل رحلة تصبح أجمل مع اكتشاف جديد.','Her rêwîtî bi keşfeke nû xweştir dibe.']};
+const TITLE={tr:'{h} ve Büyük Yolculuk',en:'{h} and the Big Journey',de:'{h} und die große Reise',ar:'{h} والرحلة الكبيرة',ku:'{h} û Rêwîtiya Mezin'};
+const REP={tr:['{h} sonra da bir {n} gördü.','Ne kadar güzel!'],en:['Then {h} also saw: {n}!','How beautiful!'],de:['Dann sah {h} auch: {N}!','Wie schön!'],ar:['ثم رأى {h} أيضاً: {n}!','ما أجمل هذا!'],ku:['Paşê {h} ev jî dît: {n}!','Çiqas xweş e!']};
+const fillT=(t,o)=>t.replace(/\{(\w)\}/g,(_,k)=>o[k]??'');
+
+/* sahnedeki her şeyi algıla */
+function sceneItems(){const out=[];for(const w of [...L.draw.children,...L.user.children]){const k=w.dataset.s,sh=w.dataset.shape;if(!k&&!sh)continue;
+  let bb;try{bb=w.getBBox();}catch(e){continue;}if(!bb.width)continue;const[tx,ty]=tOf(w);
+  out.push({w,k:k||'sh_'+sh,cat:k?CAT_OF[k]||'oyun':'sekil',names:k?SD[k].n:SHAPE_N[sh],cx:bb.x+bb.width/2+tx,cy:bb.y+bb.height/2+ty,top:bb.y+ty,bottom:bb.y+bb.height+ty});}
+ return out;}
+function sceneMood(items){const bg=[...L.draw.children].map(w=>w.dataset.bg).filter(Boolean),ks=new Set(items.map(i=>i.k));
+ if(bg.includes('uzay')||ks.has('gezegen')||ks.has('ufo'))return'space';if(bg.includes('gece')||ks.has('moon'))return'night';if(bg.includes('deniz')||items.some(i=>i.cat==='deniz'))return'sea';
+ if(ks.has('rain'))return'rainy';if(bg.includes('okul')||ks.has('okul'))return'school';if(ks.has('sun')||bg.includes('cayir'))return'sunny';return'none';}
+function sparkle(x,y){for(let i=0;i<8;i++){const a=i/8*Math.PI*2,s=el('path',{d:starD(0,0,12,5),fill:['#FFD84D','#F39A2B','#F4A6C0','#8EC5EA'][i%4],stroke:INK,'stroke-width':1.5},L.fx);
+  s.animate([{transform:`translate(${x}px,${y}px) scale(.2)`,opacity:1},{transform:`translate(${x+Math.cos(a)*90}px,${y+Math.sin(a)*90}px) scale(1)`,opacity:0}],{duration:900,easing:'ease-out'}).onfinish=()=>s.remove();}}
+function pulse(w){const g=w.firstElementChild;if(!g)return;g.style.transformBox='fill-box';g.style.transformOrigin='50% 100%';g.animate([{transform:'scale(1)'},{transform:'scale(1.18) rotate(-4deg)'},{transform:'scale(.95) rotate(3deg)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'});}
+async function tell(t,tok,lines){lines.push(t);const hl=setCaption(t);await speak(t,'narr',tok,hl);}
+async function heroTalk(n,t,tok,lines){lines.push('— '+t);await speak(t,n,tok,showBubble(n,t));await wait(350,tok);hideBubble();}
+function showStory(title,lines){const b=$('#autoBox');b.hidden=false;$('#autoTitle').textContent=title;$('#autoText').innerHTML='';lines.forEach(l=>{const p=document.createElement('p');p.textContent=l;if(curLang==='ar')p.dir='rtl';$('#autoText').appendChild(p);});AT.lastStory={title,lines};}
+
+/* 🚶 hikâyeli yürüyüş: çizilenleri algılar, yolda durup anlatır */
+async function storyWalk(){if(AT.busy)return;AT.busy=true;const tok=RUN,n=AT.hero,C=CH[n],L5=LI[curLang],lines=[];
+ try{hideBubble();if(!C.show){C.x=180;C.y=800;C.face=1;popIn(n);await wait(300,tok);}if(C.y<500)C.y=800;
+  const items=sceneItems(),friends=Object.keys(CH).filter(f=>f!==n&&CH[f].show).map(f=>({f,cat:'friend',cx:CH[f].x,cy:CH[f].y-100}));
+  const pw=[...L.user.querySelectorAll('.item[data-pts]')].pop();let path=null;
+  if(pw){const[tx,ty]=tOf(pw);path=JSON.parse(pw.dataset.pts).map(([x,y])=>[x+tx,y+ty]);}
+  let stops=[...items,...friends];const hn=hName(n),title=fillT(TITLE[curLang],{h:hn});
+  const tt=el('text',{x:800,y:120,'text-anchor':'middle',class:'flash'+(curLang==='ar'?' ar':'')},L.fx);tt.textContent=title;tt.animate([{opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.8},{opacity:0}],{duration:3200}).onfinish=()=>tt.remove();sfx.ding();
+  await tell(fillT(INTRO[curLang],{h:hn,y:YER[sceneMood(items)][L5]}),tok,lines);
+  if(path){stops.forEach(s=>{let bi=0,bd=1e9;path.forEach((p,i)=>{const d=Math.hypot(p[0]-s.cx,p[1]-s.cy);if(d<bd){bd=d;bi=i;}});s.pi=bi;s.pd=bd;});stops=stops.filter(s=>s.pd<340).sort((a,b)=>a.pi-b.pi);
+   C.x=path[0][0];C.y=path[0][1]-3;place(n);}
+  else stops.sort((a,b)=>Math.abs(a.cx-C.x)-Math.abs(b.cx-C.x)||a.cx-b.cx),stops.sort((a,b)=>a.cx-b.cx);
+  stops=stops.slice(0,9);let pi=0;const joined=[],seenC=new Set();
+  if(!stops.length){await tell({tr:'Ama yol bomboştu! Hadi yoluna bir şeyler çiz: çiçek, güneş, hayvan…',en:"But the road was empty! Draw something: a flower, the sun, an animal…",de:'Aber der Weg war leer! Male etwas: eine Blume, die Sonne, ein Tier…',ar:'لكن الطريق كان فارغاً! ارسم شيئاً: زهرة، شمساً، حيواناً…',ku:'Lê rê vala bû! Tiştekî xêz bike: kulîlkek, roj, heywanek…'}[curLang],tok,lines);}
+  for(const s of stops){
+   if(path){const seg=path.slice(pi,s.pi+1).map(p=>[p[0],p[1]-3]);if(seg.length)await walkTo(n,seg,tok,.3);pi=s.pi;}
+   else{const tx=s.cx>C.x?s.cx-120:s.cx+120;await walkTo(n,[[Math.max(60,Math.min(1540,tx)),C.y]],tok,.32);}
+   C.face=s.cx>=C.x?1:-1;place(n);if(s.w)pulse(s.w);sparkle(s.cx,s.cy);sfx.pop();
+   const rep=!s.f&&seenC.has(s.cat);seenC.add(s.cat);const tp0=TPL[s.cat]||TPL.oyun,tp=rep?{[curLang]:REP[curLang]}:tp0,nm=s.f?hName(s.f):s.names[L5];
+   await tell(fillT(tp[curLang][0],{h:hn,n:s.f?nm:lowN(nm),N:nm}),tok,lines);
+   if(s.f){setAct(s.f,'wave');await heroTalk(s.f,fillT(tp[curLang][1],{h:hn}),tok,lines);setAct(s.f,null);joined.push(s.f);}
+   else{const sk=SAY_K[s.k];setAct(n,'wave');await heroTalk(n,sk?sk[L5]:fillT(tp[curLang][1],{n:lowN(nm),N:nm}),tok,lines);setAct(n,null);}}
+  if(path&&pi<path.length-1)await walkTo(n,path.slice(pi+1).map(p=>[p[0],p[1]-3]),tok,.3);
+  joined.forEach((f,i)=>walkTo(f,[[C.x-(i+1)*110*C.face,C.y]],tok,.35).catch(()=>{}));
+  setAct(n,'jump');confetti();sfx.ding();const cats=new Set(stops.map(s=>s.cat));const mk2=['friend','hayvan','bitki','deniz','yemek','uzay'].find(c=>cats.has(c))||'def';
+  await tell(fillT(ENDS[curLang],{h:hn,k:stops.length}),tok,lines);await tell(MORAL[mk2][L5],tok,lines);setAct(n,null);
+  showStory(title,lines);saveSoon();}
+ catch(e){if(!(e instanceof Cancel))console.error(e);}finally{AT.busy=false;hideBubble();}}
+
+/* ✍️ yazılan hikâyeyi çözümle ve canlandır */
+const TR_SUF=['','ı','i','u','ü','a','e','da','de','ta','te','dan','den','tan','ten','la','le','lar','ler','ın','in','un','ün','yı','yi','yu','yü','ya','ye','nın','nin','nun','nün','s','es','n','en'];
+const mut=s=>s.replace(/p$/,'b').replace(/ç$/,'c').replace(/t$/,'d').replace(/k$/,'ğ');
+const lw=s=>s.toLocaleLowerCase('tr');
+const arStrip=s=>s.replace(/^(و|ف|ب|ل|ك)?(ال)?/,'');
+let DICT=null;
+function buildDict(){DICT=[];const seen=new Set(),order=[...CATS.filter(c=>c[0]!=='sekil'),...CATS.filter(c=>c[0]==='sekil')].flatMap(c=>c[2]);
+ const add=(k,f)=>{f=lw(f).trim();if(!f||f.length<2||seen.has(f))return;seen.add(f);DICT.push({k,f,m:mut(f),ar:/[\u0600-\u06FF]/.test(f)});};
+ order.forEach(k=>SD[k].n.forEach(nm=>add(k,nm)));
+ [['park',['tree','flower']],['orman',['tree','cam']],['bahçe',['flower','tree']],['çimen',['cali']],['kedicik',['kitten']],['pisi',['kitten']],['köpekçik',['kopek']],['tavşancık',['tavsan']],['ağaçlar',['tree']],['çiçekler',['flower']],['yıldızlar',['star']],['kuşlar',['kus']],['arılar',['ari']],['forest',['tree','cam']],['garden',['flower','tree']],['wald',['tree','cam']],['garten',['flower','tree']],['kitty',['kitten']],['puppy',['kopek']],['sonne',['sun']],['حديقة',['flower','tree']],['baxçe',['flower','tree']]].forEach(([w,ks])=>ks.forEach(k=>DICT.push({k,f:w,m:w,syn:1})));}
+function matchWord(tok,d){if(d.ar){const t=arStrip(tok),f=arStrip(d.f);return t===f||t.startsWith(f)&&t.length-f.length<=3;}
+ if(d.f.includes(' '))return false;if(d.f.length<=3)return TR_SUF.some(s=>tok===d.f+s||tok===d.m+s);return tok.startsWith(d.f)&&tok.length-d.f.length<=6||tok.startsWith(d.m)&&d.m!==d.f&&tok.length-d.m.length<=6;}
+function parseStory(text){if(!DICT)buildDict();const sents=(text.match(/[^.!?؟\n]+[.!?؟]*/g)||[]).map(s=>s.trim()).filter(Boolean);const keys=[],heroes=[];let bg=null;
+ const heroList=[...BASE_H.map(([id,nm])=>[id,nm]),...MYH.map(h=>[h.id,h.name]),...Object.entries(HN_AR)];
+ const res=sents.map((s,si)=>{const low=lw(s),toks=[...s.matchAll(/[\p{L}\p{M}]+/gu)].map(m=>({w:lw(m[0]),o:m[0],i:m.index}));const ks=[],hs=[];
+  DICT.filter(d=>d.f.includes(' ')).forEach(d=>{const i=low.indexOf(d.f);if(i>=0&&(i===0||!/\p{L}/u.test(low[i-1]))&&!ks.includes(d.k))ks.push(d.k);});
+  toks.forEach(t=>{for(const d of DICT){if(ks.includes(d.k))continue;if(matchWord(t.w,d)){ks.push(d.k);break;}}
+   const cap=t.o[0]!==t.o[0].toLocaleLowerCase('tr')||/[\u0600-\u06FF]/.test(t.o);
+   if(cap){const h=heroList.find(([id,nm])=>lw(nm)===t.w||t.w.startsWith(lw(nm))&&t.w.length-nm.length<=4&&nm.length>3);
+    if(h){if(!hs.includes(h[0]))hs.push(h[0]);}else if(GIRLS.includes(t.w)||BOYS.includes(t.w)){const nm=t.o[0].toLocaleUpperCase('tr')+t.w.slice(1);if(!hs.includes('new:'+nm))hs.push('new:'+nm);}}
+   if(/^(gece|geceleyin|night|nacht|ليل|ليلة|şev|şevê)/.test(t.w))bg=bg||'gece';if(/^(uzay|space|weltall|فضاء|feza)/.test(t.w))bg=bg||'uzay';if(/^(deniz|sea|ocean|meer|بحر|derya)/.test(t.w)&&!hs.length)bg=bg||'deniz';});
+  ks.forEach(k=>{if(!keys.includes(k))keys.push(k);});hs.forEach(h=>{if(!heroes.includes(h))heroes.push(h);});
+  const q=s.match(/[“"«](.+?)[”"»]/);return{s,ks,hs,quote:q?q[1]:null};});
+ return{sents:res,keys:keys.filter(k=>SD[k]).slice(0,11),heroes:heroes.slice(0,4),bg};}
+const SKYK=new Set(['sun','cloud','moon','star','rainbow','simsek','kar','bird','gezegen','ufo','kuyruklu','dunya','ucak','helikopter','ucanbalon','roket','kelebek','ari','balloon','ucurtma','rain']);
+async function animateText(){const text=$('#txIn').value.trim();if(!text){$('#txIn').focus();sfx.boing();return;}if(AT.busy)return;
+ sfx.init();stopAll();const tok=RUN;AT.busy=true;const P0=parseStory(text),L5=LI[curLang],lines=[];
+ try{pushU({t:'wipe',draw:L.draw.innerHTML,user:L.user.innerHTML,paper:paper.getAttribute('fill')});L.draw.innerHTML='';L.user.innerHTML='';paper.setAttribute('fill','#FFFEF8');propEls.clear();
+  for(const c in CH){CH[c].show=false;place(c);}
+  /* kahramanlar: yazıdaki isimler (bilinmeyen Türkçe isimler için otomatik kahraman) */
+  const hs=[];for(const h of P0.heroes){if(h.startsWith('new:')){const nm=h.slice(4),g=guessG(nm);const o={id:'u'+Date.now().toString(36)+hs.length,name:nm,g:Array.isArray(g)?g[0]:g||'e',c:'okul',hair:HAIRS[Math.floor(Math.random()*3)],skin:SKINS[0]};MYH.push(o);LS.set('km-heroes',MYH);buildMyHero(o);hs.push(o.id);}else hs.push(h);}
+  if(!hs.length)hs.push(AT.hero);const main=hs[0];AT.hero=main;renderHeroes();
+  /* arka plan */
+  const bgFn=(BGS.find(b=>b[3]===P0.bg)||BGS[0])[2],wb=newItem(L.draw,'bg');wb.dataset.bg=P0.bg||'cayir';
+  if(P0.bg==='deniz'||P0.bg==='uzay'||P0.bg==='gece')await bgFn(tok,wb);else await drawProp(P.ground('bg'+uid++,40,1560,780),tok,wb);
+  /* nesneleri yerleştir: gökyüzü üstte, diğerleri yerde, metindeki sıraya göre */
+  const sky=P0.keys.filter(k=>SKYK.has(k)),gr=P0.keys.filter(k=>!SKYK.has(k)),placed={};
+  const fr=hs.slice(1),slots=gr.length+fr.length,xs=i=>slots<=1?900:420+i*(1060/Math.max(1,slots-1));let gi=0;
+  const order=[];P0.sents.forEach(s=>{s.ks.forEach(k=>{if(gr.includes(k)&&!order.includes(k))order.push(k);});s.hs.forEach(h=>{const id=h.startsWith('new:')?hs[P0.heroes.indexOf(h)]:h;if(fr.includes(id)&&!order.includes(id))order.push(id);});});
+  gr.concat(fr).forEach(k=>{if(!order.includes(k))order.push(k);});
+  for(const k of order){const x=xs(gi++);if(CH[k]){const c=CH[k];c.x=x;c.y=800;c.face=-1;popIn(k);placed[k]={f:k,cx:x,cy:700};await wait(200,tok);continue;}
+   const w=newItem(L.draw,'stamp');w.dataset.s=k;const y=P0.bg==='deniz'&&CAT_OF[k]==='deniz'?720:(CAT_OF[k]==='sekil'?650:690);await drawProp(stampProp(k,'tx'+uid++,x,y,1,AT.color===INK?'#3F7FD1':AT.color),tok,w);placed[k]={w,k,cx:x,cy:y};}
+  let si=0;for(const k of sky){const x=k==='rain'||k==='rainbow'?800:260+si*(1100/Math.max(1,sky.length-1||1));const y=k==='rainbow'?380:k==='rain'?300:[150,230][si%2];si++;
+   const w=newItem(L.draw,'stamp');w.dataset.s=k;await drawProp(stampProp(k,'tx'+uid++,x,y,1),tok,w);placed[k]={w,k,cx:x,cy:y};}
+  await parkPen(tok);const C=CH[main];C.x=170;C.y=800;C.face=1;popIn(main);await wait(400,tok);
+  /* cümle cümle canlandır */
+  for(const s of P0.sents){const tk=s.ks.find(k=>placed[k])||s.hs.map(h=>h.startsWith('new:')?hs[P0.heroes.indexOf(h)]:h).find(h=>h!==main&&placed[h]);
+   if(tk){const t=placed[tk];if(!SKYK.has(tk)||t.f){const tx=t.cx>C.x?t.cx-120:t.cx+120;await walkTo(main,[[Math.max(60,Math.min(1540,tx)),800]],tok,.34);}C.face=t.cx>=C.x?1:-1;place(main);if(t.w)pulse(t.w);sparkle(t.cx,t.cy);if(t.f)setAct(t.f,'wave');}
+   if(/(zıpla|sevin|mutlu|jump|happy|froh|spr|فرح|kêfxweş)/i.test(s.s))setAct(main,'jump');
+   await tell(s.s.replace(/[“"«].+?[”"»]/,'').trim()||s.s,tok,lines);
+   if(s.quote)await heroTalk(tk&&placed[tk]?.f?placed[tk].f:main,s.quote,tok,lines);setAct(main,null);if(tk&&placed[tk]?.f)setAct(placed[tk].f,null);}
+  confetti();sfx.ding();showStory(text.split(/[.!?]/)[0].slice(0,40),lines);saveSoon();}
+ catch(e){if(!(e instanceof Cancel))console.error(e);}finally{AT.busy=false;hideBubble();}}
+/* 🎙️ söyleyerek yaz (Chrome konuşma tanıma) */
+let SR=null;function dictate(){const R=window.SpeechRecognition||window.webkitSpeechRecognition,b=$('#txMic');
+ if(!R){$('#txInfo').textContent='Bu tarayıcı sesle yazmayı desteklemiyor. Chrome veya Edge kullanın.';return;}
+ if(SR){SR.stop();return;}SR=new R();SR.lang=curLang==='ku'?'tr-TR':LANGS[curLang].code;SR.continuous=true;SR.interimResults=true;const base=$('#txIn').value.trim();
+ SR.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript+(e.results[i].isFinal?'. ':' ');$('#txIn').value=(base?base+' ':'')+t.replace(/\s+\./g,'.').trim();};
+ SR.onerror=e=>{$('#txInfo').textContent=e.error==='not-allowed'?'Mikrofon izni yok. Sayfayı “Ayrı sekmede aç” ile açıp izin verin.':'Ses anlaşılamadı, tekrar deneyin.';};
+ SR.onend=()=>{SR=null;b.classList.remove('on');b.textContent='🎙️ Söyleyerek yaz';};SR.start();b.classList.add('on');b.textContent='⏹️ Bitir';$('#txInfo').textContent='Dinliyorum… Hikâyeni anlat!';}
+const SAMPLES=[['🌞 Parkta','Güneşli bir günde Ayşe parka gitti. Parkta kocaman bir ağaç ve rengârenk çiçekler vardı. Ağacın altında bir kedi uyuyordu. Ayşe kediyi sevdi ve “Merhaba pisicik!” dedi. Sonra gökyüzünde bir gökkuşağı çıktı. Ayşe çok mutlu oldu.'],
+ ['🌙 Gece','Yıldızlı bir gecede Can bahçeye çıktı. Gökyüzünde parlak bir ay vardı. Bir baykuş gibi uyanık olan kedi yanına geldi. Can uzaktaki roketi gördü ve “Bir gün uzaya gideceğim!” dedi.'],
+ ['🌊 Deniz','Mira denize gitti. Denizde bir balık ve bir ahtapot yüzüyordu. Kıyıda bir yengeç yürüyordu. Mira “Denizi temiz tutalım!” dedi. Deniz feneri ışıl ışıl yanıyordu.'],
+ ['🍎 Piknik','Metehan ve Ela pikniğe gitti. Sepette elma, muz ve çilek vardı. Bir arı çiçeğin üstünde uçuyordu. Metehan “Meyveler çok sağlıklı!” dedi. Arkadaşlar birlikte top oynadı.']];
+function textUI(){SAMPLES.forEach(([t,s])=>{const b=document.createElement('button');b.className='paperbtn';b.textContent=t;b.onclick=()=>{$('#txIn').value=s;sfx.pop();};$('#txSamples').appendChild(b);});
+ $('#txGo').onclick=animateText;$('#txMic').onclick=dictate;
+ $('#walkB').onclick=()=>{sfx.init();$('#storyChk').checked?storyWalk():heroWalk();};
+ $('#autoSave').onclick=()=>{if(!AT.lastStory)return;$('#scCap').value=AT.lastStory.lines.filter(l=>!l.startsWith('—')).join(' ');snapScene();};
+ $('#autoRead').onclick=async()=>{if(!AT.lastStory)return;stopAll();const tok=RUN;try{for(const l of AT.lastStory.lines){const hl=setCaption(l.replace(/^— /,''));await speak(l.replace(/^— /,''),'narr',tok,hl);}}catch(e){}};}
+/* damgalara anahtar ekle (algılama için) ve arka planları işaretle */
+BGS[0][3]='cayir';BGS[1][3]='gece';BGS[2][3]='deniz';BGS[3][3]='uzay';BGS[4][3]='okul';
 
 /* modlar ve düğmeler */
 function setMode(m,skipIntro){if(mode==='atelier'&&m!=='atelier'){saveWork();if(AT.playing)stopAll();AT.playing=false;}paper.setAttribute('fill',m==='atelier'?paper.getAttribute('fill'):'#FFFEF8');mode=m;$$('.modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));$('#shelfStory').hidden=m!=='story';$('#shelfAtelier').hidden=m!=='atelier';$('#ctrl').hidden=m!=='story';svg.classList.toggle('drawing',m==='atelier');
@@ -1671,7 +1846,7 @@ $('#fsB').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();e
 document.addEventListener('keydown',e=>{if(mode!=='story'||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.code==='Space'&&document.activeElement===document.body){e.preventDefault();$('#playB').click();}if(e.key==='ArrowRight')$('#nextB').click();if(e.key==='ArrowLeft')$('#prevB').click();});
 /* kâğıt dokusu */
 (()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),d=x.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=Math.random(),a=v>.72?(v-.72)*2.6:0;d.data[i]=d.data[i+1]=d.data[i+2]=255;d.data[i+3]=a*230;}x.putImageData(d,0,0);$('#grain').style.backgroundImage=`url(${c.toDataURL()})`;})();
-buildAtelierUI();taskUI();renderScenes();recUI();renderShelf();updDots();setPlayUI();dockUI();intro();
+buildAtelierUI();taskUI();textUI();renderScenes();recUI();renderShelf();updDots();setPlayUI();dockUI();intro();
 </script>
 </body>
 </html>
