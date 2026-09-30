@@ -195,6 +195,8 @@ body.pc #pcKeys{display:block}
 @media (max-width:760px){.side{width:64px}.side button{width:56px;font-size:9px}.side button .e{font-size:20px}.search{display:none}.games{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 @media (max-height:460px){#lb{min-width:160px;font-size:11px}#chat{width:min(300px,40vw);font-size:12px}#chatLog{max-height:62px}#chatIn{height:28px}#stageT{font-size:20px}#jumpB{width:84px;height:84px}}
 @media (orientation:portrait){#stageT{top:calc(60px + var(--st));font-size:20px}#chat{top:calc(112px + var(--st));width:62vw;font-size:12px}#chatLog{max-height:74px}#lb{min-width:150px;font-size:11px}.avwrap{flex-direction:column}#avView{flex:0 0 42%}.avPanel{max-width:none;border-left:0;border-top:1px solid var(--line)}}
+/* ZİRVE Cihaz/Ekran Uyumu */
+.topbar,.side,.main>*,#gd .gdb,.mb,#gTop,#chat,#lb,#stageT,#coinHud,#win>*,#toast,.tabs,.items,#avExtra,#badgeP,#note,#gload>*,#lqBtn{zoom:var(--egt-z,1)}#jumpB{transform:scale(var(--egt-z,1));transform-origin:100% 100%}.joyB{transform:scale(var(--egt-z,1))}
 </style>
 </head>
 <body>
@@ -274,6 +276,7 @@ body.pc #pcKeys{display:block}
  <div id="gTop"><button class="gb pe" id="gMenu" aria-label="Menü"><div class="mcube"></div></button><button class="gb pe" id="gChat" aria-label="Sohbet">💬</button></div>
  <div id="chat" class="pe"><div id="chatLog"></div><input id="chatIn" maxlength="70" placeholder="Sohbet etmek için dokun..." enterkeyhint="send"></div>
  <div id="stageT"></div>
+ <button class="btn pe" id="lqBtn" style="position:absolute;left:50%;top:calc(70px + var(--st));transform:translateX(-50%);display:none;background:#ff5a1a;font-size:14px">🎓 Beklerken soru çöz (+5 KP)</button>
  <div id="lb" class="pe"></div>
  <div id="note"></div>
  <div id="joyZ"><div class="joyB" id="joyB" style="display:none"><div class="joyK" id="joyK"></div></div></div>
@@ -287,7 +290,7 @@ body.pc #pcKeys{display:block}
  <h3 id="mTitle">Menü</h3>
  <button class="btn b" id="mResume">▶ Oyuna Devam Et</button>
  <button class="btn" id="mReset">🔄 Karakteri Sıfırla (R)</button>
- <button class="btn" id="mSkip">⏭️ Aşamayı Atla (25 KP)</button>
+ <button class="btn" id="mSkip">⏭️ Aşamayı Atla (Soru Çöz)</button>
  <div class="row2">Ses Efektleri<button class="tg" id="tSnd"></button></div>
  <div class="row2">Müzik<button class="tg" id="tMus"></button></div>
  <div class="row2">Yüksek Grafik<button class="tg" id="tHq"></button></div>
@@ -300,6 +303,7 @@ body.pc #pcKeys{display:block}
  <div class="row2">Ses Efektleri<button class="tg" id="tSnd2"></button></div>
  <div class="row2">Müzik<button class="tg" id="tMus2"></button></div>
  <div class="row2">Yüksek Grafik<button class="tg" id="tHq2"></button></div>
+ <div class="row2">🎓 Sınıf Seviyesi<button class="btn b" id="lvlBtn" style="padding:6px 12px;font-size:14px"></button></div>
  <div class="row2" style="flex-direction:column;align-items:flex-start;gap:4px;font-size:13px;font-weight:800"><b style="font-size:15px">🎮 Nasıl Oynanır?</b><span>📱 Sol altta sürükle → yürü, sağdaki ok butonu → zıpla. Ekranın sağ tarafında parmağını sürükle → kamerayı döndür. İki parmakla yakınlaştır.</span><span>💻 WASD yürü, Boşluk zıpla, fareyle sürükle kamera, tekerlek yakınlaştır.</span><span>🔴 Kırmızı parlayan bloklara dokunma!</span></div>
  <button class="btn r" id="resetAll" style="font-size:14px;padding:10px">İlerlemeyi Sıfırla</button>
  <button class="btn g" id="setOk">Tamam</button>
@@ -313,6 +317,157 @@ body.pc #pcKeys{display:block}
  <symbol id="iKP" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="url(#gk)" stroke="#6b4a00" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 2v10l9-5M12 12l-9-5M12 12v10" fill="none" stroke="#6b4a00" stroke-width="1.2" opacity=".55"/><text x="12" y="16" font-size="8" font-weight="900" text-anchor="middle" fill="#6b4a00" font-family="Arial">K</text></symbol>
 </defs></svg>
 <script>
+/* ===================== ZİRVE EĞİTİM KATMANI (oyunlar için ortak) =====================
+   window.EGT.ask({baslik, odul, tema}) -> Promise<{dogru:boolean, atlandi:boolean}>
+   window.EGT.karsilama({uygulama, baslik, emoji, ozet, adimlar, renk})
+   window.EGT.pill(true/false)  -> menü ekranlarında "?" ve "📲 QR" düğmelerini göster/gizle
+   window.EGT.mesgul            -> soru penceresi açıkken true (oyun duraklar)
+*/
+(function(){
+'use strict';
+const LSx={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[Math.floor(Math.random()*a.length)],SH=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const SEV=[['k1','1-2. Sınıf','🐣'],['k2','3-4. Sınıf','🌱'],['k3','5-6. Sınıf','🚀'],['k4','7-8. Sınıf (LGS)','🏆'],['k5','Lise','🎓']];
+const DERS={mat:['Matematik','🔢','#3b82f6'],tr:['Türkçe','📖','#ef4444'],fen:['Fen Bilimleri','🔬','#10b981'],sos:['Sosyal Bilgiler','🌍','#f59e0b'],ing:['İngilizce','🇬🇧','#8b5cf6'],trf:['Trafik ve Güvenlik','🚦','#f97316']};
+
+/* ---------- SORU ÜRETİCİLER ---------- */
+function secenek(dogru,yakin){const s=new Set([dogru]);let g=0;while(s.size<4&&g++<200){const d=yakin();if(d!==dogru&&d!==undefined&&d!==null&&!Number.isNaN(d))s.add(d);}const o=SH([...s]);return{o:o.map(String),a:o.indexOf(dogru)};}
+function mat(sv){
+ let q,c,near,e='';
+ const t=R(0,99);
+ if(sv==='k1'){if(t<40){const a=R(1,10),b=R(1,10);q=`${a} + ${b} = ?`;c=a+b;}else if(t<75){const a=R(5,20),b=R(1,a);q=`${a} − ${b} = ?`;c=a-b;}else{const a=R(10,60),b=R(1,9);q=`${a} + ${b} = ?`;c=a+b;}near=()=>c+R(-3,3);}
+ else if(sv==='k2'){if(t<35){const a=R(2,10),b=R(2,10);q=`${a} × ${b} = ?`;c=a*b;e='Çarpım tablosunu hatırla!';near=()=>c+P([-a,a,-b,b,-1,1,2]);}else if(t<60){const b=R(2,9),c0=R(2,10);q=`${b*c0} ÷ ${b} = ?`;c=c0;near=()=>c+R(-3,3);}else if(t<80){const a=R(100,500),b=R(10,300);q=`${a} + ${b} = ?`;c=a+b;near=()=>c+P([-10,10,-100,100,-1,1]);}else{const n=P([2,4,10]),x=n*R(2,10);q=`${x} sayısının 1/${n}'${n===2?'si':n===4?'ü':'u'} kaçtır?`;c=x/n;near=()=>c+R(-4,4);}}
+ else if(sv==='k3'){if(t<25){const a=R(11,40),b=R(3,12);q=`${a} × ${b} = ?`;c=a*b;near=()=>c+P([-10,10,-b,b,-a,a]);}else if(t<45){const d=R(4,12),a=R(1,d-2),b=R(1,d-a-1);q=`${a}/${d} + ${b}/${d} = ?`;const o=secenek(`${a+b}/${d}`,()=>P([`${a+b}/${d*2}`,`${a*b}/${d}`,`${a+b+1}/${d}`,`${Math.abs(a-b)}/${d}`,`${a+b-1}/${d}`]));return{d:'mat',q,...o,e:'Paydalar eşitse paylar toplanır, payda aynı kalır.'};}
+  else if(t<65){const p=P([10,20,25,50]),x=P([40,80,120,200,60,100]);q=`${x} sayısının %${p}'${p===50?'si':p===10?'u':'i'} kaçtır?`;c=x*p/100;near=()=>c+P([-5,5,-10,10,-2,2]);e='Yüzde hesabı: sayı × yüzde ÷ 100';}
+  else if(t<82){const a=R(2,9),b=R(2,9),d=R(2,9);q=`${a} + ${b} × ${d} = ?`;c=a+b*d;near=()=>P([(a+b)*d,c+1,c-1,c+b]);e='Önce çarpma, sonra toplama yapılır!';}
+  else{const a=(R(10,99)/10),b=(R(10,99)/10);q=`${a.toString().replace('.',',')} + ${b.toString().replace('.',',')} = ?`;c=Math.round((a+b)*10)/10;const o=secenek(c.toString().replace('.',','),()=>(Math.round((c+P([-1,1,-.1,.1,.2]))*10)/10).toString().replace('.',','));return{d:'mat',q,...o,e:'Virgüller alt alta gelecek şekilde topla.'};}}
+ else{if(t<25){const x=R(2,12),a=R(2,6),b=R(1,20);q=`${a}x + ${b} = ${a*x+b} ise x kaçtır?`;c=x;near=()=>c+R(-3,3);e=`${b}'yi karşıya at: ${a}x = ${a*x}, sonra ${a}'ye böl.`;}
+  else if(t<45){const a=R(2,5),n=R(2,4);q=`${a}${['','','²','³','⁴'][n]} = ?`;c=Math.pow(a,n);near=()=>P([a*n,c+a,c-a,c+1,Math.pow(a,n-1)]);e='Üs: tabanı kendisiyle üs kadar çarp.';}
+  else if(t<62){const r=R(2,15);q=`√${r*r} = ?`;c=r;near=()=>c+R(-3,3);e='Karekök: hangi sayının karesi?';}
+  else if(t<80){const a=R(-12,12),b=R(-12,12);q=`(${a}) + (${b}) = ?`;c=a+b;near=()=>P([a-b,-c,c+1,c-1,b-a]);e='Tam sayılarda işaretlere dikkat!';}
+  else{const a=R(2,6),b=R(2,6),k=R(2,8);q=`${a}/${b} = ${a*k}/? (orantı)`;c=b*k;near=()=>c+P([-k,k,-1,1,-b,b]);e='Pay kaç katına çıktıysa payda da o katına çıkar.';}}
+ if(sv==='k5'&&Math.random()<.6){const x=R(1,9),y=R(1,9);q=`x + y = ${x+y} ve x − y = ${x-y} ise x kaçtır?`;c=x;near=()=>c+R(-3,3);e='İki denklemi topla: 2x = '+(2*x);}
+ const o=secenek(c,near);return{d:'mat',q,o:o.o,a:o.a,e};
+}
+const ES=[['siyah','kara'],['beyaz','ak'],['kırmızı','al'],['cevap','yanıt'],['yıl','sene'],['ad','isim'],['doktor','hekim'],['hediye','armağan'],['misafir','konuk'],['fakir','yoksul'],['kelime','sözcük'],['cümle','tümce'],['anlam','mana'],['özgür','hür'],['yaşlı','ihtiyar'],['hızlı','süratli'],['okul','mektep'],['ülke','yurt'],['sınav','imtihan'],['öykü','hikâye']];
+const ZT=[['büyük','küçük'],['uzun','kısa'],['sıcak','soğuk'],['açık','kapalı'],['iyi','kötü'],['hızlı','yavaş'],['gece','gündüz'],['ağır','hafif'],['eski','yeni'],['genç','yaşlı'],['dolu','boş'],['ince','kalın'],['erken','geç'],['yukarı','aşağı'],['tatlı','acı'],['geniş','dar'],['kolay','zor'],['temiz','kirli'],['güçlü','zayıf'],['mutlu','üzgün']];
+const YZ=[['herkes','herkez','herkeş'],['yanlış','yalnış','yanlıs'],['yalnız','yanlız','yalınız'],['sürpriz','süpriz','sürprız'],['orijinal','orjinal','orijınal'],['şoför','şöför','şöfor'],['tıraş','traş','tıraj'],['egzoz','egzos','eksoz'],['kirpi','kırpi','kirbi'],['antrenman','antreman','antrenmen'],['makine','makina','makıne'],['kütüphane','kütüphahne','kütüpane']];
+function tr(sv){const t=R(0,2);
+ if(t===0){const p=P(ES),dir=Math.random()<.5;const w=dir?p[0]:p[1],c=dir?p[1]:p[0];const o=secenek(c,()=>P(ES)[R(0,1)]);return{d:'tr',q:`"${w}" kelimesinin EŞ anlamlısı hangisidir?`,o:o.o,a:o.a,e:`${w} = ${c} (aynı anlamı taşır)`};}
+ if(t===1){const p=P(ZT),dir=Math.random()<.5;const w=dir?p[0]:p[1],c=dir?p[1]:p[0];const o=secenek(c,()=>P(ZT)[R(0,1)]);return{d:'tr',q:`"${w}" kelimesinin ZIT anlamlısı hangisidir?`,o:o.o,a:o.a,e:`${w} ↔ ${c}`};}
+ const p=P(YZ);const o=secenek(p[0],()=>P([p[1],p[2],P(YZ)[1]]));return{d:'tr',q:'Hangi kelimenin yazımı DOĞRUDUR?',o:o.o,a:o.a,e:`Doğru yazım: ${p[0]}`};}
+const EN=[['elma','apple'],['kedi','cat'],['köpek','dog'],['kırmızı','red'],['mavi','blue'],['yeşil','green'],['okul','school'],['kitap','book'],['anne','mother'],['baba','father'],['su','water'],['ev','house'],['güneş','sun'],['ay','moon'],['araba','car'],['kuş','bird'],['balık','fish'],['masa','table'],['kalem','pencil'],['öğretmen','teacher'],['arkadaş','friend'],['mutlu','happy'],['büyük','big'],['küçük','small'],['koşmak','run'],['yüzmek','swim'],['okumak','read'],['yazmak','write'],['uyumak','sleep'],['yemek yemek','eat'],['pazartesi','Monday'],['cuma','Friday'],['kış','winter'],['yaz','summer'],['hastane','hospital'],['itfaiyeci','firefighter'],['polis','police officer'],['trafik ışığı','traffic light'],['sol','left'],['sağ','right']];
+function ing(sv){const p=P(EN.slice(0,sv==='k1'?20:sv==='k2'?30:EN.length));const dir=Math.random()<.6;const w=dir?p[0]:p[1],c=dir?p[1]:p[0];const o=secenek(c,()=>P(EN)[dir?1:0]);return{d:'ing',q:dir?`"${w}" İngilizcede nedir?`:`"${w}" Türkçede ne demektir?`,o:o.o,a:o.a,e:`${p[1]} = ${p[0]}`,dil:dir?'en':'tr'};}
+const FEN_A=[['Bitkiler besinlerini nasıl üretir?','Fotosentez ile','Uyuyarak','Toprağı yiyerek','Suyu dondurarak'],['Suyun donma sıcaklığı kaç derecedir?','0 °C','100 °C','50 °C','−50 °C'],['Hangisi bir duyu organımızdır?','Deri','Mide','Kalp','Akciğer'],['Dünya kendi etrafında dönerek neyi oluşturur?','Gece ve gündüzü','Mevsimleri','Yağmuru','Depremi'],['Hangisi canlıdır?','Ağaç','Taş','Su','Hava'],['Mıknatıs hangisini çeker?','Demir çivi','Tahta kalem','Plastik top','Kâğıt'],['Güneş bir ...dır.','Yıldız','Gezegen','Uydu','Kuyruklu yıldız'],['Kalbimizin görevi nedir?','Kanı pompalamak','Besinleri sindirmek','Nefes almak','Düşünmek'],['Hangisi katı bir maddedir?','Buz','Su','Buhar','Hava'],['Kuşların vücudu neyle örtülüdür?','Tüy','Pul','Kıl','Kabuk'],['Işık kaynağı hangisidir?','Güneş','Ay','Ayna','Cam'],['Dişlerimizi günde kaç kez fırçalamalıyız?','En az 2','Hiç','Haftada 1','Ayda 1']];
+const FEN_B=[['Hücrenin yönetim merkezi hangisidir?','Çekirdek','Zar','Sitoplazma','Koful'],['Suyun kimyasal formülü nedir?','H₂O','CO₂','O₂','NaCl'],['Ses hangi ortamda YAYILMAZ?','Boşluk','Su','Hava','Demir'],['Kuvvetin birimi nedir?','Newton','Metre','Kilogram','Litre'],['Dünya\'nın uydusu hangisidir?','Ay','Mars','Güneş','Venüs'],['Hangisi yenilenebilir enerji kaynağıdır?','Rüzgâr','Kömür','Petrol','Doğal gaz'],['DNA nerede bulunur?','Hücre çekirdeğinde','Kemiklerde','Havada','Toprakta'],['Asitlerin tadı nasıldır?','Ekşi','Tatlı','Acı','Tuzlu'],['Işık en hızlı hangi ortamda yayılır?','Boşluk','Su','Cam','Tahta'],['Mevsimlerin oluşma nedeni nedir?','Dünya\'nın eksen eğikliği','Ay\'ın dönüşü','Rüzgârlar','Bulutlar'],['Periyodik tabloda "Fe" hangi elementtir?','Demir','Flor','Fosfor','Flüor'],['Fotosentezde bitkiler havadan hangi gazı alır?','Karbondioksit','Oksijen','Azot','Helyum']];
+const SOS_A=[['Türkiye\'nin başkenti neresidir?','Ankara','İstanbul','İzmir','Bursa'],['Cumhuriyet ne zaman ilan edildi?','29 Ekim 1923','23 Nisan 1920','19 Mayıs 1919','30 Ağustos 1922'],['23 Nisan hangi bayramdır?','Ulusal Egemenlik ve Çocuk Bayramı','Zafer Bayramı','Cumhuriyet Bayramı','Gençlik Bayramı'],['Haritada kuzey yönü genellikle nerededir?','Yukarıda','Aşağıda','Solda','Sağda'],['Türk bayrağının renkleri nelerdir?','Kırmızı ve beyaz','Mavi ve beyaz','Yeşil ve sarı','Siyah ve kırmızı'],['Hangisi bir haktır?','Eğitim almak','Çöp atmak','Kural çiğnemek','Kavga etmek'],['İstiklal Marşı\'nın şairi kimdir?','Mehmet Akif Ersoy','Ziya Gökalp','Yunus Emre','Nazım Hikmet'],['Türkiye kaç denizle çevrilidir?','3','1','2','5'],['Acil durumda hangi numara aranır?','112','155','110','100'],['Pusula hangi yönü gösterir?','Kuzeyi','Doğuyu','Güneyi','Batıyı']];
+const SOS_B=[['TBMM ne zaman açıldı?','23 Nisan 1920','29 Ekim 1923','1 Kasım 1922','3 Mart 1924'],['Malazgirt Savaşı hangi yıl yapıldı?','1071','1453','1923','1299'],['İstanbul\'u kim fethetti?','Fatih Sultan Mehmet','Kanuni','Yavuz Sultan Selim','Osman Gazi'],['Türkiye\'nin en uzun nehri hangisidir?','Kızılırmak','Fırat','Sakarya','Dicle'],['Türkiye\'nin en yüksek dağı hangisidir?','Ağrı Dağı','Uludağ','Erciyes','Palandöken'],['Kurtuluş Savaşı\'nın başladığı tarih kabul edilen gün?','19 Mayıs 1919','29 Ekim 1923','30 Ağustos 1922','23 Nisan 1920'],['Ekvator\'a yaklaştıkça sıcaklık genelde nasıl değişir?','Artar','Azalır','Değişmez','Sıfır olur'],['Osmanlı Devleti\'nin kurucusu kimdir?','Osman Bey','Orhan Bey','Ertuğrul Gazi','Fatih'],['Anayasa nedir?','Devletin temel kanunu','Bir şehir adı','Bir savaş','Bir marş'],['Kıtalardan en büyüğü hangisidir?','Asya','Avrupa','Afrika','Antarktika']];
+const TRF=[['Trafik ışığında KIRMIZI ne demektir?','Dur','Geç','Hızlan','Korna çal'],['Karşıdan karşıya nereden geçmeliyiz?','Yaya geçidinden','Arabaların arasından','Viraj başından','Otoyoldan'],['Arabada hangisini mutlaka takmalıyız?','Emniyet kemeri','Güneş gözlüğü','Kulaklık','Şapka'],['SARI ışık ne anlama gelir?','Dikkat, hazırlan','Hızlan','Park et','Geri git'],['Bisiklete binerken ne takmalıyız?','Kask','Terlik','Kolye','Kulaklık'],['Karşıya geçmeden önce ne yapılır?','Sola, sağa, tekrar sola bakılır','Koşarak geçilir','Telefona bakılır','Gözler kapatılır'],['Okul önlerinde sürücüler ne yapmalıdır?','Yavaşlamalıdır','Hızlanmalıdır','Korna çalmalıdır','Durmadan geçmelidir'],['Ambulans siren çalarak geliyorsa ne yapılır?','Yol verilir','Önü kesilir','Yarışılır','Takip edilir'],['Yaya kaldırımı kimin içindir?','Yayaların','Arabaların','Otobüslerin','Kamyonların'],['12 yaş altı çocuklar arabada nerede oturmalıdır?','Arka koltukta','Ön koltukta','Bagajda','Sürücünün kucağında'],['Yeşil ışık yayalar için ne demektir?','Güvenle geçebilirsin','Dur','Koş','Bekle'],['Trafik polisi elini kaldırırsa ne yapılır?','Durulur','Hızlanılır','Korna çalınır','Şerit değiştirilir'],['Yangın anında hangi numara aranır?','112','155','110','444'],['Yangında binadan çıkarken ne kullanılır?','Merdiven','Asansör','Pencere','Paraşüt'],['Dumanlı ortamda nasıl ilerlenmelidir?','Eğilerek, ağzı kapatarak','Koşarak, dik durarak','Gözleri kapatarak','Zıplayarak'],['Elimiz hafifçe yanarsa ne yaparız?','Soğuk suya tutarız','Diş macunu süreriz','Buz ile ovalarız','Hiçbir şey yapmayız'],['Burnu kanayan kişinin başı nasıl tutulur?','Hafifçe öne eğik','Geriye yatık','Yana yatık','Aşağı sarkık'],['Deprem anında ne yapılır?','Çök, kapan, tutun','Asansöre bin','Pencereden atla','Merdivene koş']];
+function statik(list,d){const x=P(list);const o=SH(x.slice(1,5));return{d,q:x[0],o,a:o.indexOf(x[1]),e:'Doğru cevap: '+x[1]};}
+function uret(sv,ders){
+ const alt=sv==='k1'||sv==='k2';
+ ders=ders||P(['mat','mat','tr','fen','sos','ing','trf']);
+ if(ders==='mat')return mat(sv);if(ders==='tr')return tr(sv);if(ders==='ing')return ing(sv);
+ if(ders==='fen')return statik(alt?FEN_A:FEN_B,'fen');if(ders==='sos')return statik(alt?SOS_A:SOS_B,'sos');return statik(TRF,'trf');
+}
+
+/* ---------- STİL ---------- */
+const css=`.egt-ov{position:fixed;inset:0;z-index:9000;background:rgba(10,8,30,.72);display:flex;align-items:center;justify-content:center;padding:14px;font-family:'Nunito',system-ui,sans-serif;animation:egtF .25s}
+@keyframes egtF{from{opacity:0}}@keyframes egtP{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1)}}
+.egt-c{width:min(520px,100%);max-height:100%;overflow:auto;background:linear-gradient(160deg,#fff,#f3f1ff);color:#1b1640;border-radius:22px;box-shadow:0 18px 60px rgba(0,0,0,.45);padding:16px 18px 18px;animation:egtP .35s;border:4px solid var(--egt,#6d4aff);-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.egt-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.egt-ch{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;color:#fff;font-weight:900;font-size:13px}
+.egt-rw{margin-left:auto;background:#fff3c4;color:#8a5a00;border-radius:999px;padding:4px 10px;font-weight:900;font-size:13px}
+.egt-t{font-weight:900;font-size:13px;color:#6b6790;margin:10px 0 2px}.egt-q{font-size:clamp(19px,4.6vw,25px);font-weight:900;line-height:1.3;margin:4px 0 14px}
+.egt-o{display:grid;grid-template-columns:1fr 1fr;gap:10px}.egt-o button{font:inherit;font-weight:900;font-size:clamp(15px,3.8vw,19px);padding:14px 10px;border-radius:14px;border:3px solid #d9d4ff;background:#fff;color:#1b1640;cursor:pointer;transition:transform .08s;min-height:56px}
+.egt-o button:active{transform:scale(.96)}.egt-o button.ok{background:#22c55e;border-color:#15803d;color:#fff}.egt-o button.no{background:#ef4444;border-color:#b91c1c;color:#fff}.egt-o button[disabled]{cursor:default}
+.egt-f{margin-top:12px;border-radius:14px;padding:10px 12px;font-weight:800;font-size:15px;display:none}.egt-f.ok{display:block;background:#dcfce7;color:#14532d}.egt-f.no{display:block;background:#fee2e2;color:#7f1d1d}
+.egt-b{display:flex;gap:8px;margin-top:12px;justify-content:space-between;align-items:center}.egt-b button{font:inherit;font-weight:900;border:0;border-radius:12px;padding:10px 16px;cursor:pointer}
+.egt-sk{background:#ecebf5;color:#6b6790}.egt-go{background:var(--egt,#6d4aff);color:#fff;font-size:17px}.egt-tts{background:#ecebf5;color:#1b1640}
+.egt-sv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.egt-sv button{font:inherit;font-weight:900;border:3px solid #d9d4ff;background:#fff;border-radius:14px;padding:10px;cursor:pointer;color:#1b1640}.egt-sv button.on{border-color:var(--egt,#6d4aff);background:#efeaff}
+.egt-st{display:flex;flex-direction:column;gap:8px;margin:10px 0}.egt-st div{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:12px;padding:8px 10px;font-weight:800;font-size:14px}.egt-st b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--egt,#6d4aff);color:#fff;display:grid;place-items:center}
+.egt-c{zoom:var(--egt-z,1)}.egt-pills{zoom:var(--egt-z,1);position:fixed;left:calc(10px + env(safe-area-inset-left));bottom:calc(10px + env(safe-area-inset-bottom));z-index:8000;display:none;gap:6px}.egt-pills.on{display:flex}
+.egt-pl{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1.5px solid rgba(20,20,40,.3);border-radius:999px;padding:4px 10px;font:800 12px system-ui,sans-serif;color:#1b1640;opacity:.5;cursor:pointer}
+.egt-pl:hover{opacity:.9}.egt-pl i{font-style:normal;opacity:.6;margin-left:2px}
+.egt-qr{display:grid;place-items:center;background:#fff;border-radius:14px;padding:12px;margin:10px auto;width:fit-content}.egt-qr img{width:220px;height:220px;image-rendering:pixelated}
+.egt-b.stk{position:sticky;bottom:-18px;margin:10px -18px -18px;padding:12px 18px;background:linear-gradient(rgba(243,241,255,0),#f3f1ff 35%)}
+@media (max-height:480px){.egt-c{padding:10px 14px 14px}.egt-st div{padding:5px 8px;font-size:12.5px}.egt-emo{font-size:34px!important}.egt-q{margin:2px 0 8px}.egt-o button{min-height:44px;padding:9px 8px}}
+.egt-cf{position:fixed;inset:0;pointer-events:none;z-index:9100;overflow:hidden}.egt-cf i{position:absolute;top:-16px;width:9px;height:14px;border-radius:2px}`;
+function stil(){if(document.getElementById('egt-css'))return;const s=document.createElement('style');s.id='egt-css';s.textContent=css;document.head.appendChild(s);}
+function el(h){const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild;}
+
+/* ---------- SES ---------- */
+let AC=null;function bip(ok){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t0=AC.currentTime;(ok?[523,659,784,1046]:[330,262]).forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ok?'triangle':'sawtooth';o.frequency.value=f;g.gain.setValueAtTime(.12,t0+i*.08);g.gain.exponentialRampToValueAtTime(.001,t0+i*.08+.25);o.connect(g);g.connect(AC.destination);o.start(t0+i*.08);o.stop(t0+i*.08+.3);});}catch(e){}}
+function oku(t,lang){try{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang==='en'?'en-US':'tr-TR';const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.toLowerCase().startsWith(lang==='en'?'en':'tr'));if(v)u.voice=v;u.rate=.92;speechSynthesis.speak(u);}catch(e){}}
+function konfeti(){const c=document.createElement('div');c.className='egt-cf';document.body.appendChild(c);const cols=['#ff5a5a','#ffc83d','#22c55e','#3b82f6','#a855f7'];for(let i=0;i<40;i++){const d=document.createElement('i');d.style.left=Math.random()*100+'%';d.style.background=cols[i%5];c.appendChild(d);d.animate([{transform:'translateY(0) rotate(0)'},{transform:`translateY(${innerHeight+30}px) rotate(${Math.random()*720}deg)`}],{duration:1300+Math.random()*900,easing:'ease-in'});}setTimeout(()=>c.remove(),2400);}
+
+/* ---------- ANA API ---------- */
+const EGT={mesgul:false,SEV,DERS};
+EGT.seviye=()=>LSx.get('zirve_oyun_sinif','k2');
+EGT.ist=()=>LSx.get('zirve_oyun_ist',{d:0,y:0,seri:0,enSeri:0});
+EGT.soru=(ders)=>uret(EGT.seviye(),ders);
+EGT.ask=function(opt){
+ opt=opt||{};stil();EGT.mesgul=true;
+ return new Promise(res=>{
+  const s=opt.soru||uret(EGT.seviye(),opt.ders),D=DERS[s.d]||DERS.mat,renk=opt.renk||'#6d4aff';
+  const ov=el(`<div class="egt-ov" style="--egt:${renk}"><div class="egt-c">
+   <div class="egt-h"><span class="egt-ch" style="background:${D[2]}">${D[1]} ${D[0]}</span>${opt.odul?`<span class="egt-rw">🎁 ${opt.odul}</span>`:''}</div>
+   <div class="egt-t">${opt.baslik||'Bilgi Sorusu'}</div><div class="egt-q"></div><div class="egt-o"></div><div class="egt-f"></div>
+   <div class="egt-b"><button class="egt-tts">🔊 Oku</button><span style="flex:1"></span><button class="egt-sk">${opt.atlaYazi||'Şimdi değil'}</button></div></div></div>`);
+  ov.querySelector('.egt-q').textContent=s.q;
+  const O=ov.querySelector('.egt-o'),F=ov.querySelector('.egt-f'),B=ov.querySelector('.egt-b');let bitti=false;
+  const kapat=(r)=>{ov.remove();EGT.mesgul=false;try{speechSynthesis.cancel();}catch(e){}res(r);};
+  s.o.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{if(bitti)return;bitti=true;const ok=i===s.a;
+   O.querySelectorAll('button').forEach((x,j)=>{x.disabled=true;if(j===s.a)x.classList.add('ok');else if(j===i)x.classList.add('no');});
+   const st=EGT.ist();if(ok){st.d++;st.seri++;st.enSeri=Math.max(st.enSeri,st.seri);}else{st.y++;st.seri=0;}LSx.set('zirve_oyun_ist',st);
+   F.className='egt-f '+(ok?'ok':'no');F.innerHTML=(ok?'🎉 <b>Harika, doğru!</b> ':'💡 <b>Olsun, öğrendik!</b> ')+(s.e?s.e:'')+(ok&&st.seri>=3?` <br>🔥 ${st.seri} doğru üst üste!`:'');
+   bip(ok);if(ok)konfeti();
+   B.querySelector('.egt-sk').remove();const g=document.createElement('button');g.className='egt-go';g.textContent=ok&&opt.odul?'Ödülü Al ▶':'Devam ▶';g.onclick=()=>kapat({dogru:ok,atlandi:false});B.appendChild(g);};O.appendChild(b);});
+  ov.querySelector('.egt-sk').onclick=()=>kapat({dogru:false,atlandi:true});
+  ov.querySelector('.egt-tts').onclick=()=>oku(s.q+'. '+s.o.join(', '),s.dil==='en'&&false?'en':'tr');
+  document.body.appendChild(ov);
+ });
+};
+EGT.seviyeSec=function(cb,renk){stil();EGT.mesgul=true;const cur=EGT.seviye();
+ const ov=el(`<div class="egt-ov" style="--egt:${renk||'#6d4aff'}"><div class="egt-c"><div class="egt-q" style="margin:0 0 4px">🎓 Kaçıncı sınıftasın?</div><div style="font-weight:800;color:#6b6790;font-size:14px">Oyundaki bilgi soruları seviyene göre gelecek. Sonra Ayarlar'dan değiştirebilirsin.</div><div class="egt-sv"></div></div></div>`);
+ const g=ov.querySelector('.egt-sv');SEV.forEach(([k,n,e])=>{const b=document.createElement('button');b.innerHTML=e+' '+n;if(k===cur)b.className='on';b.onclick=()=>{LSx.set('zirve_oyun_sinif',k);ov.remove();EGT.mesgul=false;cb&&cb(k);};g.appendChild(b);});
+ document.body.appendChild(ov);};
+EGT.seviyeAd=()=>{const s=SEV.find(x=>x[0]===EGT.seviye());return s?s[2]+' '+s[1]:'';};
+
+/* ---------- İLK AÇILIŞ KARŞILAMA (ZİRVE zorunlu) ---------- */
+let KAR=null;
+EGT.karsilama=function(k,zorla){KAR=k||KAR;if(!KAR)return;const key='zirve_karsilama_goruldu_'+KAR.uygulama;if(!zorla&&LSx.get(key,0))return;stil();EGT.mesgul=true;
+ const ov=el(`<div class="egt-ov" style="--egt:${KAR.renk||'#6d4aff'}"><div class="egt-c"><div class="egt-emo" style="font-size:54px;text-align:center">${KAR.emoji||'🎮'}</div><div class="egt-q" style="text-align:center;margin:4px 0">${KAR.baslik}</div><div style="text-align:center;font-weight:800;color:#6b6790">${KAR.ozet||''}</div><div class="egt-st">${(KAR.adimlar||[]).map((a,i)=>`<div><b>${i+1}</b><span>${a}</span></div>`).join('')}</div><div style="font-weight:900;margin-top:4px">🎓 Sınıf seviyen: <span class="egt-svn">${EGT.seviyeAd()}</span> <button class="egt-svb" style="font:inherit;font-weight:900;border:0;background:#ecebf5;border-radius:10px;padding:4px 10px;cursor:pointer">Değiştir</button></div><div class="egt-b stk"><span></span><button class="egt-go">Hadi Başlayalım! ▶</button></div></div></div>`);
+ ov.querySelector('.egt-svb').onclick=()=>{ov.style.display='none';EGT.seviyeSec(()=>{ov.style.display='';EGT.mesgul=true;ov.querySelector('.egt-svn').textContent=EGT.seviyeAd();},KAR.renk);};
+ ov.querySelector('.egt-go').onclick=()=>{LSx.set(key,1);ov.remove();EGT.mesgul=false;};document.body.appendChild(ov);};
+
+/* ---------- QR İLE PAYLAŞ (ZİRVE zorunlu) + YÜZER DÜĞMELER ---------- */
+let pills=null;
+function pillKur(){if(pills)return;stil();const gizli=LSx.get('zirve_kontroller_gizli',{});
+ pills=el(`<div class="egt-pills"></div>`);
+ const add=(id,txt,fn)=>{if(gizli[id])return;const p=el(`<span class="egt-pl" data-k="${id}">${txt}<i title="Gizle">×</i></span>`);p.onclick=e=>{if(e.target.tagName==='I'){gizli[id]=1;LSx.set('zirve_kontroller_gizli',gizli);p.remove();return;}fn();};pills.appendChild(p);};
+ add('yardim','❓ Yardım',()=>EGT.karsilama(null,true));add('sinif','🎓 Sınıf',()=>EGT.seviyeSec(null,KAR&&KAR.renk));add('qr','📲 QR',EGT.paylasAc);add('ekran',ekranEtiket(),()=>{ekranDegis();const p=pills.querySelector('[data-k=ekran]');if(p)p.firstChild.textContent=ekranEtiket();});
+ document.body.appendChild(pills);window.ZIRVE_kontroller=(window.ZIRVE_kontroller||[]).concat(['yardim','sinif','qr']);}
+EGT.pill=function(on){pillKur();pills.classList.toggle('on',!!on);};
+window.ZIRVE_kontrolleriGeriGetir=()=>{LSx.set('zirve_kontroller_gizli',{});if(pills){pills.remove();pills=null;}};
+function qrYukle(){return new Promise((ok,no)=>{if(window.qrcode)return ok();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';s.onload=()=>ok();s.onerror=no;document.head.appendChild(s);});}
+EGT.paylasAc=window.ZIRVE_paylasAc=async function(){stil();const url=(window.PAYLAS&&window.PAYLAS.url)||location.href;EGT.mesgul=true;
+ const ov=el(`<div class="egt-ov"><div class="egt-c" style="text-align:center"><div class="egt-q" style="margin:0">📲 Arkadaşlarınla Paylaş</div><div style="font-weight:800;color:#6b6790;font-size:14px">Telefon kamerasıyla okut, oyun hemen açılsın!</div><div class="egt-qr">⏳</div><div style="font-size:12px;word-break:break-all;color:#6b6790" class="egt-u"></div>${location.protocol==='file:'?'<div style="color:#b45309;font-weight:800;font-size:13px;margin-top:6px">⚠️ Bu oyun şu an bilgisayardan açılmış. QR, oyun siteye yüklendiğinde çalışır.</div>':''}<div class="egt-b" style="justify-content:center;flex-wrap:wrap"><button class="egt-tts egt-cp">📋 Linki Kopyala</button><button class="egt-tts egt-dl">⬇️ PNG İndir</button><button class="egt-go egt-x">Kapat</button></div></div></div>`);
+ ov.querySelector('.egt-u').textContent=url;document.body.appendChild(ov);const kap=()=>{ov.remove();EGT.mesgul=false;};ov.querySelector('.egt-x').onclick=kap;ov.onclick=e=>{if(e.target===ov)kap();};
+ ov.querySelector('.egt-cp').onclick=()=>{try{navigator.clipboard.writeText(url);ov.querySelector('.egt-cp').textContent='✔ Kopyalandı';}catch(e){}};
+ let data='';try{await qrYukle();const q=qrcode(0,'M');q.addData(url);q.make();data=q.createDataURL(8,12);ov.querySelector('.egt-qr').innerHTML=`<img src="${data}" alt="QR">`;}catch(e){ov.querySelector('.egt-qr').textContent='QR yüklenemedi (internet gerekli)';}
+ ov.querySelector('.egt-dl').onclick=()=>{if(!data)return;const a=document.createElement('a');a.href=data;a.download='oyun-qr.png';a.click();};};
+
+/* ---------- CİHAZ / EKRAN UYUMU (ZİRVE) ---------- */
+const EKR=[['oto','Otomatik'],['tablet','Tablet/PC',1],['tahta','Akıllı Tahta',1.35],['buyuk','Büyük Tahta',1.6]];
+function ekranOto(){const sw=Math.max(screen.width||0,screen.height||0),dpr=devicePixelRatio||1,touch=(navigator.maxTouchPoints||0)>0;if(sw>=3000)return 1.6;if(sw>=1700&&touch&&dpr<=1.3)return 1.35;return 1;}
+function ekranK(){const m=LSx.get('zirve_ekran_mod','oto'),x=EKR.find(q=>q[0]===m)||EKR[0];return x[0]==='oto'?ekranOto():x[2];}
+function ekranEtiket(){const m=LSx.get('zirve_ekran_mod','oto'),x=EKR.find(q=>q[0]===m)||EKR[0];return '📺 '+(x[0]==='oto'?'Oto ('+({1:'Normal',1.35:'Tahta',1.6:'Büyük'}[ekranOto()])+')':x[1]);}
+let ekranSon=1;function ekranUygula(k){ekranSon=k==null?ekranK():k;document.documentElement.style.setProperty('--egt-z',ekranSon);try{window.dispatchEvent(new Event('resize'));}catch(e){}}
+function ekranDegis(){const m=LSx.get('zirve_ekran_mod','oto'),i=EKR.findIndex(q=>q[0]===m),n=EKR[(i+1)%EKR.length];LSx.set('zirve_ekran_mod',n[0]);ekranUygula();}
+window.ZIRVE_ekranReset=()=>ekranUygula(1);window.ZIRVE_ekranGeri=()=>ekranUygula();EGT.ekranUygula=ekranUygula;ekranUygula();
+EGT.konfeti=konfeti;
+window.EGT=EGT;
+})();
 'use strict';
 /* ===================== KÜPVERSE – çekirdek ===================== */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -685,6 +840,7 @@ function reachCP(i){
  if(i>PL.stage){PL.stage=i;AU.cp();puffAt(PL.x,PL.y+1,PL.z,RAINBOW[i%8],14);
   if(i<W.stageMax)note((W.exp==='tower'?'Kat ':'Aşama ')+i+' ✔',1);
   addKP(1,true);
+  if(window.EGT&&i<W.stageMax&&((W.exp==='obby'&&i%3===0)||(W.exp==='tower'&&i%2===0))){const kp=W.exp==='tower'?4:5;setTimeout(()=>{if(!W||PL.dead)return;EGT.ask({baslik:'🚪 BİLGİ KAPISI • '+(W.exp==='tower'?'Kat ':'Aşama ')+i,odul:'+'+kp+' KP',renk:'#3b6cff'}).then(r=>{if(r.dogru)addKP(kp);});},700);}
   if(W.exp==='obby'){if(i>S.obby){S.obby=i;save();}if(i>=10)giveBadge('stage10');}
   if(W.exp==='tower'&&i>S.tower){S.tower=i;save();}
   W.killY=W.cps[i].y-38;
@@ -804,7 +960,7 @@ const EXPS={
  tower:{t:'Gökyüzü Kulesi 🗼',g:'Kule',d:'Her seferinde farklı kurulan dev bir kule! 12 katı süre bitmeden tırman ve bulutların üstüne çık.',a:rint(4000,9000),v:'22,1 Mn',l:'%92'},
 };
 const THUMB={},HEADS={};let FRIENDS=[];
-function go(id){SCR=id;$$('.scr').forEach(e=>e.classList.toggle('on',e.id===id));$('#load').style.display=id==='load'?'flex':'none';
+function go(id){SCR=id;$$('.scr').forEach(e=>e.classList.toggle('on',e.id===id));$('#load').style.display=id==='load'?'flex':'none';if(window.EGT)EGT.pill(id==='home');
  if(id==='home'){renderHome();if(MUS.name!=='home'||!MUS.timer)MUS.play('home');}
  if(id==='avatar'){avInit();}
  ox.clearRect(0,0,VW,VH);updKP();}
@@ -906,7 +1062,7 @@ function startExp(id){
  setTimeout(()=>{try{buildExp(id);}catch(e){console.error(e);toast('Bir hata oldu, tekrar dene');go('home');return;}go('game');MUS.play('game');},1100);
 }
 function disposeWorld(){if(!W)return;W.scene.traverse(o=>{if(o.geometry&&!Object.values(GEO).includes(o.geometry))o.geometry.dispose();if(o.material&&o.material.dispose&&!o.isSprite)o.material.dispose();});W=null;PL=null;}
-function buildExp(id,keep){
+function buildExp(id,keep){if($('#lqBtn'))$('#lqBtn').style.display='none';
  const oldBots=keep&&W?W.bots.map(b=>({n:b.name,av:b.av,w:b.wins})):null;const oldMsgs=keep&&W?W.msgs:null;const oldT=keep&&W?W.gameT:0;
  disposeWorld();newWorld(id);
  if(id==='obby'){buildCourse(OBBY_SEQ,{turn:i=>i%6===5,turnDir:i=>Math.floor(i/6)%2?-1:1});}
@@ -931,8 +1087,9 @@ function buildExp(id,keep){
  W.gameT=0;
 }
 function lavaCtl(dt){
+ lavaQuizBtn();
  if(W.state==='lobby'){W.cd-=dt;const n=Math.ceil(W.cd);if(n!==W.lastN&&n<=5&&n>0){W.lastN=n;AU.tick();}
-  if(W.cd<=0){W.state='play';W.roundT=0;W.lavaOn=false;W.lavaY=-1.3;PL.out=false;fadeFlash();
+  if(W.cd<=0){lobbyQ=0;W.state='play';W.roundT=0;W.lavaOn=false;W.lavaY=-1.3;PL.out=false;fadeFlash();
    const s=spawnPoint();PL.x=s.x;PL.y=s.y;PL.z=s.z;PL.vx=PL.vy=PL.vz=0;if(PL.dead){PL.dead=false;restore(PL.m);}
    W.bots.forEach(b=>{const ch=pick(W.chains),gx=rnd(-30,30),gz=rnd(-30,30);b.chain=[{x:gx,y:0,z:gz,j:false},{x:ch[0].x+rnd(-2,2),y:0,z:ch[0].z+rnd(-2,2)+3,j:false}].concat(ch);b.i=0;b.cpI=0;b.x=gx;b.y=0;b.z=gz;b.st='wait';b.t=rnd(.2,2);b.out=false;b.dead=false;restore(b.m);b.m.root.visible=true;b.margin=rnd(2.5,9);});
    note('KOŞ! Lav yükseliyor! 🌋',1);chatAdd('Sistem','Tur başladı! En yükseğe tırman!','#ffc83d');}}
@@ -944,6 +1101,9 @@ function lavaCtl(dt){
  }else if(W.state==='end'){W.endT-=dt;if(W.lavaOn)W.lavaY+=dt*.2;if(W.endT<=0){buildExp('lava',true);}}
  if(W.lava){W.lava.position.y=W.lavaY;W.lava.material.map.offset.x+=dt*.01;W.lava.material.map.offset.y+=dt*.006;}
 }
+let lobbyQ=0;function lavaQuizBtn(){const b=$('#lqBtn');if(!b)return;const show=W&&W.exp==='lava'&&W.state==='lobby'&&lobbyQ<2;b.style.display=show?'':'none';}
+$('#lqBtn').onclick=async()=>{if(!window.EGT)return;const r=await EGT.ask({baslik:'🌋 Tur başlamadan bilgi sorusu!',odul:'+5 KP',renk:'#ff5a1a'});lobbyQ++;if(r.dogru)addKP(5);lavaQuizBtn();};
+$('#lvlBtn').onclick=()=>{if(window.EGT)EGT.seviyeSec(()=>syncTg(),'#3b6cff');};
 function note(t,k){const n=$('#note');n.textContent=t;n.classList.remove('pop');void n.offsetWidth;n.classList.add('pop');}
 function showWin(t,s){$('#winT').textContent=t;$('#winS').textContent=s;$('#win').classList.add('on');}
 $('#winStay').onclick=()=>{$('#win').classList.remove('on');};
@@ -1004,12 +1164,12 @@ function moveVec(){let x=IN.joy.x,y=IN.joy.y;const k=IN.keys;if(k.KeyW||k.ArrowU
  const sy=Math.sin(CAM.yaw),cy=Math.cos(CAM.yaw);return[x*cy-y*(-sy),x*(-sy)-y*(-cy)];}
 
 /* ---------- MENÜ / AYARLAR ---------- */
-function syncTg(){[['tSnd','snd'],['tMus','mus'],['tHq','hq'],['tSnd2','snd'],['tMus2','mus'],['tHq2','hq']].forEach(([i,k])=>$('#'+i).classList.toggle('on',!!S[k]));$('#sens').value=S.sens||1;$('#nameIn').value=S.name;}
+function syncTg(){if($('#lvlBtn'))$('#lvlBtn').textContent=window.EGT?EGT.seviyeAd():'';[['tSnd','snd'],['tMus','mus'],['tHq','hq'],['tSnd2','snd'],['tMus2','mus'],['tHq2','hq']].forEach(([i,k])=>$('#'+i).classList.toggle('on',!!S[k]));$('#sens').value=S.sens||1;$('#nameIn').value=S.name;}
 function openMenu(){syncTg();$('#gMenuM').classList.add('on');}
 $('#gMenu').onclick=()=>{AU.click();openMenu();};
 $('#mResume').onclick=()=>$('#gMenuM').classList.remove('on');
 $('#mReset').onclick=()=>{$('#gMenuM').classList.remove('on');if(PL&&!PL.dead)die();};
-$('#mSkip').onclick=()=>{if(!W||W.exp!=='obby')return;if(PL.stage>=W.stageMax){toast('Zaten sondasın!');return;}if(S.kp<25){toast('Yeterli KP yok (25 KP gerekli)');return;}S.kp-=25;save();updKP();$('#gMenuM').classList.remove('on');reachCP(PL.stage+1);respawn();toast('⏭️ Aşama atlandı!');};
+let skipT=0;$('#mSkip').onclick=async()=>{if(!W||W.exp!=='obby')return;if(PL.stage>=W.stageMax){toast('Zaten sondasın!');return;}if(performance.now()-skipT<15000){toast('Yeni soru için biraz bekle ⏳');return;}$('#gMenuM').classList.remove('on');if(!window.EGT)return;const r=await EGT.ask({baslik:'⏭️ Aşamayı atlamak için doğru cevapla!',odul:'Aşama atlama',renk:'#3b6cff'});if(r.dogru){reachCP(PL.stage+1);respawn();toast('⏭️ Aşama atlandı! Bilgin seni ileri taşıdı 🎓');}else if(!r.atlandi){skipT=performance.now();toast('Olsun! 15 saniye sonra yeni bir soru deneyebilirsin.');}};
 $('#mLeave').onclick=()=>{AU.click();leaveGame();};
 ['tSnd','tSnd2'].forEach(i=>$('#'+i).onclick=()=>{S.snd=S.snd?0:1;save();AU.setVol();syncTg();});
 ['tMus','tMus2'].forEach(i=>$('#'+i).onclick=()=>{S.mus=S.mus?0:1;save();AU.setVol();syncTg();});
@@ -1024,6 +1184,7 @@ function resize(){VW=innerWidth;VH=innerHeight;DPR=Math.min(devicePixelRatio||1,
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));
 let last=performance.now(),acc=0;
 function gameUpdate(dt){
+ if(window.EGT&&EGT.mesgul)return;
  W.t+=dt;W.gameT+=dt;updParts(dt);
  if(W.exp==='lava')lavaCtl(dt);
  if(W.exp==='tower'&&!W.finished){W.timer-=dt;if(W.timer<=0){note('Süre doldu! Kule yenileniyor...',1);buildExp('tower');return;}}
@@ -1067,7 +1228,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
  const ns=shuffle(BOT_NAMES.slice());FRIENDS=ns.slice(0,8).map(n=>({n,img:headshot(randAv()),g:pick(['obby','lava','tower'])}));
  initInput();resize();requestAnimationFrame(loop);bar.style.width='100%';
  $('#ldTxt').textContent='Hazır!';$('#ldBtn').style.display='inline-flex';
- $('#ldBtn').onclick=()=>{AU.init();AU.click();$('#load').classList.add('off');setTimeout(()=>go('home'),450);giveBadge('first');};
+ $('#ldBtn').onclick=()=>{AU.init();AU.click();$('#load').classList.add('off');setTimeout(()=>{go('home');if(window.EGT)EGT.karsilama({uygulama:'kupverse',baslik:'KüpVerse\'e Hoş Geldin!',emoji:'🧊',renk:'#3b6cff',ozet:'Avatarını tasarla, dünyaları keşfet, bilgini göster!',adimlar:['🎮 Bir deneyim seç: Mega Parkur, Lav Yükseliyor veya Gökyüzü Kulesi.','📱 Sol altta sürükle: yürü. Ok düğmesi: zıpla. Sağda sürükle: kamerayı çevir.','🎓 Parkurda her 3 aşamada bir BİLGİ KAPISI var: doğru cevap = bonus KP! Aşama atlamak için de soru çözebilirsin.','🧍 KüpPara (KP) ile avatarına şapka, yüz ve kıyafet al.']});},450);giveBadge('first');};
 })();
 </script>
 </body>
