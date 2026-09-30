@@ -302,6 +302,16 @@ html,body{overflow-x:hidden}
 .fold summary{font:700 22px var(--hand);cursor:pointer}
 body.kid #shelfAtelier>.fold{width:380px}
 
+
+.ai-open{background:linear-gradient(90deg,#B9E3F7,#E8D9FF)!important;font-weight:800}
+#aiTopic{width:100%;box-sizing:border-box;font:600 16px/1.35 var(--ui);padding:8px 12px;border:2.5px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);margin:6px 0}
+#aiEx .paperbtn{font-size:12.5px;padding:3px 8px}
+dialog#aiDlg{border:3px solid var(--ink);border-radius:18px;background:var(--paper);color:var(--ink);max-width:min(620px,94vw);font-family:var(--ui)}
+dialog#aiDlg h2{margin:0 0 6px;font:700 30px var(--hand)}dialog#aiDlg label{display:flex;flex-direction:column;gap:4px;font-weight:700;margin:8px 0}
+dialog#aiDlg select{font:600 15px var(--ui);padding:6px 10px;border:2.5px solid var(--ink);border-radius:10px;background:#fff}
+#aiGo:disabled{opacity:.6}
+body.kid #shelfStory>.ai-open{width:220px;align-self:center;white-space:normal}
+.ai-open[hidden]{display:none!important}
 .paused *{animation-play-state:paused!important}
 @media (prefers-reduced-motion:reduce){.prop,.eyes,.scarf,.acc-sweat{animation:none!important}.brand .under path{animation:none;stroke-dashoffset:0}}
 </style>
@@ -373,6 +383,7 @@ body.kid #shelfAtelier>.fold{width:380px}
       <div><small>Haftanın öğrencisi</small><b>Metehan</b><button class="paperbtn" id="starB">Metehan'ın hikâyesi</button></div>
       <span class="badge">★</span>
     </div>
+    <button class="paperbtn ai-open" id="aiOpen" hidden>🤖 Yapay zekâ ile hikâye üret</button>
     <h2>Hikâye seç</h2>
     <div class="levels" id="levels" role="tablist" aria-label="Kademe"></div>
     <div id="cards" class="shelf"></div>
@@ -401,6 +412,7 @@ body.kid #shelfAtelier>.fold{width:380px}
     </details>
     <button class="paperbtn big" id="walkB">🚶 Kahramanı yürüt</button>
     <label class="chk small"><input type="checkbox" id="storyChk" checked> Yürürken hikâye anlatsın</label>
+    <label class="chk small"><input type="checkbox" id="quizChk" checked> Sonunda soru sorsun</label>
     <div class="sayrow"><input id="sayIn" placeholder="Kahramanın ne söylesin?" aria-label="Kahramanın söyleyeceği cümle"><button class="paperbtn" id="sayB">🔊</button><button class="paperbtn" id="recB" aria-label="Sesimi kaydet">🎤</button></div>
     <span id="recInfo" class="recinfo"></span>
     <div id="autoBox" class="autobox" hidden><b id="autoTitle"></b><div id="autoText"></div><div class="row"><button class="paperbtn" id="autoRead">🔈 Tekrar oku</button><button class="paperbtn go" id="autoSave">📸 Hikâyem'e ekle</button></div></div>
@@ -409,6 +421,7 @@ body.kid #shelfAtelier>.fold{width:380px}
    <details class="fold"><summary>✍️ Yazarak canlandır</summary>
     <textarea id="txIn" rows="5" placeholder="Örnek: Güneşli bir günde Ayşe parka gitti. Ağacın altında bir kedi vardı. Ayşe “Merhaba pisicik!” dedi."></textarea>
     <div id="txSamples" class="toolrow"></div>
+    <button class="paperbtn ai-open" id="txAI" hidden>🤖 Konudan hikâye yazdır</button>
     <div class="row"><button class="paperbtn go" id="txGo">✨ Çiz ve canlandır</button><button class="paperbtn" id="txMic">🎙️ Söyleyerek yaz</button></div>
     <small id="txInfo" class="recinfo"></small>
    </details>
@@ -439,6 +452,15 @@ body.kid #shelfAtelier>.fold{width:380px}
   <label>Ana sistemin adresi (🏠 düğmesi buraya döner)<input id="homeUrl" placeholder="https://..."></label>
   <label class="chk"><input type="checkbox" id="kidChk"> Çocuk boyu düzeni (düğmeler ekranın altında)</label>
   <div class="row"><button class="paperbtn go" id="setClose">Tamam</button></div>
+</dialog>
+<dialog id="aiDlg">
+  <h2>🤖 Yapay zekâ ile hikâye üret</h2>
+  <p class="small">Bir konu yaz; kalem başlığıyla, 4 sahnesiyle, çizimleriyle, konuşmalarıyla ve 4 sorusuyla yepyeni bir hikâye hazırlasın. Hikâye seçili dilde üretilir ve “🤖 Ürettiklerim” sekmesine kaydedilir.</p>
+  <textarea id="aiTopic" rows="3" placeholder="Örnek: Piri Reis ve dünya haritası, Kaşgarlı Mahmut, uzaya giden kedi…"></textarea>
+  <div id="aiEx" class="toolrow"></div>
+  <label>Kademe <select id="aiLv"></select></label>
+  <div class="row"><button class="paperbtn go" id="aiGo">✨ Üret ve oynat</button><button class="paperbtn" id="aiClear">🗑️ Ürettiklerimi sil</button><button class="paperbtn" id="aiClose">Kapat</button></div>
+  <p id="aiInfo" class="small" aria-live="polite"></p>
 </dialog>
 <script>
 const NS='http://www.w3.org/2000/svg',INK='#2E3136',SKIN='#F6D2B0';
@@ -1435,6 +1457,84 @@ STORIES.push({lv:5,icon:IC.meclis,values:['Vatanseverlik','Demokrasi','Sorumlulu
   [['Cumhuriyet hangi tarihte ilan edildi?','When was the Republic proclaimed?','Wann wurde die Republik ausgerufen?','متى أُعلنت الجمهورية؟','Komar kengî hat ragihandin?'],2,[O('📅',DT.n20),O('📅',DT.m19),O('📅',DT.e23)]],
   [['Türkiye Cumhuriyeti’nin ilk Cumhurbaşkanı kimdir?','Who was the first President of the Republic of Türkiye?','Wer war der erste Präsident der Republik Türkei?','من هو أول رئيس لجمهورية تركيا؟','Serokkomarê yekem ê Komara Tirkiyeyê kî ye?'],0,[O('🇹🇷',['Mustafa Kemal Atatürk','Mustafa Kemal Atatürk','Mustafa Kemal Atatürk','مصطفى كمال أتاتورك','Mistefa Kemal Atatirk']),O('👦',['Can','Can','Can','جان','Can']),O('🤖',['Robi','Robi','Robi','روبي','Robî'])]],
   [['23 Nisan kimlere armağan edildi?','To whom was 23 April dedicated?','Wem wurde der 23. April geschenkt?','لمن أُهدي يوم 23 أبريل؟','23ê Nîsanê diyarî kê hat kirin?'],1,[O('👴',['Dedelere','Grandfathers','Großvätern','الأجداد','Bapîran']),O('🧒',['Dünya çocuklarına','The children of the world','Den Kindern der Welt','أطفال العالم','Zarokên dinyayê']),O('🐶',['Köpeklere','Dogs','Hunden','الكلاب','Seyan'])]]]});
+/* ---------- NASREDDİN HOCA · İBN-İ SİNA · MİMAR SİNAN ---------- */
+Object.assign(SD,{
+ esek:{e:'🐎',n:['Eşek','Donkey','Esel','حمار','Ker'],a:'sway',p:[...legs([-26,-10,16,30],16,46,7,'#8A94A0'),['L',[[40,-2],[52,20]],3],['D',52,24,4],['E',2,4,42,22,'gray'],['R',-14,-20,18,-6,'red'],['G',[[-30,-8],[-52,-36],[-40,-44],[-20,-14]],'gray'],['E',-48,-54,5,16,'gray'],['E',-38,-56,5,16,'gray'],['E',-58,-34,18,12,'gray'],['E',-70,-30,8,8,'#C9D3DC'],['D',-56,-38,3]]},
+ corba:{e:'🍲',n:['Çorba','Soup','Suppe','حساء','Şorbe'],p:[['L',[[-10,-14],[-6,-26],[-10,-38]],2.5,'#A7B2BD'],['L',[[10,-14],[14,-26],[10,-38]],2.5,'#A7B2BD'],['G',[[-40,-4],[40,-4],[30,20],[0,28],[-30,20]],'#E8C39E'],['E',0,-4,40,8,'orange']]},
+ mum:{e:'🕯️',n:['Mum','Candle','Kerze','شمعة','Mûm'],a:'pulse',p:[['E',0,40,22,6,'#C9A227'],['R',-8,-12,8,40,'#FFF6D6'],['S',[[0,-12],[0,-18]],2.5],['G',[[0,-40],[7,-24],[0,-16],[-7,-24]],'yellow']]},
+ kitaplik:{e:'📚',n:['Kitaplık','Bookshelf','Bücherregal','رفّ كتب','Refikê pirtûkan'],p:[['R',-72,-92,72,92,'trunk'],...[-60,-2].flatMap(y=>[-60,-40,-22,-4,14,34,52].map((x,i)=>['R',x,y,x+14,y+52,['red','blue','yellow','leaf','purple','orange','sky'][i]])),['S',[[-72,-4],[72,-4]],4],['S',[[-72,52],[72,52]],4]]},
+ taskopru:{e:'🌉',n:['Taş köprü','Stone bridge','Steinbrücke','جسر حجري','Pira kevirî'],p:[['Q',[[-130,-24],[130,-24],[130,40],[-130,40]],'#D8C3A5'],['G',arcPts(30,40,Math.PI,2*Math.PI,10,-82,40),'sky'],['G',arcPts(38,54,Math.PI,2*Math.PI,10,0,40),'sky'],['G',arcPts(30,40,Math.PI,2*Math.PI,10,82,40),'sky'],['S',[[-130,-32],[130,-32]],4]]}});
+CATS.find(c=>c[0]==='tarih')[2].push('esek','corba','mum','kitaplik','taskopru');
+Object.assign(IC,{hoca:`<svg viewBox="0 0 56 56"><path d="M12 22 Q10 6 28 6 Q46 6 44 22 Q28 28 12 22Z" fill="#fff" ${S5}/><circle cx="28" cy="28" r="12" fill="#E8B48A" ${S5}/><path d="M18 34 Q28 50 38 34 Q28 40 18 34Z" fill="#E6E6E6" ${S5}/></svg>`,
+ sina:`<svg viewBox="0 0 56 56"><path d="M6 12 Q18 6 28 12 V48 Q18 42 6 48Z" fill="#3F7FD1" ${S5}/><path d="M50 12 Q38 6 28 12 V48 Q38 42 50 48Z" fill="#fff" ${S5}/><path d="M36 22 H44 M40 18 V26" stroke="#E5484D" stroke-width="3.5"/></svg>`,
+ sinan:`<svg viewBox="0 0 56 56"><path d="M8 48 V34 Q28 8 48 34 V48Z" fill="#F2F4F7" ${S5}/><path d="M6 48 V14 M50 48 V14" stroke="#2E3136" stroke-width="3.5"/><path d="M3 16 L6 6 L9 16 M47 16 L50 6 L53 16" fill="#8EC5EA" ${S5}/></svg>`});
+
+STORIES.push({lv:5,icon:IC.hoca,values:['Saygı','Eşitlik','Hoşgörü'],
+ t:['Nasreddin Hoca: Ye Kürküm Ye','Nasreddin Hodja: Eat, My Fur Coat!','Nasreddin Hodscha: Iss, mein Pelz!','نصر الدين خوجة: كُلْ يا معطفي','Nesreddîn Xoce: Bixwe Kurka Min'],
+ note:{d:'Saygı, eşitlik, hoşgörü, mizah',b:'Ana fikir bulma, neden–sonuç, mizahi anlatımı fark etme',e:'Fıkrayı sınıfta canlandırın; çocuklar “İnsanları neye göre değerlendiririz?” sorusunu tartışsın. Başka Nasreddin Hoca fıkralarını birlikte okuyun.'},
+ scenes:[
+ {clear:1,carry:'hoca',props:[P.ground('g',40,1560,760),P.house('hs',1350,760,1),P.table('tb',900,760,320),ST('corba','cb',900,606),ST('esek','es',150,712,.9)],chars:{hoca:{carryTo:420,face:1},can:{at:[1130,760],face:-1}},
+  n:['Nasreddin Hoca, Akşehir’de yaşayan, sözleriyle insanları hem güldüren hem düşündüren biriydi. Bir gün eski giysileriyle bir düğün yemeğine gitti.','Nasreddin Hodja lived in Akşehir; his words made people both laugh and think. One day he went to a wedding feast in his old clothes.','Nasreddin Hodscha lebte in Akşehir; mit seinen Worten brachte er die Menschen zum Lachen und zum Nachdenken. Eines Tages ging er in alten Kleidern zu einem Hochzeitsessen.','كان نصر الدين خوجة يعيش في آق شهير، وكانت كلماته تُضحك الناس وتجعلهم يفكّرون. وذات يوم ذهب إلى وليمة عرس بثيابه القديمة.','Nesreddîn Xoce li Akşehirê dijiya; gotinên wî mirov hem dikenandin hem jî didan fikirandin. Rojekê bi cilên xwe yên kevn çû xwarina dawetekê.'],
+  s:['hoca','Afiyet olsun komşular!','Enjoy your meal, neighbors!','Guten Appetit, Nachbarn!','بالهناء والشفاء يا جيراني!','Noşîcan be cîranno!']},
+ {props:[],chars:{hoca:{act:'tired'}},
+  n:['Ama kimse onunla ilgilenmedi. Ona ne bir yer gösterdiler ne de bir kâse çorba verdiler.','But nobody paid attention to him. They didn’t offer him a seat or a bowl of soup.','Aber niemand kümmerte sich um ihn. Man bot ihm weder einen Platz noch eine Schüssel Suppe an.','لكن لم يهتمّ به أحد. لم يُجلسوه ولم يقدّموا له صحن حساء.','Lê kesî guh neda wî. Ne cih nîşanî wî dan, ne jî kasek şorbe dan wî.'],
+  s:['hoca','Hımm… Galiba giysilerimi beğenmediler.','Hmm… I guess they didn’t like my clothes.','Hmm… Meine Kleider gefallen ihnen wohl nicht.','همم… يبدو أن ثيابي لم تعجبهم.','Hmm… Xuya ye cilên min ne li xweşa wan çûn.']},
+ {walkFirst:1,props:[P.star('s1',700,300,.8)],chars:{hoca:{show:false},hocak:{at:[420,760],face:1,walk:[[760,760]]},can:{act:'wave'}},
+  n:['Hoca eve gidip süslü kürkünü giydi ve geri geldi. Bu kez herkes onu güler yüzle karşıladı ve baş köşeye oturttu.','The Hodja went home, put on his fancy fur coat and came back. This time everyone greeted him with a smile and gave him the best seat.','Der Hodscha ging nach Hause, zog seinen prächtigen Pelzmantel an und kam zurück. Diesmal empfingen ihn alle lächelnd und gaben ihm den besten Platz.','عاد الخوجة إلى بيته ولبس معطف الفرو الفاخر ثم رجع. هذه المرّة استقبله الجميع بابتسامة وأجلسوه في صدر المجلس.','Xoce çû malê, kurka xwe ya xemilandî li xwe kir û vegeriya. Vê carê her kesî bi rûyekî ken ew pêşwazî kir û li serê civatê rûniştand.'],
+  s:['can','Buyurun Hocam, baş köşeye geçin!','Welcome, Hodja! Please take the best seat!','Willkommen, Hodscha! Bitte nehmen Sie den besten Platz!','تفضّل يا خوجة، اجلس في صدر المجلس!','Fermo Xoce, derbasî serê civatê bibe!']},
+ {props:[P.heart('h1',1000,420,1),P.star('s2',1250,300,.8)],chars:{hocak:{pose:'fwd'},can:{act:'jump'}},
+  n:['Hoca kürkünün yenini çorbaya uzattı. Herkes şaşırdı. İnsanlara giysilerine göre değil, kalplerine göre değer vermeliyiz.','The Hodja held the sleeve of his fur coat toward the soup. Everyone was surprised. We should value people for their hearts, not their clothes.','Der Hodscha hielt den Ärmel seines Pelzmantels zur Suppe. Alle staunten. Wir sollten Menschen nach ihrem Herzen schätzen, nicht nach ihrer Kleidung.','مدّ الخوجة كُمّ معطف الفرو نحو الحساء، فتعجّب الجميع. يجب أن نقدّر الناس بقلوبهم لا بثيابهم.','Xoce milê kurka xwe ber bi şorbeyê ve dirêj kir. Her kes ecêbmayî ma. Divê em qîmetê bidin mirovan li gorî dilê wan, ne li gorî cilên wan.'],
+  s:['hocak','Ye kürküm ye! Bu ikram sana yapıldı.','Eat, my fur coat, eat! This feast was served for you.','Iss, mein Pelz, iss! Dieses Essen wurde ja dir serviert.','كُلْ يا معطفي كُلْ! فهذه الوليمة قُدِّمت لك.','Bixwe kurka min bixwe! Ev xwarin ji bo te hat pêşkêşkirin.']}],
+ quiz:[
+  [['Hoca düğüne ilk gittiğinde ne giymişti?','What was the Hodja wearing when he first went to the feast?','Was trug der Hodscha, als er zum ersten Mal zum Fest ging?','ماذا كان يرتدي الخوجة عندما ذهب إلى الوليمة أول مرة؟','Dema Xoce cara pêşî çû dawetê çi li xwe kiribû?'],0,[O('👕',['Eski giysiler','Old clothes','Alte Kleider','ثياب قديمة','Cilên kevn']),O('🧥',['Kürk','A fur coat','Einen Pelzmantel','معطف فرو','Kurk']),O('🦸',['Pelerin','A cape','Einen Umhang','عباءة بطل','Pelerîn'])]],
+  [['Hoca kürkünü giyince ne oldu?','What happened when the Hodja wore his fur coat?','Was geschah, als der Hodscha seinen Pelz trug?','ماذا حدث عندما لبس الخوجة معطف الفرو؟','Dema Xoce kurka xwe li xwe kir çi qewimî?'],1,[O('🌧️',['Yağmur yağdı','It rained','Es regnete','أمطرت','Baran barî']),O('😊',['Herkes ona ilgi gösterdi','Everyone paid attention to him','Alle kümmerten sich um ihn','اهتمّ به الجميع','Her kesî guh da wî']),O('🚪',['Onu kapıdan çevirdiler','They turned him away','Man wies ihn ab','ردّوه عن الباب','Ew ji derî zivirandin'])]],
+  [['Hoca kürkünün yenini çorbaya uzatınca ne dedi?','What did the Hodja say when he held his sleeve to the soup?','Was sagte der Hodscha, als er den Ärmel zur Suppe hielt?','ماذا قال الخوجة عندما مدّ كُمّه نحو الحساء؟','Dema Xoce milê xwe ber bi şorbeyê ve dirêj kir çi got?'],2,[O('😴',['“Uykum geldi!”','“I’m sleepy!”','„Ich bin müde!“','«أشعر بالنعاس!»','“Xewa min tê!”']),O('🏠',['“Eve gidelim!”','“Let’s go home!”','„Gehen wir nach Hause!“','«لنعد إلى البيت!»','“Em herin malê!”']),O('🧥',['“Ye kürküm ye!”','“Eat, my fur coat, eat!”','„Iss, mein Pelz, iss!“','«كُلْ يا معطفي كُلْ!»','“Bixwe kurka min bixwe!”'])]],
+  [['Bu fıkra bize ne anlatır?','What does this story teach us?','Was lehrt uns diese Geschichte?','ماذا تعلّمنا هذه النادرة؟','Ev qerf çi hînî me dike?'],1,[O('👔',['İnsanları giysilerine göre değerlendirmeyi','To judge people by their clothes','Menschen nach der Kleidung zu beurteilen','أن نحكم على الناس بثيابهم','Mirovan li gorî cilan binirxînin']),O('❤️',['İnsanlara kalplerine göre değer vermeyi','To value people for their hearts','Menschen nach ihrem Herzen zu schätzen','أن نقدّر الناس بقلوبهم','Qîmetdayîna mirovan li gorî dilê wan']),O('🍲',['Çok çorba içmeyi','To eat lots of soup','Viel Suppe zu essen','أن نأكل الكثير من الحساء','Gelek şorbe vexwarin'])]]]});
+
+STORIES.push({lv:5,icon:IC.sina,values:['Merak','Çalışkanlık','Sağlıklı yaşam'],
+ t:['İbn-i Sina: Merak Eden Hekim','Ibn Sina: The Curious Physician','Ibn Sina: Der neugierige Arzt','ابن سينا: الطبيب الفضولي','Îbn Sîna: Bijîşkê Meraqdar'],
+ note:{d:'Merak, çalışkanlık, sağlıklı yaşam',b:'Bilim insanlarını tanıma, sağlıklı yaşam alışkanlıkları, kitap okuma sevgisi',e:'Sınıfta “küçük hekimler” köşesi kurun: nane ve ıhlamur gibi bitkileri inceleyin, el yıkama kurallarını afişe dönüştürün.'},
+ scenes:[
+ {clear:1,carry:'ela',props:[P.ground('g',40,1560,760),ST('kitaplik','kl',1300,668),P.table('tb',820,760,300),ST('kitap','kt',800,608,.8),ST('mum','mm',930,600,.7)],chars:{ela:{carryTo:400,face:1},can:{at:[1080,760],face:-1}},
+  n:['Bin yıl kadar önce, Buhara yakınlarında İbn-i Sina adında çok meraklı bir çocuk yaşardı. Küçük yaşta okumayı ve öğrenmeyi çok severdi.','About a thousand years ago, a very curious child named Ibn Sina lived near Bukhara. From a young age, he loved reading and learning.','Vor etwa tausend Jahren lebte bei Buchara ein sehr neugieriges Kind namens Ibn Sina. Schon früh liebte er das Lesen und Lernen.','قبل نحو ألف عام، عاش قرب بخارى طفل فضولي جداً اسمه ابن سينا. كان يحبّ القراءة والتعلّم منذ صغره.','Berî nêzî hezar salan, li nêzî Buxarayê zarokekî pir meraqdar bi navê Îbn Sîna dijiya. Ji zarokatiya xwe ve ji xwendin û hînbûnê pir hez dikir.'],
+  s:['ela','Ben de onun gibi çok kitap okumak istiyorum!','I want to read lots of books like him!','Ich möchte auch so viele Bücher lesen wie er!','أريد أن أقرأ كتباً كثيرة مثله!','Ez jî dixwazim wek wî gelek pirtûkan bixwînim!']},
+ {props:[P.flower('f1',540,760,'purple'),ST('yaprak','yp',620,540,.8),ST('cali','cl',250,712,.8)],chars:{can:{act:'wave'}},
+  n:['Genç yaşta tıp öğrendi ve hekim olarak hastaları tedavi etmeye başladı. Bitkileri inceleyerek ilaçlar hazırladı.','He studied medicine at a young age and began treating patients as a physician. He studied plants to prepare medicines.','Schon jung studierte er Medizin und begann als Arzt Kranke zu behandeln. Er untersuchte Pflanzen, um Heilmittel herzustellen.','درس الطبّ في سنّ صغيرة وبدأ يعالج المرضى طبيباً. ودرس النباتات ليُعدّ منها الأدوية.','Di temenekî ciwan de bijîşkî xwend û wek bijîşk dest bi dermankirina nexweşan kir. Wî li nebatan lêkolîn kir û derman amade kirin.'],
+  s:['can','Doğadaki bitkiler bile bize şifa olabilir!','Even the plants in nature can help heal us!','Sogar Pflanzen aus der Natur können uns heilen!','حتى نباتات الطبيعة يمكن أن تشفينا!','Nebatên xwezayê jî dikarin me baş bikin!']},
+ {props:[P.label('kn',800,450,'El-Kânûn fi’t-Tıb',50),P.star('s1',560,380,.8),P.star('s2',1040,380,.8)],chars:{ela:{act:'jump'}},
+  n:['İbn-i Sina, “El-Kânûn fi’t-Tıb” adlı büyük bir tıp kitabı yazdı. Bu kitap yüzyıllar boyunca Avrupa’daki okullarda ders kitabı olarak okundu.','Ibn Sina wrote a great medical book called “The Canon of Medicine.” For centuries it was used as a textbook in schools in Europe.','Ibn Sina schrieb ein großes Medizinbuch, den „Kanon der Medizin“. Jahrhundertelang wurde es an Schulen in Europa als Lehrbuch verwendet.','كتب ابن سينا كتاباً عظيماً في الطبّ اسمه «القانون في الطب». وظلّ قروناً يُدرَّس كتاباً مدرسياً في مدارس أوروبا.','Îbn Sîna pirtûkeke bijîşkiyê ya mezin bi navê “El-Qanûn fî’t-Tib” nivîsand. Ev pirtûk bi sedsalan li dibistanên Ewropayê wek pirtûka dersê hat xwendin.'],
+  s:['ela','Bir kitap, dünyanın dört bir yanına ışık oldu!','One book became a light for the whole world!','Ein Buch wurde zu einem Licht für die ganze Welt!','صار كتاب واحد نوراً للعالم كلّه!','Pirtûkek bû ronahiya hemû dinyayê!']},
+ {props:[P.heart('h1',800,330,1),ST('elma','ap',1000,640,.8)],chars:{can:{act:'jump'},ela:{act:'jump'}},party:1,
+  n:['Temizliğe, sağlıklı beslenmeye ve düzenli yaşamaya önem verdi. Merak eden ve çalışan insan dünyayı değiştirebilir.','He valued cleanliness, healthy eating and an orderly life. A curious, hard-working person can change the world.','Er legte Wert auf Sauberkeit, gesunde Ernährung und ein geregeltes Leben. Ein neugieriger, fleißiger Mensch kann die Welt verändern.','اهتمّ بالنظافة والغذاء الصحي والحياة المنتظمة. الإنسان الفضولي المجتهد يستطيع أن يغيّر العالم.','Wî giringî da paqijî, xwarina tendurist û jiyana birêkûpêk. Mirovê meraqdar û xebatkar dikare dinyayê biguherîne.'],
+  s:['can','Büyüyünce ben de bilim insanı olacağım!','When I grow up, I’ll be a scientist too!','Wenn ich groß bin, werde ich auch Wissenschaftler!','عندما أكبر سأصبح عالماً أنا أيضاً!','Dema ez mezin bibim, ez jî ê bibim zanyar!']}],
+ quiz:[
+  [['İbn-i Sina’nın mesleği neydi?','What was Ibn Sina’s profession?','Welchen Beruf hatte Ibn Sina?','ما كانت مهنة ابن سينا؟','Pîşeya Îbn Sîna çi bû?'],1,[O('🍳',['Aşçı','Cook','Koch','طبّاخ','Aşpêj']),O('⚕️',['Hekim (doktor)','Physician','Arzt','طبيب','Bijîşk']),O('✈️',['Pilot','Pilot','Pilot','طيّار','Pîlot'])]],
+  [['Yazdığı ünlü tıp kitabının adı nedir?','What is the name of his famous medical book?','Wie heißt sein berühmtes Medizinbuch?','ما اسم كتابه الطبي الشهير؟','Navê pirtûka wî ya bijîşkiyê ya navdar çi ye?'],2,[O('📗',['Dede Korkut','Dede Korkut','Dede Korkut','دده قورقود','Dede Korkut']),O('📙',['Kutadgu Bilig','Kutadgu Bilig','Kutadgu Bilig','قوتادغو بيليغ','Kutadgu Bilig']),O('📘',['El-Kânûn fi’t-Tıb','The Canon of Medicine','Kanon der Medizin','القانون في الطب','El-Qanûn fî\'t-Tib'])]],
+  [['İlaç hazırlamak için neleri inceledi?','What did he study to prepare medicines?','Was untersuchte er, um Heilmittel herzustellen?','ماذا درس ليُعدّ الأدوية؟','Ji bo amadekirina dermanan li çi lêkolîn kir?'],0,[O('🌿',['Bitkileri','Plants','Pflanzen','النباتات','Nebatan']),O('🎮',['Oyuncakları','Toys','Spielzeuge','الألعاب','Pêlîstokan']),O('🚗',['Arabaları','Cars','Autos','السيارات','Erebeyan'])]],
+  [['İbn-i Sina’dan hangi değeri öğreniriz?','Which value do we learn from Ibn Sina?','Welchen Wert lernen wir von Ibn Sina?','أي قيمة نتعلّمها من ابن سينا؟','Em ji Îbn Sîna kîjan nirxî hîn dibin?'],1,[O('😴',['Tembellik','Laziness','Faulheit','الكسل','Tembelî']),O('📚',['Merak ve çalışkanlık','Curiosity and hard work','Neugier und Fleiß','الفضول والاجتهاد','Meraq û xebatkarî']),O('😠',['Kızgınlık','Anger','Wut','الغضب','Hêrs'])]]]});
+
+STORIES.push({lv:5,icon:IC.sinan,values:['Sabır','Emek','Tasarruf'],
+ t:['Mimar Sinan: Taşa Can Veren Usta','Mimar Sinan: The Master Builder','Mimar Sinan: Der große Baumeister','المعمار سنان: المعلّم الكبير','Mîmar Sînan: Hosteyê Mezin'],
+ note:{d:'Sabır, emek, israftan kaçınma, estetik',b:'Mimari yapıları tanıma, geometrik şekiller (kubbe, kemer), tasarruf',e:'Bloklar ve kâğıt rulolarla sınıfça bir kubbe ve kemer yapın; Süleymaniye’deki is odası örneğiyle geri dönüşümü konuşun.'},
+ scenes:[
+ {clear:1,carry:'can',props:[P.ground('g',40,1560,760),P.sun('sun',1420,150,52),ST('kare','b1',600,738,.45),ST('kare','b2',644,738,.45),ST('kare','b3',622,695,.45),ST('ucgen','b4',622,655,.4)],chars:{can:{carryTo:400,face:1},ela:{at:[1480,760],face:-1}},
+  n:['Mimar Sinan, yaklaşık 500 yıl önce Kayseri’nin Ağırnas köyünde doğdu. Gençliğinde marangozluğu ve yapı işlerini öğrendi.','Mimar Sinan was born about 500 years ago in the village of Ağırnas in Kayseri. As a young man, he learned carpentry and building.','Mimar Sinan wurde vor etwa 500 Jahren im Dorf Ağırnas bei Kayseri geboren. Als junger Mann lernte er Tischlerei und Bauhandwerk.','وُلد المعمار سنان قبل نحو 500 عام في قرية آغيرناس في قيصري. وفي شبابه تعلّم النجارة وأعمال البناء.','Mîmar Sînan berî nêzî 500 salan li gundê Axirnasê yê Qeyseriyê hat dinyayê. Di ciwaniya xwe de necarî û karên avahiyê hîn bû.'],
+  s:['can','Ben de bloklarla sağlam bir yapı kuracağım!','I’ll build a strong building with blocks too!','Ich baue auch ein stabiles Gebäude aus Klötzen!','سأبني أنا أيضاً بناءً متيناً بالمكعبات!','Ez jî ê bi blokan avahiyeke xurt ava bikim!']},
+ {props:[P.pond('pd',1000,790,190,34),ST('taskopru','tk',1000,712,1.1)],chars:{ela:{act:'wave'}},
+  n:['Sinan, Osmanlı Devleti’nin baş mimarı oldu. Camiler, köprüler, çeşmeler, hamamlar ve medreseler; yüzlerce yapı inşa etti.','Sinan became the chief architect of the Ottoman Empire. He built hundreds of structures: mosques, bridges, fountains, baths and schools.','Sinan wurde Hofarchitekt des Osmanischen Reiches. Er baute Hunderte Bauwerke: Moscheen, Brücken, Brunnen, Bäder und Schulen.','أصبح سنان كبير معماريي الدولة العثمانية. وبنى مئات المباني: مساجد وجسوراً ونوافير وحمّامات ومدارس.','Sînan bû mîmarê serekî yê Dewleta Osmanî. Wî bi sedan avahî çêkirin: mizgeft, pir, kanî, hemam û medrese.'],
+  s:['ela','Yaptığı köprülerin bazıları hâlâ ayakta!','Some of his bridges are still standing!','Einige seiner Brücken stehen heute noch!','بعض جسوره ما زالت قائمة حتى اليوم!','Hin pirên wî hê jî li ser piyan in!']},
+ {remove:['tk','pd'],props:[ST('cami','cm',980,685,1.5),P.label('sl',930,540,'Süleymaniye',40),ST('mum','mm',760,700,.9)],chars:{can:{act:'jump'}},
+  n:['İstanbul’daki Süleymaniye Camii’nde, mumların isini toplayan bir oda yaptırdı. Bu isten mürekkep yapıldı; hiçbir şey boşa gitmedi!','In the Süleymaniye Mosque in Istanbul, he built a room that collected the soot from candles. Ink was made from this soot, so nothing was wasted!','In der Süleymaniye-Moschee in Istanbul ließ er einen Raum bauen, der den Ruß der Kerzen sammelte. Daraus wurde Tinte gemacht – nichts ging verloren!','في جامع السليمانية بإسطنبول بنى غرفة تجمع سُخام الشموع، وصُنع من هذا السُّخام حبرٌ، فلم يضِع شيء!','Li Mizgefta Süleymaniyeyê ya li Stenbolê, wî odeyek çêkir ku dûda mûman berhev dikir. Ji vê dûdê hibir hat çêkirin; tiştek bi fîro neçû!'],
+  s:['can','Ne akıllıca! Hem temiz hava hem de israf yok.','How clever! Clean air and no waste.','Wie klug! Saubere Luft und keine Verschwendung.','يا للذكاء! هواء نقي ولا تبذير.','Çiqas jîrane! Hem hewaya paqij hem jî bê fîrodayîn.']},
+ {props:[ST('cami','cm2',1330,680,1.6),P.label('se',1370,450,'Selimiye • Edirne',36),P.star('s1',600,300,.9),P.star('s2',1150,260,.8)],chars:{can:{act:'jump'},ela:{act:'jump'}},party:1,
+  n:['Sinan, Edirne’deki Selimiye Camii’ni ustalık eseri olarak görüyordu. Sabırla ve emek vererek çalışanlar, yüzyıllarca yaşayan eserler bırakır.','Sinan regarded the Selimiye Mosque in Edirne as his masterpiece. Those who work with patience and effort leave works that live for centuries.','Sinan betrachtete die Selimiye-Moschee in Edirne als sein Meisterwerk. Wer mit Geduld und Fleiß arbeitet, hinterlässt Werke, die Jahrhunderte überdauern.','كان سنان يرى جامع السليمية في أدرنة تحفته الكبرى. من يعمل بصبر وجهد يترك أعمالاً تعيش قروناً.','Sînan Mizgefta Selîmiyeyê ya li Edîrneyê wek şaheserê xwe didît. Yên ku bi sebir û ked dixebitin, berhemên ku bi sedsalan dijîn li pey xwe dihêlin.'],
+  s:['ela','Selimiye’nin kubbesi gökyüzü gibi kocaman!','The Selimiye’s dome is as big as the sky!','Die Kuppel der Selimiye ist so groß wie der Himmel!','قبّة السليمية كبيرة كالسماء!','Qubeya Selîmiyeyê wek ezmanan mezin e!']}],
+ quiz:[
+  [['Mimar Sinan nerede doğdu?','Where was Mimar Sinan born?','Wo wurde Mimar Sinan geboren?','أين وُلد المعمار سنان؟','Mîmar Sînan li ku hat dinyayê?'],1,[O('🌊',['İzmir','İzmir','İzmir','إزمير','Îzmîr']),O('🏔️',['Kayseri (Ağırnas)','Kayseri (Ağırnas)','Kayseri (Ağırnas)','قيصري (آغيرناس)','Qeyserî (Axirnas)']),O('🍵',['Rize','Rize','Rize','ريزة','Rîze'])]],
+  [['Ustalık eseri olarak bilinen cami hangisidir?','Which mosque is known as his masterpiece?','Welche Moschee gilt als sein Meisterwerk?','أيّ جامع يُعرف بأنه تحفته الكبرى؟','Kîjan mizgeft wek şaheserê wî tê zanîn?'],2,[O('🕌',['Şehzade','Şehzade','Şehzade','شهزاده','Şehzade']),O('🕌',['Süleymaniye','Süleymaniye','Süleymaniye','السليمانية','Süleymaniye']),O('🕌',['Selimiye (Edirne)','Selimiye (Edirne)','Selimiye (Edirne)','السليمية (أدرنة)','Selîmiye (Edîrne)'])]],
+  [['Süleymaniye’de toplanan mum isinden ne yapıldı?','What was made from the candle soot in the Süleymaniye?','Was wurde aus dem Kerzenruß in der Süleymaniye gemacht?','ماذا صُنع من سُخام الشموع في السليمانية؟','Ji dûda mûman a li Süleymaniyeyê çi hat çêkirin?'],1,[O('🍞',['Ekmek','Bread','Brot','الخبز','Nan']),O('🖋️',['Mürekkep','Ink','Tinte','الحبر','Hibir']),O('🧸',['Oyuncak','Toys','Spielzeug','الألعاب','Pêlîstok'])]],
+  [['Mimar Sinan’ın hayatı bize ne öğretir?','What does Mimar Sinan’s life teach us?','Was lehrt uns das Leben von Mimar Sinan?','ماذا تعلّمنا حياة المعمار سنان؟','Jiyana Mîmar Sînan çi hînî me dike?'],0,[O('⏳',['Sabır ve emek','Patience and effort','Geduld und Fleiß','الصبر والجهد','Sebir û ked']),O('🎲',['Şansa güvenmek','Relying on luck','Sich auf Glück verlassen','الاعتماد على الحظ','Xwe spartina bextê']),O('🛋️',['Hiç çalışmamak','Never working','Nie arbeiten','عدم العمل أبداً','Qet nexebitîn'])]]]});
+LV.push('🤖 Ürettiklerim');
 const LI={tr:0,en:1,de:2,ar:3,ku:4};const T=a=>a[LI[curLang]]??a[0];
 const PRAISE={tr:['Aferin!','Harikasın!','Çok doğru!','Süpersin!'],en:['Well done!','Great!',"That's right!",'Super!'],de:['Gut gemacht!','Toll!','Richtig!','Super!'],ar:['أحسنت!','رائع!','صحيح!','ممتاز!'],ku:['Aferin!','Pir baş!','Rast e!','Gelek baş!']};
 const RETRY={tr:'Bir daha düşünelim!',en:"Let's think again!",de:'Denk noch einmal nach!',ar:'لنفكّر مرة أخرى!',ku:'Werin em dîsa bifikirin!'};
@@ -1523,10 +1623,10 @@ function setPlayUI(){const on=running&&!paused;$('#playIc').innerHTML=on?'<path 
 function updDots(){const d=$('#dots');d.innerHTML='';story().scenes.forEach((_,i)=>{const b=document.createElement('button');b.className=i===cur.scene?'on':i<cur.scene?'done':'';b.setAttribute('aria-label',`Sahne ${i+1}`);b.onclick=()=>{sfx.init();runFrom(i,false);};d.appendChild(b);});}
 
 /* sorular: her hikâyede 4 soru, ilerleme, puan */
-const quiz=$('#quiz');let QS=null;function hideQuiz(){quiz.hidden=true;quiz.innerHTML='';QS=null;}
+const quiz=$('#quiz');let QS=null,QOV=null;const QZ=()=>QOV||story().quiz;function hideQuiz(){quiz.hidden=true;quiz.innerHTML='';QS=null;QOV=null;}
 function quizFrame(){quiz.hidden=false;quiz.dir=curLang==='ar'?'rtl':'ltr';quiz.classList.toggle('ar',curLang==='ar');}
-function showQuiz(keep){if(!keep||!QS)QS={i:0,score:0,miss:false,hist:[]};quizFrame();if(QS.i>=story().quiz.length)return showResult();
- const [qq,a,opts]=story().quiz[QS.i],N=story().quiz.length,tok=RUN;
+function showQuiz(keep){if(!keep||!QS)QS={i:0,score:0,miss:false,hist:[]};quizFrame();if(QS.i>=QZ().length)return showResult();
+ const [qq,a,opts]=QZ()[QS.i],N=QZ().length,tok=RUN;
  quiz.innerHTML='<div class="qprog"></div><p class="qq"></p><div class="qopts"></div>';
  const pr=quiz.querySelector('.qprog');for(let k=0;k<N;k++){const d=document.createElement('i');d.className=k<QS.i?(QS.hist[k]?'ok':'miss'):k===QS.i?'cur':'';pr.appendChild(d);}
  pr.appendChild(document.createTextNode(` ${QS.i+1} / ${N}`));
@@ -1536,18 +1636,18 @@ function showQuiz(keep){if(!keep||!QS)QS={i:0,score:0,miss:false,hist:[]};quizFr
     speak(p,'narr',RUN,null).catch(()=>{});setTimeout(()=>{if(!QS)return;QS.i++;QS.miss=false;QS.lock=false;showQuiz(true);},1300/Math.max(.8,speedMul));}
    else{QS.miss=true;b.classList.remove('wrong');void b.offsetWidth;b.classList.add('wrong');sfx.boing();speak(RETRY[curLang],'narr',RUN,null).catch(()=>{});}};quiz.querySelector('.qopts').appendChild(b);});
  speak(T(qq),'narr',tok,null).catch(()=>{});}
-function showResult(){quizFrame();const N=story().quiz.length,s=QS.score,msg=RESULT[curLang](s,N);
+function showResult(){quizFrame();const N=QZ().length,s=QS.score,msg=RESULT[curLang](s,N);if(!QS.counted){QS.counted=1;LS.set('km-stars',(LS.get('km-stars',0)||0)+s);}
  quiz.innerHTML=`<div class="qres">${s>=N-1?'🎉':'🌟'}</div><div class="qstars">${'★'.repeat(s)}<span style="color:#D9CFBF">${'★'.repeat(N-s)}</span></div><p class="qq"></p><div class="qend"><button class="paperbtn" id="qRe">Soruları tekrarla</button><button class="paperbtn" id="qAgain">Tekrar izle</button><button class="paperbtn" id="qNext" style="background:var(--orange)">Sıradaki hikâye</button></div>`;
- quiz.querySelector('.qq').textContent=msg;if(s>=Math.ceil(N*.75)){confetti();sfx.ding();}speak(msg,'narr',RUN,null).catch(()=>{});
- quiz.querySelector('#qRe').onclick=()=>showQuiz(false);quiz.querySelector('#qAgain').onclick=()=>runFrom(0,true);
- quiz.querySelector('#qNext').onclick=()=>{const n=(cur.story+1)%STORIES.length;cur.level=STORIES[n].lv;selectStory(n);};}
+ quiz.querySelector('.qq').textContent=msg+'  ⭐ '+(LS.get('km-stars',0)||0);if(QOV){quiz.querySelector('#qAgain').textContent='🚶 Tekrar yürüt';quiz.querySelector('#qNext').textContent='✔ Kapat';}if(s>=Math.ceil(N*.75)){confetti();sfx.ding();}speak(msg,'narr',RUN,null).catch(()=>{});
+ quiz.querySelector('#qRe').onclick=()=>showQuiz(false);quiz.querySelector('#qAgain').onclick=()=>{if(QOV){hideQuiz();storyWalk();}else runFrom(0,true);};
+ quiz.querySelector('#qNext').onclick=()=>{if(QOV){hideQuiz();return;}const n=(cur.story+1)%STORIES.length;cur.level=STORIES[n].lv;selectStory(n);};}
 function confetti(){const w=$('#stageWrap'),cols=['#E5484D','#F39A2B','#FFD84D','#7DBA4A','#3F7FD1','#9B7BD4'];for(let i=0;i<60;i++){const c=document.createElement('span');c.className='conf';c.style.left=Math.random()*100+'%';c.style.background=cols[i%6];w.appendChild(c);
  c.animate([{transform:'translateY(0) rotate(0)'},{transform:`translateY(${w.clientHeight+40}px) rotate(${720*Math.random()}deg)`}],{duration:1600+Math.random()*1400,delay:Math.random()*400,easing:'cubic-bezier(.3,.6,.6,1)'}).onfinish=()=>c.remove();}}
 
 /* raf, kademeler, öğretmen notu */
 function renderLevels(){const box=$('#levels');box.innerHTML='';LV.forEach((l,i)=>{const b=document.createElement('button');b.className='paperbtn';b.setAttribute('role','tab');b.setAttribute('aria-selected',i===cur.level);b.textContent=`${l} (${STORIES.filter(s=>s.lv===i).length})`;b.onclick=()=>{sfx.init();cur.level=i;renderShelf();};box.appendChild(b);});}
 function renderShelf(){renderLevels();const box=$('#cards');box.innerHTML='';STORIES.forEach((s,i)=>{if(s.lv!==cur.level)return;const b=document.createElement('button');b.className='card'+(i===cur.story?' on':'');
- b.innerHTML=`<span class="pin"></span><span class="ic">${s.icon}</span><span><b>${s.star?'⭐ ':''}${s.t[0]}</b><small>${s.values.join(', ')}</small><small class="gr">${LV[s.lv]} • 4 soru</small></span>`;b.onclick=()=>{sfx.init();selectStory(i);};box.appendChild(b);});
+ b.innerHTML=`<span class="pin"></span><span class="ic">${s.icon}</span><span><b>${s.star?'⭐ ':''}${s.gen?'🤖 ':''}${s.gen?s.t[0]:s.t[0]}</b><small>${s.values.join(', ')}</small><small class="gr">${LV[s.lv]} • 4 soru</small></span>`;b.onclick=()=>{sfx.init();selectStory(i);};box.appendChild(b);});
  const s=story(),n=s.note;$('#tnote').innerHTML=`<dl><dt>Hikâye</dt><dd>${s.t[0]} (${LV[s.lv]})</dd><dt>Değerler</dt><dd>${n.d}</dd><dt>Beceriler</dt><dd>${n.b}</dd><dt>Değerlendirme</dt><dd>Hikâye sonunda 4 soru: anlama, sıralama, çıkarım ve değer sorusu. İlk denemedeki doğrular yıldız olarak gösterilir.</dd><dt>Sınıf etkinliği</dt><dd>${n.e}</dd></dl><p class="mm">Hikâyeler, Türkiye Yüzyılı Maarif Modeli’nin değerler çerçevesi gözetilerek kademelere göre yazıldı.</p>`;}
 function selectStory(i){if(mode!=='story')setMode('story',true);cur.story=i;cur.level=STORIES[i].lv;renderShelf();runFrom(0,true);}
 $('#starB').onclick=()=>{sfx.init();selectStory(STORIES.findIndex(s=>s.star));};
@@ -1621,7 +1721,7 @@ function kidSVG(o){const g=o.g==='k',c=COS[o.c]||COS.okul,H=o.hair||HAIRS[0],S=o
  const lc=g?(gown?'#2B2B33':'#2B2B33'):c.pants,lw=g?10:14;
  s+=limb('leg legB',-8,-74,60,lc,lw,shoe(64,c.shoe))+limb('leg legA',9,-74,60,g?'#3A3A44':c.pants,lw,shoe(64,c.shoe));
  s+=limb('arm armB',-16,-122,40,sl,11,hnd(40));
- if(gown)s+=`<path d="M-20 -130 Q0 -137 20 -130 L44 -16 Q0 -6 -44 -16 Z" fill="${top}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
+ if(gown||c.robe)s+=`<path d="M-20 -130 Q0 -137 20 -130 L44 -16 Q0 -6 -44 -16 Z" fill="${top}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
  else if(g)s+=`<path d="M-22 -130 Q0 -137 22 -130 L26 -92 L-26 -92Z" fill="${top}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><path d="M-27 -94 L27 -94 L38 -60 Q0 -52 -38 -60Z" fill="${c.pants}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
  else s+=`<path d="M-24 -130 Q0 -138 24 -130 L29 -70 Q0 -62 -29 -70 Z" fill="${top}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`;
  s+=c.det||'';
@@ -1633,6 +1733,8 @@ function kidSVG(o){const g=o.g==='k',c=COS[o.c]||COS.okul,H=o.hair||HAIRS[0],S=o
  s+=`<g class="eyes"><circle cx="7" cy="-164" r="${c.mask?3.2:4}" fill="${c.mask?'#fff':INK}"/><circle cx="26" cy="-164" r="${c.mask?3.2:4}" fill="${c.mask?'#fff':INK}"/></g>`;
  if(g)s+=`<path d="M2 -170 L0 -174 M22 -170 L21 -174 M29 -170 L31 -174" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`;
  s+=face(16);
+ if(c.beard)s+=`<path d="M-16 -148 Q-8 -116 12 -110 Q34 -116 36 -148 Q26 -138 12 -139 Q-4 -138 -16 -148Z" fill="#E6E6E6" stroke="${INK}" stroke-width="2.5"/>`;
+ if(c.hat==='turban')s+=`<path d="M-30 -176 Q-36 -216 4 -218 Q44 -216 38 -176 Q4 -166 -30 -176Z" fill="#FFFFFF" stroke="${INK}" stroke-width="3"/><path d="M-28 -190 Q4 -178 36 -190 M-24 -203 Q4 -192 32 -203" fill="none" stroke="#C9D3DC" stroke-width="3"/><circle cx="4" cy="-218" r="6" fill="#7A8B5A" stroke="${INK}" stroke-width="2"/>`;
  if(c.hat==='fire')s+=`<path d="M-30 -176 Q4 -224 40 -176 L50 -170 L-38 -170Z" fill="#E5484D" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M0 -206 L8 -206 L8 -186 L0 -186Z" fill="#FFD84D" stroke="${INK}" stroke-width="2"/>`;
  if(c.hat==='chef')s+=`<path d="M-22 -186 L30 -186 L30 -198 Q46 -214 30 -226 Q20 -242 4 -230 Q-12 -242 -22 -226 Q-38 -214 -22 -198Z" fill="#fff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`;
  if(c.hat==='crown')s+=`<path d="M-18 -188 L-18 -214 L-6 -200 L4 -220 L14 -200 L26 -214 L26 -188Z" fill="#FFC83D" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="4" cy="-196" r="3.5" fill="#E5484D"/>`;
@@ -1647,7 +1749,7 @@ function addTag(n,name){const c=CH[n];if(c.tag)c.tag.remove();const t=el('g',{cl
 const _place=place;place=function(n){_place(n);const c=CH[n];if(c.tag){c.tag.setAttribute('transform',`translate(${f1(c.x)} ${f1(c.y)})`);c.tag.style.display=c.show?'':'none';c.tag.classList.toggle('sel',mode==='atelier'&&AT.hero===n);}};
 function buildMyHero(h){if(!CH[h.id])buildChar(h.id,kidSVG(h));addTag(h.id,h.name);}
 PRESETS.forEach(buildMyHero);MYH.forEach(buildMyHero);
-const heroHTML=id=>{const my=MYH.find(h=>h.id===id)||PRESETS.find(h=>h.id===id);return my?kidSVG(my):({can:CAN,ela:ELA,met:MET,mira:MIRA,robo:ROBO})[id];};
+const heroHTML=id=>{const my=MYH.find(h=>h.id===id)||PRESETS.find(h=>h.id===id);if(id==='hoca')return kidSVG(HOCA_O);return my?kidSVG(my):({can:CAN,ela:ELA,met:MET,mira:MIRA,robo:ROBO})[id];};
 const heroName=id=>(MYH.find(h=>h.id===id)||PRESETS.find(h=>h.id===id)||{}).name||(BASE_H.find(b=>b[0]===id)||[0,id])[1];
 function renderHeroes(){const box=$('#heroes');box.innerHTML='';[...BASE_H,...PRESETS.map(h=>[h.id,h.name]),...MYH.map(h=>[h.id,h.name])].forEach(([id,nm])=>{const b=document.createElement('button');b.className='hero';b.dataset.h=id;b.setAttribute('aria-pressed',id===AT.hero);
   b.innerHTML=`<svg viewBox="-48 -214 104 108" aria-hidden="true">${heroHTML(id)}</svg><small>${nm}</small>`;b.onclick=()=>selectHero(id);
@@ -1663,7 +1765,7 @@ function nhRender(){const nm=$('#nhName').value.trim();if(!NH.manual){const r=gu
  $$('#nhHair button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NH.hair));$$('#nhSkin button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===NH.skin));
  $('#nhPrev').innerHTML=kidSVG(NH)+(nm?`<g class="nametag" transform="translate(4 0)"><rect x="${-Math.max(70,nm.length*15+28)/2}" y="4" width="${Math.max(70,nm.length*15+28)}" height="34" rx="16"/><text x="0" y="29" text-anchor="middle">${nm.replace(/[<&]/g,'')}</text></g>`:'');}
 function nhInit(){[['k','👧 Kız'],['e','👦 Erkek']].forEach(([g,t])=>{const b=document.createElement('button');b.className='paperbtn';b.dataset.g=g;b.textContent=t;b.onclick=()=>{NH.g=g;NH.manual=true;nhRender();};$('#nhG').appendChild(b);});
- Object.entries(COS).forEach(([k,c])=>{const b=document.createElement('button');b.dataset.c=k;b.textContent=c.e+' '+c.n;b.onclick=()=>{NH.c=k;nhRender();};$('#nhCos').appendChild(b);});
+ Object.entries(COS).filter(([k,c])=>!c.hidden).forEach(([k,c])=>{const b=document.createElement('button');b.dataset.c=k;b.textContent=c.e+' '+c.n;b.onclick=()=>{NH.c=k;nhRender();};$('#nhCos').appendChild(b);});
  HAIRS.forEach(v=>{const b=document.createElement('button');b.dataset.v=v;b.style.background=v;b.setAttribute('aria-label','Saç rengi');b.onclick=()=>{NH.hair=v;nhRender();};$('#nhHair').appendChild(b);});
  SKINS.forEach(v=>{const b=document.createElement('button');b.dataset.v=v;b.style.background=v;b.setAttribute('aria-label','Ten rengi');b.onclick=()=>{NH.skin=v;nhRender();};$('#nhSkin').appendChild(b);});
  $('#nhName').addEventListener('input',()=>{NH.manual=false;nhRender();});
@@ -2025,11 +2127,153 @@ function textUI(){SAMPLES.forEach(([t,s])=>{const b=document.createElement('butt
 /* damgalara anahtar ekle (algılama için) ve arka planları işaretle */
 BGS[0][3]='cayir';BGS[1][3]='gece';BGS[2][3]='deniz';BGS[3][3]='uzay';BGS[4][3]='okul';
 
+/* ===================== NASREDDİN HOCA KARAKTERİ ===================== */
+Object.assign(COS,{hoca:{n:'Nasreddin Hoca',e:'👳',hidden:1,top:'#7A8B5A',sl:'#6E7F50',pants:'#5A4632',shoe:'#5A3A22',robe:1,hat:'turban',beard:1,det:`<rect x="-14" y="-100" width="11" height="11" fill="#A0522D" stroke="${INK}" stroke-width="1.5"/><rect x="10" y="-62" width="11" height="10" fill="#8A7B5A" stroke="${INK}" stroke-width="1.5"/>`},
+ hocakurk:{n:'Kürklü Hoca',e:'🧥',hidden:1,top:'#8A5A36',sl:'#7A4E2E',pants:'#5A4632',shoe:'#5A3A22',robe:1,hat:'turban',beard:1,det:`<path d="M-22 -130 Q0 -116 22 -130 L18 -108 Q0 -98 -18 -108Z" fill="#F2E2C4" stroke="${INK}" stroke-width="2"/><path d="M0 -102 L0 -22" stroke="#F2E2C4" stroke-width="8"/><path d="M-40 -22 Q0 -12 40 -22" stroke="#F2E2C4" stroke-width="8" fill="none"/>`}});
+const HOCA_O={g:'e',c:'hoca',hair:'#9AA0A6',skin:'#E8B48A'},HOCAK_O={g:'e',c:'hocakurk',hair:'#9AA0A6',skin:'#E8B48A'};
+buildChar('hoca',kidSVG(HOCA_O));buildChar('hocak',kidSVG(HOCAK_O));
+BASE_H.push(['hoca','Nasreddin Hoca']);HN_AR.hoca='نصر الدين خوجة';HN_AR.hocak='نصر الدين خوجة';
+VOICE.hoca={pitch:.8,rate:.9};VOICE.hocak={pitch:.8,rate:.9};
+
+/* ===================== 🤖 YAPAY ZEKÂ İLE ÜRET ===================== */
+let GEN=LS.get('km-gen',[]);
+const GLV2=['Anaokulu','1–2. sınıf','3–4. sınıf','5–6. sınıf','7–8. sınıf'];
+async function aiJSON(prompt){
+ if(window.claude&&typeof window.claude.use==='function'){try{const s=await window.claude.use('sample');if(s)return await s.json(prompt,{modelTier:'default'});}catch(e){if(e&&e.code==='rate_limited')throw new Error('Çok sık istek gönderildi, biraz bekleyip tekrar deneyin.');}}
+ throw new Error('NOKEY');}
+function stampList(){return Object.entries(SD).map(([k,d])=>k+'='+d.n[0]).join(', ');}
+const LNAME={tr:'Türkçe',en:'İngilizce',de:'Almanca',ar:'Arapça',ku:'Kürtçe (Kurmancî)'};
+function genPrompt(topic,lv,lang){return `Sen okul öncesi ve ilkokul/ortaokul çocukları için eğitici, çizimle anlatılan kısa hikâyeler yazan bir yazarsın.
+Konu: "${topic}". Kademe: ${GLV2[lv]}. Hikâye dili: ${LNAME[lang]} (başlık, anlatım, konuşmalar ve sorular bu dilde; öğretmen notu Türkçe).
+Kurallar: Tarihî ve bilimsel bilgiler doğru olsun; emin olmadığın bilgiyi yazma. Şiddet, korku, uygunsuz içerik olmasın. Gerçek kişilere uydurma sözler söyletme; konuşmaları hikâyenin çocuk kahramanları yapsın. Cümleler kademeye uygun uzunlukta olsun (anaokulu çok kısa). Türkiye Yüzyılı Maarif Modeli değerlerinden birini vurgula.
+Sahnede YALNIZCA şu damgaları kullan (anahtar=ad): ${stampList()}
+Kahramanlar (anahtar): can (Can, erkek çocuk), ela (Ela, kız çocuk), met (Metehan, erkek), mira (Mira, kız), robo (Robi, robot), hoca (Nasreddin Hoca, yalnızca Nasreddin Hoca konularında).
+Arka plan seçenekleri: cayir, gece, deniz, uzay, okul.
+YALNIZCA şu yapıda geçerli JSON döndür:
+{"title":"...","values":["değer1","değer2"],"bg":"cayir","heroes":["can","ela"],
+"scenes":[{"stamps":["anahtar"],"narr":"anlatıcı (1-2 cümle)","who":"can","say":"kahramanın kısa sözü","act":"jump"}],
+"quiz":[{"q":"soru","options":[{"e":"tek emoji","t":"seçenek"},{"e":"🙂","t":"..."},{"e":"🙂","t":"..."}],"answer":0}],
+"note":{"d":"değerler","b":"beceriler","e":"sınıf etkinliği önerisi"}}
+Tam 4 sahne olsun; her sahnede 0-3 yeni damga (toplamda en fazla 9). act: jump, wave veya none. Tam 4 soru olsun (anlama, sıralama, çıkarım, değer); doğru cevabın yeri sorudan soruya değişsin.`;}
+function buildGen(js,lv,lang){const L5=v=>[v,v,v,v,v],ok=k=>SD[k];let hs=(js.heroes||['can','ela']).filter(h=>CH[h]&&!/^(hocak)$/.test(h));if(!hs.length)hs=['can'];const h0=hs[0],h1=hs[1];
+ const gSlots=[560,730,900,1070,1240],sSlots=[[260,150],[560,230],[860,140],[1160,220],[1420,150]];let gi=0,si=0;
+ const bg=js.bg||'cayir',scenes=[];
+ (js.scenes||[]).slice(0,5).forEach((sc,i)=>{const props=[];if(i===0){props.push(P.ground('g'+uid,40,1560,760));
+   if(bg==='gece'||bg==='uzay'){props.push(P.night('nt'+uid));props.push(P.moon('mn'+uid,1400,150,45,.45));[[300,120],[700,90],[1000,200]].forEach(([x,y],j)=>props.push(P.star('st'+uid+j,x,y,.55)));}
+   if(bg==='deniz')props.push(P.river('sea'+uid,980,1610,772));if(bg==='okul')props.push(P.school('sc'+uid,1320,760));}
+  const placed=[];(sc.stamps||[]).filter(ok).slice(0,3).forEach(k=>{const id='gn'+(uid++);if(SKYK.has(k)){if(si>=sSlots.length)return;const[x,y]=sSlots[si++];props.push(stampProp(k,id,x,y,.9));}else{if(gi>=gSlots.length)return;const x=gSlots[gi++];props.push(stampProp(k,id,x,CAT_OF[k]==='sekil'?650:690,.9));placed.push(x);}});
+  const who=CH[sc.who]?sc.who:h0,chars={};
+  if(i===0){chars[h0]={carryTo:360,face:1};if(h1)chars[h1]={at:[1470,760],face:-1};}
+  if(placed.length&&i>0)chars[h0]=Object.assign(chars[h0]||{},{walk:[[Math.max(120,placed[0]-120),760]],face:1});
+  if(sc.act&&sc.act!=='none'&&CH[who])chars[who]=Object.assign(chars[who]||{},{act:sc.act==='wave'?'wave':'jump'});
+  if(!chars[who]&&who!==h0&&who!==h1)chars[who]={at:[1320,760],face:-1};
+  const o={props,chars,n:L5(String(sc.narr||'')),s:[who,...L5(String(sc.say||''))]};if(i===0){o.clear=1;o.carry=h0;}if(i===(js.scenes.length-1))o.party=1;scenes.push(o);});
+ const quiz=(js.quiz||[]).slice(0,4).map(q=>[L5(String(q.q||'')),Math.max(0,Math.min(2,+q.answer||0)),(q.options||[]).slice(0,3).map(o=>[o.e||'🔹',...L5(String(o.t||''))])]).filter(q=>q[2].length===3);
+ return{lv:6,gen:1,genLang:lang,icon:IC.robot,values:(js.values||['Merak']).slice(0,3),t:L5(String(js.title||'Yeni hikâye')),note:{d:js.note?.d||'-',b:js.note?.b||'-',e:js.note?.e||'-'},scenes,quiz};}
+function loadGen(){for(let i=STORIES.length-1;i>=0;i--)if(STORIES[i].gen)STORIES.splice(i,1);GEN.forEach(g=>{try{STORIES.push(buildGen(g.js,g.lv,g.lang));}catch(e){}});}
+async function doGenerate(){const topic=$('#aiTopic').value.trim(),lv=+$('#aiLv').value,info=$('#aiInfo'),btn=$('#aiGo');if(!topic){$('#aiTopic').focus();return;}
+ btn.disabled=true;info.textContent='✏️ Kalem düşünüyor… (10–40 saniye)';
+ try{const js=await aiJSON(genPrompt(topic,lv,curLang));if(!js||!Array.isArray(js.scenes)||!js.scenes.length)throw new Error('Yanıt anlaşılamadı, tekrar deneyin.');
+  GEN.push({topic,lv,lang:curLang,js});if(GEN.length>30)GEN.shift();LS.set('km-gen',GEN);loadGen();info.textContent='✅ Hazır: '+(js.title||'');$('#aiDlg').close();
+  const i=STORIES.findIndex((s,j)=>s.gen&&j===STORIES.length-1);cur.level=6;selectStory(STORIES.length-1);}
+ catch(e){info.innerHTML=e.message==='NOKEY'?'Yapay zekâ bu açılışta kullanılamıyor. Hikâyeyi atölyede “✍️ Yazarak canlandır” ile yazabilirsiniz.':'⚠️ '+(e.message||'Üretilemedi');}
+ finally{btn.disabled=false;}}
+/* atölye: konudan hikâye metni yazdır, sonra kalem çizsin */
+async function aiText(){const t=$('#txIn').value.trim(),info=$('#txInfo');if(!t){$('#txIn').focus();info.textContent='Önce bir konu yaz (ör. “Piri Reis ve haritası”).';return;}
+ info.textContent='🤖 Hikâye yazılıyor…';
+ try{const js=await aiJSON(`Çocuklar için "${t}" konusunda ${LNAME[curLang]} dilinde 5-6 kısa cümlelik, doğru bilgili, şiddetsiz bir hikâye yaz. Bilgiler doğru olsun, gerçek kişilere uydurma söz söyletme. Hikâyede şu nesnelerden birkaçını adıyla geçir: ${Object.values(SD).map(d=>d.n[LI[curLang]]).slice(0,120).join(', ')}. Kahraman adı olarak Can, Ela, Metehan veya Mira kullan. Bir çocuğun söylediği bir cümleyi tırnak içinde yaz. YALNIZCA {"text":"..."} JSON döndür.`);
+  $('#txIn').value=js.text||'';info.textContent='✅ Hikâye yazıldı, kalem çiziyor…';animateText();}
+ catch(e){info.innerHTML=e.message==='NOKEY'?'Yapay zekâ bu açılışta kullanılamıyor; hikâyeni kendin yazıp “✨ Çiz ve canlandır”a basabilirsin.':'⚠️ '+(e.message||'Yazılamadı');}}
+function aiUI(){GLV2.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;$('#aiLv').appendChild(o);});
+ const EX=['Piri Reis ve dünya haritası','Kaşgarlı Mahmut ve ilk Türkçe sözlük','Uzaya giden meraklı kedi','Mevsimler neden değişir?','Ebru sanatı','Karagöz ile Hacivat gölge oyunu','Deprem anında ne yapmalıyız?','Arılar neden önemlidir?'];
+ EX.forEach(t=>{const b=document.createElement('button');b.className='paperbtn';b.textContent=t;b.onclick=()=>{$('#aiTopic').value=t;};$('#aiEx').appendChild(b);});
+ const openAI=()=>{sfx.init();$('#aiInfo').textContent='';$('#aiDlg').showModal?.();setTimeout(()=>$('#aiTopic').focus(),50);};
+ $('#aiOpen').onclick=openAI;$('#aiGo').onclick=doGenerate;$('#aiClose').onclick=()=>$('#aiDlg').close();$('#txAI').onclick=aiText;
+ $('#aiClear').onclick=()=>{if(!GEN.length)return;if(!confirm('Üretilen tüm hikâyeler silinsin mi?'))return;GEN=[];LS.set('km-gen',GEN);loadGen();cur.level=6;if(cur.story>=STORIES.length)cur.story=0;renderShelf();};
+}
+loadGen();
+
+/* ===================== ÇOCUĞUN HİKÂYESİ: HER ŞEYİ KULLAN + SONUNDA SORULAR ===================== */
+const SKY_INTRO=new Set(['sun','moon','rain','rainbow','cloud','star','kar','simsek']);
+const SKYL={sun:['Güneş gökyüzünde pırıl pırıl parlıyordu.','The sun was shining brightly in the sky.','Die Sonne schien hell am Himmel.','كانت الشمس تسطع في السماء.','Roj li ezmanan geş dibiriqî.'],
+ moon:['Ay gökyüzünü aydınlatıyordu.','The moon lit up the sky.','Der Mond erhellte den Himmel.','كان القمر يضيء السماء.','Heyvê ezman ronî dikir.'],
+ rain:['Yağmur damla damla yağıyordu.','Rain was falling drop by drop.','Der Regen fiel Tropfen für Tropfen.','كان المطر يتساقط قطرة قطرة.','Baran dilop bi dilop dibariya.'],
+ rainbow:['Gökyüzünde rengârenk bir gökkuşağı vardı.','There was a colorful rainbow in the sky.','Am Himmel stand ein bunter Regenbogen.','كان في السماء قوس قزح ملوّن.','Li ezmanan keskesoreke rengîn hebû.'],
+ cloud:['Pamuk gibi bulutlar gökyüzünde süzülüyordu.','Fluffy clouds were floating in the sky.','Watteweiche Wolken zogen am Himmel vorbei.','كانت غيوم كالقطن تسبح في السماء.','Ewrên wek pembû li ezmanan diherikîn.'],
+ star:['Yıldızlar göz kırpıyordu.','The stars were twinkling.','Die Sterne funkelten.','كانت النجوم تتلألأ.','Stêrk dibiriqîn.'],
+ kar:['Lapa lapa kar yağıyordu.','Snow was falling softly.','Es schneite dicke Flocken.','كان الثلج يتساقط بغزارة.','Berf bi xurtî dibariya.'],
+ simsek:['Birden gökyüzünde bir şimşek çaktı!','Suddenly, lightning flashed in the sky!','Plötzlich zuckte ein Blitz am Himmel!','فجأةً لمع برق في السماء!','Ji nişkê ve birûskek li ezmanan çirisî!']};
+const FAR={tr:'Uzakta bir {n} vardı; {h} ona el salladı.',en:'Far away, {h} spotted something and waved: {n}!',de:'In der Ferne entdeckte {h} etwas und winkte: {N}!',ar:'لمح {h} من بعيد شيئاً فلوّح له: {n}!',ku:'{h} ji dûr ve tiştek dît û destê xwe hejand: {n}!'};
+const QINTRO={tr:'Şimdi hikâyemizle ilgili birkaç soru!',en:'Now some questions about our story!',de:'Jetzt ein paar Fragen zu unserer Geschichte!',ar:'والآن بعض الأسئلة عن قصتنا!',ku:'Niha çend pirs li ser çîroka me!'};
+const QT={hero:['Hikâyemizin kahramanı kimdi?','Who was the hero of our story?','Wer war der Held unserer Geschichte?','من كان بطل قصتنا؟','Lehengê çîroka me kî bû?'],
+ first:['{h} yolda ilk olarak neyle karşılaştı?','What did {h} meet first on the way?','Was traf {h} unterwegs zuerst?','ما أول شيء قابله {h} في الطريق؟','{h} di rê de pêşî rastî çi hat?'],
+ not:['Hangisi hikâyemizde YOKTU?','Which one was NOT in our story?','Was kam in unserer Geschichte NICHT vor?','أيّ هذه لم يكن في قصتنا؟','Kîjan di çîroka me de TUNEBÛ?'],
+ count:['{h} yolda kaç şeyle karşılaştı?','How many things did {h} meet on the way?','Wie vielen Dingen begegnete {h} unterwegs?','كم شيئاً قابل {h} في الطريق؟','{h} di rê de rastî çend tiştan hat?'],
+ where:['Hikâyemiz ne zaman ya da nerede geçti?','When or where did our story take place?','Wann oder wo spielte unsere Geschichte?','متى أو أين جرت قصتنا؟','Çîroka me kengî an li ku derbas bû?'],
+ feel:['Yolun sonunda {h} nasıl hissetti?','How did {h} feel at the end of the road?','Wie fühlte sich {h} am Ende des Weges?','كيف شعر {h} في نهاية الطريق؟','{h} li dawiya rê çawa hîs kir?'],
+ moral:['Bu hikâyeden ne öğrendik?','What did we learn from this story?','Was haben wir aus dieser Geschichte gelernt?','ماذا تعلّمنا من هذه القصة؟','Em ji vê çîrokê çi hîn bûn?']};
+const FEEL=[['😊',['Mutlu','Happy','Glücklich','سعيداً','Kêfxweş']],['😢',['Üzgün','Sad','Traurig','حزيناً','Xemgîn']],['😠',['Kızgın','Angry','Wütend','غاضباً','Hêrs']]];
+const WRONGM=[['Başkalarına yardım etmemeliyiz.','We should not help others.','Wir sollten anderen nicht helfen.','يجب ألّا نساعد الآخرين.','Divê em alîkariya kesên din nekin.'],['Doğaya zarar vermek güzeldir.','Harming nature is good.','Der Natur zu schaden ist gut.','إيذاء الطبيعة أمر جيد.','Zirardana xwezayê baş e.'],['Hiçbir şeyi merak etmemeliyiz.','We should never be curious.','Wir sollten nie neugierig sein.','يجب ألّا نكون فضوليين أبداً.','Divê em qet meraq nekin.']];
+const MOODE={night:'🌙',sea:'🌊',space:'🚀',school:'🏫',sunny:'☀️',rainy:'🌧️'};
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const L5f=f=>[0,1,2,3,4].map(f);
+function mkQ(q,right,wrongs){const opts=shuf([right,...wrongs.slice(0,2)]);return[q,opts.indexOf(right),opts];}
+function heroNames5(id){const n=heroName(id);return[n,n,n,HN_AR[id]||n,n];}
+function buildWalkQuiz(o){const Q=[],hid=o.hero,hf=L=>heroName(hid),fillQ=k=>L5f(i=>QT[k][i].replace('{h}',i===3&&HN_AR[hid]?HN_AR[hid]:heroName(hid)));
+ const inScene=new Set(o.allKeys);const pool=Object.keys(SD).filter(k=>!inScene.has(k)&&['hayvan','bitki','yemek','oyun','tasit'].includes(CAT_OF[k]));shuf(pool);
+ const first=o.stops.find(s=>s.k&&SD[s.k]);
+ if(first){const w=pool.slice(0,2).map(k=>[SD[k].e,SD[k].n]);Q.push(mkQ(fillQ('first'),[SD[first.k].e,SD[first.k].n],w));}
+ const present=o.allKeys.filter(k=>SD[k]);
+ if(present.length>=2){const nk=pool[2]||pool[0];const pr=shuf([...present]).slice(0,2).map(k=>[SD[k].e,SD[k].n]);Q.push(mkQ(QT.not,[SD[nk].e,SD[nk].n],pr));}
+ else{const c=o.stops.length;const ws=[c+1,c+2].map(x=>['🔢',L5f(()=>String(x))]);Q.push(mkQ(fillQ('count'),['🔢',L5f(()=>String(c))],ws));}
+ if(o.mood&&o.mood!=='none'){const cap=s=>s.replace(/[,،\s]+$/,'').replace(/^./,c=>c.toLocaleUpperCase('tr'));const ms=Object.keys(MOODE).filter(m=>m!==o.mood);shuf(ms);
+  Q.push(mkQ(QT.where,[MOODE[o.mood],YER[o.mood].map(cap)],ms.slice(0,2).map(m=>[MOODE[m],YER[m].map(cap)])));}
+ else{const others=[...BASE_H.map(b=>b[0]),...PRESETS.map(p=>p.id)].filter(x=>x!==hid);shuf(others);Q.push(mkQ(QT.hero,['⭐',heroNames5(hid)],others.slice(0,2).map(x=>['👤',heroNames5(x)])));}
+ Q.push(mkQ(fillQ('feel'),FEEL[0],FEEL.slice(1)));
+ Q.push(mkQ(QT.moral,['📘',MORAL[o.moral]],shuf([...WRONGM]).slice(0,2).map(m=>['📘',m])));
+ return Q.map(([q,a,opts])=>[q,a,opts.map(([e,t])=>[e,...t])]);}
+
+async function storyWalk(){if(AT.busy)return;AT.busy=true;hideQuiz();const tok=RUN,n=AT.hero,C=CH[n],L5=LI[curLang],lines=[];
+ try{hideBubble();if(!C.show){C.x=180;C.y=800;C.face=1;popIn(n);await wait(300,tok);}if(C.y<500)C.y=800;
+  const items=sceneItems(),sky=items.filter(i=>SKY_INTRO.has(i.k)).slice(0,3),rest=items.filter(i=>!SKY_INTRO.has(i.k));
+  const friends=Object.keys(CH).filter(f=>f!==n&&CH[f].show).map(f=>({f,cat:'friend',cx:CH[f].x,cy:CH[f].y-100}));
+  const pw=[...L.user.querySelectorAll('.item[data-pts]')].pop();let path=null;
+  if(pw){const[tx,ty]=tOf(pw);path=JSON.parse(pw.dataset.pts).map(([x,y])=>[x+tx,y+ty]);}
+  const hn=hName(n),title=fillT(TITLE[curLang],{h:hn}),mood=sceneMood(items);
+  const tt=el('text',{x:800,y:120,'text-anchor':'middle',class:'flash'+(curLang==='ar'?' ar':'')},L.fx);tt.textContent=title;tt.animate([{opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.8},{opacity:0}],{duration:3200}).onfinish=()=>tt.remove();sfx.ding();
+  await tell(fillT(INTRO[curLang],{h:hn,y:YER[mood][L5]}),tok,lines);
+  for(const s of sky){pulse(s.w);sparkle(s.cx,s.cy);await tell(SKYL[s.k][L5],tok,lines);}
+  let stops=[...rest,...friends],far=[];
+  if(path){stops.forEach(s=>{let bi=0,bd=1e9;path.forEach((p,i)=>{const d=Math.hypot(p[0]-s.cx,p[1]-s.cy);if(d<bd){bd=d;bi=i;}});s.pi=bi;s.pd=bd;});
+   far=stops.filter(s=>s.pd>=340);stops=stops.filter(s=>s.pd<340).sort((a,b)=>a.pi-b.pi);C.x=path[0][0];C.y=path[0][1]-3;place(n);}
+  else stops.sort((a,b)=>a.cx-b.cx);
+  stops=stops.slice(0,8);far=far.slice(0,3);let pi=0;const joined=[],seenC=new Set();
+  if(!stops.length&&!far.length&&!sky.length)await tell({tr:'Ama yol bomboştu! Hadi yoluna bir şeyler çiz: çiçek, güneş, hayvan…',en:'But the road was empty! Draw something: a flower, the sun, an animal…',de:'Aber der Weg war leer! Male etwas: eine Blume, die Sonne, ein Tier…',ar:'لكن الطريق كان فارغاً! ارسم شيئاً: زهرة، شمساً، حيواناً…',ku:'Lê rê vala bû! Tiştekî xêz bike: kulîlkek, roj, heywanek…'}[curLang],tok,lines);
+  for(const s of stops){
+   if(path){const seg=path.slice(pi,s.pi+1).map(p=>[p[0],p[1]-3]);if(seg.length)await walkTo(n,seg,tok,.3);pi=s.pi;}
+   else{const tx=s.cx>C.x?s.cx-120:s.cx+120;await walkTo(n,[[Math.max(60,Math.min(1540,tx)),C.y]],tok,.32);}
+   C.face=s.cx>=C.x?1:-1;place(n);if(s.w)pulse(s.w);sparkle(s.cx,s.cy);sfx.pop();
+   const rep=!s.f&&seenC.has(s.cat);seenC.add(s.cat);const tp0=TPL[s.cat]||TPL.oyun,tp=rep?{[curLang]:REP[curLang]}:tp0,nm=s.f?hName(s.f):s.names[L5];
+   await tell(fillT(tp[curLang][0],{h:hn,n:s.f?nm:lowN(nm),N:nm}),tok,lines);
+   if(s.f){setAct(s.f,'wave');await heroTalk(s.f,fillT(tp0[curLang][1],{h:hn}),tok,lines);setAct(s.f,null);joined.push(s.f);}
+   else{const sk=SAY_K[s.k];setAct(n,'wave');await heroTalk(n,sk?sk[L5]:fillT(tp[curLang][1],{n:lowN(nm),N:nm}),tok,lines);setAct(n,null);}}
+  if(path&&pi<path.length-1)await walkTo(n,path.slice(pi+1).map(p=>[p[0],p[1]-3]),tok,.3);
+  for(const s of far){C.face=s.cx>=C.x?1:-1;place(n);setAct(n,'wave');if(s.w)pulse(s.w);sparkle(s.cx,s.cy);const nm=s.f?hName(s.f):s.names[L5];await tell(fillT(FAR[curLang],{h:hn,n:s.f?nm:lowN(nm),N:nm}),tok,lines);setAct(n,null);}
+  joined.forEach((f,i)=>walkTo(f,[[C.x-(i+1)*110*C.face,C.y]],tok,.35).catch(()=>{}));
+  setAct(n,'jump');confetti();sfx.ding();const all=[...stops,...far],cats=new Set(all.map(s=>s.cat));const mk2=['friend','hayvan','bitki','deniz','yemek','uzay'].find(c=>cats.has(c))||'def';
+  await tell(fillT(ENDS[curLang],{h:hn,k:all.length+sky.length}),tok,lines);await tell(MORAL[mk2][L5],tok,lines);setAct(n,null);
+  showStory(title,lines);saveSoon();
+  if($('#quizChk').checked){await wait(500,tok);await tell(QINTRO[curLang],tok,[]);hideBubble();
+   QOV=buildWalkQuiz({hero:n,stops:all.filter(s=>!s.f),allKeys:items.map(i=>i.k),mood,moral:mk2});showQuiz(false);}}
+ catch(e){if(!(e instanceof Cancel))console.error(e);}finally{AT.busy=false;hideBubble();}}
+/* yapay zekâ butonları: yalnızca anahtarsız çalışan ortamda görünür */
+(function(){const show=()=>{$('#aiOpen').hidden=false;$('#txAI').hidden=false;};if(window.claude&&typeof window.claude.use==='function')window.claude.use('sample').then(s=>{if(s)show();}).catch(()=>{});})();
+
 /* modlar ve düğmeler */
 function setMode(m,skipIntro){if(mode==='atelier'&&m!=='atelier'){saveWork();if(AT.playing)stopAll();AT.playing=false;}paper.setAttribute('fill',m==='atelier'?paper.getAttribute('fill'):'#FFFEF8');mode=m;$$('.modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));$('#shelfStory').hidden=m!=='story';$('#shelfAtelier').hidden=m!=='atelier';$('#ctrl').hidden=m!=='story';svg.classList.toggle('drawing',m==='atelier');
  stopAll();hideQuiz();running=false;setPlayUI();$('#capNote').textContent='';if(m==='atelier'){L.user.innerHTML='';enterAtelier();}else{L.user.innerHTML='';if(!skipIntro)intro();}}
 $$('.modes button').forEach(b=>b.onclick=()=>{sfx.init();if(b.dataset.mode!==mode)setMode(b.dataset.mode);});
-$$('.langs button').forEach(b=>b.onclick=()=>{sfx.init();curLang=b.dataset.lang;$$('.langs button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(mode!=='story')return;if(!quiz.hidden){if(QS&&QS.i>=story().quiz.length)showResult();else showQuiz(true);}else if(running)runFrom(Math.min(cur.scene,story().scenes.length-1),false);});
+$$('.langs button').forEach(b=>b.onclick=()=>{sfx.init();curLang=b.dataset.lang;$$('.langs button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(mode!=='story')return;if(!quiz.hidden){if(QS&&QS.i>=QZ().length)showResult();else showQuiz(true);}else if(running)runFrom(Math.min(cur.scene,story().scenes.length-1),false);});
 $('#playB').onclick=()=>{sfx.init();if(running)togglePause();else if(cur.scene>=story().scenes.length||!quiz.hidden)runFrom(0,true);else runFrom(cur.scene,cur.scene===0);};
 $('#prevB').onclick=()=>{sfx.init();runFrom(Math.max(0,Math.min(cur.scene,story().scenes.length)-1),false);};
 $('#nextB').onclick=()=>{sfx.init();const n=cur.scene+1;if(n<story().scenes.length)runFrom(n,false);};
@@ -2040,7 +2284,7 @@ $('#fsB').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();e
 document.addEventListener('keydown',e=>{if(mode!=='story'||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.code==='Space'&&document.activeElement===document.body){e.preventDefault();$('#playB').click();}if(e.key==='ArrowRight')$('#nextB').click();if(e.key==='ArrowLeft')$('#prevB').click();});
 /* kâğıt dokusu */
 (()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),d=x.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=Math.random(),a=v>.72?(v-.72)*2.6:0;d.data[i]=d.data[i+1]=d.data[i+2]=255;d.data[i+3]=a*230;}x.putImageData(d,0,0);$('#grain').style.backgroundImage=`url(${c.toDataURL()})`;})();
-buildAtelierUI();taskUI();textUI();renderScenes();recUI();renderShelf();updDots();setPlayUI();dockUI();intro();
+aiUI();buildAtelierUI();taskUI();textUI();renderScenes();recUI();renderShelf();updDots();setPlayUI();dockUI();intro();
 </script>
 </body>
 </html>
