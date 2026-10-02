@@ -346,7 +346,7 @@ button{font-family:inherit;cursor:pointer;border:0}
 
 <!-- TELEFON -->
 <div id="phone" class="hide">
-  <div class="pTop"><div class="logo">🤖 Kumanda</div><div class="stat"><span class="dot" id="pDot"></span><span id="pStat">Bağlı değil</span></div></div>
+  <div class="pTop"><div class="logo">🤖 Kumanda</div><div style="display:flex;align-items:center;gap:8px"><div class="stat"><span class="dot" id="pDot"></span><span id="pStat">Bağlı değil</span></div><button class="mini" style="padding:6px 10px;font-size:13px" onclick="pChangeBoard()">🔄 Tahta</button></div></div>
   <div class="pBody" id="pBody"></div>
   <div class="pNav" id="pNav">
     <button class="on" data-p="foto" onclick="pTab('foto')"><b>📸</b>Öğrenci</button>
@@ -390,7 +390,7 @@ async function makeThumb(dataUrl,size=72){try{const i=await loadImg(dataUrl);ret
 /* ================= ROL ================= */
 const hashCode=(location.hash.match(/k=(\d{4})/)||[])[1];
 function chooseRole(r){LS.set('mr_role',r);$('#start').classList.add('hide');r==='board'?initBoard():initPhone()}
-window.addEventListener('load',()=>{if(hashCode){LS.set('mr_role','phone');initPhone(hashCode);return}const r=LS.get('mr_role',null);if(r==='board')initBoard();else if(r==='phone')initPhone();else $('#start').classList.remove('hide')});
+window.addEventListener('load',()=>{if(hashCode){LS.set('mr_role','phone');try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}initPhone(hashCode);return}const r=LS.get('mr_role',null);if(r==='board')initBoard();else if(r==='phone')initPhone();else $('#start').classList.remove('hide')});
 
 /* ================= TAHTA ================= */
 let db, peer=null, conns=[], tab='sahne', pos={}, active=null, onStage=new Set();
@@ -637,7 +637,7 @@ function memoFlip(i,b){const c=memo.cards[i];if(c.st||memo.open.length>=2)return
 
 /* ================= TELEFON ================= */
 let pPeer=null,pConn=null,pCode=null,roster={list:[],classes:[],cls:'',active:null},pCur='foto',pImg=null,pZoom=1.1,pOff=-.3,codeState={code:[],lvl:1,hint:''};
-function initPhone(code){$('#phone').classList.remove('hide');pCode=code||LS.get('mr_code',null);if(pCode)pConnect();else pRenderConnect()}
+function initPhone(code){$('#phone').classList.remove('hide');pCode=code||null;if(pCode)pConnect();else pRenderConnect()}
 function pSetStat(ok,t){$('#pDot').classList.toggle('ok',ok);$('#pStat').textContent=t}
 function pRenderConnect(){$('#pNav').classList.add('hide');$('#pBody').innerHTML=`<div class="conBox"><div style="font-size:70px">📱➡️🖥️</div><h2>Tahtaya Bağlan</h2><p>Tahtada sağ üstteki düğmeye dokunun ve QR kodu okutun ya da 4 haneli kodu yazın:</p><input class="pIn" id="pCodeIn" inputmode="numeric" maxlength="4" placeholder="0000"><br><button class="pBtn2 g" style="max-width:260px;width:100%" onclick="const v=document.getElementById('pCodeIn').value.trim();if(/^\\d{4}$/.test(v)){pCode=v;pConnect()}else toast('4 haneli kodu yazın')">Bağlan 🚀</button><p style="margin-top:28px"><button class="mini" onclick="LS.set('mr_role','board');location.hash='';location.reload()">Bu cihaz tahta olsun</button></p></div>`}
 function pConnect(){if(!window.Peer){pSetStat(false,'İnternet yok');toast('İnternet bağlantısı gerekli');pRenderConnect();return}
@@ -645,13 +645,13 @@ function pConnect(){if(!window.Peer){pSetStat(false,'İnternet yok');toast('İnt
   try{if(pPeer)pPeer.destroy()}catch(e){}
   pPeer=new Peer({debug:0});
   pPeer.on('open',()=>{pConn=pPeer.connect(PREFIX+pCode,{reliable:true});
-    const to=setTimeout(()=>{if(!pConn||!pConn.open){pSetStat(false,'Tahta bulunamadı');toast('Tahta bulunamadı. Kod doğru mu? Tahtada sayfa açık mı?');}},9000);
+    const to=setTimeout(()=>{if(!pConn||!pConn.open){pSetStat(false,'Tahta bulunamadı');toast('Tahta bulunamadı. Kod doğru mu? Tahtada sayfa açık mı?');if(!pConn||!pConn.open){pCode=null;pRenderConnect()}}},9000);
     pConn.on('open',()=>{clearTimeout(to);LS.set('mr_code',pCode);pSetStat(true,'Tahtaya bağlı · '+pCode);pConn.send({t:'hello'});if(navigator.vibrate)navigator.vibrate(60)});
     pConn.on('data',d=>{if(d.t==='roster'){roster=d;if(pCur==='canli'){const e=document.getElementById('lvChips');if(e)e.innerHTML=pChips()}else if(pCur!=='foto'||!pImg)pRender();else pUpdateCls()}else if(d.t==='added'){toast('✅ '+d.name+' tahtaya gönderildi!')}else if(d.t==='codeState'){codeState=d;if(pCur==='kod')pRender()}});
-    pConn.on('close',()=>{pSetStat(false,'Bağlantı koptu');setTimeout(pConnect,2500)});
+    pConn.on('close',()=>{if(!pCode)return;pSetStat(false,'Bağlantı koptu');setTimeout(()=>{if(pCode)pConnect()},2500)});
     pConn.on('error',()=>{});
   });
-  pPeer.on('error',e=>{if(e.type==='peer-unavailable'){pSetStat(false,'Tahta bulunamadı');toast('Bu kodla açık bir tahta yok: '+pCode)}else pSetStat(false,'Bağlantı hatası')});
+  pPeer.on('error',e=>{if(e.type==='peer-unavailable'){pSetStat(false,'Tahta bulunamadı');toast('Bu kodla açık bir tahta yok: '+pCode);pCode=null;pRenderConnect()}else pSetStat(false,'Bağlantı hatası')});
 }
 function send(m){if(pConn&&pConn.open){pConn.send(m);if(navigator.vibrate)navigator.vibrate(25);return true}toast('Tahtaya bağlı değil');return false}
 function pTab(p){pCur=p;document.querySelectorAll('#pNav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));if(p==='kumanda')send({t:'tab',v:'sahne'});if(p==='kod')send({t:'tab',v:'kodla'});if(p==='zeka')send({t:'zeka',g:'menu'});pRender()}
@@ -1153,5 +1153,18 @@ function lvAutoId(v,P,sm,hm,T){if(!lvAuto.on)return;const now=performance.now();
  if(lvAuto.cand===best.s.id)lvAuto.n++;else{lvAuto.cand=best.s.id;lvAuto.n=1}
  if(lvAuto.n>=3&&best.s.id!==roster.active){sendQ({t:'sel',id:best.s.id,auto:1});roster.active=best.s.id;lvAuto.n=0;toast('📹 Kamerada: '+firstName(best.s.name));const e=document.getElementById('lvChips');if(e)e.innerHTML=pChips()}}
 </script>
+<script>
+/* ---------- tahta değiştirme + telefondan öğrenci silme ---------- */
+function pChangeBoard(){const old=pCode;pCode=null;try{pConn&&pConn.close()}catch(e){}try{pPeer&&pPeer.destroy()}catch(e){}pConn=null;pPeer=null;try{if(lv.run)lvStop()}catch(e){}roster={list:[],classes:[],cls:'',active:null};pSetStat(false,'Bağlı değil');pRenderConnect();if(old)toast('Yeni tahtanın kodunu yazın')}
+const _pRenderConnect4=pRenderConnect;pRenderConnect=function(){_pRenderConnect4();const i=document.getElementById('pCodeIn');if(i){i.value='';setTimeout(()=>{try{i.focus()}catch(e){}},200)}};
+let pDelMode=false;
+const _pChips4=pChips;pChips=function(){let h=_pChips4();if(pDelMode)h=h.replace(/onclick="send\(\{t:'sel',id:'([^']+)'\}\)"/g,(m,id)=>`onclick="pDel('${id}')"`).replace(/class="chip /g,'class="chip delm ');return h};
+function pDel(id){const s=roster.list.find(x=>x.id===id);if(!s)return;if(confirm(s.name+' silinsin mi?')){if(send({t:'del',id}))toast('🗑️ '+s.name+' silindi')}}
+const _pRender4=pRender;pRender=function(){_pRender4();if(pCur!=='foto')return;const h=[...document.querySelectorAll('#pBody .pCard h3')].find(e=>e.textContent.includes('Tahtadaki'));if(!h)return;
+ h.insertAdjacentHTML('afterend',`<button class="mini ${pDelMode?'del':''}" style="padding:6px 12px;font-size:14px;margin-bottom:6px" onclick="pDelMode=!pDelMode;pRender()">${pDelMode?'✅ Silmeyi bitir':'🗑️ Öğrenci sil'}</button>${pDelMode?'<div class="lvTips" style="margin:0 0 4px">Silmek istediğiniz öğrenciye dokunun</div>':''}`);
+ const card=h.closest('.pCard');const old=card.querySelector('.pChips');if(old&&pDelMode)old.outerHTML=pChips()};
+const _extMsg4=extMsg;extMsg=function(d,c){if(d.t==='del'){const s=stu(d.id);if(s){db.students=db.students.filter(x=>x.id!==d.id);onStage.delete(d.id);delete pos[d.id];if(active===d.id)active=null;const a=$('#stage').querySelector(`.av[data-id="${d.id}"]`);if(a)a.remove();layoutStage();save();renderAll();toast('🗑️ '+s.name+' silindi')}return}_extMsg4(d,c)};
+</script>
+<style>.chip.delm{outline:3px solid #e11d48}.chip.delm:after{content:'✖';position:absolute;top:-6px;left:-4px;background:#e11d48;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;display:flex;align-items:center;justify-content:center}</style>
 </body>
 </html>
