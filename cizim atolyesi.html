@@ -2319,7 +2319,7 @@ function twin(id){if(!id||id.startsWith('t_')||id==='robo')return id;let name,g,
 /* parseStory'yi kitap modunda güvenli hâle getir: konuşma metni aynı, çizim listesi korumalı */
 const _parse=parseStory;
 parseStory=function(text){if(!B.active)return _parse(text);const s=safe(text),A=_parse(text),S=_parse(s.text);
- const sents=A.sents.map((x,k)=>{const y=S.sents[k]||{ks:[],hs:[],s:''};const sacred=/(^|\s)nur(\s|$|[.,!?])/.test(y.s)&&!/(^|\s)nur(\s|$|[.,!?])/.test(x.s);return {s:sacred?x.s.replace(/[“"«»”]/g,'’'):x.s,ks:y.ks||[],hs:y.hs||[],quote:sacred?null:x.quote}});
+ const sents=A.sents.map((x,k)=>{const y=S.sents[k]||{ks:[],hs:[],s:''};const sacred=(/(^|\s)nur(\s|$|[.,!?])/.test(y.s)&&!/(^|\s)nur(\s|$|[.,!?])/.test(x.s))||/peygamber|efendimiz|resulullah|sallallahu|aleyhisselam/i.test(x.s);return {s:sacred?x.s.replace(/[“"«»”]/g,'’'):x.s,ks:y.ks||[],hs:y.hs||[],quote:sacred?null:x.quote}});
  let heroes=(S.heroes||[]).map(twin).filter(h=>h&&h!=='nur');if(!heroes.length)heroes=[twin(AT.hero||'can')];sents.forEach(x=>x.hs=x.hs.map(twin));
  return {sents,keys:S.keys,heroes,bg:S.bg}};
 const _saveSoon=saveSoon;saveSoon=function(){if(B.active)return;_saveSoon()};
@@ -2362,11 +2362,21 @@ async function loadBooks(){const db=await connect();const s=await db.collection(
 /* Kitabın metnini her türden çıkar: dijital (Firestore), PDF (pdf.js), kendi sitendeki HTML kitap */
 const temiz=t=>String(t||'').replace(/\s+/g,' ').trim();
 function grupla(parcalar,hedef=360){const out=[];let cur='';for(const p of parcalar){if(cur&&(cur+' '+p).length>hedef){out.push(cur);cur=p}else cur=cur?cur+' '+p:p}if(cur)out.push(cur);return out.map(t=>({text:t,img:''}))}
-async function htmlSayfalar(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('html');const ham=await r.text();const doc=new DOMParser().parseFromString(ham,'text/html');const abs=u=>{try{return u?new URL(u,url).href:''}catch{return ''}};doc.querySelectorAll('script,style,noscript,nav,header,footer,button,select,form').forEach(e=>e.remove());
- const sel='[class*="page"],[class*="sayfa"],[class*="slide"],[class*="spread"],section,article';let kap=[...doc.querySelectorAll(sel)].filter(e=>!e.querySelector(sel)&&temiz(e.textContent).length>12);
- let sayfalar=kap.map(e=>{const im=e.querySelector('img');const bg=(e.getAttribute('style')||'').match(/url\(["']?([^"')]+)/);return {text:temiz(e.textContent),img:abs(im?im.getAttribute('src'):bg?bg[1]:'')}});
+async function htmlSayfalar(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('html');const ham=await r.text();const abs=u=>{try{return u?new URL(u,url).href:''}catch{return ''}};
+ const metin=h=>{const d=document.createElement('div');d.innerHTML=String(h||'').replace(/<br\s*\/?>/gi,' ');d.querySelectorAll('script,style').forEach(e=>e.remove());return temiz(d.textContent)};
+ const coz=v=>String(v||'').replace(/\\n/g,' ').replace(/\\(["'`\\])/g,'$1');
+ /* 1) Sayfalar JavaScript içinde: { img:"…", title:"…", text:"…" } */
+ const js=[];const re=/\{[^{}]*?\btext\s*:\s*(["'`])((?:(?!\1)[^\\]|\\[\s\S])*)\1[^{}]*?\}/g;let m;
+ while((m=re.exec(ham))){const blok=m[0];const al=k=>{const x=blok.match(new RegExp('\\b'+k+'\\s*:\\s*(["\'`])((?:(?!\\1)[^\\\\]|\\\\[\\s\\S])*)\\1'));return x?coz(x[2]):''};const t=metin(coz(m[2]));if(t.length<8)continue;const bas=metin(al('title')||al('baslik'));js.push({text:(bas&&!t.startsWith(bas)?bas+'. ':'')+t,img:abs(al('img')||al('resim')||al('image')||al('gorsel'))})}
+ if(js.length>=2)return js.slice(0,80);
+ /* 2) Sayfalar HTML kartları içinde */
+ const doc=new DOMParser().parseFromString(ham,'text/html');doc.querySelectorAll('script,style,noscript,nav,header,footer,button,select,form').forEach(e=>e.remove());
+ const sel='[class*="page"],[class*="sayfa"],[class*="slide"],[class*="spread"],[class*="card"],[class*="kart"],[class*="story"],[class*="box"],section,article';
+ let aday=[...doc.querySelectorAll(sel)].filter(e=>temiz(e.textContent).length>12);aday=aday.filter(e=>!aday.some(o=>o!==e&&e.contains(o)));
+ const resimBul=e=>{let n=e;for(let k=0;k<4&&n;k++,n=n.parentElement){const im=n.querySelector&&n.querySelector('img');if(im)return abs(im.getAttribute('src'));const bg=(n.getAttribute&&n.getAttribute('style')||'').match(/url\(["']?([^"')]+)/);if(bg)return abs(bg[1])}return ''};
+ let sayfalar=aday.map(e=>({text:temiz(e.textContent),img:resimBul(e)}));
  if(sayfalar.length<2){const ps=[...doc.querySelectorAll('p,h1,h2,h3,li,blockquote')].map(e=>temiz(e.textContent)).filter(x=>x.length>14);sayfalar=grupla(ps)}
- if(sayfalar.length<2){const seen=new Set();const str=[...ham.matchAll(/(["'`])((?:(?!\1)[^\\\n]|\\.){30,700})\1/g)].map(m=>m[2].replace(/\\n/g,' ').replace(/\\(["'`])/g,'$1')).filter(x=>/\p{Ll}{3,}\s+\p{Ll}{2,}\s+\p{L}{2,}/u.test(x)&&!/[<>{};=]|function|https?:|px|rgba?\(|\$\{/.test(x)&&!seen.has(x)&&seen.add(x));sayfalar=grupla(str)}
+ if(sayfalar.length<2){const seen=new Set();const str=[...ham.matchAll(/(["'`])((?:(?!\1)[^\\\n]|\\.){30,700})\1/g)].map(m=>metin(coz(m[2]))).filter(x=>/\p{Ll}{3,}\s+\p{Ll}{2,}\s+\p{L}{2,}/u.test(x)&&!/[{};=]|function|https?:|px|rgba?\(|\$\{/.test(x)&&!seen.has(x)&&seen.add(x));sayfalar=grupla(str)}
  return sayfalar.slice(0,80)}
 let pdfLib=null;async function pdfSayfalar(url){if(!window.pdfjsLib){await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=no;document.head.append(s)});pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}const pdf=await pdfjsLib.getDocument(url).promise;B.pdf=pdf;const out=[];for(let i=1;i<=Math.min(pdf.numPages,80);i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();out.push({text:temiz(tc.items.map(x=>x.str).join(' ')),img:'',pdf:i})}return out}
 async function pdfResim(p){if(!B.pdf||!p.pdf||p.img)return;const pg=await B.pdf.getPage(p.pdf);const v=pg.getViewport({scale:1});const vp=pg.getViewport({scale:Math.min(2,900/v.width)});const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;p.img=c.toDataURL('image/jpeg',.85)}
