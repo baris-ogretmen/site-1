@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="7.4">
+<meta name="surum" content="7.5">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='7.4';
+const PANEL_SURUM='7.5';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -982,6 +982,13 @@ const prevPFC=pageFromCloud;pageFromCloud=function(){prevPFC();PD.page.stil=(sit
 const prevSave=savePage;savePage=async function(btn){await prevSave(btn);try{await db.collection('site_ayarlari').doc('sayfa').set({stil:PD.page.stil||'yumusak'},{merge:true})}catch{}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b||!currentUser)return;if(b.dataset.x==='pd-stil'){PD.page.stil=b.dataset.s;markDirty();renderPage()}else if(b.dataset.x==='pd-stil-onizle'){window.open(new URL('./',base).href+'?tema='+(PD.page.tema||'klasik')+'&stil='+(PD.page.stil||'yumusak')+'&onizleme=1','_blank','noopener')}});
 if($('#pv-tema')){$('#pv-tema').innerHTML=TEMA_LIST.map(([k,ad])=>`<option value="${k}">🎨 ${esc(ad)}</option>`).join('')}
+/* ---------- 22) 📖 CANLANDIR: bağlantılı kitabı metniyle birlikte dijitale çevir (aynı kart, aynı kapak) ---------- */
+let CANL=null;
+function canlandir(key){const i=findRecord(key);if(!i)return;const sid=db.collection('dijital_kitaplar').doc().id;CANL={bookId:i.id,eski:i.link||''};fillStory({...i,sayfalar:[{img:'',text:'',alt:''}],featured:false,editing:{bookId:i.id,storyId:sid}});$('#story-publish').textContent='Kitabı canlandır →';toast('📖 “'+i.baslik+'” için kitabın metnini yapıştır; sayfalara kendiliğinden bölünür.');setTimeout(storySplit,350)}
+const prevPS2=publishStory;publishStory=async function(e){await prevPS2(e);if(CANL&&storyEditing?.bookId===CANL.bookId){try{await db.collection('kitaplar').doc(CANL.bookId).set({eskiLink:CANL.eski,cizim:true},{merge:true})}catch{}toast('✨ Kitap canlandı! Çizim Atölyesi’nde sayfa sayfa çiziliyor ve seslendiriliyor.');CANL=null}};
+$('#story-form').onsubmit=publishStory;
+const prevRK2=renderKapak;renderKapak=function(){prevRK2();const bek=liveRecords().filter(i=>i.col==='kitaplar'&&/Atölyede açılmaz/.test(kitapTuru(i)));const sb=$('#km-series');if(sb&&bek.length&&!sb.querySelector('.km-canl'))sb.insertAdjacentHTML('afterbegin',`<div class="km-canl x-fix" style="flex-direction:column;align-items:stretch;margin-bottom:12px"><b>📖 Canlanmayı bekleyen kitaplar (${bek.length})</b><span class="small">Bu kitaplar başka bir sitede duruyor; Çizim Atölyesi metnine ulaşamıyor. “Canlandır”a bas, kitabın metnini bir kez yapıştır: aynı kapakla sitede kalır, atölyede sayfa sayfa çizilip seslendirilir.</span>${bek.map(i=>`<div class="row between" style="margin-top:6px"><span>${esc(i.baslik)}</span><button class="btn small" data-x="canlandir" data-k="${esc(keyOf(i))}" style="background:#f59e0b;color:#fff;border:0">📖 Canlandır</button></div>`).join('')}</div>`);$$('#km-list .x-doc-row').forEach(row=>{const btn=row.querySelector('[data-x="km-pick"]');const i=btn&&findRecord(btn.dataset.k);if(!i||i.col!=='kitaplar'||row.querySelector('[data-x="canlandir"]'))return;const t=kitapTuru(i);if(/Atölyede açılmaz/.test(t))btn.insertAdjacentHTML('beforebegin',`<button class="btn small" data-x="canlandir" data-k="${esc(keyOf(i))}" style="background:#f59e0b;color:#fff;border:0">📖 Canlandır</button>`)})};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-x="canlandir"]');if(b&&currentUser)canlandir(b.dataset.k)});
 /* Kenar çubuğundaki "Siteyi görüntüle" her zaman sitenin ana sayfasını açsın (panel alt klasördeyse de). */
 const siteLink=$('.sidebar-bottom a.menu-btn');if(siteLink)siteLink.href=new URL('index.html',base).href;
 saveWatch();
