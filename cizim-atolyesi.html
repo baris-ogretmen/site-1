@@ -2522,6 +2522,35 @@ function toastBul(t){try{$('#capNote').textContent=t;setTimeout(()=>{if($('#capN
 
 </script>
 <script>
+/* ===== 🩹 KOD AYIKLAYICI: yapıştırılan/okunan HTML-JS kodundan kitabın sayfalarını (metin + resim) çıkarır =====
+   Site, panel ve Çizim Atölyesi aynı fonksiyonu kullanır. window.kodMu(metin) · window.kodSayfalar(ham, adres) */
+(function(){
+const temiz=t=>String(t||'').replace(/\s+/g,' ').trim();
+function grupla(p,hedef=360){const o=[];let c='';for(const x of p){if(c&&(c+' '+x).length>hedef){o.push(c);c=x}else c=c?c+' '+x:x}if(c)o.push(c);return o.map(text=>({text,img:''}))}
+const kodMu=t=>{t=String(t||'');return /<!doctype|<html[\s>]|<head[\s>]|<body[\s>]|<script[\s>]|<style[\s>]|<\/div>|<\/span>|<link\s|function\s*\w*\s*\(|document\.getElementById|\b(const|let|var)\s+\w+\s*=|\{\s*(margin|padding|display|font|background|color)\s*:/i.test(t)};
+function kodSayfalar(ham,adres){ham=String(ham||'');const abs=u=>{try{return u?new URL(u,adres||location.href).href:''}catch{return u||''}};
+ const metin=h=>{const d=document.createElement('div');d.innerHTML=String(h||'').replace(/<br\s*\/?>/gi,' ').replace(/<\/(p|h\d|li|div)>/gi,' ');d.querySelectorAll('script,style').forEach(e=>e.remove());return temiz(d.textContent)};
+ const coz=v=>String(v||'').replace(/\\n/g,' ').replace(/\\([\"'`\\])/g,'$1');
+ /* 1) JavaScript dizisi: { img:"…", title:"…", text:"…" } */
+ const js=[];const re=/\{[^{}]*?\b(?:text|metin|yazi|content)\s*:\s*(["'`])((?:(?!\1)[^\\]|\\[\s\S])*)\1[^{}]*?\}/g;let m;
+ while((m=re.exec(ham))){const blok=m[0];const al=k=>{const x=blok.match(new RegExp('\\b'+k+'\\s*:\\s*(["\'`])((?:(?!\\1)[^\\\\]|\\\\[\\s\\S])*)\\1'));return x?coz(x[2]):''};const t=metin(coz(m[2]));if(t.length<8)continue;const bas=metin(al('title')||al('baslik'));js.push({text:(bas&&!t.startsWith(bas)?bas+'. ':'')+t,img:abs(al('img')||al('resim')||al('image')||al('gorsel'))})}
+ if(js.length>=2)return js.slice(0,80);
+ /* 2) HTML kartları */
+ const doc=new DOMParser().parseFromString(ham,'text/html');doc.querySelectorAll('script,style,noscript,nav,header,footer,button,select,form').forEach(e=>e.remove());
+ const sel='[class*="page"],[class*="sayfa"],[class*="slide"],[class*="spread"],[class*="card"],[class*="kart"],[class*="story"],[class*="row"],[class*="box"],section,article';
+ let aday=[...doc.querySelectorAll(sel)].filter(e=>temiz(e.textContent).length>12);aday=aday.filter(e=>!aday.some(o=>o!==e&&e.contains(o)));
+ const resimBul=e=>{let n=e;for(let k=0;k<4&&n;k++,n=n.parentElement){const im=n.querySelector&&n.querySelector('img');if(im)return abs(im.getAttribute('src'));const bg=(n.getAttribute&&n.getAttribute('style')||'').match(/url\(["']?([^"')]+)/);if(bg)return abs(bg[1])}return ''};
+ let s=aday.map(e=>({text:temiz(e.textContent),img:resimBul(e)}));
+ if(s.length<2){const ps=[...doc.querySelectorAll('p,h1,h2,h3,li,blockquote')].map(e=>temiz(e.textContent)).filter(x=>x.length>14);s=grupla(ps)}
+ if(s.length<2){const seen=new Set();const str=[...ham.matchAll(/(["'`])((?:(?!\1)[^\\\n]|\\.){30,700})\1/g)].map(m=>metin(coz(m[2]))).filter(x=>/\p{Ll}{3,}\s+\p{Ll}{2,}\s+\p{L}{2,}/u.test(x)&&!/[{};=]|function|https?:|px|rgba?\(|\$\{/.test(x)&&!seen.has(x)&&seen.add(x));s=grupla(str)}
+ return s.filter(p=>p.text&&!kodMu(p.text)).slice(0,80)}
+/* sayfaları kod içeren bir kitap mı? (en az yarısı kod gibi görünüyorsa) */
+const sayfalarBozukMu=ps=>{ps=(ps||[]).filter(p=>p&&p.text);if(!ps.length)return false;return ps.filter(p=>kodMu(p.text)).length>=Math.max(1,Math.ceil(ps.length/3))};
+/* bozuk sayfaları onar: hepsini birleştir, yeniden ayıkla */
+const sayfalariOnar=(ps,adres)=>{const ham=(ps||[]).map(p=>p.text||'').join('\n\n');const n=kodSayfalar(ham,adres);return n.length?n:null};
+Object.assign(window,{kodMu,kodSayfalar,sayfalarBozukMu,sayfalariOnar});
+})();
+
 /* ===================== 📚 BARIŞ ÖĞRETMEN'İN KİTAPLARI — sayfa sayfa çizerek öğren =====================
    Kitaplar yönetici panelindeki "HİKAYE YAZ" ile yazılan dijital kitaplardan (Firestore: dijital_kitaplar) otomatik gelir.
    Hassasiyet: Peygamber Efendimiz (s.a.v.) ve peygamberler ASLA çizilmez; adı geçtiğinde sahnede yalnızca yumuşak bir nur/ışık belirir. */
@@ -2622,7 +2651,7 @@ function secenek(k){if(!k)return;const cizimli=window.cizimliBul?window.cizimliB
  d.querySelector('.bk-close').onclick=closeDlg;d.querySelectorAll('.bk-sec').forEach(x=>x.onclick=()=>{closeDlg();const t=x.dataset.s;if(t==='cizimli'){exitBookSafe();window.cizimliAc(k.baslik)}else if(t==='kalem')openBookA(k.id);else if(t==='oku'){const u=k.link&&!/kitap-oku/i.test(k.link)?new URL(k.link,location.href).href:new URL('./?icerik=kitaplar:'+k.id,location.href).href;window.open(u,'_blank','noopener')}else{exitBookSafe();if(mode!=='atelier')setMode('atelier',true);drawMode()}})}
 function exitBookSafe(){try{if(B.active)exitBook()}catch{}}
 async function openBookA(id){try{const db=await connect();if(!B.books.length)await loadBooks().catch(()=>{});const k=B.books.find(b=>b.id===id||dijId(b)===id);if(!k)throw new Error('yok');B.pdf=null;let pages=[];const tur=turu(k);
- if(tur==='dijital'){const s=await db.collection('dijital_kitaplar').doc(dijId(k)).get();if(!s.exists)throw new Error('yok');pages=(s.data().sayfalar||[]).map(p=>({text:p.text||'',img:p.img||''}))}
+ if(tur==='dijital'){const s=await db.collection('dijital_kitaplar').doc(dijId(k)).get();if(!s.exists)throw new Error('yok');pages=(s.data().sayfalar||[]).map(p=>({text:p.text||'',img:p.img||''}));if(window.sayfalarBozukMu&&sayfalarBozukMu(pages)){const n=sayfalariOnar(pages,location.href);if(n&&n.length)pages=n}pages=pages.map(p=>{let t=String(p.text||'');if(/<\/?[a-z][^>]*>/i.test(t)){const d=document.createElement('div');d.innerHTML=t.replace(/<br\s*\/?>/gi,' ');d.querySelectorAll('script,style').forEach(e=>e.remove());t=d.textContent}return{...p,text:t,img:p.img?new URL(p.img,location.href).href:''}})}
  else if(tur==='pdf'){dialog('<h2>📖 Kitap hazırlanıyor…</h2><p>PDF sayfaları okunuyor, birazdan kalem çizmeye başlayacak.</p>');pages=await pdfSayfalar(new URL(k.link,location.href).href);closeDlg()}
  else if(tur==='html'){pages=await htmlSayfalar(new URL(k.link,location.href).href)}
  pages=pages.filter(p=>temiz(p.text).length>2);
