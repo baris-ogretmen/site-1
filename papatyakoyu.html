@@ -467,6 +467,12 @@ html[data-device=phone] .pk-act { width: 92px; height: 92px; }
   html[data-device=phone] #pk { --u: 15px; }
 }
 
+/* ---- keep everything inside the part of the screen that is really visible (site viewers / iframes) ---- */
+#pk { top: var(--vis-top, 0px); bottom: var(--vis-bottom, 0px); }
+#joy.rest { opacity: .55; transform: scale(1); transition: opacity .3s, transform .2s; }
+#joy.rest #joy-knob { animation: pkJoyHint 2.4s ease-in-out infinite; }
+@keyframes pkJoyHint { 0%,70%,100% { transform: translate(0,0); } 78% { transform: translate(14px,-10px); } 88% { transform: translate(-6px,4px); } }
+
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
@@ -651,12 +657,42 @@ function onResize() {
   camera.fov = w / h < 0.6 ? 50 : w / h < 0.8 ? 46 : w / h < 1.2 ? 38 : 32;
   // phones: start a bit closer so characters stay readable; boards: a little wider view
   if (!G._camInit) { G._camInit = true; if (G.device === 'phone') G.cam.dist = 26; if (G.device === 'board') G.cam.dist = 32; }
+  const vi = G.viewInset || { top: 0, bottom: 0 };
+  if (vi.top || vi.bottom) camera.setViewOffset(w, h, 0, (vi.bottom - vi.top) / 2, w, h); else camera.clearViewOffset();
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
   G.composer.setSize(w, h);
   G.emit('resize', w, h);
 }
 addEventListener('resize', onResize);
+// ---- visible-area detection ------------------------------------------------
+// When the game runs inside a site's viewer (iframe) that is taller than the phone
+// screen, part of it is hidden. IntersectionObserver reports what is really visible
+// even across origins, so HUD/dialogs/joystick and the camera centre move into view.
+G.viewInset = { top: 0, bottom: 0 };
+{
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;inset:0;pointer-events:none;visibility:hidden;z-index:-1';
+  document.body.appendChild(probe);
+  const th = []; for (let i = 0; i <= 100; i++) th.push(i / 100);
+  const apply = (t, b) => {
+    t = Math.max(0, Math.round(t)); b = Math.max(0, Math.round(b));
+    if (Math.abs(t - G.viewInset.top) < 4 && Math.abs(b - G.viewInset.bottom) < 4) return;
+    G.viewInset.top = t; G.viewInset.bottom = b;
+    document.documentElement.style.setProperty('--vis-top', t + 'px');
+    document.documentElement.style.setProperty('--vis-bottom', b + 'px');
+    onResize(); G.emit('viewinset', G.viewInset);
+  };
+  if ('IntersectionObserver' in window && window.top !== window) {
+    new IntersectionObserver(es => {
+      for (const e of es) {
+        const H = window.innerHeight; const r = e.intersectionRect;
+        if (!e.isIntersecting || r.height < H * 0.35) continue; // mostly scrolled away → ignore
+        apply(r.top, H - r.bottom);
+      }
+    }, { threshold: th }).observe(probe);
+  }
+}
 addEventListener('orientationchange', () => setTimeout(onResize, 250));
 window.visualViewport?.addEventListener('resize', () => onResize());
 // iOS: block pinch-zoom / double-tap zoom of the page itself
@@ -994,7 +1030,7 @@ G.input.update = () => {
     if (touches.size === 2) { // start pinch, cancel joystick
       endJoy(); const [p1, p2] = [...touches.values()]; pinch = { d: Math.hypot(p1.x - p2.x, p1.y - p2.y), dist: G.cam.dist };
     } else if (touches.size === 1) {
-      joyId = e.pointerId; joy.style.left = e.clientX + 'px'; joy.style.top = e.clientY + 'px';
+      joyId = e.pointerId; joy.classList.remove('rest'); joy.style.left = e.clientX + 'px'; joy.style.top = e.clientY + 'px';
       G.input.joy.x = G.input.joy.z = 0;
     }
   });
@@ -1009,7 +1045,18 @@ G.input.update = () => {
       knob.style.transform = `translate(${dx}px,${dy}px)`; G.input.joy.x = dx / r; G.input.joy.z = dy / r;
     }
   });
-  function endJoy() { joyId = null; joy.classList.remove('on'); knob.style.transform = ''; G.input.joy.active = false; G.input.joy.x = G.input.joy.z = 0; }
+  function endJoy() { joyId = null; joy.classList.remove('on'); knob.style.transform = ''; G.input.joy.active = false; G.input.joy.x = G.input.joy.z = 0; restJoy(); }
+  // touch devices: the stick rests visibly at bottom-left so kids know where to drag
+  function restJoy() {
+    if (!G.isTouch || joyId !== null) return;
+    const show = G.state.started && !G.state.busy;
+    const rad = joy.offsetWidth / 2 || 66, h = window.visualViewport?.height || innerHeight;
+    joy.style.left = (rad + 22 + (G.device === 'board' ? 20 : 0)) + 'px';
+    joy.style.top = (h - (G.viewInset?.bottom || 0) - rad - (G.device === 'phone' ? 34 : 44)) + 'px';
+    joy.classList.toggle('rest', show);
+  }
+  G.on('start', restJoy); G.on('resize', restJoy); G.on('viewinset', restJoy);
+  { let lastBusy = null; G.updaters.push(() => { if (G.state.busy !== lastBusy) { lastBusy = G.state.busy; restJoy(); } }); }
   const end = e => {
     if (mouse && e.pointerType === 'mouse') {
       const m = mouse; mouse = null; G.input.mouseHold = null;
