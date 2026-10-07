@@ -1,0 +1,631 @@
+<title>Beynine Yolculuk</title>
+<meta name="description" content="Robotik-kodlama, yapay zekâ, satranç ve akıl-zekâ oyunlarında beynimizde neler oluyor? Nöronların içine giren, bilimsel temelli animasyonlu sunum.">
+<meta property="og:title" content="Beynine Yolculuk">
+<meta property="og:description" content="Kodlarken, satranç oynarken, yapay zekâyı sorgularken beynimizde neler oluyor? Nöronların içine giren animasyonlu bir yolculuk.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: tam ekran tuval sahne (beyin + nöron mikro dünyası); üstte ince başlık, altta sunum altyazısı paneli. Tek koyu görünüm (beynin içi). */
+:root{
+  --bg:#0a0918;
+  --bg2:#141031;
+  --panel:rgba(16,13,36,.86);
+  --line:rgba(196,180,255,.18);
+  --ink:#f4f0ff;
+  --dim:#aca4cc;
+  --tissue:#ff8fb1;
+  --code:#3fe0ff;
+  --ai:#b48bff;
+  --chess:#ffc44d;
+  --acc:var(--tissue);
+  --f-display:"Baloo 2","Nunito",system-ui,sans-serif;
+  --f-body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;background:radial-gradient(ellipse at 50% 40%,var(--bg2),var(--bg) 70%)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+
+.top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;display:flex;align-items:center;gap:12px;z-index:5;pointer-events:none}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;pointer-events:auto}
+.brand b{font-family:var(--f-display);font-weight:800;font-size:clamp(18px,2vw,28px);letter-spacing:.2px;line-height:1}
+.brand span{font-family:var(--f-mono);font-size:clamp(10px,.9vw,13px);color:var(--dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tools{margin-left:auto;display:flex;gap:8px;pointer-events:auto}
+.tbtn{height:42px;min-width:42px;padding:0 14px;border-radius:21px;border:1px solid var(--line);background:var(--panel);font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:8px;backdrop-filter:blur(6px)}
+.tbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+.tbtn svg{width:18px;height:18px}
+
+/* Hub */
+#hub{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 18px);z-index:4}
+.hub-in{max-width:1500px;margin:0 auto;display:grid;gap:16px}
+.hub-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 28px}
+.hub-head h1{font-family:var(--f-display);font-weight:800;font-size:clamp(34px,5.2vw,84px);line-height:.9;margin:0;text-wrap:balance;background:linear-gradient(100deg,var(--tissue),var(--ai) 45%,var(--code) 75%,var(--chess));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hub-head p{margin:0;max-width:52ch;color:var(--dim);font-size:clamp(15px,1.35vw,21px);line-height:1.45}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{position:relative;text-align:left;border-radius:20px;border:1px solid var(--line);background:var(--panel);padding:16px 18px 18px;display:grid;gap:6px;backdrop-filter:blur(8px);transition:transform .25s,border-color .25s;min-width:0}
+.card:hover{transform:translateY(-4px);border-color:var(--c)}
+.card .k{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.card h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(20px,1.8vw,30px);line-height:1.05}
+.card p{margin:0;color:var(--dim);font-size:clamp(13px,1vw,16px);line-height:1.4}
+.card .orb{position:absolute;right:16px;top:16px;width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 22%,transparent),0 0 22px var(--c)}
+.card .badge{justify-self:start;margin-top:4px;font-size:12px;font-weight:900;padding:3px 10px;border-radius:99px;background:var(--c);color:#130f2a}
+.note{color:var(--dim);font-size:12px;opacity:.8;margin:0}
+
+/* Caption */
+#cap{position:fixed;left:0;right:0;bottom:0;z-index:4;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 14px)}
+.cap-in{max-width:1500px;margin:0 auto;border-radius:24px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);padding:clamp(14px,1.6vw,24px) clamp(16px,2vw,32px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 28px;align-items:end}
+.eyebrow{font-family:var(--f-mono);font-size:clamp(11px,.95vw,14px);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);display:flex;gap:10px;align-items:center}
+.eyebrow i{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+#capTitle{margin:.25em 0 .2em;font-family:var(--f-display);font-weight:800;font-size:clamp(22px,2.9vw,46px);line-height:1.02;text-wrap:balance}
+#capText{margin:0;max-width:72ch;font-size:clamp(15px,1.55vw,24px);line-height:1.45;color:#e2dcf6}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{padding:6px 14px;border-radius:99px;border:1.5px solid var(--acc);color:var(--ink);font-weight:800;font-size:clamp(13px,1.2vw,18px);background:color-mix(in srgb,var(--acc) 14%,transparent)}
+.ctrl{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.dots{display:flex;gap:7px}
+.dots b{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots b.on{background:var(--acc);box-shadow:0 0 10px var(--acc);width:26px;border-radius:6px}
+.dots b.done{background:color-mix(in srgb,var(--acc) 55%,transparent)}
+.nav{display:flex;gap:8px}
+.nbtn{height:56px;min-width:56px;padding:0 18px;border-radius:28px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-weight:900;font-size:17px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.nbtn.main{background:var(--acc);color:#120e28;border-color:transparent;min-width:130px}
+.nbtn svg{width:22px;height:22px}
+.nbtn[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+@media (max-width:820px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card p{display:none}
+  .cap-in{grid-template-columns:minmax(0,1fr)}
+  .ctrl{flex-direction:row;justify-content:space-between;align-items:center}
+  .nbtn{height:48px;min-width:48px;padding:0 12px}
+  .nbtn.main{min-width:96px}
+  .brand span{display:none}
+  .tbtn .lbl{display:none}
+}
+@media (max-height:560px){ .card p,.note{display:none} #capText{font-size:14px} }
+</style>
+
+<canvas id="stage" aria-label="Beyin ve nöron animasyonu"></canvas>
+
+<header class="top">
+  <div class="brand"><b>Beynine Yolculuk</b><span>Barış Öğretmen · Ders öncesi</span></div>
+  <div class="tools">
+    <button class="tbtn" id="bHome" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span class="lbl">Menü</span></button>
+    <button class="tbtn" id="bVoice" aria-pressed="false" title="Sesli anlatım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="lbl">Sesli anlatım</span></button>
+    <button class="tbtn" id="bFull" title="Tam ekran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Tam ekran</span></button>
+  </div>
+</header>
+
+<section id="hub">
+  <div class="hub-in">
+    <div class="hub-head">
+      <h1>Beynine Yolculuk</h1>
+      <p>Kod yazarken, yapay zekâyı sorgularken, satranç oynarken beynimizde neler oluyor? Hadi beynin içine girip nöronları iş başında görelim!</p>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="note">Animasyonlar beyin bilimindeki bilgileri çocukların anlayacağı şekilde sadeleştirir. Yalnızca araştırmalarla desteklenen bilgiler kullanıldı.</p>
+  </div>
+</section>
+
+<section id="cap" hidden>
+  <div class="cap-in">
+    <div style="min-width:0">
+      <div class="eyebrow"><i></i><span id="capEye"></span></div>
+      <h2 id="capTitle"></h2>
+      <p id="capText"></p>
+      <div class="chips" id="capChips"></div>
+    </div>
+    <div class="ctrl">
+      <div class="dots" id="dots"></div>
+      <div class="nav">
+        <button class="nbtn" id="bPrev" aria-label="Önceki adım"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="nbtn" id="bAuto" aria-pressed="false" aria-label="Otomatik oynat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg></button>
+        <button class="nbtn main" id="bNext">İleri <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(()=>{
+/* ---------- temel ---------- */
+const $=s=>document.querySelector(s);
+const cv=$('#stage'),ctx=cv.getContext('2d');
+const C={tissue:'#ff8fb1',code:'#3fe0ff',ai:'#b48bff',chess:'#ffc44d',good:'#6dffa8',bad:'#ff5d73',ink:'#f4f0ff',dim:'#aca4cc',grey:'#6f6890'};
+const HEXC={};
+function hex(h){if(HEXC[h])return HEXC[h];const s=h.replace('#','');return HEXC[h]=[parseInt(s.slice(0,2),16),parseInt(s.slice(2,4),16),parseInt(s.slice(4,6),16)]}
+function rgba(col,a){const c=hex(col);return `rgba(${c[0]},${c[1]},${c[2]},${Math.max(0,Math.min(1,a))})`}
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const ph=(t,a,b)=>clamp((t-a)/(b-a));
+const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const decay=(t,since,len=.8)=>(t<since)?0:Math.exp(-(t-since)/len);
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let W=0,H=0,DPR=1,B={x:0,y:0,w:100,h:100},U=1,LA=1;
+function P(x,y){return[B.x+x*B.w,B.y+y*B.h]}
+
+/* ---------- çizim yardımcıları ---------- */
+const SPR={};
+function sprite(col){if(SPR[col])return SPR[col];const s=document.createElement('canvas');s.width=s.height=128;const g=s.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,rgba(col,1));gr.addColorStop(.22,rgba(col,.5));gr.addColorStop(.55,rgba(col,.12));gr.addColorStop(1,rgba(col,0));g.fillStyle=gr;g.fillRect(0,0,128,128);return SPR[col]=s}
+function glow(x,y,col,r,a=1){if(a<=.01||r<=0)return;ctx.globalAlpha=LA*clamp(a);ctx.drawImage(sprite(col),x-r,y-r,r*2,r*2);ctx.globalAlpha=LA}
+function line(a,b){ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}
+function dot(p,r,col,a=1){ctx.globalAlpha=LA*a;ctx.fillStyle=col;ctx.beginPath();ctx.arc(p[0],p[1],r,0,7);ctx.fill();ctx.globalAlpha=LA}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function fsz(m=1){return Math.round(clamp(15*U*m,12,34))}
+function label(txt,x,y,o={}){
+  const col=o.col||C.ink,a=o.a==null?1:o.a;if(a<=.01)return null;
+  const fs=fsz(o.size||1);ctx.font=`${o.w||800} ${fs}px Nunito, system-ui, sans-serif`;
+  const tw=ctx.measureText(txt).width,px=fs*.65,h=fs*1.75,w=tw+px*2;
+  let lx=o.align==='left'?x:o.align==='right'?x-w:x-w/2;let ly=y-h/2;
+  lx=clamp(lx,B.x-8,B.x+B.w-w+8);ly=clamp(ly,B.y-4,B.y+B.h-h+4);
+  ctx.globalAlpha=LA*a;
+  if(o.bg!==false){rr(lx,ly,w,h,h/2);ctx.fillStyle=o.fill||'rgba(12,10,30,.82)';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle=rgba(o.border||col,.65);ctx.stroke()}
+  ctx.fillStyle=col;ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(txt,lx+px,ly+h/2+fs*.04);
+  ctx.globalAlpha=LA;return{x:lx,y:ly,w,h,cx:lx+w/2,cy:ly+h/2};
+}
+function pin(txt,anchor,lp,col,a=1,size=.95){
+  if(a<=.01)return;ctx.globalAlpha=LA*a*.8;ctx.strokeStyle=rgba(col,.8);ctx.lineWidth=1.6;ctx.setLineDash([4,4]);line(anchor,lp);ctx.setLineDash([]);
+  ctx.globalAlpha=LA;dot(anchor,3.5*Math.max(U,.8),col,a);label(txt,lp[0],lp[1],{col:C.ink,border:col,a,size});
+}
+function bigText(txt,x,y,col,m=2,a=1,font='Baloo 2'){ctx.globalAlpha=LA*a;ctx.font=`800 ${Math.round(clamp(15*U*m,16,90))}px "${font}", Nunito, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=col;ctx.fillText(txt,x,y);ctx.globalAlpha=LA}
+
+/* nöron */
+const DC={};
+function dendr(seed){if(DC[seed])return DC[seed];const r=rng(seed*977+3);const br=[];const n=6+Math.floor(r()*3);
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2+r()*.7;const L=1.7+r()*1.7;let x=Math.cos(a),y=Math.sin(a),ang=a;const pts=[[x,y]];
+    for(let k=0;k<4;k++){ang+=(r()-.5)*.9;x+=Math.cos(ang)*L/4;y+=Math.sin(ang)*L/4;pts.push([x,y])}
+    const subs=[];for(let j=1;j<4;j+=2){if(r()<.75){const sp=pts[j];const sa=ang+(r()<.5?-1:1)*(.5+r()*.6);const sl=L*(.3+r()*.25);subs.push([sp,[sp[0]+Math.cos(sa)*sl,sp[1]+Math.sin(sa)*sl]])}}
+    br.push({pts,subs})}
+  return DC[seed]=br}
+function neuron(x,y,r,col,lit=0,seed=1){
+  lit=clamp(lit);const br=dendr(seed);ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle=rgba(col,.28+.5*lit);
+  for(const b of br){ctx.lineWidth=Math.max(1.2,r*.2);ctx.beginPath();ctx.moveTo(x+b.pts[0][0]*r,y+b.pts[0][1]*r);
+    for(let i=1;i<b.pts.length-1;i++){const p=b.pts[i],q=b.pts[i+1];ctx.quadraticCurveTo(x+p[0]*r,y+p[1]*r,x+(p[0]+q[0])/2*r,y+(p[1]+q[1])/2*r)}ctx.stroke();
+    ctx.lineWidth=Math.max(.9,r*.1);for(const s of b.subs)line([x+s[0][0]*r,y+s[0][1]*r],[x+s[1][0]*r,y+s[1][1]*r])}
+  glow(x,y,col,r*(3.2+3*lit),.22+.65*lit);
+  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);g.addColorStop(0,lit>.35?'#ffffff':rgba(col,.95));g.addColorStop(.55,rgba(col,.8+.2*lit));g.addColorStop(1,rgba(col,.4));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  ctx.fillStyle=`rgba(25,12,48,${.5-.25*lit})`;ctx.beginPath();ctx.arc(x+r*.12,y+r*.06,r*.36,0,7);ctx.fill();
+}
+/* akson */
+function curvePts(a,b,bend=0,n=28){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1];const c=[mx-dy*bend,my+dx*bend];const o=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;o.push([u*u*a[0]+2*u*t*c[0]+t*t*b[0],u*u*a[1]+2*u*t*c[1]+t*t*b[1]])}return o}
+function at(pts,t){t=clamp(t);const f=t*(pts.length-1),i=Math.floor(f),k=f-i;const p=pts[i],q=pts[Math.min(i+1,pts.length-1)];return[p[0]+(q[0]-p[0])*k,p[1]+(q[1]-p[1])*k]}
+function strokeTo(pts,t0,t1){const n=pts.length-1;ctx.beginPath();const s=at(pts,t0);ctx.moveTo(s[0],s[1]);for(let i=Math.ceil(t0*n);i<=Math.floor(t1*n);i++){ctx.lineTo(pts[i][0],pts[i][1])}const e=at(pts,t1);ctx.lineTo(e[0],e[1]);ctx.stroke()}
+function axon(pts,o={}){const col=o.col||C.ink,w=o.w==null?.4:o.w,a=o.a==null?1:o.a,my=o.myelin||0,up=o.upto==null?1:o.upto,t0=o.from||0;if(up<=t0||a<=.01)return;
+  const lw=U*(1.4+w*6.5);ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=LA*a;
+  if(o.dash)ctx.setLineDash(o.dash);
+  ctx.strokeStyle=rgba(col,.1+.18*w);ctx.lineWidth=lw*3;strokeTo(pts,t0,up);
+  ctx.strokeStyle=rgba(col,.35+.5*w);ctx.lineWidth=lw;strokeTo(pts,t0,up);
+  ctx.setLineDash([]);
+  if(my>.02){const n=9;for(let k=0;k<n;k++){const s=(k+.14)/n,e=(k+.14+.72*clamp(my))/n;if(s>=up)break;
+      ctx.strokeStyle='rgba(240,232,255,.62)';ctx.lineWidth=lw*2.3+2*U;strokeTo(pts,s,Math.min(e,up));
+      ctx.strokeStyle=rgba(col,.55);ctx.lineWidth=lw*1.1;strokeTo(pts,s,Math.min(e,up))}}
+  ctx.globalAlpha=LA}
+function pulse(pts,t,col,m=1,a=1){if(t<0||t>1)return;for(let i=6;i>=1;i--){const q=at(pts,t-i*.018);glow(q[0],q[1],col,10*U*m*(1-i/8),a*.5*(1-i/7))}const p=at(pts,t);glow(p[0],p[1],col,22*U*m,a);dot(p,4*U*m,'#ffffff',a)}
+
+/* ---------- beyin (dünya koordinatları) ---------- */
+const BX0=140,BY0=60,BW=720,BH=600,BS=2;
+const brainPts=[[190,360],[172,290],[200,215],[262,152],[352,108],[455,92],[560,96],[662,120],[748,170],[805,242],[820,318],[796,390],[738,432],[668,440],[612,428],[560,452],[468,476],[372,466],[296,446],[232,412]];
+function catmull(pts){const p=new Path2D();const n=pts.length;p.moveTo(pts[0][0],pts[0][1]);for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];p.bezierCurveTo(p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6,p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6,p2[0],p2[1])}p.closePath();return p}
+const cerebrum=catmull(brainPts);
+const cereb=new Path2D();cereb.ellipse(690,480,94,54,-.12,0,Math.PI*2);
+const stem=catmull([[582,440],[628,436],[640,500],[634,570],[618,628],[594,628],[588,560],[592,490]]);
+const tctx=document.createElement('canvas').getContext('2d');
+const inC=(x,y)=>tctx.isPointInPath(cerebrum,x,y);
+let brainImg=null;
+function buildBrain(){
+  const c=document.createElement('canvas');c.width=BW*BS;c.height=BH*BS;const g=c.getContext('2d');g.setTransform(BS,0,0,BS,-BX0*BS,-BY0*BS);
+  const r=rng(42);
+  // beyin sapı
+  let gr=g.createLinearGradient(600,440,620,630);gr.addColorStop(0,'rgba(255,143,177,.38)');gr.addColorStop(1,'rgba(255,143,177,.05)');g.fillStyle=gr;g.fill(stem);g.strokeStyle='rgba(255,170,200,.35)';g.lineWidth=2;g.stroke(stem);
+  // beyincik
+  gr=g.createRadialGradient(680,470,10,690,480,100);gr.addColorStop(0,'rgba(255,170,200,.42)');gr.addColorStop(1,'rgba(160,70,130,.25)');g.fillStyle=gr;g.fill(cereb);
+  g.save();g.clip(cereb);g.strokeStyle='rgba(20,8,35,.5)';g.lineWidth=3;for(let i=-6;i<=6;i++){g.beginPath();for(let x=590;x<=790;x+=8){const y=480+i*9+Math.sin(x*.06+i)*2.5+(x-690)*.12;x===590?g.moveTo(x,y):g.lineTo(x,y)}g.stroke()}g.restore();
+  g.strokeStyle='rgba(255,170,200,.55)';g.lineWidth=2.5;g.stroke(cereb);
+  // büyük beyin
+  g.save();g.shadowColor='rgba(255,120,170,.55)';g.shadowBlur=40;
+  gr=g.createRadialGradient(470,250,20,500,300,380);gr.addColorStop(0,'rgba(255,175,205,.5)');gr.addColorStop(.6,'rgba(220,110,170,.32)');gr.addColorStop(1,'rgba(120,60,150,.3)');g.fillStyle=gr;g.fill(cerebrum);g.restore();
+  g.save();g.clip(cerebrum);
+  const walks=[];
+  for(let i=0;i<95;i++){let x,y,tries=0;do{x=180+r()*640;y=95+r()*380;tries++}while(!inC(x,y)&&tries<50);let a=r()*Math.PI*2;const pts=[[x,y]];const n=6+Math.floor(r()*9);for(let k=0;k<n;k++){a+=(r()-.5)*1.5;x+=Math.cos(a)*15;y+=Math.sin(a)*15;pts.push([x,y]);if(!inC(x,y))break}walks.push(pts)}
+  const drawW=(pts)=>{g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length-1;i++){g.quadraticCurveTo(pts[i][0],pts[i][1],(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2)}g.stroke()};
+  g.lineCap='round';g.lineJoin='round';
+  for(const w of walks){g.strokeStyle='rgba(30,10,45,.5)';g.lineWidth=5.5;drawW(w)}
+  g.translate(-1.6,-1.6);for(const w of walks){g.strokeStyle='rgba(255,200,222,.32)';g.lineWidth=2;drawW(w)}g.translate(1.6,1.6);
+  const sulc=[[[530,98],[520,170],[505,240],[492,300],[480,360],[474,400]],[[300,408],[380,378],[470,352],[560,338],[640,344],[690,360]]];
+  for(const s of sulc){g.strokeStyle='rgba(25,8,40,.65)';g.lineWidth=8;drawW(s);g.strokeStyle='rgba(255,200,222,.25)';g.lineWidth=2.5;drawW(s.map(p=>[p[0]-2.5,p[1]-2.5]))}
+  // iç parlaklık
+  gr=g.createRadialGradient(420,200,10,420,200,260);gr.addColorStop(0,'rgba(255,230,240,.18)');gr.addColorStop(1,'rgba(255,230,240,0)');g.fillStyle=gr;g.fillRect(150,80,700,420);
+  g.restore();
+  g.strokeStyle='rgba(255,185,212,.8)';g.lineWidth=3;g.stroke(cerebrum);
+  brainImg=c;
+}
+const SPK=[];(()=>{const r=rng(7);while(SPK.length<170){const x=180+r()*640,y=95+r()*380;if(inC(x,y))SPK.push({x,y,s:.6+r()*1.8,p:r()*7,c:Math.floor(r()*3)})}const r2=rng(9);for(let i=0;i<20;i++){SPK.push({x:620+r2()*140,y:455+r2()*50,s:.6+r2()*1.6,p:r2()*7,c:3})}})();
+const R={
+  prefrontal:{x:285,y:255,r:110,lx:-120,ly:-165},
+  motor:{x:505,y:140,r:58,lx:-40,ly:-105},
+  parietal:{x:655,y:190,r:88,lx:150,ly:-95},
+  occipital:{x:765,y:322,r:64,lx:150,ly:25},
+  temporal:{x:440,y:398,r:80,lx:-130,ly:150},
+  hippocampus:{x:520,y:352,r:36,lx:60,ly:205},
+  cerebellum:{x:690,y:478,r:74,lx:150,ly:100}
+};
+/* mikro arka plan */
+const BG=[];(()=>{const r=rng(3);for(let i=0;i<54;i++)BG.push({x:r(),y:r(),z:.3+r()*.7,p:r()*6});})();
+const BGE=[];for(let i=0;i<BG.length;i++){let best=-1,bd=9;for(let j=0;j<BG.length;j++){if(i===j)continue;const d=Math.hypot(BG[i].x-BG[j].x,BG[i].y-BG[j].y);if(d<bd){bd=d;best=j}}BGE.push([i,best])}
+function backdrop(col,t){
+  const pts=BG.map(p=>[B.x+(p.x+.012*Math.sin(t*.25+p.p))*B.w,B.y+(p.y+.012*Math.cos(t*.2+p.p))*B.h]);
+  ctx.strokeStyle=rgba(col,.07);ctx.lineWidth=1.2;for(const e of BGE)line(pts[e[0]],pts[e[1]]);
+  BG.forEach((p,i)=>{const a=.08+.1*p.z*(.5+.5*Math.sin(t*1.3+p.p*3));glow(pts[i][0],pts[i][1],col,(10+18*p.z)*U,a);dot(pts[i],1.6*p.z*Math.max(U,.7),rgba(col,.5))});
+}
+
+/* ---------- içerik ---------- */
+const J=[
+ {name:'Beyin Nasıl Öğrenir?',short:'Başlangıç',col:C.tissue,desc:'86 milyar nöron, sinapslar ve kullandıkça güçlenen yollar.',badge:'Önce bunu izleyin',steps:[
+  {view:'brain',focus:null,regions:[['prefrontal','Ön beyin'],['parietal','Üst-arka bölge'],['occipital','Görme bölgesi'],['temporal','Yan bölge'],['cerebellum','Beyincik']],
+   title:'Kafanın içinde koca bir evren var',text:'Beynin yaklaşık 86 milyar sinir hücresinden oluşur. Bu hücrelere nöron denir. Her nöron, binlerce başka nöronla küçük elektrik sinyalleriyle konuşabilir.'},
+  {view:'micro',draw:'anatomy',title:'Bir nöronu yakından tanı',text:'Dendritler mesajı alır, akson mesajı taşır. İki nöronun buluştuğu küçücük noktaya sinaps denir. Miyelin kılıfla sarılı yollarda sinyal saniyede 100 metreye kadar hız yapabilir.'},
+  {view:'micro',draw:'hebb',title:'Birlikte çalışan nöronlar birbirine bağlanır',text:'Bir şeyi her tekrar ettiğinde aynı nöronlar birlikte ateşlenir. Aralarındaki bağ kalınlaşır, yol hızlanır. Buna nöroplastisite denir: beynin, kullandıkça değişebilme gücü.',chips:['Tekrar','Merak','Hatadan korkmamak','İyi bir uyku']}
+ ]},
+ {name:'Robotik & Kodlama',short:'Robotik',col:C.code,desc:'Sıralı düşünme, hata ayıklama ve tekrar beynin kaptanını güçlendirir.',steps:[
+  {view:'brain',focus:'prefrontal',regions:[['prefrontal','Ön beyin: plan yapar'],['motor','Hareket merkezi'],['cerebellum','Beyincik: zamanlama ve denge']],
+   title:'Kod yazarken beyninin kaptanı çalışır',text:'Alnının hemen arkasındaki bölgeye ön beyin (prefrontal korteks) denir. Plan yapar, adımları sıraya dizer, karar verir. Bir robota komut yazarken en çok burası çalışır.'},
+  {view:'micro',draw:'algo',title:'Algoritma: Adım adım düşünmek',text:'Robot, komutları ancak doğru sırayla verirsen yapabilir. Sen komutları sıraya dizdikçe beyninde de nöronlar bir zincir gibi sırayla ateşlenir. Araştırmalar, kodlama öğrenen çocukların bu adım adım düşünme becerisinde ilerlediğini gösteriyor.'},
+  {view:'micro',draw:'debug',title:'Hata ayıklamak: Yeni yol bulmak',text:'Kod çalışmadığında pes etmezsin; hatayı arar, başka bir yol denersin. Öğrenirken beyninde de benzer bir şey olur: nöronlar arasında yeni bağlantılar kurulur. Hata yapmak, öğrenmenin doğal bir parçasıdır.'},
+  {view:'micro',draw:'loop',title:'Döngü: Tekrar ettikçe hızlanırsın',text:'Aynı beceriyi tekrar tekrar kullandıkça yol kalınlaşır ve miyelin kılıfla sarılır, sinyal daha hızlı gider. İlk başta zor gelen kodlar bir süre sonra kolay gelir, çünkü pratik yaptıkça beynin o işe alışır.'},
+  {view:'brain',focus:'prefrontal',regions:[['prefrontal','Ön beyin: plan yapar'],['motor','Hareket merkezi'],['cerebellum','Beyincik: zamanlama ve denge']],
+   title:'Bugün çalıştıracağın beyin güçleri',text:'Robotik ve kodlama dersinde beynindeki bu yolları çalıştıracağız. Araştırmalara göre kodlama en çok kodlama becerini geliştirir; matematik ve mantık yürütmeye de daha küçük ölçüde katkı sağlayabilir. Hazır mısın?',chips:['Adım adım düşünme','Problem çözme','Hata ayıklama','Sabır','Takım çalışması']}
+ ]},
+ {name:'Yapay Zekâ',short:'YZ',col:C.ai,desc:'YZ beyinden ilham aldı. Örüntü tanıma ve eleştirel düşünme gelişir.',steps:[
+  {view:'brain',focus:'occipital',regions:[['occipital','Görme bölgesi'],['temporal','Tanıma ve dil'],['prefrontal','Değerlendirme: Doğru mu?']],
+   title:'Yapay zekâ, beyninden ilham aldı',text:'Bilim insanları bilgisayarlara öğrenmeyi öğretmek için insan beynini incelediler. Gördüğün bir şeyi tanıman, beyninin arka ve yan bölgelerinin birlikte çalışmasıyla olur.'},
+  {view:'micro',draw:'split',title:'Gerçek nöronlar, yapay nöronlar',text:'Senin nöronların sinyalleri birbirine iletir. Yapay zekâda da sayılarla çalışan yapay nöronlar katman katman dizilir. Fikir aynı: birçok küçük parça birlikte çalışınca öğrenme ortaya çıkar.'},
+  {view:'micro',draw:'pattern',title:'Örüntü tanıma: Çok örnek, iyi tanıma',text:'Yapay zekâ çok sayıda örnek görerek üçgeni kareden ayırmayı öğrenir. Sen de öyle: çok örnek gördükçe beynin kalıpları fark eder. Örüntü bulmak, matematikte ve kodlamada çok işe yarar.'},
+  {view:'micro',draw:'critical',title:'Son karar senin beyninde',text:'Yapay zekâ bazen yanılır. Ona körü körüne inanmak yerine sorarsın: Kanıt var mı? Mantıklı mı? Başka kaynaklar ne diyor? Bu soruları sormaya eleştirel düşünme denir ve yapay zekâ kullanırken çok önemlidir.'},
+  {view:'brain',focus:'prefrontal',regions:[['occipital','Görme bölgesi'],['temporal','Tanıma ve dil'],['prefrontal','Değerlendirme: Doğru mu?']],
+   title:'Bugün çalıştıracağın beyin güçleri',text:'Yapay zekâ dersinde makinelerin nasıl öğrendiğini keşfederken kendi beynini de çalıştıracaksın. Yapay zekâyı kullanan ve kontrol eden hep sen olacaksın.',chips:['Örüntü tanıma','Merak ve soru sorma','Eleştirel düşünme','YZ\'yi doğru kullanma','Hayal gücü']}
+ ]},
+ {name:'Satranç & Akıl-Zekâ',short:'Satranç',col:C.chess,desc:'Düşünce ağacı, ustaların kalıpları ve bilimin satranç hakkında söyledikleri.',steps:[
+  {view:'brain',focus:'parietal',regions:[['prefrontal','Plan ve strateji'],['parietal','Tahtayı zihinde canlandırma'],['hippocampus','Hafıza: hamleleri hatırlar'],['occipital','Görme: taşları izler']],
+   title:'Satranç oynarken beynin bir orkestra gibi çalışır',text:'Hamle düşünürken beyninin birçok bölgesi aynı anda çalışır. Ön beyin plan yapar, üst-arka bölge tahtayı zihninde canlandırır, hafıza merkezi daha önce gördüğün hamleleri hatırlatır.'},
+  {view:'micro',draw:'tree',title:'İleriyi görmek: Düşünce ağacı',text:'"Ben atı oynarsam rakip ne yapar?" diye düşündüğünde beynin olasılıkları bir ağaç gibi dallandırır. Kötü dalları eler, en iyi yolu seçer. Satranç oynadıkça bu ağacı daha hızlı ve daha doğru kurarsın.'},
+  {view:'micro',draw:'memory',title:'Zihnindeki not defteri ve ustaların sırrı',text:'Aklında aynı anda tutabildiğin bilgi sınırlıdır; çoğu insan 3-4 parçayı birlikte tutabilir. Satranç ustaları taşları tek tek değil, tanıdık kalıplar hâlinde görür. Bilim insanları buna parçalama (chunking) der. Bu kalıplar, yüzlerce oyun oynadıkça birikir.'},
+  {view:'micro',draw:'brake',title:'Dur ve düşün: Beynin freni',text:'İlk aklına gelen hamleyi hemen oynamak isteyebilirsin. Ön beynin bir fren gibi çalışır ve "Dur, önce bir düşün" der. Satrançta bu freni sık sık kullanırsın: hamleden önce kontrol etmek, iyi oyuncuların alışkanlığıdır.'},
+  {view:'brain',focus:'prefrontal',regions:[['prefrontal','Plan ve strateji'],['parietal','Tahtayı zihinde canlandırma'],['hippocampus','Hafıza: hamleleri hatırlar'],['occipital','Görme: taşları izler']],
+   title:'Bilim ne diyor?',text:'Satranç çalıştıkça satrançta gerçekten ustalaşırsın; beynin satranç kalıplarını tanımayı öğrenir. Ama satrancın tek başına matematik ya da okuma başarısını artırdığı, iyi kurulmuş büyük araştırmalarda gösterilemedi. Satranç, keyifle ve dikkatle oynandığında başlı başına değerli bir düşünme oyunudur.',chips:['Hamleden önce düşünmek','Plan yapmak','Dikkati tahtada tutmak','Kurallara uymak','Kazanınca ve kaybedince saygılı olmak']}
+ ]}
+];
+
+/* ---------- mikro sahneler ---------- */
+const M={};
+M.anatomy=(I,dt,col)=>{const t=I.t;const r=30*U;const A=P(.2,.52);const E=P(.74,.52);const N2=[E[0]+78*U,E[1]];
+  const pts=curvePts([A[0]+r*.9,A[1]],E,.07);const cyc=2.6,c=t%cyc,p=c/1.25;
+  axon(pts,{col,w:.55,myelin:1});
+  const term=[[E[0]+24*U,E[1]-20*U],[E[0]+28*U,E[1]],[E[0]+24*U,E[1]+20*U]];ctx.strokeStyle=rgba(col,.75);ctx.lineWidth=3*U;for(const q of term){line(E,q);dot(q,5.5*U,col)}
+  neuron(A[0],A[1],r,col,.15+.85*decay(c,0,.45),7);
+  const lit2=c>1.55?decay(c,1.55,.7):0;neuron(N2[0],N2[1],r*.75,col,.12+lit2,11);
+  if(p<=1)pulse(pts,p,col,1.2);
+  if(c>1.25&&c<1.65){const q=(c-1.25)/.4;for(let i=0;i<12;i++){const tt=term[i%3];const x=tt[0]+(N2[0]-r*.75-tt[0])*q*(.55+.45*((i*37)%10)/10);const y=tt[1]+Math.sin(i*2.1)*7*U*q;glow(x,y,C.ink,9*U,1-q*.4)}}
+  const a=ph(t,.3,1.2);
+  pin('Dendrit: mesajı alır',[A[0]-r*1.8,A[1]-r*1.6],P(.1,.12),col,a);
+  pin('Hücre gövdesi',[A[0],A[1]+r],[A[0],A[1]+r*4.2],col,ph(t,.8,1.6));
+  const m1=at(pts,.4);pin('Akson: mesajı taşır',m1,[m1[0],m1[1]-74*U],col,ph(t,1.3,2.1));
+  const m2=at(pts,.75);pin('Miyelin kılıf: hızlandırır',m2,[m2[0]-20*U,m2[1]+84*U],col,ph(t,1.8,2.6));
+  pin('Sinaps: buluşma noktası',[E[0]+34*U,E[1]],[E[0]+20*U,E[1]-110*U],col,ph(t,2.3,3.1));
+};
+M.hebb=(I,dt,col)=>{const S=I.state;if(S.acc==null){S.acc=0;S.n=0;S.pl=[];S.lt=-1;S.lb=-9;S.la=-9}
+  const loop=14;const lt=I.t%loop;if(lt<S.lt){S.n=0;S.pl=[]}S.lt=lt;
+  const q=ph(lt,.5,10.5);const w=.06+.94*ease(q);const my=ph(lt,4.5,10.5);
+  const interval=1.7-1.05*q;S.acc+=dt;if(S.acc>interval&&lt<12.5){S.acc=0;S.n++;S.pl.push({t:0,dur:1.3-.8*my});S.la=I.t}
+  const r=30*U;const A=P(.27,.56),Bn=P(.73,.56);const pts=curvePts([A[0]+r,A[1]],[Bn[0]-r,Bn[1]],.16);
+  axon(pts,{col,w,myelin:my});
+  for(const p of S.pl){p.t+=dt/p.dur;if(p.t>=1&&!p.done){p.done=1;S.lb=I.t}}
+  S.pl=S.pl.filter(p=>p.t<1.05);
+  neuron(A[0],A[1],r,col,.15+.85*decay(I.t,S.la,.4),21);
+  neuron(Bn[0],Bn[1],r,col,.15+.85*decay(I.t,S.lb,.5),23);
+  for(const p of S.pl)pulse(pts,p.t,col,1.1);
+  label('Nöron A',A[0],A[1]+r*4,{col,size:.9});label('Nöron B',Bn[0],Bn[1]+r*4,{col,size:.9});
+  // güç çubuğu
+  const bx=B.x+B.w*.3,bw=B.w*.4,by=B.y+B.h*.1,bh=Math.max(10,14*U);
+  label('Bağlantı gücü',B.x+B.w/2,by-bh*1.2,{col:C.ink,bg:false,size:1});
+  rr(bx,by,bw,bh,bh/2);ctx.fillStyle='rgba(255,255,255,.08)';ctx.fill();rr(bx,by,Math.max(bh,bw*w),bh,bh/2);const g=ctx.createLinearGradient(bx,0,bx+bw,0);g.addColorStop(0,rgba(col,.5));g.addColorStop(1,col);ctx.fillStyle=g;ctx.fill();
+  glow(bx+bw*w,by+bh/2,col,30*U,.8);
+  label('Birlikte ateşlenme: '+S.n+' kez',B.x+B.w/2,by+bh*3,{col,size:1});
+  if(my>.1)label('Miyelin sarılıyor, sinyal hızlanıyor!',B.x+B.w/2,B.y+B.h*.85,{col:C.ink,border:col,a:ph(lt,5,6)*(1-ph(lt,12.6,13.4))});
+};
+M.algo=(I,dt,col)=>{const ct=I.t%7.2;const xs=[.1,.3,.5,.7,.9],r=24*U;
+  const N=xs.map((x,i)=>P(x,.3+Math.sin(i*1.3)*.06));const names=['Başla','İleri git','Sağa dön','İleri git','Işığı yak'];
+  const tr=i=>.4+i*.95;
+  for(let i=0;i<4;i++){const pts=curvePts([N[i][0]+r,N[i][1]],[N[i+1][0]-r,N[i+1][1]],.1);const done=ct>tr(i+1);axon(pts,{col,w:done?.7:.3});const p=ph(ct,tr(i),tr(i+1));if(p>0&&p<1)pulse(pts,p,col)}
+  N.forEach((n,i)=>{const reached=ct>=tr(i);neuron(n[0],n[1],r,col,(reached?.3:.05)+.7*decay(ct,tr(i),.5),30+i);label((i+1)+'. '+names[i],n[0],n[1]+r*3.6,{col:reached?C.ink:C.dim,border:col,a:reached?1:.6,size:.95})});
+  // robot ızgarası
+  const cs=Math.min(B.w*.075,B.h*.15);const gx=B.x+B.w/2-cs*2,gy=B.y+B.h*.66;
+  ctx.strokeStyle=rgba(col,.35);ctx.lineWidth=1.5;for(let i=0;i<=4;i++)line([gx+i*cs,gy],[gx+i*cs,gy+2*cs]);for(let j=0;j<=2;j++)line([gx,gy+j*cs],[gx+4*cs,gy+j*cs]);
+  const k1=ease(ph(ct,tr(1),tr(1)+.6)),k2=ease(ph(ct,tr(2),tr(2)+.5)),k3=ease(ph(ct,tr(3),tr(3)+.6));const lamp=ct>=tr(4);
+  const cx=gx+cs*(.5+k1),cy=gy+cs*(.5+k3),dir=k2*Math.PI/2;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(dir);
+  if(lamp)glow(0,0,C.chess,cs*1.4,.8+.2*Math.sin(I.t*8));
+  rr(-cs*.33,-cs*.33,cs*.66,cs*.66,cs*.14);ctx.fillStyle='#e9f6ff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=col;ctx.stroke();
+  dot([cs*.16,-cs*.13],cs*.07,'#120e28');dot([cs*.16,cs*.13],cs*.07,'#120e28');
+  ctx.fillStyle=col;ctx.fillRect(cs*.33,-cs*.05,cs*.1,cs*.1);
+  dot([-cs*.12,0],cs*.1,lamp?C.chess:'#9aa');ctx.restore();
+  label('Robot',gx-cs*.2,gy+cs,{col:C.dim,align:'right',bg:false,size:.85});
+};
+M.debug=(I,dt,col)=>{const ct=I.t%10.5;const r=24*U;
+  const A=P(.12,.6),Bn=P(.37,.6),Cn=P(.63,.6),D=P(.88,.6),E=P(.5,.22);
+  const AB=curvePts([A[0]+r,A[1]],[Bn[0]-r,Bn[1]],.08),BC=curvePts([Bn[0]+r,Bn[1]],[Cn[0]-r,Cn[1]],-.08),CD=curvePts([Cn[0]+r,Cn[1]],[D[0]-r,D[1]],.08);
+  const BE=curvePts([Bn[0]+r*.7,Bn[1]-r*.7],[E[0]-r,E[1]],.12),EC=curvePts([E[0]+r,E[1]],[Cn[0]-r*.7,Cn[1]-r*.7],.12);
+  const fixed=ct>7.3;
+  axon(AB,{col,w:.45});
+  // kırık yol
+  const fl=ct>1.5&&ct<4.6?(.6+.4*Math.sin(I.t*22)):.7;
+  axon(BC,{col:C.bad,w:.3,upto:.42,a:fl,dash:[6*U,6*U]});axon(BC,{col:C.bad,w:.3,from:.58,a:fl,dash:[6*U,6*U]});
+  axon(CD,{col,w:fixed?.6:.3});
+  const eA=ph(ct,2.4,3.2);
+  axon(BE,{col:C.good,w:.55,upto:ease(ph(ct,2.8,3.7))});axon(EC,{col:C.good,w:.55,upto:ease(ph(ct,3.5,4.4))});
+  // darbeler
+  let p=ph(ct,.2,1);if(p>0&&p<1)pulse(AB,p,col);
+  p=ph(ct,1,1.5);if(p>0&&p<1)pulse(BC,p*.45,col);
+  if(ct>1.5&&ct<2.5){const q=(ct-1.5);const m=at(BC,.5);for(let i=0;i<10;i++){const a=i*.63;glow(m[0]+Math.cos(a)*q*50*U,m[1]+Math.sin(a)*q*50*U,C.bad,10*U,1-q)}glow(m[0],m[1],C.bad,40*U,1-q)}
+  p=ph(ct,4.6,5.2);if(p>0&&p<1)pulse(AB,p,C.good);
+  p=ph(ct,5.2,5.9);if(p>0&&p<1)pulse(BE,p,C.good);
+  p=ph(ct,5.9,6.6);if(p>0&&p<1)pulse(EC,p,C.good);
+  p=ph(ct,6.6,7.3);if(p>0&&p<1)pulse(CD,p,C.good);
+  neuron(A[0],A[1],r,col,.2+.8*Math.max(decay(ct,.2,.4),decay(ct,4.6,.4)),41);
+  neuron(Bn[0],Bn[1],r,col,.2+.8*Math.max(decay(ct,1,.4),decay(ct,5.2,.4)),42);
+  neuron(Cn[0],Cn[1],r,col,.2+.8*decay(ct,6.6,.4),43);
+  neuron(D[0],D[1],r,fixed?C.good:col,fixed?.6+.4*decay(ct,7.3,.5):.15,44);
+  if(eA>0){LA*=1;ctx.save();ctx.globalAlpha=LA*eA;const la=LA;LA=la*eA;neuron(E[0],E[1],r*1.05,C.good,.3+.7*decay(ct,5.9,.4)+.3*decay(ct,3.2,.6),45);LA=la;ctx.restore();ctx.globalAlpha=LA}
+  const m=at(BC,.5);
+  label('Hata! Sinyal geçemiyor',m[0],m[1]+70*U,{col:C.bad,a:ph(ct,1.5,1.9)*(1-ph(ct,4.6,5))});
+  label('Yeni yol deneniyor…',E[0],E[1]-r*3.6,{col:C.good,a:ph(ct,3,3.5)});
+  label('Çalıştı!',D[0],D[1]-r*3.6,{col:C.good,a:ph(ct,7.3,7.7),size:1.2});
+  ['Kod','Komut 1','Komut 2','Robot'].forEach((s,i)=>{const n=[A,Bn,Cn,D][i];label(s,n[0],n[1]+r*3.6,{col:C.dim,border:col,size:.85,a:.85})});
+};
+M.loop=(I,dt,col)=>{const S=I.state;if(S.prog==null){S.prog=0;S.hold=0}
+  const lap=Math.floor(S.prog);const sp=1+.32*Math.min(lap,8);
+  if(lap<8)S.prog+=dt*sp/2.6;else{S.hold+=dt;if(S.hold>3){S.prog=0;S.hold=0}}
+  const lapN=Math.min(lap,8);const w=clamp(.1+lapN*.11),my=clamp((lapN-1)/6);
+  const c=P(.5,.5),Rr=Math.min(B.w,B.h)*.34,n=6,r=20*U;
+  const N=[];for(let i=0;i<n;i++){const a=-Math.PI/2+i/n*Math.PI*2;N.push([c[0]+Math.cos(a)*Rr*1.25,c[1]+Math.sin(a)*Rr])}
+  const E=[];for(let i=0;i<n;i++){const a=N[i],b=N[(i+1)%n];const d=Math.hypot(b[0]-a[0],b[1]-a[1]);const ux=(b[0]-a[0])/d,uy=(b[1]-a[1])/d;E.push(curvePts([a[0]+ux*r,a[1]+uy*r],[b[0]-ux*r,b[1]-uy*r],-.12))}
+  E.forEach(e=>axon(e,{col,w,myelin:my}));
+  const f=(S.prog*n)%n,seg=Math.floor(f),loc=f-seg;
+  N.forEach((p,i)=>{const d=((f-i)%n+n)%n;neuron(p[0],p[1],r,col,.15+.85*Math.max(0,1-d/1.2),60+i)});
+  if(lap<8)pulse(E[seg],loc,col,1.1+my*.3);
+  bigText('Tekrar: '+lapN,c[0],c[1]-16*U,C.ink,2.4);
+  bigText('Sinyal hızı ×'+sp.toFixed(1),c[0],c[1]+30*U,col,1.4);
+  if(lap>=8)label('Yol hazır: artık çok hızlı!',c[0],c[1]+74*U,{col:C.good});
+};
+M.split=(I,dt,col)=>{const S=I.state,t=I.t;
+  if(!S.bio){const r=rng(5);S.bio=[];for(let i=0;i<8;i++)S.bio.push([.06+r()*.36,.2+r()*.65]);S.be=[];for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){const d=Math.hypot(S.bio[i][0]-S.bio[j][0],S.bio[i][1]-S.bio[j][1]);if(d<.3)S.be.push([i,j,(i*7+j)%3*.1-.1])}S.pl=[];S.acc=0;S.lit={}}
+  const bp=S.bio.map(p=>P(p[0],p[1])),r=16*U;
+  const curves=S.be.map(e=>curvePts(bp[e[0]],bp[e[1]],e[2]));
+  curves.forEach(c=>axon(c,{col:C.tissue,w:.3}));
+  S.acc+=dt;if(S.acc>.32&&S.be.length){S.acc=0;const k=Math.floor(Math.random()*S.be.length);S.pl.push({k,t:0,rev:Math.random()<.5})}
+  for(const p of S.pl){p.t+=dt/.9;if(p.t>=1&&!p.d){p.d=1;const e=S.be[p.k];S.lit[p.rev?e[0]:e[1]]=t}}
+  S.pl=S.pl.filter(p=>p.t<1);
+  bp.forEach((p,i)=>neuron(p[0],p[1],r,C.tissue,.15+.85*decay(t,S.lit[i]??-9,.4),80+i));
+  for(const p of S.pl)pulse(curves[p.k],p.rev?1-p.t:p.t,C.tissue,.9);
+  // yapay ağ
+  const L=[3,4,4,2],X=[.58,.7,.82,.94];const nodes=L.map((n,l)=>Array.from({length:n},(_,i)=>P(X[l],.5+(i-(n-1)/2)*.19)));
+  const wave=t%1.8;ctx.lineWidth=1.4;
+  for(let l=0;l<3;l++)for(const a of nodes[l])for(const b of nodes[l+1]){ctx.strokeStyle=rgba(col,.22);line(a,b);const q=ph(wave,l*.42,l*.42+.42);if(q>0&&q<1){const x=a[0]+(b[0]-a[0])*q,y=a[1]+(b[1]-a[1])*q;glow(x,y,col,10*U,.8);dot([x,y],2.2*U,'#fff')}}
+  nodes.forEach((ly,l)=>ly.forEach(p=>{const lit=decay(wave,l*.42,.35);glow(p[0],p[1],col,30*U,.25+.6*lit);ctx.fillStyle=rgba(col,.25+.6*lit);ctx.beginPath();ctx.arc(p[0],p[1],13*U,0,7);ctx.fill();ctx.lineWidth=2.5*U;ctx.strokeStyle=col;ctx.stroke()}));
+  ctx.setLineDash([6,8]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;line(P(.5,.12),P(.5,.92));ctx.setLineDash([]);
+  label('Senin beynin: gerçek nöronlar',B.x+B.w*.25,B.y+B.h*.07,{col:C.tissue});
+  label('Bilgisayar: yapay nöronlar',B.x+B.w*.76,B.y+B.h*.07,{col});
+  label('ilham verdi  →',B.x+B.w*.5,B.y+B.h*.5,{col:C.ink,border:col,size:.9});
+};
+const SHAPES=['Üçgen','Daire','Kare'];
+function shape(k,x,y,s,col){ctx.lineWidth=4*U;ctx.strokeStyle=col;ctx.fillStyle=rgba(col,.2);ctx.beginPath();if(k===0){ctx.moveTo(x,y-s);ctx.lineTo(x+s*.95,y+s*.7);ctx.lineTo(x-s*.95,y+s*.7);ctx.closePath()}else if(k===1){ctx.arc(x,y,s*.85,0,7)}else{ctx.rect(x-s*.75,y-s*.75,s*1.5,s*1.5)}ctx.fill();ctx.stroke()}
+M.pattern=(I,dt,col)=>{const S=I.state,t=I.t;if(S.n==null){S.n=0;S.k=0;S.st=0;S.wr=Array.from({length:60},(_,i)=>.15+((i*53)%10)/14)}
+  S.st+=dt;if(S.st>2.3){S.st=0;S.n++;S.k=(S.k+1+(S.n%2))%3;if(S.n>24)S.n=1}
+  const conf=1-.72*Math.exp(-S.n/5);
+  const inP=P(.1,.5),s=Math.min(B.w,B.h)*.09;
+  rr(inP[0]-s*1.5,inP[1]-s*1.5,s*3,s*3,s*.3);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fill();ctx.strokeStyle=rgba(col,.4);ctx.lineWidth=1.5;ctx.stroke();
+  shape(S.k,inP[0],inP[1],s,C.ink);
+  label('Örnek: '+(S.n+1),inP[0],inP[1]+s*2.2,{col:C.dim,border:col,size:.85});
+  const L=[4,5,4],X=[.3,.45,.6];const nodes=L.map((n,l)=>Array.from({length:n},(_,i)=>P(X[l],.5+(i-(n-1)/2)*.17)));
+  const outs=[.25,.5,.75].map(y=>P(.74,y));
+  const wv=S.st;let ei=0;
+  // giriş → ilk katman
+  for(const b of nodes[0]){ctx.strokeStyle=rgba(col,.2);ctx.lineWidth=1.3;line([inP[0]+s*1.5,inP[1]],b)}
+  for(let l=0;l<2;l++)for(const a of nodes[l])for(const b of nodes[l+1]){const w=S.wr[ei++%60];ctx.strokeStyle=rgba(col,.12+.25*w);ctx.lineWidth=(1+w*2.5)*U;line(a,b);const q=ph(wv,.2+l*.35,.55+l*.35);if(q>0&&q<1){const x=a[0]+(b[0]-a[0])*q,y=a[1]+(b[1]-a[1])*q;glow(x,y,col,9*U,.7)}}
+  nodes[2].forEach(a=>outs.forEach((b,o)=>{const w=o===S.k?.15+.85*conf:.25*(1-conf)+.04;ctx.strokeStyle=rgba(o===S.k?C.good:col,.12+.6*w);ctx.lineWidth=(1+w*5)*U;line(a,b);const q=ph(wv,.9,1.3);if(q>0&&q<1&&o===S.k){glow(a[0]+(b[0]-a[0])*q,a[1]+(b[1]-a[1])*q,C.good,10*U,.9)}}));
+  nodes.forEach((ly,l)=>ly.forEach(p=>{const lit=decay(wv,.2+l*.35,.4);glow(p[0],p[1],col,26*U,.2+.6*lit);ctx.fillStyle=rgba(col,.25+.6*lit);ctx.beginPath();ctx.arc(p[0],p[1],11*U,0,7);ctx.fill();ctx.lineWidth=2*U;ctx.strokeStyle=col;ctx.stroke()}));
+  const others=(1-conf);outs.forEach((p,o)=>{const v=o===S.k?conf:others*(o===(S.k+1)%3?.6:.4);const lit=wv>1.3?v:0;
+    glow(p[0],p[1],o===S.k?C.good:col,36*U,.15+.7*lit);ctx.fillStyle=rgba(o===S.k?C.good:col,.2+.6*lit);ctx.beginPath();ctx.arc(p[0],p[1],15*U,0,7);ctx.fill();ctx.lineWidth=2.5*U;ctx.strokeStyle=o===S.k&&lit?C.good:col;ctx.stroke();
+    const bx=p[0]+28*U,bw=B.w*.14,bh=Math.max(8,11*U);
+    ctx.font=`800 ${fsz(.95)}px Nunito, sans-serif`;ctx.fillStyle=C.ink;ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(SHAPES[o],bx,p[1]-bh*.6);
+    rr(bx,p[1]-bh/2+4*U,bw,bh,bh/2);ctx.fillStyle='rgba(255,255,255,.08)';ctx.fill();if(lit>.01){rr(bx,p[1]-bh/2+4*U,Math.max(bh,bw*lit),bh,bh/2);ctx.fillStyle=o===S.k?C.good:col;ctx.fill()}
+    ctx.textBaseline='top';ctx.font=`700 ${fsz(.8)}px "JetBrains Mono", monospace`;ctx.fillStyle=C.dim;ctx.fillText('%'+Math.round(lit*100),bx,p[1]+bh+6*U)});
+  label('Tahmin',P(.74,.1)[0],P(.74,.1)[1],{col:C.dim,bg:false,size:.9});
+};
+M.critical=(I,dt,col)=>{const ct=I.t%12.5,t=I.t;
+  const L=[3,3,2],X=[.06,.15,.24];const nodes=L.map((n,l)=>Array.from({length:n},(_,i)=>P(X[l],.5+(i-(n-1)/2)*.15)));const wv=t%1.4;
+  ctx.lineWidth=1.3;for(let l=0;l<2;l++)for(const a of nodes[l])for(const b of nodes[l+1]){ctx.strokeStyle=rgba(col,.25);line(a,b)}
+  nodes.forEach((ly,l)=>ly.forEach(p=>{const lit=decay(wv,l*.3,.35);glow(p[0],p[1],col,22*U,.2+.6*lit);ctx.fillStyle=rgba(col,.3+.5*lit);ctx.beginPath();ctx.arc(p[0],p[1],9*U,0,7);ctx.fill()}));
+  label('Yapay zekâ',P(.15,.3)[0],P(.15,.3)[1],{col,size:.9});
+  label('YZ cevabı: "Penguenler uçar."',B.x+B.w*.06,B.y+B.h*.12,{col:C.ink,border:col,align:'left',a:ph(ct,.3,.9)});
+  const Sn=P(.48,.5),r=34*U;const out=[nodes[2][0][0],(nodes[2][0][1]+nodes[2][1][1])/2];
+  const toS=curvePts(out,[Sn[0]-r,Sn[1]],.1);axon(toS,{col,w:.4});const p1=ph(ct,1.2,2.2);if(p1>0&&p1<1)pulse(toS,p1,col);
+  const checks=[['Kanıt var mı?','Yok'],['Mantıklı mı?','Penguen kanatları yüzmek için'],['Başka kaynak ne diyor?','Ansiklopedi: uçamaz']];
+  const CP=[P(.82,.2),P(.82,.5),P(.82,.8)];
+  CP.forEach((c,i)=>{const pts=curvePts([Sn[0]+r,Sn[1]],[c[0]-18*U,c[1]],.1*(i-1));const s0=3+i*1.3;axon(pts,{col:C.chess,w:.35});const q=ph(ct,s0,s0+.8);if(q>0&&q<1)pulse(pts,q,C.chess);
+    const done=ct>s0+.8;neuron(c[0],c[1],18*U,done?C.chess:col,done?.4+.6*decay(ct,s0+.8,.6):.1,90+i);
+    label(checks[i][0],c[0],c[1]-50*U,{col:C.ink,border:C.chess,size:.9});
+    label('✗  '+checks[i][1],c[0],c[1]+50*U,{col:C.bad,size:.85,a:ph(ct,s0+.8,s0+1.2)})});
+  neuron(Sn[0],Sn[1],r,C.chess,.3+.7*Math.max(decay(ct,2.2,.8),ct>2.2&&ct<7.5?.35+.15*Math.sin(t*5):0),99);
+  bigText('SEN',Sn[0],Sn[1]+r*2.6,C.chess,1.8);
+  label('Doğru mu?',Sn[0],Sn[1]-r*2.5,{col:C.chess,a:ph(ct,2.3,2.7)*(1-ph(ct,7.6,8))});
+  label('Sonuç: Penguenler yüzer ama uçamaz. YZ yanıldı, sen yakaladın!',B.x+B.w*.5,B.y+B.h*.94,{col:C.good,a:ph(ct,7.8,8.4),size:1.05});
+};
+M.tree=(I,dt,col)=>{const ct=I.t%14;const r=17*U;
+  const root=P(.06,.5);const d1=[[.32,.18,'At oyna'],[.32,.5,'Fil oyna'],[.32,.82,'Piyon sür']];
+  const d2=[[.6,.08,'Rakip kaçar',0],[.6,.29,'Rakip yanılır',0],[.6,.42,'Taş kaybı',1],[.6,.58,'Boş hamle',1],[.6,.72,'Yavaş kalır',2],[.6,.92,'Tehlikeli',2]];
+  const leaf=P(.88,.29);
+  const pr1=[false,true,true];const pr2=[true,false,true,true,true,true];
+  const tPr=[0,4.2,4.8],tPr2=5.4;
+  const best=ct>6;
+  d1.forEach(([x,y,n],i)=>{const p=P(x,y);const pts=curvePts([root[0]+r,root[1]],[p[0]-r,p[1]],.06*(1-i));const pruned=pr1[i]&&ct>tPr[i];const isBest=i===0&&best;
+    axon(pts,{col:pruned?C.grey:isBest?C.chess:col,w:isBest?.8:.35,a:pruned?.5:1});const q=ph(ct,.3+i*.6,1.1+i*.6);if(q>0&&q<1)pulse(pts,q,col);
+    if(isBest){const q2=ph(ct,6,6.8);if(q2>0&&q2<1)pulse(pts,q2,C.chess,1.2)}
+    d2.filter(d=>d[3]===i).forEach(d=>{const j=d2.indexOf(d);const c=P(d[0],d[1]);const pts2=curvePts([p[0]+r,p[1]],[c[0]-r*.8,c[1]],.05);const pr=(pr2[j]&&ct>(i===0?tPr2:tPr[i]))||(pruned);const b2=j===1&&best;
+      axon(pts2,{col:pr?C.grey:b2?C.chess:col,w:b2?.8:.3,a:pr?.45:1});const q3=ph(ct,2.4,3.4);if(q3>0&&q3<1)pulse(pts2,q3,col,.8);
+      if(b2){const q4=ph(ct,6.8,7.6);if(q4>0&&q4<1)pulse(pts2,q4,C.chess,1.2)}
+      neuron(c[0],c[1],r*.8,pr?C.grey:b2?C.chess:col,pr?.05:b2?.6:.2+.6*decay(ct,3.4,.5),120+j);
+      label(d[2],c[0]+r*2.2,c[1],{col:pr?C.dim:C.ink,border:pr?C.grey:col,align:'left',size:.8,a:pr?.55:1});
+      if(pr&&ct>(i===0?tPr2:tPr[i])&&!pruned)bigText('✗',c[0],c[1]-r*1.9,C.bad,1.3,ph(ct,i===0?tPr2:tPr[i],(i===0?tPr2:tPr[i])+.3));
+    });
+    neuron(p[0],p[1],r,pruned?C.grey:isBest?C.chess:col,pruned?.05:isBest?.7:.2+.7*decay(ct,1.1+i*.6,.5),110+i);
+    label(n,p[0],p[1]-r*2.6,{col:pruned?C.dim:C.ink,border:pruned?C.grey:isBest?C.chess:col,size:.95,a:pruned?.6:1});
+    if(pruned)bigText('✗',p[0]+r*2.6,p[1]+r*.2,C.bad,1.6,ph(ct,tPr[i],tPr[i]+.3));
+  });
+  neuron(root[0],root[1],r*1.1,best?C.chess:col,.5+.5*decay(ct,.3,.5),100);
+  label('Sıra sende',root[0],root[1]+r*3,{col:C.ink,border:col,size:.9});
+  const a2=P(.6,.29);const lp=curvePts([a2[0]+r*.8,a2[1]],[leaf[0]-r,leaf[1]],.05);const la=ph(ct,7.4,8);
+  if(la>0){axon(lp,{col:C.chess,w:.8,upto:ph(ct,7.4,8)});const q=ph(ct,7.8,8.5);if(q>0&&q<1)pulse(lp,q,C.chess,1.2);if(ct>8.5){neuron(leaf[0],leaf[1],r*1.2,C.chess,.7+.3*Math.sin(I.t*6),130);bigText('Şah-mat! ♛',leaf[0],leaf[1]+r*3.4,C.chess,1.8,ph(ct,8.5,9))}}
+  label('Kötü dalları eler, en iyisini seçer',B.x+B.w*.8,B.y+B.h*.97,{col:C.chess,bg:false,a:ph(ct,4,4.6)*(1-ph(ct,13.2,13.8))});
+};
+M.memory=(I,dt,col)=>{const ct=I.t%13,t=I.t;const c=P(.5,.5),r=30*U;const Rr=Math.min(B.w,B.h)*.34;
+  const items=[['♞','Atımın yeri'],['♝','Rakibin fili'],['♜','Tehdit: kale'],['♛','Planım: vezir']];
+  const fade=1-ph(ct,11.6,12.6);let k=0;
+  items.forEach((it,i)=>{const a0=ph(ct,.6+i*1.7,1.3+i*1.7)*fade;if(a0<=0)return;k++;
+    const ang=-Math.PI/2+i*Math.PI/2+t*.28;const p=[c[0]+Math.cos(ang)*Rr*1.35,c[1]+Math.sin(ang)*Rr];
+    const pts=curvePts([c[0],c[1]],p,.12);axon(pts,{col,w:.4,a:a0,upto:a0});
+    if(a0>=.99){const q=(t*.6+i*.27)%1;const pp=q<.5?q*2:2-q*2;pulse(pts,pp,col,.9)}
+    const s=26*U;glow(p[0],p[1],col,s*2.6,.4*a0);ctx.globalAlpha=LA*a0;ctx.fillStyle='rgba(18,14,40,.92)';ctx.beginPath();ctx.arc(p[0],p[1],s,0,7);ctx.fill();ctx.lineWidth=2.5*U;ctx.strokeStyle=col;ctx.stroke();ctx.globalAlpha=LA;
+    bigText(it[0],p[0],p[1]+s*.08,C.ink,2.2,a0,'Nunito');
+    label(it[1],p[0],p[1]+s*1.9,{col:C.ink,border:col,size:.85,a:a0});
+  });
+  neuron(c[0],c[1],r,col,.35+.25*Math.sin(t*3)+.2*k/4,140);
+  label('Zihnindeki not defteri',B.x+B.w*.14,B.y+B.h*.06,{col:C.ink,border:col,size:1});
+  label('Aklında tutulan: '+k,B.x+B.w*.86,B.y+B.h*.06,{col,size:1.2});
+};
+M.brake=(I,dt,col)=>{const ct=I.t%10.5,t=I.t;const r=24*U;
+  const S0=P(.1,.52),T1=P(.86,.2),G=P(.48,.74),T2=P(.86,.74);
+  const fast=curvePts([S0[0]+r,S0[1]],[T1[0]-r,T1[1]],-.12);const stopAt=.48;const sp=at(fast,stopAt);
+  const s1=curvePts([S0[0]+r*.7,S0[1]+r*.7],[G[0]-r*1.1,G[1]],.1),s2=curvePts([G[0]+r*1.1,G[1]],[T2[0]-r,T2[1]],-.05),gb=curvePts([G[0],G[1]-r*1.1],sp,-.1);
+  axon(fast,{col:C.bad,w:.3,a:.7,dash:[5*U,6*U]});axon(s1,{col,w:.45});axon(s2,{col,w:.45});axon(gb,{col:C.chess,w:.3,a:ph(ct,.8,1.1),dash:[3*U,5*U]});
+  let q=ph(ct,.3,1.4);const red=q*stopAt;const ra=1-ph(ct,1.6,2.6);if(q>0)pulse(fast,red,C.bad,1.3,ra);
+  q=ph(ct,.8,1.3);if(q>0&&q<1)pulse(gb,q,C.chess,.9);
+  if(ct>1.2&&ct<3){const w=(ct-1.2)/1.8;ctx.strokeStyle=rgba(C.chess,.8*(1-w));ctx.lineWidth=3*U;for(let i=0;i<3;i++){const rr_=(w*90+i*22)*U;ctx.beginPath();ctx.arc(sp[0],sp[1],rr_,0,7);ctx.stroke()}}
+  q=ph(ct,3,4);if(q>0&&q<1)pulse(s1,q,C.chess,1.1);
+  q=ph(ct,4.2,5.2);if(q>0&&q<1)pulse(s2,q,C.chess,1.1);
+  neuron(S0[0],S0[1],r,col,.25+.75*Math.max(decay(ct,.3,.4),decay(ct,3,.4)),150);
+  neuron(T1[0],T1[1],r,C.bad,.06,151);
+  neuron(G[0],G[1],r*1.3,C.chess,.3+.7*Math.max(decay(ct,.8,.8),decay(ct,4,.6)),152);
+  const ok=ct>5.2;neuron(T2[0],T2[1],r,ok?C.good:col,ok?.6+.4*decay(ct,5.2,.6):.1,153);
+  label('Aklına gelen ilk fikir',S0[0],S0[1]+r*3.4,{col:C.ink,border:col,size:.9});
+  label('"Hemen oyna!"',T1[0],T1[1]-r*3,{col:C.bad,size:.9,a:.8});
+  label('Fren: Dur, önce düşün',G[0],G[1]+r*3.6,{col:C.chess,size:1});
+  label('En iyi hamle ✓',T2[0],T2[1]-r*3,{col:ok?C.good:C.dim,border:ok?C.good:col,size:1});
+  bigText('DUR!',sp[0],sp[1]-46*U,C.chess,2.2,ph(ct,1.3,1.6)*(1-ph(ct,3.6,4.2)));
+};
+
+/* ---------- sahne durumu ---------- */
+let cur={hub:true,t:0,state:{}},trans=null,T=0,auto=false,stepClock=0,speechDone=0,speaking=false;
+const stepOf=I=>I.hub?null:J[I.j].steps[I.s];
+const viewOf=I=>I.hub?'hub':stepOf(I).view;
+const colOf=I=>I.hub?C.tissue:J[I.j].col;
+
+function brainView(I,zoomMul,focusLerp,focusKey){
+  const stp=stepOf(I),col=colOf(I),t=I.t;
+  const fk=focusKey?R[focusKey]:(stp&&stp.focus?R[stp.focus]:null);
+  let cx=495,cy=330;if(fk){cx+=(fk.x-cx)*.15;cy+=(fk.y-cy)*.15}
+  if(fk&&focusLerp>0){cx+=(fk.x-cx)*focusLerp;cy+=(fk.y-cy)*focusLerp}
+  const bs=Math.min(B.w/700,B.h/590)*.98;const k=bs*zoomMul*(1+(reduce?0:.01*Math.sin(T*1.1)));
+  const Ox=B.x+B.w/2-cx*k,Oy=B.y+B.h/2-cy*k;const S=(x,y)=>[Ox+x*k,Oy+y*k];
+  const c0=S(495,340);glow(c0[0],c0[1],col,420*k,.32);
+  ctx.setTransform(DPR*k,0,0,DPR*k,DPR*Ox,DPR*Oy);
+  ctx.globalAlpha=LA;ctx.drawImage(brainImg,BX0,BY0,BW,BH);
+  // bölgeler
+  const regs=I.hub?[['prefrontal',null,C.code],['parietal',null,C.chess],['occipital',null,C.ai],['temporal',null,C.ai],['cerebellum',null,C.code],['hippocampus',null,C.chess]]:stp.regions.map(r=>[r[0],r[1],col]);
+  ctx.globalCompositeOperation='lighter';
+  const ra=[];
+  regs.forEach((rg,i)=>{const R0=R[rg[0]];let a=I.hub?(.45+.45*Math.sin(T*1.2+i*1.7)):ease(ph(t,.3+i*.5,.9+i*.5));ra.push(a);if(a<=0)return;
+    const pul=1+.08*Math.sin(T*3+i);ctx.globalAlpha=LA*a*.95;const s=sprite(rg[2]);const rs=R0.r*2.5*pul;ctx.drawImage(s,R0.x-rs,R0.y-rs,rs*2,rs*2);ctx.globalAlpha=LA});
+  // kıvılcımlar
+  const pal=I.hub?[C.code,C.ai,C.chess,C.tissue]:[col,col,C.tissue,col];
+  for(const s of SPK){const v=Math.sin(T*s.s+s.p);if(v<.75)continue;const a=(v-.75)/.25;ctx.globalAlpha=LA*a;const sp=sprite(pal[s.c%pal.length]);ctx.drawImage(sp,s.x-9,s.y-9,18,18);ctx.globalAlpha=LA}
+  ctx.globalCompositeOperation='source-over';
+  ctx.setLineDash([7,7]);ctx.lineDashOffset=-T*14;
+  regs.forEach((rg,i)=>{const a=ra[i];if(!a||I.hub)return;const R0=R[rg[0]];ctx.globalAlpha=LA*a;ctx.strokeStyle=rg[2];ctx.lineWidth=2.4/k;ctx.beginPath();ctx.arc(R0.x,R0.y,R0.r*.78,0,7);ctx.stroke()});
+  ctx.setLineDash([]);ctx.globalAlpha=LA;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(!I.hub)regs.forEach((rg,i)=>{const a=ra[i];if(!a||!rg[1])return;const R0=R[rg[0]];const sp=S(R0.x,R0.y);const lp=S(R0.x+R0.lx,R0.y+R0.ly);pin(rg[1],sp,lp,rg[2],a*clamp(1.6-zoomMul*.6+ .6),1)});
+}
+function microView(I,dt,scale){const col=colOf(I);const cx=B.x+B.w/2,cy=B.y+B.h/2;
+  ctx.setTransform(DPR*scale,0,0,DPR*scale,DPR*(cx-cx*scale),DPR*(cy-cy*scale));
+  backdrop(col,I.t);M[stepOf(I).draw](I,dt,col);ctx.setTransform(DPR,0,0,DPR,0,0)}
+function drawInst(I,dt,o){LA=o.alpha;ctx.globalAlpha=LA;const v=viewOf(I);
+  if(v==='micro')microView(I,dt,o.scale||1);else brainView(I,o.zoom||1,o.focusLerp||0,o.focusKey);
+  LA=1;ctx.globalAlpha=1}
+const STR=Array.from({length:110},(_,i)=>({a:i*2.399,d:((i*73)%100)/100,s:.5+((i*31)%10)/10}));
+function streaks(p,col){const cx=B.x+B.w/2,cy=B.y+B.h/2,mr=Math.hypot(B.w,B.h)*.6;const a=Math.sin(Math.PI*p);ctx.lineCap='round';
+  for(const s of STR){const d=((s.d+p*1.6*s.s)%1);const r0=d*mr,r1=r0+mr*.12*p;ctx.strokeStyle=rgba(col,.55*a*d);ctx.lineWidth=(1+2*d)*Math.max(U,.8);line([cx+Math.cos(s.a)*r0,cy+Math.sin(s.a)*r0],[cx+Math.cos(s.a)*r1,cy+Math.sin(s.a)*r1])}}
+
+/* ---------- döngü ---------- */
+let last=performance.now();
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  U=Math.min(B.w,B.h)/500;
+  cur.t+=dt;stepClock+=dt;
+  if(trans){trans.from.t+=dt;trans.p+=dt/trans.dur;const p=ease(clamp(trans.p));const F=trans.from;
+    if(trans.type==='dive'){const fk=stepOf(F).focus;drawInst(F,dt,{alpha:1-p,zoom:1+p*p*7,focusLerp:p,focusKey:fk});streaks(p,colOf(cur));drawInst(cur,dt,{alpha:p,scale:.5+.5*p})}
+    else if(trans.type==='rise'){drawInst(F,dt,{alpha:1-p,scale:1+p*.9});streaks(1-p,colOf(F));const fk=stepOf(cur).focus;drawInst(cur,dt,{alpha:p,zoom:1+(1-p)*(1-p)*6,focusLerp:1-p,focusKey:fk})}
+    else{drawInst(F,dt,{alpha:1-p,scale:1});drawInst(cur,dt,{alpha:p,scale:1})}
+    if(trans.p>=1)trans=null}
+  else drawInst(cur,dt,{alpha:1});
+  if(auto&&!cur.hub){const need=voiceOn&&hasSpeech?(speaking?1e9:(speechDone?((now-speechDone)/1000>2.2?0:1e9):1e9)):14;
+    if(voiceOn&&hasSpeech&&!speaking&&speechDone&&(now-speechDone)/1000>2.2)next();else if(!(voiceOn&&hasSpeech)&&stepClock>need)next()}
+  requestAnimationFrame(frame)}
+
+/* ---------- arayüz ---------- */
+const hub=$('#hub'),cap=$('#cap');
+function layout(){DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;measure()}
+function measure(){const top=$('.top').getBoundingClientRect().bottom+4;const panel=(cur.hub?hub:cap).getBoundingClientRect();const bot=(panel.height?panel.top:H)-10;
+  B={x:16,y:top,w:Math.max(100,W-32),h:Math.max(120,bot-top)}}
+const cards=$('#cards');
+J.forEach((j,i)=>{const b=document.createElement('button');b.className='card';b.style.setProperty('--c',j.col);
+  b.innerHTML=`<span class="orb"></span><span class="k">${j.steps.length} adım</span><h3>${j.name}</h3><p>${j.desc}</p>${j.badge?`<span class="badge">${j.badge}</span>`:''}`;
+  b.onclick=()=>go(i,0);cards.appendChild(b)});
+function setUI(){const h=cur.hub;hub.hidden=!h;cap.hidden=h;$('#bHome').hidden=h;
+  document.documentElement.style.setProperty('--acc',colOf(cur));
+  if(!h){const j=J[cur.j],s=j.steps[cur.s];$('#capEye').textContent=`${j.name} · ${cur.s+1}/${j.steps.length}`;$('#capTitle').textContent=s.title;$('#capText').textContent=s.text;
+    const ch=$('#capChips');ch.innerHTML='';(s.chips||[]).forEach(c=>{const e=document.createElement('span');e.className='chip';e.textContent=c;ch.appendChild(e)});ch.hidden=!s.chips;
+    const d=$('#dots');d.innerHTML='';j.steps.forEach((_,i)=>{const e=document.createElement('b');if(i===cur.s)e.className='on';else if(i<cur.s)e.className='done';d.appendChild(e)});
+    const lastStep=cur.s===j.steps.length-1;$('#bNext').innerHTML=(lastStep?(cur.j<J.length-1?'Sıradaki yolculuk':'Menüye dön'):'İleri')+' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+    $('#bPrev').disabled=cur.s===0;$('#bPrev').style.opacity=cur.s===0?.4:1}
+  requestAnimationFrame(measure)}
+function go(j,s){const ni=j==null?{hub:true,t:0,state:{}}:{j,s,t:0,state:{}};const pv=viewOf(cur),nv=viewOf(ni);
+  let type='fade';if(pv==='brain'&&nv==='micro')type='dive';else if(pv==='micro'&&nv==='brain')type='rise';
+  trans={from:cur,p:0,dur:reduce?.35:(type==='fade'?.8:1.4),type};cur=ni;stepClock=0;setUI();speak()}
+function next(){if(cur.hub)return go(0,0);const j=J[cur.j];if(cur.s<j.steps.length-1)go(cur.j,cur.s+1);else if(cur.j<J.length-1){if(auto){auto=false;syncAuto()}go(cur.j+1,0)}else{auto=false;syncAuto();go(null)}}
+function prev(){if(!cur.hub&&cur.s>0)go(cur.j,cur.s-1)}
+$('#bNext').onclick=next;$('#bPrev').onclick=prev;$('#bHome').onclick=()=>{auto=false;syncAuto();go(null)};
+function syncAuto(){const b=$('#bAuto');b.setAttribute('aria-pressed',auto);b.innerHTML=auto?'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>';b.setAttribute('aria-label',auto?'Otomatiği durdur':'Otomatik oynat')}
+$('#bAuto').onclick=()=>{auto=!auto;stepClock=0;syncAuto()};
+/* ses */
+const hasSpeech='speechSynthesis' in window;let voiceOn=false,trVoice=null;
+function pickVoice(){if(!hasSpeech)return;const vs=speechSynthesis.getVoices();trVoice=vs.find(v=>/^tr/i.test(v.lang))||null}
+if(hasSpeech){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}else $('#bVoice').hidden=true;
+function speak(){if(!hasSpeech)return;try{speechSynthesis.cancel()}catch(e){}speaking=false;speechDone=0;if(!voiceOn||cur.hub)return;const s=stepOf(cur);
+  const u=new SpeechSynthesisUtterance(s.title+'. '+s.text+(s.chips?' Bugün pratik edeceğin beceriler: '+s.chips.join(', ')+'.':''));u.lang='tr-TR';if(trVoice)u.voice=trVoice;u.rate=.94;u.pitch=1.05;
+  u.onstart=()=>{speaking=true};u.onend=u.onerror=()=>{speaking=false;speechDone=performance.now()};speaking=true;speechSynthesis.speak(u)}
+$('#bVoice').onclick=()=>{voiceOn=!voiceOn;$('#bVoice').setAttribute('aria-pressed',voiceOn);if(voiceOn)speak();else{try{speechSynthesis.cancel()}catch(e){}speaking=false}};
+$('#bFull').onclick=()=>{const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else{const r=(d.requestFullscreen||d.webkitRequestFullscreen).call(d);if(r&&r.catch)r.catch(()=>{})}}catch(e){}};
+addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next()}else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev()}else if(e.key==='Escape'){go(null)}});
+addEventListener('resize',layout);document.addEventListener('fullscreenchange',()=>setTimeout(layout,60));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);
+buildBrain();layout();setUI();
+const h=(location.hash||'').slice(1);const map={baslangic:0,robotik:1,yz:2,satranc:3};if(h in map){cur={j:map[h],s:0,t:0,state:{}};setUI()}
+requestAnimationFrame(frame);
+})();
+</script>
