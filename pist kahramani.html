@@ -216,6 +216,7 @@ h1,h2,h3{font-family:'Baloo 2',cursive;margin:0}
   <div id="uyari" class="kutu gizli"></div>
   <div id="kamKutu" class="kutu gizli"><canvas id="kamKucuk" width="320" height="240"></canvas>
    <div class="olc"><span>⬅</span><div class="bar"><i id="barDir" style="background:#3ab0ff"></i></div><span>➡</span></div>
+   <div id="elDurum" style="font-size:13px;font-weight:900;text-align:center;margin-top:4px;color:#ffe08a"></div>
    <div class="olc"><span>⛽</span><div class="bar"><i id="barGaz" style="background:#2ee59d"></i></div><span>🛑</span><div class="bar"><i id="barFren" style="background:#ff4d6d"></i></div></div>
   </div>
   <div id="dokun" class="gizli">
@@ -412,8 +413,8 @@ h1,h2,h3{font-family:'Baloo 2',cursive;margin:0}
 /* =====================================================================
    PİST KAHRAMANI — kamera kontrollü sürüş simülatörü
    ===================================================================== */
-const APP={ad:'Pist Kahramanı',surum:'1.1',tarih:'08.10.2026',satir:1506,kb:218,onceki:{surum:'1.0',satir:1353,kb:204},
- yenilikler:['📱 Telefon = kablosuz kamera: tahtada kamera yoksa QR ile telefon bağlanır, görüntü tahtaya canlı gider','Önden / arkadan çekim seçeneği (arkadan çekimde kollar ve dizler takip edilir)','Kamera bulunamazsa tek dokunuşla telefona geçiş','Telefon bağlantısı koparsa oyunda uyarı + telefonda “Yeniden bağlan”']};
+const APP={ad:'Pist Kahramanı',surum:'1.2',tarih:'08.10.2026',satir:1553,kb:222,onceki:{surum:'1.1',satir:1506,kb:218},
+ yenilikler:['🙌 Her şey ellerle: eller direksiyonda yukarıda = gaz, sağa–sola çevir = dön, eller aşağı = dur','✊ Yumruk = tam gaz, ✋ açık el = yavaşla (önden çekimde, el modeli ile)','Arkadan çekimde bilek tahmini + dirsek yedeği; ayna görüntüsü kapanır','Kamera kutusunda o an algılanan komut yazar (GAZ / DUR / YUMRUK)','Telefon arka kamerası daha net (720p) ve varsayılan “arkadan çekim”']};
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -424,7 +425,7 @@ function kucukTost(t){const e=$('#kucukTost');e.textContent=t;e.classList.add('o
 const ARACLAR={
  araba:{ad:'Aile Arabası',ikon:'🚗',acik:'Dengeli, kolay',hiz:1,ivme:1,renk:0xe63946},
  spor:{ad:'Spor Araba',ikon:'🏎️',acik:'Çok hızlı!',hiz:1.25,ivme:1.45,renk:0xffb703},
- motor:{ad:'Motosiklet',ikon:'🏍️',acik:'Gövdeyle yatır',hiz:1.15,ivme:1.5,renk:0x3a86ff,motor:true},
+ motor:{ad:'Motosiklet',ikon:'🏍️',acik:'Gidonu ellerinle çevir',hiz:1.15,ivme:1.5,renk:0x3a86ff,motor:true},
  traktor:{ad:'Traktör',ikon:'🚜',acik:'Yavaş ama sevimli',hiz:.62,ivme:.75,renk:0x2a9d8f}
 };
 const HARITALAR={
@@ -503,7 +504,8 @@ const SORULAR={
 };
 
 /* ---------------- AYARLAR & SEVİYE ---------------- */
-const S=Object.assign({arac:'araba',harita:'vadi',mod:'egitim',kontrol:'kamera',gazModu:'ayak',kamYon:'on',ses:true,konusma:true,ayna:true,kamId:'',gorus:'arka'},LS.get('pist_ayar',{}));
+const S=Object.assign({arac:'araba',harita:'vadi',mod:'egitim',kontrol:'kamera',gazModu:'el',yumruk:true,kamYon:'on',ses:true,konusma:true,ayna:true,kamId:'',gorus:'arka'},LS.get('pist_ayar',{}));
+if(!LS.get('pist_el_gocu',false)){S.gazModu='el';LS.set('pist_el_gocu',true);try{localStorage.setItem('pist_ayar',JSON.stringify(S))}catch(e){}}
 function ayarKaydet(){LS.set('pist_ayar',S)}
 function sinifAl(){let s=localStorage.getItem('zirve_oyun_sinif');if(!s){const o=window.ZGIRIS&&ZGIRIS.ogrenci;s=o?o.sinif:'4'}return s}
 function bandAl(){const s=sinifAl();if(s==='Anaokulu')return'ana';const n=parseInt(s);if(n>=1&&n<=4)return'ilk';return'orta'}
@@ -540,12 +542,26 @@ async function mpYukle(){
  let son;
  for(const v of MP_SURUMLER){
   try{const vision=await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${v}/vision_bundle.mjs`);
-   const fs=await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${v}/wasm`);
+   const fs=await vision.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${v}/wasm`);KAM.vision=vision;KAM.fs=fs;
    const op=d=>({baseOptions:{modelAssetPath:MP_MODEL,delegate:d},runningMode:'VIDEO',numPoses:1,minPoseDetectionConfidence:.5,minPosePresenceConfidence:.5,minTrackingConfidence:.5});
    try{return await vision.PoseLandmarker.createFromOptions(fs,op('GPU'))}catch(e){return await vision.PoseLandmarker.createFromOptions(fs,op('CPU'))}
   }catch(e){son=e}
  }
  throw son||new Error('Yüklenemedi');
+}
+const EL_MODEL='https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+/* El modeli (yumruk/açık el) — yalnızca eller kameraya dönükken (önden) işe yarar; arkadan çekimde el yüksekliği kullanılır */
+async function elModeliYukle(){
+ if(KAM.elModel||KAM.elYukleniyor||!KAM.vision)return;KAM.elYukleniyor=true;
+ const op=d=>({baseOptions:{modelAssetPath:EL_MODEL,delegate:d},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.35,minHandPresenceConfidence:.35,minTrackingConfidence:.35});
+ try{try{KAM.elModel=await KAM.vision.HandLandmarker.createFromOptions(KAM.fs,op('GPU'))}catch(e){KAM.elModel=await KAM.vision.HandLandmarker.createFromOptions(KAM.fs,op('CPU'))}}catch(e){KAM.elModel=null}
+ KAM.elYukleniyor=false;
+}
+/* Parmak uçları bileğe, parmak köklerinden çok uzak değilse parmak kıvrıktır */
+function elSekli(lm){
+ const d=(a,b)=>Math.hypot(lm[a].x-lm[b].x,lm[a].y-lm[b].y);let kivrik=0,acik=0;
+ [[8,5],[12,9],[16,13],[20,17]].forEach(([u,k])=>{const r=d(u,0)/Math.max(1e-4,d(k,0));if(r<1.3)kivrik++;else if(r>1.6)acik++});
+ return kivrik>=3?'yumruk':acik>=3?'acik':'';
 }
 function kamModu(){return S.kontrol==='kamera'||S.kontrol==='telefon'}
 async function kameraBaslat(){
@@ -576,6 +592,14 @@ function kamDongu(){
  if(KAM.video.currentTime===KAM.sonTs)return;KAM.sonTs=KAM.video.currentTime;
  let r;try{r=KAM.lm.detectForVideo(KAM.video,n)}catch(e){return}
  const p=r&&r.landmarks&&r.landmarks[0];KAM.son=p||null;if(p)KAM.sonZaman=n;
+ if(S.gazModu==='el'&&S.yumruk){
+  if(!KAM.elModel)elModeliYukle();
+  else if((KAM.kare=(KAM.kare||0)+1)%2===0){
+   try{const h=KAM.elModel.detectForVideo(KAM.video,n+.5);const L=(h&&h.landmarks)||[];
+    KAM.eller=L.map(lm=>({x:lm[0].x,y:lm[0].y,sekil:elSekli(lm)}));
+    if(KAM.eller.some(e=>e.sekil))KAM.elZaman=n;}catch(e){}
+  }
+ }
  kontrolHesapla(p);
  const hc=KAM.hedefCanvas;if(hc)kamCiz(hc,p);
 }
@@ -647,12 +671,12 @@ function telefonModu(kod){
  </div>`;
  document.body.appendChild(d);
  const $t=id=>d.querySelector('#'+id),vid=$t('telVid');
- let yuz='environment',yon=LS.get('pist_tel_yon','on'),akis=null,peer=null,cagri=null,veri=null,kilit=null;
+ let yuz='environment',yon=LS.get('pist_tel_yon','arka'),akis=null,peer=null,cagri=null,veri=null,kilit=null;
  const roz=(t,ok)=>{$t('telRoz').textContent=t;$t('telRoz').classList.toggle('ok',!!ok)};
  const yonYazT=()=>{$t('telYon').textContent='🎥 Öğrenciyi: '+(yon==='arka'?'Arkadan':'Önden')};yonYazT();
  async function kameraAc(){
   if(akis)akis.getTracks().forEach(t=>t.stop());
-  akis=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:yuz},width:{ideal:640},height:{ideal:480},frameRate:{ideal:30}},audio:false});
+  akis=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:yuz},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}},audio:false});
   vid.srcObject=akis;vid.style.transform=yuz==='user'?'scaleX(-1)':'';await vid.play().catch(()=>{});
  }
  async function baglan(){
@@ -690,7 +714,7 @@ function kisi(p){
  const arka=S.kamYon==='arka';
  const cift=(a,b,e)=>{if(!gor(p,a,e)||!gor(p,b,e))return null;const A=p[a],B=p[b],sol=A.x<B.x?A:B,sag=A.x<B.x?B:A;return arka?{R:sag,L:sol}:{R:sol,L:sag}};
  let el=cift(15,16,.4),kol=false;if(!el){el=cift(13,14,.45);kol=!!el}
- return{omz:cift(11,12,.5),el,kol,diz:cift(25,26,.45),burun:gor(p,0,.3)?p[0]:null};
+ return{omz:cift(11,12,.5),el,kol,elTahmin:cift(15,16,.05),dirsek:cift(13,14,.2),kalca:cift(23,24,.25),diz:cift(25,26,.45),burun:gor(p,0,.3)?p[0]:null};
 }
 const egimAl=c=>Math.atan2(c.R.y-c.L.y,Math.max(.02,Math.abs(c.R.x-c.L.x)));
 function kontrolHesapla(p){
@@ -700,7 +724,28 @@ function kontrolHesapla(p){
  const O=k.omz,sw=Math.max(.04,Math.hypot(O.R.x-O.L.x,O.R.y-O.L.y));
  c.eller=!!k.el;c.dizler=!!k.diz;
  const T=KAM.taban;let dir=0,gaz=0,fren=0;
- if(S.arac==='motor'){
+ if(S.gazModu==='el'){
+  /* HER ŞEY ELLERLE:
+     • Direksiyon: iki elin oluşturduğu çizginin eğimi (eller görünmüyorsa dirsekler)
+     • Gaz: eller direksiyon hizasında (göğüs) yukarıda → araç gider; ✊ yumruk → tam gaz
+     • Fren: eller aşağı (bel altına) → durur; ✋ açık el → yavaşlar */
+  const elc=(k.el&&!k.kol)?k.el:(k.elTahmin||k.dirsek);
+  c.eller=!!elc;
+  if(elc){
+   const kolMu=elc===k.dirsek;
+   dir=clamp(egimAl(elc)/(kolMu?.5:.6),-1,1);
+   const omY=(O.L.y+O.R.y)/2,kY=k.kalca?(k.kalca.L.y+k.kalca.R.y)/2:omY+1.5*sw,elY=(elc.L.y+elc.R.y)/2;
+   const h=(kY-elY)/Math.max(.02,kY-omY); // 0 = kalça hizası, 1 = omuz hizası
+   c.elYuk=h;
+   gaz=clamp((h-(kolMu?.15:.3))/.3,0,1);
+   if(h<(kolMu?0:.12))fren=1;
+  }
+  // ✊ / ✋ (önden çekimde eller görünürse)
+  const yeni=KAM.elZaman&&performance.now()-KAM.elZaman<500;
+  c.yumruk=0;c.acikEl=0;
+  if(yeni&&KAM.eller){c.yumruk=KAM.eller.filter(e=>e.sekil==='yumruk').length;c.acikEl=KAM.eller.filter(e=>e.sekil==='acik').length;
+   if(c.yumruk>0&&fren<1){gaz=1;fren=0}else if(c.acikEl>0){gaz=0;fren=Math.max(fren,.55)}}
+ }else if(S.arac==='motor'){
   // Gövdeyi yatır = yön ; sağ el aşağı bükülür = gaz ; sol el aşağı = fren
   dir=clamp((egimAl(O)-(T?T.egim:0))/.32,-1,1);
   if(k.el&&T&&T.rEl!=null){gaz=clamp(((k.el.R.y-T.rEl)/sw-.08)/.45,0,1);fren=clamp(((k.el.L.y-T.lEl)/sw-.12)/.45,0,1)}
@@ -720,7 +765,7 @@ function kontrolHesapla(p){
  if(Math.abs(dir)<.07)dir=0;
  // Korna: iki el başın üstünde (arkadan çekimde burun görünmezse omuz hizası kullanılır)
  const tepe=k.burun?k.burun.y-.3*sw:Math.min(O.L.y,O.R.y)-1.1*sw;
- c.korna=!!(k.el&&!k.kol&&k.el.L.y<tepe&&k.el.R.y<tepe);
+ c.korna=!!(k.el&&!k.kol&&k.el.L.y<tepe&&k.el.R.y<tepe)||!!(S.gazModu==='el'&&k.elTahmin&&k.elTahmin.L.y<tepe&&k.elTahmin.R.y<tepe);
  if(c.korna)gaz=0;
  c.dir=lerp(c.dir,dir,yum+.15);c.gaz=lerp(c.gaz,gaz,yum);c.fren=lerp(c.fren,fren,yum+.2);
 }
@@ -731,7 +776,7 @@ function tabanAl(p){
 const KEMIK=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 function kamCiz(cv,p){
  const g=cv.getContext('2d'),W=cv.width,H=cv.height,v=KAM.video;
- g.save();if(S.ayna){g.translate(W,0);g.scale(-1,1)}
+ const ayna=S.ayna&&S.kamYon!=='arka';g.save();if(ayna){g.translate(W,0);g.scale(-1,1)}
  const vr=v.videoWidth/v.videoHeight||4/3,cr=W/H;let sw=W,sh=H,sx=0,sy=0;
  if(vr>cr){sw=H*vr;sx=(W-sw)/2}else{sh=W/vr;sy=(H-sh)/2}
  g.drawImage(v,sx,sy,sw,sh);
@@ -741,7 +786,8 @@ function kamCiz(cv,p){
   g.lineCap='round';g.lineWidth=Math.max(3,W/90);
   KEMIK.forEach(([a,b])=>{if(gor(p,a,.3)&&gor(p,b,.3)){g.strokeStyle=(a>=23||b>=23)?'#ffb703':'#3ab0ff';g.beginPath();g.moveTo(X(a),Y(a));g.lineTo(X(b),Y(b));g.stroke()}});
   [[15,'#2ee59d'],[16,'#2ee59d'],[25,'#ffb703'],[26,'#ffb703'],[0,'#fff']].forEach(([i,r])=>{if(gor(p,i,.3)){g.fillStyle=r;g.beginPath();g.arc(X(i),Y(i),W/45,0,7);g.fill()}});
-  const ea=gor(p,15,.4)&&gor(p,16,.4)?[15,16]:[13,14];
+  const ea=gor(p,15,.05)&&gor(p,16,.05)?[15,16]:[13,14];
+  if(KAM.elZaman&&performance.now()-KAM.elZaman<500&&KAM.eller)KAM.eller.forEach(e=>{if(!e.sekil)return;g.save();g.translate(sx+e.x*sw,sy+e.y*sh);if(ayna)g.scale(-1,1);g.font=`${Math.round(W/12)}px serif`;g.textAlign='center';g.fillText(e.sekil==='yumruk'?'✊':'✋',0,-W/40);g.restore()});
   if(S.arac!=='motor'&&KAM.c.eller){ // sanal direksiyon
    const cx=(X(ea[0])+X(ea[1]))/2,cy=(Y(ea[0])+Y(ea[1]))/2,rr=Math.hypot(X(ea[0])-X(ea[1]),Y(ea[0])-Y(ea[1]))/2;
    g.strokeStyle='#ffffffcc';g.lineWidth=W/70;g.beginPath();g.arc(cx,cy,rr,0,7);g.stroke();
@@ -1206,6 +1252,7 @@ function hudGuncelle(zorla){
  if(kamModu()&&KAM.hazir){
   $('#barDir').style.cssText=`background:#3ab0ff;left:${50+Math.min(0,GIRIS.dir)*50}%;width:${Math.abs(GIRIS.dir)*50}%`;
   $('#barGaz').style.width=(GIRIS.gaz*100)+'%';$('#barFren').style.width=(GIRIS.fren*100)+'%';
+  const ec=KAM.c;$('#elDurum').textContent=S.gazModu!=='el'?'':ec.fren>.9?'🛑 Eller aşağı = DUR':ec.yumruk?'✊ Yumruk = TAM GAZ':ec.acikEl?'✋ Açık el = yavaşla':ec.gaz>.3?'🙌 Eller yukarıda = GAZ':'🙌 Ellerini kaldır = gaz';
   if(KAM.kaynak==='telefon'&&!TEL.bagli)uyari('📱 Telefon bağlantısı koptu — telefonda “Yeniden bağlan”a dokun');
   else if(G.kamGorulmedi>1.2)uyari('👀 Seni göremiyorum — kameranın karşısına geç');
   else if(KAM.c.gorunuyor&&!KAM.c.eller&&S.arac!=='motor')uyari(S.kamYon==='arka'?'🙌 Kolların görünsün — dirseklerini yana aç':'🙌 Ellerini direksiyon tutar gibi kaldır');
@@ -1279,7 +1326,6 @@ async function kalibrasyonAc(devamOyun){
  $('#kalibTelBtn').classList.toggle('gizli',tel);$('#kalibTelBtn').className=tel?'btn ikincil gizli':'btn ikincil';
  $('#kalibBaslik').textContent=tel?'📱 Telefon kamerası bekleniyor…':'📷 Kamera açılıyor…';
  $('#kalibIpucu').textContent=tel?'Telefonunla QR kodu okut, açılan sayfada “Kamerayı başlat”a dokun. Telefon ve tahta aynı Wi-Fi’de olursa en hızlı çalışır.':'Tarayıcı izin sorarsa "İzin ver"e dokunun. Vücut takip modeli ilk seferde birkaç saniye iner.';$('#kalibListe').innerHTML='';
- if(S.arac!=='motor'&&BAND==='ana'&&!LS.get('pist_gaz_secildi',false))S.gazModu='oto';
  const ok=await kameraBaslat();
  $('#telBag').classList.add('gizli');
  if(!kalibD.aktif)return;
@@ -1298,10 +1344,10 @@ function kalibDongu(){
  if(ayak&&c.gorunuyor&&c.eller&&!c.dizler){kalibD.dizYok=(kalibD.dizYok||0)+1/60;if(kalibD.dizYok>6){S.gazModu='govde';ayarKaydet();konus('Dizlerini göremiyorum. Öne eğilince gaz, geriye yaslanınca fren olacak.',true);kucukTost('🙇 Dizler görünmüyor → “öne eğil = gaz” moduna geçtim (Ayarlar’dan değişir)')}}
  if(hepsi){kalibD.tutma+=1/60}else kalibD.tutma=Math.max(0,kalibD.tutma-1/30);
  const oran=clamp(kalibD.tutma/2,0,1);$('#halkaIlerle').setAttribute('stroke-dashoffset',264*(1-oran));
- $('#kalibIpucu').textContent=!c.gorunuyor?'Kameranın karşısına geç, 2–3 adım geri çekil. Omuzların görünsün.':!c.eller?(S.kamYon==='arka'?'Arkadan çekimde kolların görünsün: dirseklerini hafifçe yana aç.':motor?'Ellerini gidon tutar gibi öne uzat.':'Ellerini direksiyon tutar gibi göğsünün önüne kaldır.'):(ayak&&!c.dizler)?'Dizlerin de görünsün — biraz daha geri çekil.':'Harika! Böyle 2 saniye sabit dur…';
+ $('#kalibIpucu').textContent=!c.gorunuyor?'Kameranın karşısına geç, 2–3 adım geri çekil. Omuzların görünsün.':!c.eller?(S.gazModu==='el'?'Ellerini direksiyon tutar gibi göğsünün önüne kaldır.':S.kamYon==='arka'?'Arkadan çekimde kolların görünsün: dirseklerini hafifçe yana aç.':motor?'Ellerini gidon tutar gibi öne uzat.':'Ellerini direksiyon tutar gibi göğsünün önüne kaldır.'):(ayak&&!c.dizler)?'Dizlerin de görünsün — biraz daha geri çekil.':'Harika! Böyle 2 saniye sabit dur…';
  if(oran>=1){
   kalibD.aktif=false;KAM.taban=tabanAl(p);
-  const yardim=motor?'Gövdeni sağa sola yatır, sağ elini aşağı bükersen gaz, sol elini aşağı bükersen fren.':S.gazModu==='ayak'?'Direksiyonu çevir. Sağ dizini kaldırınca gaz, sol dizini kaldırınca fren.':S.gazModu==='govde'?'Direksiyonu çevir. Öne eğilince gaz, geriye yaslanınca fren.':'Direksiyonu çevir. Araba kendi gider; durmak için ellerini aşağı indir.';
+  const yardim=S.gazModu==='el'?'Ellerini direksiyon tutar gibi yukarıda tut, araba gider. Sağa sola çevir. Ellerini aşağı indirince durur.'+(S.kamYon==='arka'?'':' Yumruk yaparsan tam gaz, elini açarsan yavaşlar.'):motor?'Gövdeni sağa sola yatır, sağ elini aşağı bükersen gaz, sol elini aşağı bükersen fren.':S.gazModu==='ayak'?'Direksiyonu çevir. Sağ dizini kaldırınca gaz, sol dizini kaldırınca fren.':S.gazModu==='govde'?'Direksiyonu çevir. Öne eğilince gaz, geriye yaslanınca fren.':'Direksiyonu çevir. Araba kendi gider; durmak için ellerini aşağı indir.';
   konus('Hazırsın! '+yardim,true);$('#kalibIpucu').textContent='✅ Hazırsın! '+yardim;
   setTimeout(()=>{$('#kalib').classList.add('gizli');if(kalibD.devamOyun&&G.p){KAM.hedefCanvas=$('#kamKucuk');$('#kamKutu').classList.remove('gizli');$('#dokun').classList.add('gizli');G.duraklat=false}else oyunBaslat()},1500);
  }
@@ -1340,6 +1386,7 @@ function yardimAc(){
  modal(`<h2>❓ Nasıl Oynanır?</h2>
  <table class="tablo">
  <tr><td>🚗</td><td><b>Direksiyon:</b> İki elini direksiyon tutar gibi göğsünün önüne kaldır, sağa–sola çevir.</td></tr>
+ <tr><td>🙌</td><td><b>Her şey ellerle (varsayılan):</b> Ellerini direksiyon tutar gibi göğüs hizasında tut → araba gider. Ellerini aşağı indir → durur. Önden çekimde eller görünürse <b>✊ yumruk = tam gaz</b>, <b>✋ açık el = yavaşla</b>.</td></tr>
  <tr><td>🦵</td><td><b>Gaz/Fren (Ayak modu):</b> Sağ dizini kaldır = gaz, sol dizini kaldır = fren. (Kamera dizlerini görmeli.)</td></tr>
  <tr><td>🙇</td><td><b>Gövde modu:</b> Öne eğil = gaz, geriye yaslan = fren.</td></tr>
  <tr><td>🤖</td><td><b>Otomatik mod (küçükler için):</b> Araba kendisi gider; ellerini aşağı indirince durur.</td></tr>
@@ -1365,10 +1412,10 @@ async function ayarAc(){
  let kameralar=[];try{const d=await navigator.mediaDevices.enumerateDevices();kameralar=d.filter(x=>x.kind==='videoinput')}catch(e){}
  const an=(k,t)=>`<div class="ayar"><span>${t}</span><button class="anahtar ${S[k]?'on':''}" data-k="tog" data-a="${k}"></button></div>`;
  const p=modal(`<h2>⚙️ Ayarlar</h2>
- <div class="ayar"><span>🦶 Araba için gaz/fren yöntemi</span><select id="gazSec"><option value="oto">🤖 Otomatik gaz (eller aşağı = fren)</option><option value="ayak">🦵 Diz kaldır (sağ gaz, sol fren)</option><option value="govde">🙇 Öne eğil gaz, geri yaslan fren</option></select></div>
+ <div class="ayar"><span>🙌 Gaz / fren yöntemi</span><select id="gazSec"><option value="el">🙌 Her şey ellerle (yukarı gaz, aşağı dur, ✊ yumruk)</option><option value="oto">🤖 Otomatik gaz (eller aşağı = fren)</option><option value="ayak">🦵 Diz kaldır (sağ gaz, sol fren)</option><option value="govde">🙇 Öne eğil gaz, geri yaslan fren</option></select></div>
  <div class="ayar"><span>🎥 Öğrenciyi hangi yönden çekiyorsun?</span><select id="yonSec"><option value="on">Önden (en doğru)</option><option value="arka">Arkadan</option></select></div>
  <div class="ayar"><span>📷 Tahta kamerası</span><select id="kamSec"><option value="">Varsayılan kamera</option>${kameralar.map((k,i)=>`<option value="${k.deviceId}">${k.label||('Kamera '+(i+1))}</option>`).join('')}</select></div>
- ${an('ayna','🪞 Kamera görüntüsü ayna gibi')}${an('ses','🔊 Oyun sesleri')}${an('konusma','🗣️ Sesli yönlendirme (Türkçe)')}
+ ${an('yumruk','✊ Yumruk = gaz, ✋ açık el = yavaşla (önden çekimde)')}${an('ayna','🪞 Kamera görüntüsü ayna gibi')}${an('ses','🔊 Oyun sesleri')}${an('konusma','🗣️ Sesli yönlendirme (Türkçe)')}
  <h3 style="margin-top:16px">🎈 Yüzen Düğmeler</h3><div id="fabAyar"></div>
  <div class="btnSat"><button class="btn ikincil" data-k="konum">📍 Konumları Sıfırla</button><button class="btn ikincil" data-k="guncel">🔄 Güncellemeleri Denetle</button><button class="btn ikincil" data-k="cikis">🙋 Öğrenci değiştir</button></div>
  <p style="font-size:13px;color:#a9b6dd">Sürüm v${APP.surum} · Kamera görüntüsü yalnızca bu cihazda işlenir; kaydedilmez, gönderilmez.</p>`,
@@ -1391,7 +1438,7 @@ window.ZIRVE=window.ZIRVE||{};
 window.ZIRVE.duzMetin=function(s){let t=String(s||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(p|li|div|h\d)>/gi,'\n').replace(/<[^>]+>/g,'');const d=document.createElement('textarea');d.innerHTML=t;t=d.value;
  return t.replace(/^#{1,6}\s*/gm,'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^>\s?/gm,'').replace(/^[-*]\s+/gm,'• ').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'$1 ($2)').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim()};
 const KARSILAMA={baslik:'🏁 Pist Kahramanı’na Hoş Geldin!',ozet:'Kameranın karşısında gerçek bir sürücü gibi direksiyonu çevir, gaz ver, fren yap! Trafik kurallarına uy, soruları cevapla, rozet kazan.',
- adimlar:['Tahta kamerasını ya da <b>kendi telefonunu</b> kamera olarak kullan; öğrenci <b>2–3 adım</b> geride dursun, baştan dizlere görünsün.','Aracını, haritanı ve modunu seç. Tahtada kamera yoksa <b>“📱 Telefon Kamerası”</b>nı seç, çıkan QR’ı telefonla okut; sonra <b>BAŞLA</b>.','Ellerini direksiyon tutar gibi kaldır ve 2 saniye sabit dur — sistem seni tanısın.','Direksiyonu çevir; gaz için <b>sağ dizini kaldır</b> (ya da Ayarlar’dan “öne eğil” / “otomatik gaz” seç). Motorda gövdeni yatır, sağ elini aşağı bük.','🚦 Kırmızıda dur, 🦆 ördeklere yol ver, 🏫 okul bölgesinde yavaşla, ❓ doğru cevabın kapısından geç!']};
+ adimlar:['Tahta kamerasını ya da <b>kendi telefonunu</b> kamera olarak kullan; öğrenci <b>2–3 adım</b> geride dursun, baştan dizlere görünsün.','Aracını, haritanı ve modunu seç. Tahtada kamera yoksa <b>“📱 Telefon Kamerası”</b>nı seç, çıkan QR’ı telefonla okut; sonra <b>BAŞLA</b>.','Ellerini direksiyon tutar gibi kaldır ve 2 saniye sabit dur — sistem seni tanısın.','<b>Her şey ellerle:</b> eller direksiyonda yukarıda = gaz, sağa–sola çevir = dön, eller aşağı = dur. Önden çekimde ✊ yumruk = tam gaz, ✋ açık el = yavaşla.','🚦 Kırmızıda dur, 🦆 ördeklere yol ver, 🏫 okul bölgesinde yavaşla, ❓ doğru cevabın kapısından geç!']};
 function karsilamaAc(zorla){
  if(!zorla&&localStorage.getItem('zirve_karsilama_goruldu_pist')==='1')return false;
  modal(`<h2>${KARSILAMA.baslik}</h2><p>${KARSILAMA.ozet}</p>${KARSILAMA.adimlar.map((a,i)=>`<div class="adim"><div class="n">${i+1}</div><div>${a}</div></div>`).join('')}
@@ -1449,7 +1496,7 @@ function fabKur(){
 function fabGoster(v){$('#fabgrup').style.display=v?'':'none'}
 window.ZIRVE_kontrolleriGeriGetir=()=>{if(ZIRVE_kontroller.length){ZIRVE_kontroller.forEach(c=>c.goster());Object.keys(localStorage).filter(x=>x.startsWith('zirve_fab_')).forEach(x=>localStorage.removeItem(x));fabKur()}else{['zirve_ekran_pill_gizli','zirve_karsilama_gizli','zirve_qr_gizli'].forEach(k=>localStorage.removeItem(k));location.reload()}};
 /* Sürüm rozeti + açılış bandı + modül öz-kontrolü */
-const MODULLER=['ZGIRIS','kameraBaslat','kontrolHesapla','oyunBaslat','fizik','olaylar','trafikGuncelle','bitir','karsilamaAc','ZIRVE_paylasAc','ekranUygula','fabKur','surumKontrol','initPWA','TEL','telefonModu','kisi'];
+const MODULLER=['ZGIRIS','kameraBaslat','kontrolHesapla','oyunBaslat','fizik','olaylar','trafikGuncelle','bitir','karsilamaAc','ZIRVE_paylasAc','ekranUygula','fabKur','surumKontrol','initPWA','TEL','telefonModu','kisi','elSekli','elModeliYukle'];
 function modulDurum(){return MODULLER.map(m=>{let ok=false;try{ok=typeof eval(m)!=='undefined'}catch(e){}return{m,ok}})}
 function surumRozetiKur(){
  const md=modulDurum(),okS=md.filter(x=>x.ok).length;$('#surumRozet').textContent=`v${APP.surum} ${okS===md.length?'✓':'⚠'}`;
