@@ -2492,6 +2492,14 @@ setInterval(()=>{if(typeof pConn!=='undefined'&&pConn&&!pConn._v11){pConn._v11=t
 .csAsG{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-height:60vh;overflow:auto;text-align:left}.csAs{display:flex;align-items:center;gap:6px;margin:3px 0;font-weight:700;font-size:14px}.csAs img{width:26px;height:30px}.csAs span{width:90px}.csAs select{flex:1;border:2px solid #e5e0f8;border-radius:10px;padding:4px;font:inherit}
 .csPz6{grid-template-columns:repeat(3,1fr)!important}.csPz6 button{font-size:13px}
 @media (max-width:900px){.csPlay{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}.csSide{width:auto;flex-direction:row;flex-wrap:wrap;padding:0}.csPbs{grid-template-columns:repeat(6,1fr)}.csTop{grid-column:1}}
+.csHeroCard{width:min(1100px,96%);display:flex;align-items:center;gap:18px;border-radius:30px;padding:14px 22px;background:linear-gradient(120deg,#4c1d95,#7c4dff 45%,#e11d48);color:#fff;box-shadow:0 10px 0 rgba(0,0,0,.14),var(--sh);text-align:left;transition:transform .15s;position:relative;overflow:hidden}
+.csHeroCard:hover{transform:translateY(-4px)}.csHeroCard .hcFig img{width:clamp(80px,9vw,130px);filter:drop-shadow(0 8px 10px rgba(0,0,0,.35));animation:hcBob 1.2s ease-in-out infinite}
+.csHeroCard .hcTx{flex:1;display:flex;flex-direction:column;gap:4px}.csHeroCard b{font-size:clamp(28px,3.4vw,52px);line-height:1}.csHeroCard small{font-size:clamp(14px,1.5vw,21px);font-weight:700;opacity:.95}.csHeroCard em{font-style:normal;font-weight:800;font-size:clamp(12px,1.2vw,16px);background:rgba(255,255,255,.2);border-radius:999px;padding:4px 12px;align-self:flex-start}
+.csHeroCard .hcPawn img{width:clamp(50px,5vw,80px);filter:drop-shadow(0 6px 8px rgba(0,0,0,.4))}
+@keyframes hcBob{50%{transform:translateY(-8px)}}
+.csScore{background:#fff;border-radius:18px;box-shadow:var(--sh);padding:8px;text-align:center;font-weight:800}.csScore b{display:block;font-size:44px;line-height:1;color:#7c4dff}.csScore small{color:var(--soft);font-size:12px}
+.csDots{display:flex;justify-content:center;gap:5px;margin:4px 0}.csDots i{width:16px;height:16px;border-radius:50%;background:#e5e0f8}.csDots i.on{background:#ffc93c;box-shadow:0 0 0 2px #f59e0b inset}
+@media (max-width:900px){.csHeroCard{padding:10px 14px}.csHeroCard .hcPawn{display:none}}
 </style>
 <script>
 /* =====================================================================
@@ -2584,8 +2592,10 @@ function csDraw(){const cv=$('#csCv');if(!cv)return;const box=cv.parentNode,W=bo
   // taşlar
   CS.pcs.forEach(pc=>{if(pc.dead&&!(pc.dieT&&now-pc.dieT<900))return;const mv=pc===CS.mover&&pc.cx!=null;const fx=mv?pc.cx:pc.x,fy=mv?pc.cy:pc.y;pc.vx=pc.vx==null?fx:pc.vx+(fx-pc.vx)*.22;pc.vy=pc.vy==null?fy:pc.vy+(fy-pc.vy)*.22;
     objs.push({z:CS.flip?CS.N-1-pc.vy:pc.vy,draw:()=>{const vx=CS.flip?CS.N-1-pc.vx:pc.vx,vy=CS.flip?CS.N-1-pc.vy:pc.vy;const p=proj(vx+.5,vy+.38);const h=CG.Wb/N*p.s*(pc.big?1.45:1.15);let alpha=1,lift=0;if(pc.dead){const k=(now-pc.dieT)/900;alpha=1-k;lift=k*h}if(pc.jumpT&&now-pc.jumpT<600)lift+=Math.sin((now-pc.jumpT)/600*Math.PI)*h*.4;
-      const lbl=pc.sid?csName(pc.sid):(pc===CS.me&&stu(active)?csName(active):'');drawPiece(x,pc.t,pc.c,p.x,p.y-lift,h,pc.sid?faceOf(pc.sid):(pc===CS.me?faceOf(active):null),{alpha,glow:pc===CS.mover?'#ffc93c':null,label:lbl,face:true})}})});
+      const lbl=pc.sid?csName(pc.sid):(pc===CS.me&&stu(active)?csName(active):'');const fimg=pc.sid?faceOf(pc.sid):(pc===CS.me?faceOf(active):null);if(csCostumeOn(pc))csDrawHero(x,pc,p.x,p.y-lift,CG.Wb/N*p.s,alpha,lbl,fimg,now);else drawPiece(x,pc.t,pc.c,p.x,p.y-lift,h,fimg,{alpha,glow:pc===CS.mover?'#ffc93c':null,label:lbl,face:!(CS.mode==='kale'&&pc!==CS.me)})}})});
+  csDrawArrow(x,now);
   objs.sort((a,b)=>b.z-a.z).forEach(o=>o.draw());
+  csDrawMarks(x,now);
   // demo hayalet
   if(CS.demo){const D=CS.demo,k=(now-D.t0)/D.dur;if(k>=1)CS.demo=null;else{const seg=k*D.path.length;const i=Math.floor(seg),f=seg-i;const A=i===0?D.from:D.path[i-1],B=D.path[Math.min(i,D.path.length-1)];const fx=A[0]+(B[0]-A[0])*Math.min(1,f*1.6),fy=A[1]+(B[1]-A[1])*Math.min(1,f*1.6);const p=proj(vX(fx)+.5,vY(fy)+.38);drawPiece(x,D.t,'w',p.x,p.y,CG.Wb/N*p.s*1.15,null,{alpha:.55,face:false});
     for(let j=0;j<=Math.min(i,D.path.length-1);j++){const q=proj(vX(D.path[j][0])+.5,vY(D.path[j][1])+.5);x.fillStyle='rgba(124,77,255,.55)';x.beginPath();x.arc(q.x,q.y,CG.Wb/N*q.s*.14,0,7);x.fill()}}}
@@ -2593,6 +2603,7 @@ function csDraw(){const cv=$('#csCv');if(!cv)return;const box=cv.parentNode,W=bo
   if(CS.ring>0&&CS.mover){const p=proj(vX(CS.cell[0])+.5,vY(CS.cell[1])+.5);const r=CG.Wb/N*p.s*.42;x.lineWidth=6;x.strokeStyle='rgba(255,255,255,.5)';x.beginPath();x.arc(p.x,p.y,r,0,7);x.stroke();x.strokeStyle='#16a34a';x.beginPath();x.arc(p.x,p.y,r,-Math.PI/2,-Math.PI/2+CS.ring*Math.PI*2);x.stroke()}
   // efektler
   CS.fx=CS.fx.filter(f=>now-f.t<1200);CS.fx.forEach(f=>{const k=(now-f.t)/1200;const p=proj(vX(f.x)+.5,vY(f.y)+.5);x.globalAlpha=1-k;x.fillStyle='#000';x.font=(CG.Wb/N*p.s*(.6+k*.6))+'px sans-serif';x.textAlign='center';x.fillText(f.e,p.x,p.y-k*H*.15);x.globalAlpha=1});
+  csDrawAyna(x,W,H,now);
   // durum
   x.textAlign='left';x.textBaseline='middle';x.font='800 '+Math.max(12,H*.026)+'px "Baloo 2",sans-serif';x.fillStyle=csFresh()?'#16a34a':(minik?'#7c2d12':'#fcd34d');x.fillText(csFresh()?'● KAMERA TAKİPTE':'👆 dokunarak oynanıyor',12,H*.035);
   if(CS.mode==='mac'&&!CS.over){x.textAlign='right';x.fillStyle=CS.turn==='w'?'#fff':'#c4b5fd';x.fillText(CS.turn==='w'?'⚪ BEYAZ TAKIMIN SIRASI':'⚫ SİYAH TAKIMIN SIRASI',W-12,H*.035)}}
@@ -2610,13 +2621,15 @@ function csTick(){const now=performance.now();const dt=Math.min(.1,(now-(CS.last
   if(!CS.stable)CS.stable=now;const held=now-CS.stable;csEval(CS.cell[0],CS.cell[1],held,dt)}
 function csEval(a,b,held,dt){const m=CS.mover;if(a===m.x&&b===m.y){CS.ring=0;return}const legal=isLegal(m,a,b);
   if(!legal){CS.ring=0;if(held>650&&!onWay(m,a,b)&&!(CS.warnCell&&CS.warnCell[0]===a&&CS.warnCell[1]===b&&performance.now()<CS.warnCell[2]+2000))csWrong(a,b);return}
+  if(CS.mode==='kale'){const tg=pcAt(a,b);if(tg&&tg.c!==m.c){if(held>350)csCommit(a,b)}else if(held>1500)csCommit(a,b);return}
   if(CS.mode==='gorev'){if(CS.stars.some(s=>s[0]===a&&s[1]===b)){if(held>300)csCommit(a,b)}return}
   if(CS.mode==='okul'){if(held>450)csCommit(a,b);return}
   CS.ring=clamp(held/1500,0,1);if(CS.ring>=1)csCommit(a,b)}
-function csWrong(a,b){const m=CS.mover;CS.warnCell=[a,b,performance.now()+1600];CS.hl=csLegal(m);sfx.no();csRec(m.t,false);csSay(PWRONG[m.t]+' Yeşil noktalara bak.');}
+function csWrong(a,b){const m=CS.mover;CS.warnCell=[a,b,performance.now()+1600];CS.hl=csLegal(m);sfx.no();csRec(m.t,false);if(CS.mode==='kale'){CS.kArrowT=performance.now()+6000;csSay(m.t==='R'?(csName(active)?csName(active)+', ':'')+'kale çapraz gidemez! Dümdüz yürü: ileri, geri, sağa ya da sola.':PWRONG[m.t]+' Oka bak.')}else csSay(PWRONG[m.t]+' Yeşil noktalara bak.');}
 
 /* ---------------- hamle ---------------- */
 function csCommit(a,b){const m=CS.mover;if(!m)return;CS.ring=0;
+  if(CS.mode==='kale'){csKaleCommit(a,b);return}
   if(CS.mode==='okul'){m.x=a;m.y=b;m.jumpT=performance.now();csRec(m.t,true);CS.okN++;sfx.ok();CS.fx.push({x:a,y:b,e:'⭐',t:performance.now()});const s=stu(active);if(s)giveStar(s.id);csSay(pick(['Aferin','Harika','Süper','Bravo'])+' '+csName(active)+'! '+PN[m.t]+' böyle gider!');if(CS.okN>=3)csBadge(m.t);csAfterMove();return}
   if(CS.mode==='gorev'){m.x=a;m.y=b;m.jumpT=performance.now();CS.stars=CS.stars.filter(s=>!(s[0]===a&&s[1]===b));csRec(m.t,true);CS.gN++;sfx.ok();CS.fx.push({x:a,y:b,e:'✨',t:performance.now()});const s=stu(active);if(s)giveStar(s.id);
     if(CS.gN>=5){csBadge(m.t);csSay(`Muhteşem ${csName(active)}! Beş yıldızı da topladın!`);confetti(60);CS.gN=0}else csSay(pick(['Yıldızı aldın!','Süpersin!','Aferin!'])+' '+(5-CS.gN)+' yıldız kaldı.');csAfterMove();setTimeout(()=>{if(CS.mode==='gorev')csNewStar()},900);return}
@@ -2633,9 +2646,9 @@ function csUndo(){const h=CS.hist.pop();if(!h){toast('Geri alınacak hamle yok')
 /* ---------------- modlar ---------------- */
 function csStartSq(t){const N=CS.N;if(t==='P')return [Math.floor(N/2),N===8?1:0];return N===5?[2,1]:[3,2]}
 function csSolo(t){CS.piece=t;CS.N=csN();CS.flip=false;CS.over=null;const [x,y]=csStartSq(t);const me={id:'me',t,c:'w',x,y,sx:x,sy:y};CS.pcs=[me];CS.me=me;CS.mover=me;CS.stars=[];CS.hl=null;CS.okN=0;CS.gN=0;csZero()}
-function csTasOkulu(t){CS.mode='okul';csSolo(t||CS.piece);csUI();const m=CS.me;csSay(PINTRO[m.t]+' '+(csName(active)?csName(active)+', şimdi sen bir '+PN[m.t].toLocaleLowerCase('tr')+'sın! Yeşil noktalardan birine yürü.':''));csDemo(m);setTimeout(()=>{if(CS.mode==='okul'&&CS.me===m)CS.hl=csLegal(m)},3600)}
+function csTasOkulu(t){CS.mode='okul';csSolo(t||CS.piece);csUI();const m=CS.me;csSay(PINTRO[m.t]+' '+(csName(active)?csName(active)+', şimdi sen bir '+PN_ACC[m.t]+'! Yeşil noktalardan birine yürü.':''));csDemo(m);setTimeout(()=>{if(CS.mode==='okul'&&CS.me===m)CS.hl=csLegal(m)},3600)}
 function csDemo(m){const L=shuffle(csLegal(m)).slice(0,3);if(!L.length)return;CS.demo={t:m.t,from:[m.x,m.y],path:L.flatMap(s=>[s,[m.x,m.y]]),t0:performance.now(),dur:3400}}
-function csGorev(t){CS.mode='gorev';csSolo(t||CS.piece);csUI();csNewStar();csSay(`${csName(active)?csName(active)+', ':''}sen bir ${PN[CS.me.t].toLocaleLowerCase('tr')}sın! ${PRULE[CS.me.t]} Yıldızı topla!`)}
+function csGorev(t){CS.mode='gorev';csSolo(t||CS.piece);csUI();csNewStar();csSay(`${csName(active)?csName(active)+', ':''}sen bir ${PN_ACC[CS.me.t]}! ${PRULE[CS.me.t]} Yıldızı topla!`)}
 function csNewStar(){const m=CS.me;const mx=CS.age==='minik'?2:(CS.N===8?4:3);let L=csLegal(m).filter(([a,b])=>Math.max(Math.abs(a-m.x),Math.abs(b-m.y))<=mx);if(!L.length){csSolo(m.t);L=csLegal(CS.me)}
   if(m.t==='P'&&!L.length){m.y=csStartSq('P')[1];csAfterMove();L=csLegal(m)}CS.stars=[pick(L)];CS.hl=stEasy(stu(active))?csLegal(m):null;CS.warnCell=null}
 function csMac(){CS.mode='mac';CS.N=csN();CS.flip=false;CS.over=null;CS.hist=[];CS.turn='w';CS.mover=null;CS.sel=null;CS.hl=null;CS.stars=[];CS.me=null;CS.mFlip=LS.get('cs_mflip',true);const P=[];let id=0;const add=(t,c,x,y)=>P.push({id:'p'+(id++),t,c,x,y,sid:null,moved:false});
@@ -2643,7 +2656,7 @@ function csMac(){CS.mode='mac';CS.N=csN();CS.flip=false;CS.over=null;CS.hist=[];
   else{const back=['R','N','B','Q','K','B','N','R'];back.forEach((t,i)=>{add(t,'w',i,0);add(t,'b',i,7)});for(let i=0;i<8;i++){add('P','w',i,1);add('P','b',i,6)}}
   CS.pcs=P;const old=LS.get('cs_assign_'+CS.N,null);if(old)P.forEach(p=>{if(old[p.id]&&stu(old[p.id]))p.sid=old[p.id]});csUI();csSay(CS.age==='minik'?'Şahı Yakala oyunu başlıyor! Beyaz takım başlar. Hamle yapacak taşa dokunun.':'Sınıf maçı başlıyor! Beyaz takım başlar.')}
 function csMacSelect(p){if(CS.over||!p||p.dead||p.c!==CS.turn)return;CS.sel={x:p.x,y:p.y};CS.mover=p;p.cx=p.x;p.cy=p.y;CS.was=false;CS.cell=[p.x,p.y];CS.hl=csLegal(p);if(p.sid){setActive(p.sid,false)}
-  if(!CS.hl.length){csSay('Bu taş şu an hiçbir yere gidemiyor. Başka taş seçin.');return}csSay(`${p.sid?csName(p.sid)+', ':''}sıra sende! Sen bir ${PN[p.t].toLocaleLowerCase('tr')}sın. ${PRULE[p.t]}`);csSide()}
+  if(!CS.hl.length){csSay('Bu taş şu an hiçbir yere gidemiyor. Başka taş seçin.');return}csSay(`${p.sid?csName(p.sid)+', ':''}sıra sende! Sen bir ${PN_ACC[p.t]}. ${PRULE[p.t]}`);csSide()}
 function csNextPiece(){if(CS.mode!=='mac'||CS.over)return;const own=CS.pcs.filter(p=>!p.dead&&p.c===CS.turn&&csLegal(p).length);if(!own.length)return;const withS=own.filter(p=>p.sid);const L=withS.length?withS:own;const i=CS.mover?L.indexOf(CS.mover):-1;csMacSelect(L[(i+1)%L.length])}
 function csAssign(){const st=clsStudents();if(!st.length){toast('Önce Sınıfım bölümünden öğrenci ekleyin');return}const m=document.createElement('div');m.className='modal';m.onclick=e=>{if(e.target===m)m.remove()};
   const opt=sid=>`<option value="">— kimse —</option>${st.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${esc(s.name)}</option>`).join('')}`;
@@ -2666,7 +2679,7 @@ const PUZ=[{t:'Vezir Avı',w:['Kg1','Bc1'],b:['Kg8','Qg5'],me:'c1',hedef:['g5'],
  {t:'Koridor Matı',w:['Kg6','Rb1'],b:['Kg8'],me:'b1',hedef:['b8'],ip:'Beyaz şah kaçış karelerini kapatıyor. Kale en üst sıraya!',son:'Şah mat!'},
  {t:'Vezir Matı',w:['Kf6','Qa7'],b:['Kh8'],me:'a7',hedef:['g7'],ip:'Vezir, şahının koruduğu kareye gitsin.',son:'Şah mat! Vezir ve şah birlikte.'}];
 function sq(s){return [FL.indexOf(s[0]),+s.slice(1)-1]}
-function csPuzzle(i){CS.mode='bulmaca';CS.N=8;CS.flip=false;CS.over=null;CS.stars=[];CS.hist=[];CS.puz=((i%PUZ.length)+PUZ.length)%PUZ.length;const P=PUZ[CS.puz];const pcs=[];const add=(s,c)=>{const [x,y]=sq(s.slice(1));pcs.push({id:c+s,t:s[0],c,x,y})};P.w.forEach(s=>add(s,'w'));P.b.forEach(s=>add(s,'b'));CS.pcs=pcs;const [mx,my]=sq(P.me);const me=pcs.find(p=>p.x===mx&&p.y===my);me.big=true;CS.me=me;CS.mover=me;CS.hl=null;csZero();csUI();csMsg(`🧩 ${CS.puz+1}. ${P.t}`);csSay(`${P.t}. ${csName(active)?csName(active)+', ':''}sen bir ${PN[me.t].toLocaleLowerCase('tr')}sın. En iyi hamleyi bul!`)}
+function csPuzzle(i){CS.mode='bulmaca';CS.N=8;CS.flip=false;CS.over=null;CS.stars=[];CS.hist=[];CS.puz=((i%PUZ.length)+PUZ.length)%PUZ.length;const P=PUZ[CS.puz];const pcs=[];const add=(s,c)=>{const [x,y]=sq(s.slice(1));pcs.push({id:c+s,t:s[0],c,x,y})};P.w.forEach(s=>add(s,'w'));P.b.forEach(s=>add(s,'b'));CS.pcs=pcs;const [mx,my]=sq(P.me);const me=pcs.find(p=>p.x===mx&&p.y===my);me.big=true;CS.me=me;CS.mover=me;CS.hl=null;csZero();csUI();csMsg(`🧩 ${CS.puz+1}. ${P.t}`);csSay(`${P.t}. ${csName(active)?csName(active)+', ':''}sen bir ${PN_ACC[me.t]}. En iyi hamleyi bul!`)}
 
 /* ---------------- arayüz ---------------- */
 function csMsg(t){CS.msg=t;const e=$('#csMsgBox');if(e)e.innerHTML=t}
@@ -2678,15 +2691,17 @@ function csUI(){const P=$('#p-satranc');if(!P)return;const s=stu(active);
     P.innerHTML=`<div class="csMenu ${minik?'minik':'okul'}"><div class="csHero"><div class="csLogo">♟️</div><div><h1>Canlı Satranç</h1><p>Ben bir satranç taşıyım! Yürü, tahtada taşın da yürüsün.</p></div></div>
      <div class="csAge"><button class="${minik?'on':''}" onclick="csAge('minik')">🧸 Okul Öncesi <small>5×5 tahta</small></button><button class="${!minik?'on':''}" onclick="csAge('okul')">🎒 İlkokul <small>8×8 tahta</small></button></div>
      <div class="csStu">${s?`<img src="${s.photo}"><div><b>${esc(s.name)}</b><span>${PT.map(t=>`<img class="bdg ${B[t]?'on':''}" src="${pIcon(t)}" title="${PN[t]} rozeti">`).join('')}</span></div>`:'<div><b>Önce öğrenci seçin</b></div>'}<button class="btnP" onclick="showPicker()">👥 Öğrenci seç</button>${s&&Object.keys(B).length?`<button class="btnP" style="background:#ff8a3d" onclick="csCert()">🎓 Sertifika</button>`:''}</div>
+     <button class="csHeroCard" onclick="csKale('R')"><span class="hcFig"><img src="${pIcon('R')}"></span><span class="hcTx"><b>Birebir Kale</b><small>Çocuk tepeden tırnağa kale olur! Dümdüz yürür, siyah piyonu alır.</small><em>📹 Telefonda kamerayı açınca kendiliğinden başlar</em></span><span class="hcPawn"><img src="${pIcon('P','b')}"></span></button>
      <div class="csCards"><button class="csCard c1" onclick="csPick('okul')"><b>🏰</b>Taş Okulu<small>Taşları tanı, nasıl yürüdüklerini öğren</small></button><button class="csCard c2" onclick="csPick('gorev')"><b>⭐</b>Yıldız Görevi<small>Taşın gibi yürü, yıldızları topla</small></button><button class="csCard c3" onclick="csMac()"><b>⚔️</b>${minik?'Şahı Yakala':'Sınıf Maçı'}<small>İki takım, her çocuk bir taş</small></button>${minik?'':'<button class="csCard c4" onclick="csPuzzle(0)"><b>🧩</b>Bulmaca<small>En iyi hamleyi bul, mat et!</small></button>'}</div>
      <div class="csFoot">${canImp&&!LS.get('cs_imported',false)?'<button class="mini" onclick="csImport()">📥 Minik Robotçular öğrencilerini getir</button> ':''}<span>📱 Telefonda <b>📹 Canlı</b>'yı açıp çocuğun arkasından tutun · kamera yoksa dokunarak oynanır</span></div></div>`;return}
-  CS.run=true;const title={okul:'🏰 Taş Okulu',gorev:'⭐ Yıldız Görevi',mac:CS.age==='minik'?'⚔️ Şahı Yakala':'⚔️ Sınıf Maçı',bulmaca:'🧩 Bulmaca'}[CS.mode];
+  CS.run=true;const title={kale:CS.me&&CS.me.t!=='R'?'🎯 Birebir '+PN[CS.me.t]:'🏰 Birebir Kale',okul:'🏰 Taş Okulu',gorev:'⭐ Yıldız Görevi',mac:CS.age==='minik'?'⚔️ Şahı Yakala':'⚔️ Sınıf Maçı',bulmaca:'🧩 Bulmaca'}[CS.mode];
   P.innerHTML=`<div class="csPlay"><div class="csTop"><button class="backBtn" onclick="CS.mode='menu';CS.mover=null;csUI()">⬅ Menü</button><b class="csTitle">${title}</b><div id="csMsgBox" class="csMsgBox">${CS.msg||''}</div></div>
    <div class="csStage"><canvas id="csCv"></canvas></div><div class="csSide" id="csSide"></div></div>`;
   $('#csCv').onclick=csClick;csSide();if(!CS.loop){CS.loop=true;requestAnimationFrame(csLoop)}}
 function csPick(mode){const m=document.createElement('div');m.className='modal';m.onclick=e=>{if(e.target===m)m.remove()};m.innerHTML=`<div class="mBox" style="max-width:760px"><h2>${mode==='okul'?'🏰 Hangi taşı öğrenelim?':'⭐ Hangi taş olacaksın?'}</h2><div class="csPk">${PT.map(t=>`<button onclick="this.closest('.modal').remove();${mode==='okul'?'csTasOkulu':'csGorev'}('${t}')"><img src="${pIcon(t)}"><b>${PN[t]}</b><small>${PRULE[t]}</small></button>`).join('')}</div></div>`;document.body.appendChild(m)}
 function csSide(){const e=$('#csSide');if(!e)return;const pb=(t)=>`<button class="csPb ${CS.me&&CS.me.t===t?'on':''}" onclick="${CS.mode==='okul'?'csTasOkulu':'csGorev'}('${t}')"><img src="${pIcon(t)}"><span>${PN[t]}</span></button>`;
   if(CS.mode==='okul'||CS.mode==='gorev')e.innerHTML=`<div class="csPbs">${PT.map(pb).join('')}</div><div class="csBt"><button class="btnP" onclick="csZero();toast('📍 Çocuğun durduğu yer taşın karesi oldu')">📍 Ortala</button><button class="btnP" style="background:#0ea5e9" onclick="csSay(PRULE[CS.me.t]);CS.hl=csLegal(CS.me)">💡 Nasıl gider?</button>${CS.mode==='okul'?`<button class="btnP" style="background:#a855f7" onclick="csDemo(CS.me)">👀 Göster</button>`:''}</div>`;
+  else if(CS.mode==='kale'){e.innerHTML=csKaleSide()}
   else if(CS.mode==='bulmaca'){const P=PUZ[CS.puz];e.innerHTML=`<div class="csPz"><button class="btnP" onclick="csPuzzle(CS.puz-1)">◀</button><b>${CS.puz+1} / ${PUZ.length}</b><button class="btnP" onclick="csPuzzle(CS.puz+1)">▶</button></div><div class="csBt"><button class="btnP" style="background:#0ea5e9" onclick="csSay(PUZ[CS.puz].ip);CS.hl=csLegal(CS.me)">💡 İpucu</button><button class="btnP" onclick="csPuzzle(CS.puz)">🔄 Baştan</button><button class="btnP" style="background:#16a34a" onclick="if(CS.cell)csCommit(CS.cell[0],CS.cell[1])">✔ Hamleyi onayla</button></div>`}
   else if(CS.mode==='mac'){const dead=c=>CS.pcs.filter(p=>p.dead&&p.c===c).map(p=>`<img src="${pIcon(p.t,p.c)}">`).join('');e.innerHTML=`<div class="csTurn ${CS.turn}">${CS.over?(CS.over==='w'?'🏆 Beyaz kazandı!':'🏆 Siyah kazandı!'):CS.turn==='w'?'⚪ Beyaz oynuyor':'⚫ Siyah oynuyor'}${CS.mover&&CS.mover.sid?`<br><small>${esc(csName(CS.mover.sid))} · ${PN[CS.mover.t]}</small>`:''}</div>
     <div class="csBt"><button class="btnP" onclick="csNextPiece()">⏭ Sıradaki taş</button><button class="btnP" style="background:#16a34a" onclick="if(CS.mover&&CS.cell&&isLegal(CS.mover,CS.cell[0],CS.cell[1]))csCommit(CS.cell[0],CS.cell[1]);else toast('Taş henüz yeni bir kareye gitmedi')">✔ Onayla</button><button class="btnP" style="background:#64748b" onclick="csUndo()">↩️ Geri al</button><button class="btnP" style="background:#ff8a3d" onclick="csAssign()">👥 Oyuncular</button><button class="btnP" style="background:#0ea5e9" onclick="CS.mFlip=!CS.mFlip;LS.set('cs_mflip',CS.mFlip);CS.flip=CS.turn==='b'&&CS.mFlip;toast(CS.mFlip?'🔄 Tahta sırası gelen takıma döner':'Tahta sabit')">🔄 Döndür</button><button class="btnP" style="background:#e11d48" onclick="if(confirm('Yeni maç başlasın mı?'))csMac()">🆕 Yeni maç</button></div><div class="csDead"><div>${dead('b')}</div><div>${dead('w')}</div></div>`}}
@@ -2715,9 +2730,9 @@ const _setTabCS=setTab;setTab=function(t){_setTabCS(t);const p=$('#p-satranc');i
 const _setActiveCS=setActive;setActive=function(id,sp){_setActiveCS(id,tab==='satranc'?false:sp);if(tab==='satranc'&&CS.mode==='menu')csUI()};
 const _extMsgCS=extMsg;extMsg=function(d,c){if(d.t!=='cs')return _extMsgCS(d,c);if(tab!=='satranc')setTab('satranc');const a=d.a;
   if(a==='center')csZero();else if(a==='ok'){if(CS.mover&&CS.cell&&isLegal(CS.mover,CS.cell[0],CS.cell[1]))csCommit(CS.cell[0],CS.cell[1])}else if(a==='undo')csUndo();else if(a==='next')csNextPiece();else if(a==='hint'){if(CS.me||CS.mover){const m=CS.mover||CS.me;csSay(CS.mode==='bulmaca'?PUZ[CS.puz].ip:PRULE[m.t]);CS.hl=csLegal(m)}}
-  else if(a==='okul'&&PT.includes(d.v))csTasOkulu(d.v);else if(a==='gorev'&&PT.includes(d.v))csGorev(d.v);else if(a==='mac')csMac();else if(a==='puz')csPuzzle(CS.mode==='bulmaca'?CS.puz+1:0);else if(a==='menu'){CS.mode='menu';CS.mover=null;csUI()}};
+  else if(a==='okul'&&PT.includes(d.v))csTasOkulu(d.v);else if(a==='gorev'&&PT.includes(d.v))csGorev(d.v);else if(a==='kale')csKale(PT.includes(d.v)?d.v:'R');else if(a==='skip'){if(CS.mode==='kale')csKaleRound()}else if(a==='mac')csMac();else if(a==='puz')csPuzzle(CS.mode==='bulmaca'?CS.puz+1:0);else if(a==='menu'){CS.mode='menu';CS.mover=null;csUI()}};
 function pCsCard(){const pb=(a,t)=>`<button onclick="send({t:'cs',a:'${a}',v:'${t}'})"><img src="${pIcon(t)}" style="width:34px;height:40px"><br>${PN[t]}</button>`;
-  return `<div class="pCard"><h3>♟️ Canlı Satranç</h3><div class="pRow"><button class="pBtn2 g" onclick="send({t:'cs',a:'center'})">📍 Ortala</button><button class="pBtn2" style="background:#16a34a;color:#fff" onclick="send({t:'cs',a:'ok'})">✔ Onayla</button></div>
+  return `<div class="pCard"><button class="pBtn2" style="width:100%;background:linear-gradient(90deg,#7c4dff,#e11d48);color:#fff;font-size:22px;padding:16px" onclick="send({t:'cs',a:'kale',v:'R'})">🏰 BİREBİR KALE</button><p class="lvTips" style="margin:6px 0 0">Kamerayı açınca tahtada kendiliğinden başlar. Çocuk kale olur, dümdüz yürüyüp siyah piyonu alır.</p><div class="pRow" style="margin-top:8px"><button class="pBtn2 y" onclick="send({t:'cs',a:'skip'})">♟️ Yeni piyon</button><button class="pBtn2 g" onclick="send({t:'cs',a:'center'})">📍 Ortala</button></div><h3 style="margin-top:10px">🎯 Birebir · diğer taşlar</h3><div class="pZ csPz6">${PT.map(t=>pb('kale',t)).join('')}</div></div><div class="pCard"><h3>♟️ Canlı Satranç</h3><div class="pRow"><button class="pBtn2 g" onclick="send({t:'cs',a:'center'})">📍 Ortala</button><button class="pBtn2" style="background:#16a34a;color:#fff" onclick="send({t:'cs',a:'ok'})">✔ Onayla</button></div>
    <div class="pRow"><button class="pBtn2 o" onclick="send({t:'cs',a:'hint'})">💡 Nasıl gider?</button><button class="pBtn2 y" onclick="send({t:'cs',a:'next'})">⏭ Sıradaki taş</button></div><div class="pRow"><button class="pBtn2" onclick="send({t:'cs',a:'undo'})">↩️ Geri al</button><button class="pBtn2" onclick="send({t:'cs',a:'menu'})">🏠 Menü</button></div>
    <h3 style="margin-top:10px">🏰 Taş Okulu</h3><div class="pZ csPz6">${PT.map(t=>pb('okul',t)).join('')}</div><h3>⭐ Yıldız Görevi</h3><div class="pZ csPz6">${PT.map(t=>pb('gorev',t)).join('')}</div>
    <div class="pRow" style="margin-top:8px"><button class="pBtn2 g" onclick="send({t:'cs',a:'mac'})">⚔️ Maç</button><button class="pBtn2 o" onclick="send({t:'cs',a:'puz'})">🧩 Bulmaca</button></div>
@@ -2730,6 +2745,144 @@ KARSILAMA.baslik='♟️ Canlı Satranç';KARSILAMA.ozet='Çocuğun fotoğrafı 
 KARSILAMA.adimlar=[['🖥️','Ekranı seçin','Tahta, bilgisayar ya da tablette "Ekran"ı seçin.'],['📱','Telefonu bağlayın','QR\'ı okutun ya da 4 haneli kodu yazın.'],['📸','Öğrenciyi çekin','Öğrencinin fotoğrafı taşın içine girer.'],['📹','Kamerayı açın','Telefonda 📹 Canlı → çocuğun arkasından tutun.'],['♟️','Yürüyerek oynayın','Çocuk yürür, taş tahtada birebir yürür!']];
 setTimeout(()=>{if(!$('#board').classList.contains('hide'))setTab('satranc')},400);
 const _initBoardCS=initBoard;initBoard=function(){_initBoardCS();setTimeout(()=>setTab('satranc'),300)};
+
+/* =====================================================================
+   v2: BİREBİR KALE — çocuk tepeden tırnağa taş olur (kostüm), kamera
+   açılınca mod kendiliğinden başlar, siyah piyonu yürüyerek alır
+   ===================================================================== */
+const CS_SKIN='#ffd9a8';
+function csPal(c){return c==='w'?{f1:'#ffffff',f2:'#e6d8b8',ln:'#5b4a2e',leg:'#d9c9a5',shoe:'#7c4dff',acc:'#ffc93c',dark:'#3b2f1c'}:{f1:'#6d6590',f2:'#221d38',ln:'#d9d2f2',leg:'#3a3354',shoe:'#0b0916',acc:'#a78bfa',dark:'#0e0b1c'}}
+/* pt(k) -> {x,y,v}: ekran koordinatı. T: gövde boyu (omuz-kalça) piksel */
+function drawCostume(x,t,c,pt,T,o={}){const P=csPal(c);const g=k=>pt(k);const vis=k=>{const q=g(k);return q&&(q.v==null||q.v>.3)};
+  const ls=g('ls'),rs=g('rs'),lh=g('lh'),rh=g('rh');const sm={x:(ls.x+rs.x)/2,y:(ls.y+rs.y)/2},hm={x:(lh.x+rh.x)/2,y:(lh.y+rh.y)/2};
+  let ux=sm.x-hm.x,uy=sm.y-hm.y;const L=Math.hypot(ux,uy)||T;ux/=L;uy/=L;const rx=-uy,ry=ux;
+  const Q=(lx,ly,b=hm)=>[b.x+rx*lx+ux*ly,b.y+ry*lx+uy*ly];
+  x.save();if(o.alpha!=null)x.globalAlpha=o.alpha;x.lineJoin='round';x.lineCap='round';
+  const limb=(a,b,cc,w,col)=>{if(!vis(a)||!vis(b))return;const A=g(a),B=g(b),C=g(cc),useC=vis(cc);const path=()=>{x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);if(useC)x.lineTo(C.x,C.y)};path();x.strokeStyle=P.ln;x.lineWidth=w+T*.07;x.stroke();path();x.strokeStyle=col;x.lineWidth=w;x.stroke()};
+  // bacaklar + ayakkabı
+  [['lh','lk','la'],['rh','rk','ra']].forEach(([h,k,a])=>{limb(h,k,a,T*.32,P.leg);if(vis(a)&&vis(k)){const A=g(a);x.fillStyle=P.shoe;x.beginPath();x.ellipse(A.x,A.y+T*.05,T*.21,T*.12,0,0,7);x.fill();x.strokeStyle=P.ln;x.lineWidth=T*.03;x.stroke()}});
+  // kollar + eller
+  [['ls','le','lw'],['rs','re','rw']].forEach(([s,e,w])=>{limb(s,e,w,T*.25,P.f2);if(vis(w)&&vis(e)){const W=g(w);x.fillStyle=CS_SKIN;x.beginPath();x.arc(W.x,W.y,T*.13,0,7);x.fill();x.strokeStyle=P.ln;x.lineWidth=T*.03;x.stroke()}});
+  // gövde
+  const sw=Math.max(Math.hypot(ls.x-rs.x,ls.y-rs.y),T*.72);const top=L+T*.04,bot=-T*.42,wt=sw*.6,wb=sw*.68;
+  const a0=Q(-wb,0),a1=Q(wb,0);const grad=x.createLinearGradient(a0[0],a0[1],a1[0],a1[1]);grad.addColorStop(0,P.f1);grad.addColorStop(1,P.f2);
+  const poly=(pts,fill,base)=>{x.beginPath();pts.forEach((p,i)=>{const q=Q(p[0],p[1],base);i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])});x.closePath();x.fillStyle=fill||grad;x.fill();x.strokeStyle=P.ln;x.lineWidth=T*.035;x.stroke()};
+  const line=(x1,y1,x2,y2,base)=>{const p=Q(x1,y1,base),q=Q(x2,y2,base);x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1]);x.stroke()};
+  if(t==='R'){poly([[-wb,bot],[-wt,top],[wt,top],[wb,bot]]);
+    x.save();x.strokeStyle=P.ln;x.globalAlpha*=.32;x.lineWidth=T*.022;const rows=5;for(let i=1;i<rows;i++){const yy=bot+(top-bot)*i/rows,ww=wb+(wt-wb)*i/rows;line(-ww,yy,ww,yy);for(let j=-2;j<=2;j++){const xx=(j+(i%2?.5:0))*ww*.42;if(Math.abs(xx)>ww*.92)continue;line(xx,yy,xx,yy-(top-bot)/rows)}}x.restore();
+    const rw=wt*1.2,rb=top-T*.03,rt=top+T*.15,mh=T*.2;poly([[-rw,rb],[-rw,rt+mh],[-rw*.6,rt+mh],[-rw*.6,rt],[rw*.6,rt],[rw*.6,rt+mh],[rw,rt+mh],[rw,rb]]);
+    // kapı
+    x.beginPath();const dw=sw*.16,dh=T*.38;const d0=Q(-dw,bot+T*.1),d1=Q(-dw,bot+T*.1+dh*.65),dc=Q(0,bot+T*.1+dh*.65),d2=Q(dw,bot+T*.1+dh*.65),d3=Q(dw,bot+T*.1);x.moveTo(d0[0],d0[1]);x.lineTo(d1[0],d1[1]);x.quadraticCurveTo(...Q(-dw,bot+T*.1+dh*1.05),...Q(0,bot+T*.1+dh*1.05));x.quadraticCurveTo(...Q(dw,bot+T*.1+dh*1.05),d2[0],d2[1]);x.lineTo(d3[0],d3[1]);x.closePath();x.fillStyle=P.dark;x.fill();
+    // ok penceresi
+    x.fillStyle=P.dark;[[-wt*.5],[wt*.5]].forEach(([xx])=>{const p=Q(xx,top-T*.32);x.beginPath();x.ellipse(p[0],p[1],T*.035,T*.1,Math.atan2(uy,ux)+Math.PI/2,0,7);x.fill()})}
+  else if(t==='P'){poly([[-wb*.9,bot],[-wt*.75,top],[wt*.75,top],[wb*.9,bot]])}
+  else if(t==='B'){poly([[-wb*.9,bot],[-wt*.8,top],[wt*.8,top],[wb*.9,bot]]);x.strokeStyle=P.acc;x.lineWidth=T*.09;line(-wt*.7,top-T*.05,wb*.75,bot+T*.12);x.strokeStyle=P.ln}
+  else if(t==='N'){poly([[-wb*.9,bot],[-wt*.8,top],[wt*.8,top],[wb*.9,bot]]);x.fillStyle=P.dark;for(let i=0;i<5;i++){const p=Q(-wt*.85,top-T*.12-i*T*.16);x.beginPath();x.arc(p[0],p[1],T*.08,0,7);x.fill()}}
+  else{poly([[-wb*.92,bot],[-wt*.85,top],[wt*.85,top],[wb*.92,bot]]);x.strokeStyle=P.acc;x.lineWidth=T*.1;line(-wb*.85,bot+T*.28,wb*.85,bot+T*.28);x.fillStyle=P.acc;[-1,0,1].forEach(k=>{const p=Q(k*wt*.4,top-T*.22);x.beginPath();x.arc(p[0],p[1],T*.06,0,7);x.fill()});x.strokeStyle=P.ln}
+  // taban halkası (satranç taşı ayağı)
+  const bw=wb*1.2;poly([[-bw,bot-T*.13],[-bw*.98,bot+T*.02],[bw*.98,bot+T*.02],[bw,bot-T*.13]]);
+  // baş
+  const r=T*.36;let hc={x:0,y:0};const ax=Q(0,L+T*.5);hc={x:ax[0],y:ax[1]};if(o.useNose&&vis('nose')){const n=g('nose');hc={x:(hc.x+n.x)/2,y:(hc.y+n.y)/2}}
+  if(o.head!==false){const nk=Q(0,L-T*.02),nk2=Q(0,L+T*.25);x.strokeStyle=CS_SKIN;x.lineWidth=T*.16;x.beginPath();x.moveTo(nk[0],nk[1]);x.lineTo(nk2[0],nk2[1]);x.stroke();
+    x.save();x.beginPath();x.arc(hc.x,hc.y,r,0,7);x.closePath();x.fillStyle=CS_SKIN;x.fill();x.clip();const f=o.face;if(f){const s=Math.min(f.naturalWidth,f.naturalHeight);x.drawImage(f,(f.naturalWidth-s)/2,(f.naturalHeight-s)/2,s,s,hc.x-r,hc.y-r,r*2,r*2)}else{x.fillStyle='#2b2350';[-1,1].forEach(k=>{x.beginPath();x.arc(hc.x+k*r*.35,hc.y-r*.12,r*.12,0,7);x.fill()});x.strokeStyle='#2b2350';x.lineWidth=r*.12;x.beginPath();x.arc(hc.x,hc.y+r*.05,r*.45,.2*Math.PI,.8*Math.PI);x.stroke()}x.restore();
+    x.beginPath();x.arc(hc.x,hc.y,r,0,7);x.lineWidth=T*.05;x.strokeStyle=P.acc;x.stroke()}
+  // başlık (taşa göre)
+  x.lineWidth=T*.035;x.strokeStyle=P.ln;const H=(lx,ly)=>Q(lx,ly,hc);const hp=(pts,fill)=>poly(pts,fill,hc);
+  if(t==='R'){const w=r*1.12,b=r*.55,t1=r*1.12,t2=r*1.5;hp([[-w,b],[-w,t2],[-w*.6,t2],[-w*.6,t1],[-w*.2,t1],[-w*.2,t2],[w*.2,t2],[w*.2,t1],[w*.6,t1],[w*.6,t2],[w,t2],[w,b]])}
+  else if(t==='P'){const c0=H(0,r*.15);x.beginPath();x.arc(c0[0],c0[1],r*1.08,Math.atan2(uy,ux)-Math.PI/2*1.15,Math.atan2(uy,ux)+Math.PI/2*1.15);x.closePath();x.fillStyle=grad;x.fill();x.stroke();const c1=H(0,r*1.35);x.beginPath();x.arc(c1[0],c1[1],r*.24,0,7);x.fill();x.stroke()}
+  else if(t==='B'){const c0=H(0,r*1.25);x.beginPath();x.ellipse(c0[0],c0[1],r*.78,r*1.0,Math.atan2(uy,ux)+Math.PI/2,0,7);x.fillStyle=grad;x.fill();x.stroke();x.strokeStyle=P.ln;x.lineWidth=T*.04;const a=H(r*.1,r*1.55),b=H(r*.5,r*1.1);x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke();const c1=H(0,r*2.3);x.beginPath();x.arc(c1[0],c1[1],r*.16,0,7);x.fillStyle=grad;x.fill();x.stroke()}
+  else if(t==='N'){hp([[-r*.75,r*.55],[-r*.95,r*1.65],[-r*.25,r*.95]]);hp([[r*.75,r*.55],[r*.95,r*1.65],[r*.25,r*.95]]);hp([[-r*.9,r*.5],[-r*.6,r*1.0],[r*.6,r*1.0],[r*.9,r*.5],[r*.5,r*.75],[-r*.5,r*.75]],P.dark)}
+  else if(t==='Q'){hp([[-r*.95,r*.6],[-r*1.15,r*1.55],[-r*.55,r*1.0],[-r*.3,r*1.7],[0,r*1.05],[r*.3,r*1.7],[r*.55,r*1.0],[r*1.15,r*1.55],[r*.95,r*.6]],P.acc);[[-1.15,1.55],[-.3,1.7],[.3,1.7],[1.15,1.55]].forEach(([a,b])=>{const c0=H(r*a,r*b);x.beginPath();x.arc(c0[0],c0[1],r*.13,0,7);x.fillStyle=P.acc;x.fill();x.stroke()})}
+  else if(t==='K'){hp([[-r*.95,r*.6],[-r*.95,r*1.2],[r*.95,r*1.2],[r*.95,r*.6]],P.acc);const k=.13;hp([[-r*k,r*1.2],[-r*k,r*1.5],[-r*.38,r*1.5],[-r*.38,r*1.75],[-r*k,r*1.75],[-r*k,r*2.05],[r*k,r*2.05],[r*k,r*1.75],[r*.38,r*1.75],[r*.38,r*1.5],[r*k,r*1.5],[r*k,r*1.2]],P.acc)}
+  x.restore();return {hc,r,feet:Math.max(g('la').y,g('ra').y)}}
+
+/* kostüm pozu: kamera varsa çocuğun gerçek hareketi, yoksa yürüme animasyonu */
+function csIdlePose(ph,amp,t,cheer){const o={};KN.forEach(k=>o[k]={x:DEF[k][0],y:DEF[k][1],v:1});const s=Math.sin(ph)*amp;
+  o.lk.x+=s*.12;o.la.x+=s*.3;o.la.y-=Math.max(0,s)*.22;o.rk.x-=s*.12;o.ra.x-=s*.3;o.ra.y-=Math.max(0,-s)*.22;
+  o.lw.y-=s*.2;o.lw.x+=s*.06;o.le.y-=s*.08;o.rw.y+=s*.2;o.rw.x+=s*.06;o.re.y+=s*.08;
+  if(cheer){o.lw.x=-.55;o.lw.y=-2.05;o.le.x=-.7;o.le.y=-1.55;o.rw.x=.55;o.rw.y=-2.05;o.re.x=.7;o.re.y=-1.55}
+  const bob=Math.abs(Math.sin(ph))*amp*.07+Math.sin(t*2.2)*.025;KN.forEach(k=>{if(!['la','ra'].includes(k))o[k].y-=bob});return o}
+function csLivePose(){const o={};KN.forEach(k=>{const q=live.P&&live.P[k];o[k]=q?{x:clamp(q.x,-1.6,1.6),y:clamp(q.y,-2.3,2.3),v:1}:{x:DEF[k][0],y:DEF[k][1],v:1}});return o}
+function csCostumeOn(pc){if(pc.dead||CS.mode==='menu')return false;return pc===CS.mover||(pc===CS.me&&CS.mode!=='mac')}
+function csDrawHero(x,pc,X,Y,cell,alpha,lbl,face,now){const t=now/1000;const N=CS.N;
+  const sp=Math.hypot((pc.vx||0)-(pc.pvx??pc.vx??0),(pc.vy||0)-(pc.pvy??pc.vy??0));pc.pvx=pc.vx;pc.pvy=pc.vy;pc.walk=(pc.walk||0)+(Math.min(1,sp*25)-(pc.walk||0))*.15;
+  const cheer=pc.cheerT&&now-pc.cheerT<1400;const liveOn=csFresh()&&pc===CS.mover;const pose=liveOn&&!cheer?csLivePose():csIdlePose(t*9,pc.walk,t,cheer);
+  const hChar=cell*(N===5?1.5:1.7),T=hChar/4.3;const hipY=Y-1.95*T;
+  // zemin halkası + gölge
+  x.save();x.globalAlpha=alpha*.9;x.fillStyle='rgba(0,0,0,.25)';x.beginPath();x.ellipse(X,Y,cell*.36,cell*.1,0,0,7);x.fill();
+  x.strokeStyle=pc.c==='w'?'#ffc93c':'#a78bfa';x.lineWidth=Math.max(3,cell*.05);x.beginPath();x.ellipse(X,Y,cell*.42+Math.sin(t*4)*cell*.02,cell*.13,0,0,7);x.stroke();x.restore();
+  drawCostume(x,pc.t,pc.c,k=>({x:X+pose[k].x*T,y:hipY+pose[k].y*T,v:1}),T,{alpha,face});
+  if(lbl){x.save();x.font=`800 ${Math.max(12,cell*.2)}px "Baloo 2",sans-serif`;const w=x.measureText(lbl).width+cell*.2;x.fillStyle=pc.c==='w'?'rgba(124,77,255,.92)':'rgba(30,24,50,.92)';x.beginPath();rr(x,X-w/2,Y+cell*.06,w,cell*.26,cell*.13);x.fill();x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.fillText(lbl,X,Y+cell*.19);x.restore()}}
+/* sol üstte büyük ayna: çocuk kale kostümüyle, hareketleri birebir */
+function csDrawAyna(x,W,H,now){if(CS.mode==='menu')return;const m=CS.mover||CS.me;if(!m||m.dead)return;if(!(csFresh()||CS.mode==='kale'))return;
+  const topW=CG.Wb*sF(CS.N);const free=(W-topW)/2-14;const pw=Math.min(H*.3,free,W*.22);if(pw<95)return;const ph=pw*1.45,px=10,py=H*.075;
+  x.save();x.fillStyle=CS.age==='minik'?'rgba(255,255,255,.82)':'rgba(255,255,255,.12)';x.strokeStyle=csFresh()?'#16a34a':'rgba(124,77,255,.6)';x.lineWidth=4;x.beginPath();rr(x,px,py,pw,ph,18);x.fill();x.stroke();
+  const t=now/1000;const liveOn=csFresh();const cheer=m.cheerT&&now-m.cheerT<1400;const pose=liveOn&&!cheer?csLivePose():csIdlePose(t*6,.6,t,cheer);const T=ph/5.2;const cx=px+pw/2,hipY=py+ph*.56;
+  x.beginPath();rr(x,px,py,pw,ph,18);x.clip();drawCostume(x,m.t,m.c,k=>({x:cx+pose[k].x*T,y:hipY+pose[k].y*T,v:1}),T,{face:m.sid?faceOf(m.sid):faceOf(active)});x.restore();
+  x.save();x.textAlign='center';x.textBaseline='middle';x.font=`800 ${Math.max(12,pw*.1)}px "Baloo 2",sans-serif`;x.fillStyle=CS.age==='minik'?'#2b2350':'#fde68a';const nm=m.sid?csName(m.sid):csName(active);x.fillText((nm?nm+' = ':'')+PN[m.t],cx,py+ph+pw*.1);
+  x.font=`700 ${Math.max(10,pw*.075)}px "Baloo 2",sans-serif`;x.fillStyle=liveOn?'#16a34a':(CS.age==='minik'?'#7c2d12':'#fcd34d');x.fillText(liveOn?'🪞 hareketlerin birebir':'📱 kamerayı aç',cx,py+ph+pw*.22);x.restore()}
+/* yol oku */
+function csDrawArrow(x,now){if(CS.mode!=='kale'||!CS.kPath||!CS.me||CS.me.dead)return;const show=CS.kr<=2||CS.age==='minik'||now<(CS.kArrowT||0);if(!show)return;const N=CS.N;const pts=[[CS.me.x,CS.me.y],...CS.kPath.filter((p,i)=>i>0||p[0]!==CS.me.x||p[1]!==CS.me.y)];if(pts.length<2)return;
+  x.save();const P=pts.map(([a,b])=>proj(vX(a)+.5,vY(b)+.5));const w=CG.Wb/N*.12;x.strokeStyle='rgba(255,201,60,.9)';x.lineWidth=w;x.lineCap='round';x.lineJoin='round';x.setLineDash([w*1.2,w*1.1]);x.lineDashOffset=-now/40;x.beginPath();P.forEach((p,i)=>i?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y));x.stroke();x.setLineDash([]);
+  const A=P[P.length-2],B=P[P.length-1];const ang=Math.atan2(B.y-A.y,B.x-A.x);const hs=w*2.2*B.s;x.fillStyle='rgba(255,201,60,.95)';x.beginPath();x.moveTo(B.x-Math.cos(ang)*w*1.6,B.y-Math.sin(ang)*w*1.6);x.lineTo(B.x-Math.cos(ang)*(w*1.6+hs)+Math.cos(ang+Math.PI/2)*hs*.7,B.y-Math.sin(ang)*(w*1.6+hs)+Math.sin(ang+Math.PI/2)*hs*.7);x.lineTo(B.x-Math.cos(ang)*(w*1.6+hs)-Math.cos(ang+Math.PI/2)*hs*.7,B.y-Math.sin(ang)*(w*1.6+hs)-Math.sin(ang+Math.PI/2)*hs*.7);x.closePath();x.fill();x.restore()}
+
+/* ---------- Birebir mod: piyonu al ---------- */
+function csKaleStart(t){const N=CS.N;if(t==='P')return [Math.floor(N/2),0];return [Math.floor(N/2),0]}
+function csKale(t,auto){CS.mode='kale';CS.piece=t||'R';CS.N=csN();CS.flip=false;CS.over=null;CS.busy=false;CS.hist=[];CS.stars=[];const [x,y]=csKaleStart(CS.piece);const me={id:'me',t:CS.piece,c:'w',x,y,sx:x,sy:y,moved:true};CS.pcs=[me];CS.me=me;CS.mover=me;CS.hl=null;CS.kN=0;CS.kr=0;CS.kBadge=false;CS.kPath=null;csZero();CS.msg='';csUI();
+  const n=csName(active);csSay((auto?'Kamera seni gördü! ':'')+(n?n+', ':'')+'şimdi sen tepeden tırnağa bir '+PN_ACC[CS.piece]+'! '+PRULE[CS.piece]);setTimeout(()=>{if(CS.mode==='kale'&&CS.me===me)csKaleRound()},auto?4200:3600)}
+function csTmpLegal(t,fx,fy,a,b){const tmp={t,c:'w',x:fx,y:fy,moved:true};return csLegal(tmp).some(m=>m[0]===a&&m[1]===b)}
+function csDirWords(dx,dy){const o=[];if(dy)o.push(Math.abs(dy)+' adım '+(dy>0?'ileri':'geri'));if(dx)o.push(Math.abs(dx)+' adım '+(dx>0?'sağa':'sola'));return o.join(' ve ')}
+function csKaleRound(){const m=CS.me;if(!m||CS.mode!=='kale')return;CS.kr++;CS.pcs=CS.pcs.filter(p=>p===m);CS.busy=false;const N=CS.N,r=CS.kr,t=m.t,minik=CS.age==='minik';
+  const empty=[];for(let a=0;a<N;a++)for(let b=0;b<N;b++)if(!(a===m.x&&b===m.y))empty.push([a,b]);
+  const reach1=([a,b])=>{const pw={t:'P',c:'b',x:a,y:b,id:'tmp'};CS.pcs.push(pw);const ok=isLegal(m,a,b);CS.pcs.pop();return ok};
+  const mid2=([a,b])=>{const pw={t:'P',c:'b',x:a,y:b,id:'tmp'};CS.pcs.push(pw);const L=csLegal(m).filter(([i,j])=>!(i===a&&j===b));let best=null;for(const [i,j] of L){m.dead=true;const tmp={t,c:'w',x:i,y:j,moved:true};const ok=csLegal(tmp).some(q=>q[0]===a&&q[1]===b);m.dead=false;if(ok){best=[i,j];if(i===m.x||j===m.y)break}}CS.pcs.pop();return best};
+  const far=minik?3:4;const D=([a,b])=>Math.max(Math.abs(a-m.x),Math.abs(b-m.y));
+  let one=empty.filter(s=>reach1(s)&&D(s)<=far),two=empty.filter(s=>!reach1(s)&&D(s)<=far&&mid2(s));
+  let want=r<=4?1:(r<=6?2:3);if(minik&&r>6)want=r%2?1:2;
+  if(t==='R'&&want===1){const pref=r===1?one.filter(([a,b])=>a===m.x&&b>m.y):r===2?one.filter(([a,b])=>b===m.y):r===3?one.filter(([a,b])=>a===m.x&&b<m.y):one;const p2=pref.filter(s=>D(s)>=2);one=p2.length?p2:(pref.length?pref:one)}
+  if(!one.length&&!two.length){m.x=csKaleStart(t)[0];m.y=csKaleStart(t)[1];m.sx=m.x;m.sy=m.y;csZero();csSay('Başlangıç yerine dön! Yeni piyonlar geliyor.');CS.kr--;setTimeout(csKaleRound,2600);return}
+  const sayIt=n=>{const nm=csName(active);return nm?nm+', ':''};
+  if(want===2&&!two.length)want=1;if(want===1&&!one.length)want=2;
+  if(want===1){const s=pick(one);CS.pcs.push({id:'bp'+r,t:'P',c:'b',x:s[0],y:s[1]});CS.kPath=[[m.x,m.y],s];const dx=s[0]-m.x,dy=s[1]-m.y;
+    csSay(t==='R'?sayIt()+'siyah piyonu gördün mü? '+(dx&&dy?'':'Dümdüz '+csDirWords(dx,dy)+' yürü ve onu al!'):sayIt()+'siyah piyonu yakala! '+PRULE[t])}
+  else if(want===2){const s=pick(two);const md=mid2(s);CS.pcs.push({id:'bp'+r,t:'P',c:'b',x:s[0],y:s[1]});CS.kPath=[[m.x,m.y],md,s];
+    csSay(t==='R'?sayIt()+'bu piyon aynı yolda değil! Önce '+csDirWords(md[0]-m.x,md[1]-m.y)+' yürü ve dur. Sonra '+csDirWords(s[0]-md[0],s[1]-md[1])+' dön ve al!':sayIt()+'bu piyona iki hamlede gidebilirsin. Önce oka doğru yürü!')}
+  else{const s1=pick(one.length?one:two);CS.pcs.push({id:'bp'+r,t:'P',c:'b',x:s1[0],y:s1[1]});const nx=empty.filter(([a,b])=>!(a===s1[0]&&b===s1[1])&&csTmpLegal(t,s1[0],s1[1],a,b)&&!reach1([a,b])&&D([a,b])<=far);
+    if(nx.length){const s2=pick(nx);CS.pcs.push({id:'bq'+r,t:'P',c:'b',x:s2[0],y:s2[1]});CS.kPath=[[m.x,m.y],s1,s2]}else CS.kPath=[[m.x,m.y],s1];csSay(sayIt()+'iki siyah piyon! Önce yakındakini al, sonra ötekine git.')}
+  CS.hl=csLegal(m);sfx.pop();csSide()}
+function csKaleCommit(a,b){const m=CS.me;if(!m||CS.busy)return;const now=performance.now();const cap=pcAt(a,b);csSnap();m.x=a;m.y=b;m.jumpT=now;
+  if(cap&&cap!==m&&cap.c!==m.c){cap.dead=true;cap.dieT=now;CS.fx.push({x:a,y:b,e:'💥',t:now});m.cheerT=now;csRec(m.t,true);CS.kN++;sfx.ok();confetti(45);const s=stu(active);if(s)giveStar(s.id);
+    const left=CS.pcs.filter(p=>!p.dead&&p.c!==m.c);const nm=csName(active);
+    if(left.length){CS.kPath=[[a,b],[left[0].x,left[0].y]];csSay(pick(['Aldın!','Süper!','Bravo!'])+' Şimdi öteki piyona git!')}
+    else{CS.busy=true;CS.kPath=null;csSay(m.t==='R'?(nm?'Bravo '+nm+'! ':'Bravo! ')+'Kale gibi dümdüz gittin ve piyonu aldın!':(nm?'Aferin '+nm+'! ':'Aferin! ')+PN[m.t]+' gibi gidip piyonu aldın!');
+      if(CS.kN>=5&&!CS.kBadge){CS.kBadge=true;setTimeout(()=>csBadge(m.t),1200)}setTimeout(()=>{if(CS.mode==='kale'&&CS.me===m)csKaleRound()},CS.kN===5?4200:2300)}}
+  else{sfx.step();if(CS.kPath){const i=CS.kPath.findIndex(p=>p[0]===a&&p[1]===b);if(i>0)CS.kPath=[[a,b],...CS.kPath.slice(i+1)];else CS.kPath=[[a,b],CS.kPath[CS.kPath.length-1]]}
+    const tg=CS.pcs.find(p=>!p.dead&&p.c!==m.c);if(tg){if(isLegal(m,tg.x,tg.y))csSay(m.t==='R'?'Dur! Şimdi '+csDirWords(tg.x-a,tg.y-b)+' dön ve piyonu al!':'Güzel! Şimdi piyonu al!');else csSay('Buradan piyona gidemezsin. Oka bak!')}}
+  csAfterMove();csSide()}
+function csKaleHint(){const m=CS.me;if(!m)return;CS.kArrowT=performance.now()+8000;CS.hl=csLegal(m);const tg=CS.pcs.find(p=>!p.dead&&p.c!==m.c);if(tg&&m.t==='R'&&isLegal(m,tg.x,tg.y))csSay('Dümdüz '+csDirWords(tg.x-m.x,tg.y-m.y)+' yürü!');else csSay(PRULE[m.t]+' Sarı oku takip et.')}
+function csKaleSide(){const pb=t=>`<button class="csPb ${CS.me&&CS.me.t===t?'on':''}" onclick="csKale('${t}')"><img src="${pIcon(t)}"><span>${PN[t]}</span></button>`;const k=CS.kN||0;
+  return `<div class="csScore"><div>♟️ Alınan piyon</div><b>${k}</b><div class="csDots">${[0,1,2,3,4].map(i=>`<i class="${i<k?'on':''}"></i>`).join('')}</div><small>${k>=5?'🏅 Rozet kazanıldı!':(5-k)+' piyon sonra rozet'}</small></div><div class="csPbs">${PT.map(pb).join('')}</div>
+   <div class="csBt"><button class="btnP" style="background:#0ea5e9" onclick="csKaleHint()">💡 Nasıl gider?</button><button class="btnP" style="background:#ff8a3d" onclick="csKaleRound()">♟️ Yeni piyon</button><button class="btnP" onclick="csZero();toast('📍 Çocuğun durduğu yer kalenin karesi oldu')">📍 Ortala</button><button class="btnP" style="background:#64748b" onclick="CS.step=CS.step===1?.5:1;LS.set('cs_step',CS.step);csSide();toast(CS.step===1?'👣 1 adım = 1 kare':'👣 2 adım = 1 kare (dar sınıf için değil, geniş alan için)')">👣 ${CS.step===1?'1 adım = 1 kare':'2 adım = 1 kare'}</button></div>`}
+
+/* ---------- kamera açılınca birebir mod kendiliğinden ---------- */
+CS.camWas=false;
+setInterval(()=>{const f=csFresh();if(f&&!CS.camWas){CS.camWas=true;if(tab!=='satranc')return;if(CS.mode==='menu'){csKale(CS.lastKale||'R',true)}else if(CS.mover){csZero();CS.was=false;const n=csName(CS.mover.sid||active);csSay('Kamera seni gördü! '+(n?n+', ':'')+'sen artık bir '+PN_ACC[CS.mover.t]+'. Yürü!')}}
+  else if(!f&&CS.camWas&&performance.now()-live.last>4000){CS.camWas=false}},250);
+const _csKale0=csKale;csKale=function(t,a){CS.lastKale=t||'R';_csKale0(t,a)};
+const _extMsgCS2=extMsg;extMsg=function(d,c){if(d.t==='cs'&&d.a==='hint'&&CS.mode==='kale'){if(tab!=='satranc')setTab('satranc');csKaleHint();return}return _extMsgCS2(d,c)};
+/* telefona: hangi taş olduğunu bildir (kamerada kostüm için) */
+const _rosterMsgCS=rosterMsg;rosterMsg=function(){const m=_rosterMsgCS();const p=CS.mover||CS.me;m.csp=p&&!p.dead?p.t:'R';return m};
+const _csUI2=csUI;csUI=function(){_csUI2();try{broadcastRoster()}catch(e){}};
+const _csMacSelect2=csMacSelect;csMacSelect=function(p){_csMacSelect2(p);try{broadcastRoster()}catch(e){}};
+/* telefon kamerası: çocuğun üstüne kale kostümü */
+if(typeof lvDrawSk==='function'){const _lvDrawSkCS=lvDrawSk;lvDrawSk=function(x,P,col,vw){if(col!=='#2ec4b6'||LS.get('cs_phcos',true)===false)return _lvDrawSkCS(x,P,col,vw);
+  try{const T=Math.hypot((P.ls.x+P.rs.x-P.lh.x-P.rh.x)/2,(P.ls.y+P.rs.y-P.lh.y-P.rh.y)/2);if(T<10)return _lvDrawSkCS(x,P,col,vw);const t=(roster&&roster.csp)||'R';
+    drawCostume(x,t,'w',k=>P[k],T,{alpha:.9,head:false});}catch(e){_lvDrawSkCS(x,P,col,vw)}}}
+KARSILAMA.adimlar=[['🖥️','Ekranı seçin','Tahta, bilgisayar ya da tablette "Ekran"ı seçin.'],['📱','Telefonu bağlayın','QR\'ı okutun ya da 4 haneli kodu yazın.'],['📸','Öğrenciyi çekin','Öğrencinin fotoğrafı taşın yüzü olur.'],['📹','Kamerayı açın','Telefonda 📹 Canlı → çocuğun arkasından tutun. Birebir Kale kendiliğinden başlar.'],['🏰','Çocuk kale olur','Tepeden tırnağa kale! Dümdüz yürür, siyah piyonu alır.']];
+
+/* hedef piyonların üstünde zıplayan işaret (kostüm önünü kapatsa da görünür) */
+function csDrawMarks(x,now){if(CS.mode!=='kale'||!CS.me)return;const t=now/1000,N=CS.N;CS.pcs.forEach(pc=>{if(pc.dead||pc.c===CS.me.c)return;const p=proj(vX(pc.x)+.5,vY(pc.y)+.38);const cell=CG.Wb/N*p.s;const y=p.y-cell*1.45-Math.abs(Math.sin(t*4))*cell*.18;
+  x.save();x.fillStyle='#e11d48';x.strokeStyle='#fff';x.lineWidth=Math.max(2,cell*.04);x.beginPath();x.moveTo(p.x,y+cell*.28);x.lineTo(p.x-cell*.2,y);x.lineTo(p.x+cell*.2,y);x.closePath();x.fill();x.stroke();x.restore()})}
 
 </script>
 </body>
