@@ -6,13 +6,13 @@
 <title>Canlı Robot</title>
 <style>
 :root{--bg:#f6f4ef;--card:#fff;--ink:#1f2a37;--soft:#6b7280;--line:#e7e2d8;--acc:#2f7de1;--ok:#22a06b;--warn:#e5484d;--yel:#ffc83d;--floor:#fbfaf6}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 html,body{height:100%}
 body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
 button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 .hidden{display:none!important}
 /* START */
-#start{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;text-align:center}
+#start{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;text-align:center;overflow:auto}
 #start h1{font-size:44px;letter-spacing:-1px}
 #start p{color:var(--soft);font-size:18px;max-width:560px;line-height:1.5}
 .choices{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
@@ -23,17 +23,25 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 #board{height:100%;display:flex;gap:20px;padding:20px}
 #stageWrap{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
 #stageTop{display:flex;align-items:center;gap:14px}
-#stageTop h2{font-size:28px;flex:1}
-.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:18px}
+#task{flex:1;font-size:30px;font-weight:800;letter-spacing:-.5px}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:18px;white-space:nowrap}
 #stageBox{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
-#grid{position:relative;aspect-ratio:7/5;height:100%;max-width:100%;background:var(--floor);border:3px solid var(--line);border-radius:22px;
- background-image:linear-gradient(var(--line) 2px,transparent 2px),linear-gradient(90deg,var(--line) 2px,transparent 2px);background-size:calc(100%/7) calc(100%/5);overflow:hidden}
-.cellObj{position:absolute;width:calc(100%/7);height:calc(100%/5);display:flex;align-items:center;justify-content:center;transition:left .5s ease,top .5s ease}
+#grid{position:relative;height:100%;max-width:100%;background:var(--floor);border:3px solid var(--line);border-radius:22px;
+ background-image:linear-gradient(var(--line) 2px,transparent 2px),linear-gradient(90deg,var(--line) 2px,transparent 2px);overflow:hidden}
+#grid.zoo{background-color:#eaf5df;border-color:#cfe3bd;background-image:linear-gradient(#cfe3bd 3px,transparent 3px),linear-gradient(90deg,#cfe3bd 3px,transparent 3px)}
+.cellObj{position:absolute;display:flex;align-items:center;justify-content:center}
+.mover{transition:left .5s ease,top .5s ease}
 .star{font-size:min(6vh,5vw);animation:tw 1.6s ease-in-out infinite}
 @keyframes tw{50%{transform:scale(1.15) rotate(8deg)}}
 .pop{animation:pop .5s forwards}@keyframes pop{to{transform:scale(2.4);opacity:0}}
+.animal{display:flex;flex-direction:column;align-items:center;gap:2px}
+.animal .ae{font-size:min(8vh,6vw);line-height:1}
+.animal .an{font-size:min(2.2vh,1.7vw);font-weight:700;color:#4b6b33}
+.target::before{content:"";position:absolute;inset:6%;border:5px solid #f59e0b;border-radius:18px;animation:ring 1.1s ease-in-out infinite}
+@keyframes ring{50%{transform:scale(.92);opacity:.55}}
+.startCell .an{color:var(--soft)}
 #robot{z-index:3}
-#robotInner{width:86%;height:86%;position:relative;display:flex;align-items:center;justify-content:center}
+#robotInner{width:82%;height:82%;position:relative;display:flex;align-items:center;justify-content:center}
 #robotInner svg{width:100%;height:100%;overflow:visible;transition:transform .25s}
 #arrow{position:absolute;inset:-8%;transition:transform .35s ease;pointer-events:none}
 #arrow::before{content:"";position:absolute;left:50%;top:-6%;transform:translateX(-50%);border:min(1.4vh,1.2vw) solid transparent;border-bottom:min(2.2vh,1.9vw) solid var(--acc)}
@@ -46,82 +54,104 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 #bubble::after{content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--ink);border-bottom:0}
 #burst{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}
 .bit{position:absolute;font-size:34px;animation:fall 1.8s ease-in forwards}@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.2}}
-#strip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-height:64px;overflow:hidden}
-#strip .lbl{color:var(--soft);font-weight:600;white-space:nowrap;margin-right:4px}
-#chips{display:flex;gap:6px;overflow:hidden;flex:1;justify-content:flex-start}
-.chip{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-weight:600;white-space:nowrap;font-size:16px}
+#strip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-height:68px}
+#strip .lbl{color:var(--soft);font-weight:700;white-space:nowrap;margin-right:4px}
+#chips{display:flex;gap:6px;overflow:hidden;flex:1;flex-wrap:wrap;align-items:center}
+#chips .empty{color:var(--soft)}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-weight:600;white-space:nowrap;font-size:17px}
 .chip.new{background:#e8f1fd;border-color:var(--acc)}
+.chip.run{background:#fff3d6;border-color:#f59e0b;transform:scale(1.08)}
 #side{width:300px;display:flex;flex-direction:column;gap:14px;overflow:auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
 .card h3{font-size:15px;color:var(--soft);font-weight:600;margin-bottom:10px}
-#qr{display:flex;justify-content:center}#qr svg{width:100%;height:auto;max-width:220px}
+.card h4{font-size:13px;color:var(--soft);font-weight:600;margin:12px 0 6px}
+#qr{display:flex;justify-content:center}#qr svg{width:100%;height:auto;max-width:200px}
 #roomCode{font-size:40px;font-weight:800;letter-spacing:6px;text-align:center;margin-top:6px}
 #netState{text-align:center;color:var(--soft);font-size:14px;margin-top:4px}
 #who{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
 #who .chip{font-size:14px}
-.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px}
-.seg button{flex:1;padding:8px;border-radius:9px;font-weight:600;font-size:14px;color:var(--soft)}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px;gap:2px}
+.seg button{flex:1;padding:8px 6px;border-radius:9px;font-weight:600;font-size:14px;color:var(--soft);line-height:1.2}
 .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.miniPad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.miniPad button{background:var(--bg);border-radius:10px;padding:8px 0;font-size:20px}
+.miniPad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.miniPad button{border-radius:12px;padding:8px 0;font-size:22px;color:#fff}
 .row{display:flex;gap:8px}.row button{flex:1}
-.btn{background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:600}
+.btn{background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-weight:600;white-space:nowrap}
 .btn.ghost{background:var(--bg);color:var(--ink)}
+.btn.go{background:#f57c00}
 .warnBox{background:#fff4e5;border:1px solid #f5d3a1;border-radius:12px;padding:10px;font-size:13px;line-height:1.4}
 /* CONTROLLER */
-#ctrl{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
-#ctrlTop{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#ctrl{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding:14px 14px calc(14px + env(safe-area-inset-bottom));overflow:auto}
+#ctrlTop{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 #ctrlTop b{font-size:20px;flex:1}
 .dot{width:12px;height:12px;border-radius:50%;background:var(--warn);display:inline-block}
 .dot.on{background:var(--ok)}
-#tabs{margin-bottom:12px}
+#notConn{background:#fdecec;border:1px solid #f3b9b9;color:#9b1c1c;border-radius:12px;padding:10px 12px;font-weight:600;font-size:15px;margin-bottom:10px;text-align:center}
+#tabs{margin-bottom:10px}
+#progView{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:44px;font-size:15px}
+#progView .chip{font-size:14px;padding:4px 7px}
+#progView .t{color:var(--soft);font-weight:700;margin-right:4px}
 .pane{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0}
-.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1;max-height:520px}
-.pad button,.kpal button{background:var(--card);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:15px;box-shadow:0 3px 0 var(--line);min-height:84px}
-.pad button span,.kpal button span{font-size:34px}
-.pad button:active,.kpal button:active{transform:translateY(3px);box-shadow:none;background:#e8f1fd}
-.pad .blank{visibility:hidden}
-#camBox{position:relative;border-radius:20px;overflow:hidden;background:#111;aspect-ratio:3/4;max-height:58vh;width:100%}
-#cam{width:100%;height:100%;object-fit:cover}
-#camFrame{position:absolute;inset:18%;border:4px solid rgba(255,255,255,.85);border-radius:22px}
-#camFrame.hit{border-color:var(--yel)}
-#camMsg{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-weight:700;font-size:20px;text-shadow:0 1px 4px #000}
-.hint{color:var(--soft);font-size:15px;text-align:center;line-height:1.4}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1;max-height:480px}
+.pad button{border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:15px;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.18);min-height:90px}
+.pad button span{font-size:36px}
+.pad button:active{transform:translateY(4px);box-shadow:none;filter:brightness(1.1)}
 .kpal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.kpal button{min-height:70px;font-size:12px}.kpal button span{font-size:26px}
+.kpal button{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:12px;box-shadow:0 3px 0 var(--line);min-height:70px}
+.kpal button span{font-size:26px}
+.kpal button:active{transform:translateY(3px);box-shadow:none}
+#camBox{position:relative;border-radius:20px;overflow:hidden;background:#111;aspect-ratio:3/4;max-height:52vh;width:100%}
+#cam{width:100%;height:100%;object-fit:cover}
+#camFrame{position:absolute;inset:18%;border:4px solid rgba(255,255,255,.85);border-radius:22px;transition:border-color .15s}
+#camFrame.hit{border-color:#3ddc84;border-width:8px}
+#camMsg{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-weight:700;font-size:20px;text-shadow:0 1px 4px #000;padding:0 10px}
+.hint{color:var(--soft);font-size:15px;text-align:center;line-height:1.4}
 #seq{background:var(--card);border:1px dashed var(--soft);border-radius:16px;min-height:72px;padding:10px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start}
 #seq:empty::before{content:"Kod blokları buraya dizilir";color:var(--soft)}
 .big{padding:16px;font-size:18px;border-radius:16px}
-#toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:12px;padding:10px 16px;font-weight:600;z-index:50;transition:opacity .3s;opacity:0;pointer-events:none}
+#flash{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(255,255,255,.94);opacity:0;pointer-events:none;transition:opacity .15s;text-align:center;padding:20px}
+#flash.on{opacity:1}
+#flash .fe{font-size:110px;line-height:1}
+#flash .ft{font-size:34px;font-weight:800}
+#flash .fs{font-size:20px;color:var(--soft);font-weight:600}
+#toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:12px;padding:10px 16px;font-weight:600;z-index:70;transition:opacity .3s;opacity:0;pointer-events:none;max-width:90vw;text-align:center}
 input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);font-size:18px;background:#fff}
 #joinCard{display:flex;flex-direction:column;gap:12px;max-width:360px;width:100%}
 /* LABELS */
 #labels{height:100%;overflow:auto;padding:24px;background:#fff}
-.lblHead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.lblHead{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .lblHead h2{flex:1}
-.sheet{display:grid;grid-template-columns:repeat(auto-fill,6.2cm);gap:.4cm}
-.tag{width:6.2cm;border:2px dashed #999;border-radius:14px;padding:.3cm;display:flex;flex-direction:column;align-items:center;gap:.1cm;break-inside:avoid}
-.tag .e{font-size:30px}.tag b{font-size:20px}
-.tag svg{width:4.6cm;height:4.6cm}
+.sheet{display:grid;gap:.35cm;justify-content:start}
+.sheet.kart{grid-template-columns:repeat(3,6cm)}
+.sheet.mini{grid-template-columns:repeat(3,2.2cm);gap:.15cm}
+.tag{border-radius:14px;display:flex;flex-direction:column;align-items:center;break-inside:avoid;overflow:hidden;background:#fff}
+.kart .tag{width:6cm;border:4px solid}
+.kart .tag .hd{width:100%;color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;gap:6px;padding:.15cm 0}
+.kart .tag svg{width:4.6cm;height:4.6cm;margin:.15cm 0 .2cm}
+.mini .tag{width:2.2cm;border:3px solid;border-radius:8px}
+.mini .tag svg{width:1.85cm;height:1.85cm;margin-top:.06cm}
+.mini .tag .hd{font-size:7pt;font-weight:800;padding:.03cm 0 .08cm}
+.sheetTitle{font-size:13px;color:var(--soft);font-weight:700;margin:16px 0 8px}
 .nfc{margin-top:24px;font-size:14px;line-height:1.7}
 .nfc code{background:var(--bg);padding:2px 6px;border-radius:6px;word-break:break-all}
 @media print{.noPrint{display:none!important}#labels{overflow:visible;padding:0}body{overflow:visible;background:#fff}}
-@media (max-width:900px){#board{flex-direction:column;overflow:auto}#side{width:auto}#grid{height:auto;width:100%}}
+@media (max-width:900px){#board{flex-direction:column;overflow:auto}#side{width:auto}#grid{height:auto;width:100%}#task{font-size:22px}}
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
+<div id="flash"><div class="fe"></div><div class="ft"></div><div class="fs"></div></div>
 
 <!-- START -->
 <section id="start" class="hidden">
   <div style="font-size:64px">🤖</div>
   <h1>Canlı Robot</h1>
-  <p>Masadaki cansız robotun düğmesine telefonu dokundur, tahtadaki Robi canlansın. Tabletlerden dokunarak ya da kod dizerek de yönetilebilir.</p>
+  <p>Masadaki cansız robotun düğmelerine telefonu dokundur, tahtadaki Robi canlansın. Kodu sen dizersin, Başlat'a basınca Robi çalıştırır.</p>
   <div class="choices">
     <button class="choice" onclick="startBoard()"><span>🖥️</span><b>Tahta</b><small>Akıllı tahtada aç, Robi burada yaşar</small></button>
     <button class="choice" onclick="showJoin()"><span>📱</span><b>Kumanda</b><small>Telefon ya da tabletten bağlan</small></button>
-    <button class="choice" onclick="startLabels()"><span>🏷️</span><b>Etiketler</b><small>Robot düğmelerine yapıştırılacak kartları yazdır</small></button>
+    <button class="choice" onclick="startLabels()"><span>🏷️</span><b>Etiketler</b><small>Robot düğmelerine yapıştırılacak renkli etiketler</small></button>
   </div>
   <div id="joinCard" class="hidden">
     <input id="joinCode" class="txt" inputmode="numeric" maxlength="4" placeholder="Tahtadaki 4 haneli kod">
@@ -133,12 +163,12 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
 <section id="board" class="hidden">
   <div id="stageWrap">
     <div id="stageTop">
-      <h2>🤖 Robi</h2>
+      <div id="task">🤖 Robi</div>
       <div class="pill">⭐ <span id="score">0</span></div>
     </div>
     <div id="stageBox">
       <div id="grid">
-        <div id="robot" class="cellObj"><div id="robotInner"><div id="arrow"></div>
+        <div id="robot" class="cellObj mover"><div id="robotInner"><div id="arrow"></div>
           <svg viewBox="0 0 200 220" id="robotSvg">
             <line x1="100" y1="40" x2="100" y2="14" stroke="#1f2a37" stroke-width="6" stroke-linecap="round"/>
             <circle id="ant" cx="100" cy="12" r="11" fill="#e5484d"/>
@@ -146,7 +176,7 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
             <rect x="56" y="54" width="88" height="44" rx="18" fill="#1f2a37"/>
             <circle class="eye" cx="80" cy="76" r="9" fill="#7ee0ff"/>
             <circle class="eye" cx="120" cy="76" r="9" fill="#7ee0ff"/>
-            <rect x="50" y="122" width="100" height="70" rx="20" fill="#2f7de1" stroke="#1f2a37" stroke-width="6"/>
+            <rect x="50" y="122" width="100" height="70" rx="20" fill="#f57c00" stroke="#1f2a37" stroke-width="6"/>
             <circle id="heart" cx="100" cy="152" r="10" fill="#ffc83d" stroke="#1f2a37" stroke-width="4"/>
             <rect id="armL" x="18" y="128" width="30" height="16" rx="8" fill="#ffffff" stroke="#1f2a37" stroke-width="5"/>
             <rect id="armR" x="152" y="128" width="30" height="16" rx="8" fill="#ffffff" stroke="#1f2a37" stroke-width="5"/>
@@ -158,7 +188,11 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
         <div id="burst"></div>
       </div>
     </div>
-    <div id="strip"><span class="lbl">Kod:</span><div id="chips"></div><button class="btn ghost" onclick="clearStrip()">Temizle</button></div>
+    <div id="strip">
+      <span class="lbl" id="stripLbl">Program:</span><div id="chips"></div>
+      <span id="progBtns" class="row" style="flex:0 0 auto"><button class="btn ghost" onclick="handle('geriAl','Öğretmen')" title="Son adımı sil">⌫</button><button class="btn ghost" onclick="handle('sil','Öğretmen')">❌ Sil</button><button class="btn go" onclick="handle('baslat','Öğretmen')">▶ Başlat</button></span>
+      <button id="histBtn" class="btn ghost hidden" onclick="clearStrip()">Temizle</button>
+    </div>
   </div>
   <aside id="side">
     <div class="card">
@@ -170,16 +204,18 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
     </div>
     <div class="card"><h3>Bağlı kumandalar</h3><div id="who"><span class="hint" style="font-size:14px">Henüz kimse yok</span></div></div>
     <div class="card">
-      <h3>Yön modu</h3>
-      <div class="seg" id="modeSeg">
-        <button data-m="kay" class="on">Kolay (yukarı-aşağı)</button>
-        <button data-m="don">Kodlama (dön)</button>
-      </div>
+      <h3>Ayarlar</h3>
+      <h4>Harita</h4>
+      <div class="seg" id="mapSeg"><button data-v="zoo" class="on">🦁 Hayvanat Bahçesi</button><button data-v="star">⭐ Yıldız Avı</button></div>
+      <h4>Etiket okutunca</h4>
+      <div class="seg" id="progSeg"><button data-v="1" class="on">Koda ekle<br><small>▶ ile çalışır</small></button><button data-v="0">Hemen yap</button></div>
+      <h4>Yön</h4>
+      <div class="seg" id="modeSeg"><button data-v="kay" class="on">Kolay<br><small>yukarı-aşağı</small></button><button data-v="don">Kodlama<br><small>sağa-sola dön</small></button></div>
     </div>
     <div class="card">
       <h3>Tahtadan dene</h3>
       <div class="miniPad" id="miniPad"></div>
-      <div class="row" style="margin-top:8px"><button class="btn ghost" onclick="newRound()">Yeni oyun</button><button class="btn ghost" onclick="startLabels()">Etiketler</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn ghost" onclick="newTask(true)">Yeni görev</button><button class="btn ghost" onclick="startLabels()">Etiketler</button></div>
     </div>
   </aside>
 </section>
@@ -187,23 +223,25 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
 <!-- CONTROLLER -->
 <section id="ctrl" class="hidden">
   <div id="ctrlTop"><span class="dot" id="cDot"></span><b id="cTitle">Kumanda</b><button class="pill" id="nameBtn" onclick="askName()" style="font-size:15px">👤 İsim</button></div>
+  <div id="notConn">⚠️ Tahtaya bağlanılıyor… Bağlanmadan okutulanlar gitmez.</div>
   <div class="seg" id="tabs">
-    <button data-t="dokun" class="on">Dokun</button>
-    <button data-t="tara">Robota dokundur</button>
-    <button data-t="kodla">Kodla</button>
+    <button data-t="tara" class="on">📷 Etiket okut</button>
+    <button data-t="dokun">🤖 Robot</button>
+    <button data-t="kodla">🧩 Kodla</button>
   </div>
-  <div class="pane" id="p-dokun">
-    <div class="pad" id="pad"></div>
-  </div>
-  <div class="pane hidden" id="p-tara">
+  <div id="progView"></div>
+  <div class="pane" id="p-tara">
     <div id="camBox"><video id="cam" playsinline muted></video><div id="camFrame"></div><div id="camMsg">Kamerayı aç</div></div>
     <button class="btn big" id="camBtn" onclick="toggleCam()">📷 Kamerayı Aç</button>
-    <div class="hint">Telefonu masadaki robotun üstündeki düğme etiketine yaklaştır. Robi tahtada hemen o hareketi yapar.</div>
+    <div class="hint">Telefonu robottaki düğme etiketine yaklaştır. Aynı etiketi tekrar okutmak için telefonu kaldırıp yeniden yaklaştır.</div>
+  </div>
+  <div class="pane hidden" id="p-dokun">
+    <div class="pad" id="pad"></div>
   </div>
   <div class="pane hidden" id="p-kodla">
     <div class="kpal" id="kpal"></div>
     <div id="seq"></div>
-    <div class="row"><button class="btn ghost big" onclick="seqDel()">⌫ Sil</button><button class="btn big" onclick="seqSend()">▶ Çalıştır</button></div>
+    <div class="row"><button class="btn ghost big" onclick="seqDel()">⌫ Sil</button><button class="btn big go" onclick="seqSend()">▶ Çalıştır</button></div>
   </div>
 </section>
 
@@ -211,11 +249,15 @@ input.txt{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line
 <section id="labels" class="hidden">
   <div class="lblHead noPrint">
     <h2>🏷️ Robot düğme etiketleri</h2>
-    <button class="btn" onclick="window.print()">🖨️ Yazdır</button>
+    <div class="seg" id="sizeSeg" style="min-width:300px"><button data-v="kart" class="on">Büyük kart</button><button data-v="mini">Küçük (robota yapıştır)</button></div>
+    <button class="btn" onclick="window.print()">🖨️ Renkli yazdır</button>
     <button class="btn ghost" onclick="location.href=baseUrl()">← Geri</button>
   </div>
-  <p class="hint noPrint" style="text-align:left;margin-bottom:18px">Yazdır, kes ve masadaki robotun (Lego, karton kutu, oyuncak — fark etmez) düğmelerine yapıştır. Kumandada “Robota dokundur” sekmesini aç, telefonu etikete yaklaştır.</p>
+  <p class="hint noPrint" id="lblHint" style="text-align:left;margin-bottom:6px"></p>
+  <div class="sheetTitle">Robot düğmeleri — robottaki yerleriyle aynı düzende</div>
   <div class="sheet" id="sheet"></div>
+  <div class="sheetTitle">Ek kartlar</div>
+  <div class="sheet" id="sheet2"></div>
   <div class="nfc noPrint" id="nfcInfo"></div>
 </section>
 
@@ -12631,16 +12673,22 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 <script>
 "use strict";
 const CMDS={
-  ileri:{e:'⬆️',t:'İleri'}, sol:{e:'⬅️',t:'Sol'}, sag:{e:'➡️',t:'Sağ'}, geri:{e:'⬇️',t:'Geri'},
-  dans:{e:'💃',t:'Dans'}, isik:{e:'💡',t:'Işık'}, ses:{e:'🎵',t:'Müzik'}, selam:{e:'👋',t:'Selam'}, zipla:{e:'🦘',t:'Zıpla'}
+  ileri:{e:'⬆️',t:'İleri',c:'#2e7d32'}, sol:{e:'⬅️',t:'Sol',c:'#e0a800'}, sag:{e:'➡️',t:'Sağ',c:'#1e88e5'}, geri:{e:'⬇️',t:'Geri',c:'#d32f2f'},
+  baslat:{e:'▶️',t:'Başlat',c:'#f57c00'}, sil:{e:'❌',t:'Sil',c:'#9e2a2b'},
+  dans:{e:'💃',t:'Dans',c:'#7e57c2'}, ses:{e:'🎵',t:'Müzik',c:'#00897b'}, selam:{e:'💬',t:'Selam',c:'#43a047'},
+  isik:{e:'💡',t:'Işık',c:'#f9a825'}, zipla:{e:'🦘',t:'Zıpla',c:'#8d6e63'}
 };
+const ROBOT_LAYOUT=['dans','ileri','ses','sol','baslat','sag','selam','geri','sil'];
+const EXTRA=['isik','zipla'];
+const ACTIONS=['ileri','sol','sag','geri','dans','ses','selam','isik','zipla'];
 const PREFIX='rbtcanli-';
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
 function baseUrl(){return location.href.split('#')[0].split('?')[0]}
-function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.opacity=0,1800)}
+function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.opacity=0,2200)}
 function show(id){['start','board','ctrl','labels'].forEach(s=>$(s).classList.toggle('hidden',s!==id));}
+function segInit(id,fn){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.toggle('on',x===b));fn(b.dataset.v)})}
 
 /* ---------- SOUND ---------- */
 let AC=null;
@@ -12650,8 +12698,16 @@ function melody(notes,step=.16){notes.forEach((f,i)=>beep(f,step*.9,'triangle',.
 function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=1;u.pitch=1.4;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 
 /* ---------- BOARD ---------- */
-const W=7,H=5,DX=[0,1,0,-1],DY=[-1,0,1,0];
-let rx=3,ry=2,dir=0,angle=0,mode='kay',stars=[],score=0,lightIdx=0;
+const DX=[0,1,0,-1],DY=[-1,0,1,0];
+const ZOO=[
+ {x:2,y:0,e:'🐘',n:'Fil',d:'File'},{x:4,y:0,e:'🦒',n:'Zürafa',d:'Zürafaya'},
+ {x:1,y:1,e:'🐰',n:'Tavşan',d:'Tavşana'},{x:3,y:1,e:'🦛',n:'Su aygırı',d:'Su aygırına'},
+ {x:0,y:2,e:'🐯',n:'Kaplan',d:'Kaplana'},{x:2,y:2,e:'🍦',n:'Dondurma',d:'Dondurmaya'},{x:4,y:2,e:'🦁',n:'Aslan',d:'Aslana'},
+ {x:1,y:3,e:'🐼',n:'Panda',d:'Pandaya'},{x:3,y:3,e:'🐻',n:'Ayı',d:'Ayıya'}
+];
+let MAP='zoo',W=5,H=4,START={x:0,y:0,d:1};
+let rx=0,ry=0,dir=1,angle=90,mode='kay',progMode=true,score=0,lightIdx=0;
+let stars=[],target=null,prog=[],running=false;
 const LIGHTS=['#e5484d','#22a06b','#ffc83d','#2f7de1','#c74ee0'];
 let peer=null,room=null,conns={};
 let Q=[],busy=false;
@@ -12659,26 +12715,61 @@ let Q=[],busy=false;
 function startBoard(){
   ac();show('board');
   if(location.protocol==='file:')$('fileWarn').classList.remove('hidden');
-  const mp=$('miniPad');
-  Object.keys(CMDS).forEach(k=>{const b=document.createElement('button');b.textContent=CMDS[k].e;b.title=CMDS[k].t;b.onclick=()=>enqueue(k,'Öğretmen');mp.appendChild(b)});
-  document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
-    mode=b.dataset.m;document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
-    if(mode==='kay'){setDir(0)}toast(mode==='kay'?'Kolay mod: düğme hangi yönü gösteriyorsa Robi oraya gider':'Kodlama modu: Sol/Sağ = olduğu yerde dön');
-  });
-  newRound();placeRobot();
+  const mp=$('miniPad');mp.innerHTML='';
+  ROBOT_LAYOUT.forEach(k=>{const b=document.createElement('button');b.textContent=CMDS[k].e;b.title=CMDS[k].t;b.style.background=CMDS[k].c;b.onclick=()=>handle(k,'Öğretmen');mp.appendChild(b)});
+  segInit('modeSeg',v=>{mode=v;if(v==='kay')setDir(dir);toast(v==='kay'?'Kolay: ok hangi yönü gösteriyorsa Robi oraya gider':'Kodlama: Sol/Sağ = Robi olduğu yerde döner')});
+  segInit('progSeg',v=>{progMode=v==='1';prog=[];renderStrip();broadcast();toast(progMode?'Okutulanlar koda eklenir, ▶ Başlat ile çalışır':'Her okutulan düğme hemen yapılır')});
+  segInit('mapSeg',v=>setMap(v));
+  setMap('zoo');
   room=ls('rbt_oda')||String(1000+Math.floor(Math.random()*9000));
   showRoom();openPeer();
+}
+function setMap(m){
+  MAP=m;Q=[];
+  if(m==='zoo'){W=5;H=4;START={x:0,y:3,d:0}}else{W=7;H=5;START={x:3,y:2,d:0}}
+  const g=$('grid');g.className=m==='zoo'?'zoo':'';
+  g.style.aspectRatio=W+'/'+H;g.style.backgroundSize='calc(100%/'+W+') calc(100%/'+H+')';
+  g.querySelectorAll('.cellObj:not(#robot)').forEach(e=>e.remove());
+  const r=$('robot');r.style.width=(100/W)+'%';r.style.height=(100/H)+'%';
+  stars=[];target=null;prog=[];
+  if(m==='zoo'){
+    addCell(START.x,START.y,'<div class="animal startCell"><span class="ae">🏁</span><span class="an">Başla</span></div>');
+    ZOO.forEach(a=>{a.el=addCell(a.x,a.y,'<div class="animal"><span class="ae">'+a.e+'</span><span class="an">'+a.n+'</span></div>')});
+  }
+  resetRobot(true);renderStrip();newTask(false);broadcast();
+}
+function addCell(x,y,html){const el=document.createElement('div');el.className='cellObj';el.style.width=(100/W)+'%';el.style.height=(100/H)+'%';el.style.left=(x/W*100)+'%';el.style.top=(y/H*100)+'%';el.innerHTML=html;$('grid').insertBefore(el,$('robot'));return el}
+function resetRobot(instant){
+  const r=$('robot');if(instant)r.classList.remove('mover');
+  rx=START.x;ry=START.y;dir=START.d;angle=dir*90;$('arrow').style.transform='rotate('+angle+'deg)';$('robotSvg').style.transform=dir===3?'scaleX(-1)':'';
+  placeRobot();if(instant){void r.offsetWidth;r.classList.add('mover')}
+}
+function newTask(announce){
+  if(MAP==='zoo'){
+    ZOO.forEach(a=>a.el&&a.el.classList.remove('target'));
+    let c;do{c=ZOO[Math.floor(Math.random()*ZOO.length)]}while(ZOO.length>1&&c===target);
+    target=c;c.el.classList.add('target');
+    $('task').textContent='🎯 Robi’yi '+c.e+' '+c.d+' götür!';
+    if(announce!==false)say('Robiyi '+c.d.toLocaleLowerCase('tr')+' götür');
+  }else{
+    document.querySelectorAll('#grid .starCell').forEach(s=>s.remove());stars=[];
+    let guard=0;while(stars.length<4&&guard++<200){const x=Math.floor(Math.random()*W),y=Math.floor(Math.random()*H);
+      if((x===rx&&y===ry)||stars.some(s=>s.x===x&&s.y===y))continue;
+      const el=addCell(x,y,'<span class="star">⭐</span>');el.classList.add('starCell');stars.push({x,y,el})}
+    $('task').textContent='⭐ Bütün yıldızları topla!';
+  }
 }
 function openPeer(){
   if(typeof Peer==='undefined'){$('netState').textContent='Bağlantı kütüphanesi yüklenemedi';return}
   peer=new Peer(PREFIX+room);
   peer.on('open',()=>{ls('rbt_oda',room);showRoom();$('netState').textContent='Hazır ✓ — telefon kamerasıyla QR’ı okut'});
   peer.on('error',e=>{
-    if(e.type==='unavailable-id'){room=String(1000+Math.floor(Math.random()*9000));try{peer.destroy()}catch(x){}setTimeout(openPeer,300);return}
+    if(e.type==='unavailable-id'){room=String(1000+Math.floor(Math.random()*9000));showRoom();try{peer.destroy()}catch(x){}setTimeout(openPeer,300);return}
     $('netState').textContent='İnternet bağlantısını kontrol et ('+e.type+')';
   });
   peer.on('disconnected',()=>{$('netState').textContent='Yeniden bağlanıyor…';setTimeout(()=>{try{peer.reconnect()}catch(x){}},1500)});
   peer.on('connection',c=>{
+    c.on('open',()=>sendState(c));
     c.on('data',d=>onData(c,d));
     c.on('close',()=>{delete conns[c.peer];renderWho()});
     c.on('error',()=>{delete conns[c.peer];renderWho()});
@@ -12691,30 +12782,90 @@ function showRoom(){
 }
 function onData(c,d){
   if(!d||typeof d!=='object')return;
-  const name=(d.ad||'Kumanda').slice(0,16);
-  if(!conns[c.peer]||conns[c.peer].name!==name){conns[c.peer]={name,c};renderWho();if(d.t==='hello'){beep(880,.08);toast(name+' bağlandı')}}
-  if(d.t==='cmd')enqueue(d.c,name);
-  if(d.t==='seq'&&Array.isArray(d.list)){d.list.slice(0,12).forEach(k=>enqueue(k,name))}
+  const name=String(d.ad||'Kumanda').slice(0,16);
+  const known=Object.values(conns).some(x=>x.name===name);
+  if(!conns[c.peer]||conns[c.peer].name!==name){conns[c.peer]={name,c};renderWho();if(!known){beep(880,.08);toast('📱 '+name+' bağlandı')}}
+  if(d.t==='cmd')handle(d.c,name,c);
+  if(d.t==='seq'&&Array.isArray(d.list))runSeq(d.list.filter(k=>ACTIONS.includes(k)).slice(0,20),name,c);
 }
 function renderWho(){
-  const w=$('who'),list=Object.values(conns);
-  w.innerHTML=list.length?'':'<span class="hint" style="font-size:14px">Henüz kimse yok</span>';
-  list.forEach(x=>{const s=document.createElement('span');s.className='chip';s.textContent='📱 '+x.name;w.appendChild(s)});
+  const w=$('who'),names=[...new Set(Object.values(conns).map(x=>x.name))];
+  w.innerHTML=names.length?'':'<span class="hint" style="font-size:14px">Henüz kimse yok</span>';
+  names.forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent='📱 '+n;w.appendChild(s)});
 }
-function enqueue(k,who){if(!CMDS[k]||Q.length>14)return;Q.push({k,who});pump()}
-async function pump(){if(busy)return;busy=true;while(Q.length){await exec(Q.shift())}busy=false}
+function stateMsg(){return{t:'state',progMode,prog:prog.slice(),running}}
+function sendState(c){try{c.open&&c.send(stateMsg())}catch(e){}}
+function broadcast(){Object.values(conns).forEach(x=>sendState(x.c))}
+function ack(c,k,res){if(c){try{c.open&&c.send({t:'ack',c:k,res,n:prog.length})}catch(e){}}broadcast()}
+
+/* ana komut yönetimi */
+function handle(k,who,c){
+  if(k==='geriAl'){if(!running&&prog.length){prog.pop();renderStrip();broadcast()}return}
+  if(!CMDS[k])return;
+  let res;
+  if(k==='sil'){
+    if(running)res='busy';else{prog=[];renderStrip();bubble('Kod silindi');beep(300,.15,'square',.08);res='cleared'}
+  }else if(k==='baslat'){
+    if(!progMode)res='nomode';
+    else if(running)res='busy';
+    else if(!prog.length){res='empty';bubble('Önce kod okut 📷');beep(200,.2,'square',.08)}
+    else{res='run';runProg()}
+  }else if(progMode){
+    if(running)res='busy';
+    else if(prog.length>=20)res='full';
+    else{prog.push(k);renderStrip();beep(660,.06);beep(990,.08,'sine',.15,.07);bubble((who?who+': ':'')+CMDS[k].e+' '+CMDS[k].t);res='added'}
+  }else{enqueue(k,who);res='ran'}
+  ack(c,k,res);
+}
+function runSeq(list,who,c){
+  if(!list.length)return;
+  if(progMode){if(running){ack(c,'baslat','busy');return}prog=list;renderStrip();ack(c,'baslat','run');runProg()}
+  else{list.forEach(k=>enqueue(k,who));ack(c,'baslat','ran')}
+}
+async function runProg(){
+  if(running||!prog.length)return;
+  running=true;broadcast();
+  if(MAP==='zoo'){resetRobot(false);await wait(550)}
+  for(let i=0;i<prog.length;i++){hilite(i);await doCmd(prog[i]);await wait(120)}
+  hilite(-1);running=false;broadcast();
+  if(MAP==='zoo')judge(true);
+}
+function judge(fromProg){
+  if(!target)return false;
+  if(rx===target.x&&ry===target.y){
+    score++;$('score').textContent=score;bubble('Aferin! 🎉');melody([523,659,784,1047],.12);say('Aferin! '+target.d.toLocaleLowerCase('tr')+' ulaştın');burst();
+    setTimeout(()=>{prog=[];renderStrip();broadcast();newTask(true);if(fromProg)resetRobot(false)},2600);return true;
+  }
+  if(fromProg){
+    const a=ZOO.find(z=>z.x===rx&&z.y===ry);
+    bubble(a?'Burası '+a.e+' '+a.n+'! Tekrar dene':'Hedefe ulaşamadık 🤔');beep(220,.25,'triangle',.15);
+    say(a?'Burası '+a.n.toLocaleLowerCase('tr')+'. Kodu düzeltelim':'Hedefe ulaşamadık. Kodu düzeltelim');
+  }
+  return false;
+}
+function enqueue(k,who){if(!ACTIONS.includes(k)||Q.length>14)return;Q.push({k,who});pump()}
+async function pump(){if(busy)return;busy=true;while(Q.length){const it=Q.shift();addHist(it.k);bubble((it.who?it.who+': ':'')+CMDS[it.k].t);await doCmd(it.k);if(MAP==='zoo'&&['ileri','geri','sol','sag'].includes(it.k))judge(false);await wait(100)}busy=false}
 
 function placeRobot(){const r=$('robot');r.style.left=(rx/W*100)+'%';r.style.top=(ry/H*100)+'%';moveBubble()}
 function moveBubble(){const b=$('bubble');b.style.left=((rx+.5)/W*100)+'%';b.style.top=(ry/H*100+2)+'%'}
-function setDir(d){let diff=((d-dir)%4+4)%4;if(diff===3)angle-=90;else angle+=diff*90;dir=d;$('arrow').style.transform='rotate('+angle+'deg)';
-  $('robotSvg').style.transform=(d===3?'scaleX(-1)':'')}
-function bubble(t){const b=$('bubble');b.textContent=t;b.style.opacity=1;moveBubble();clearTimeout(bubble.h);bubble.h=setTimeout(()=>b.style.opacity=0,1400)}
-function addChip(k){
-  const ch=$('chips');ch.querySelectorAll('.new').forEach(x=>x.classList.remove('new'));
+function setDir(d){let diff=((d-dir)%4+4)%4;if(diff===3)angle-=90;else angle+=diff*90;dir=d;$('arrow').style.transform='rotate('+angle+'deg)';$('robotSvg').style.transform=(d===3?'scaleX(-1)':'')}
+function bubble(t){const b=$('bubble');b.textContent=t;b.style.opacity=1;moveBubble();clearTimeout(bubble.h);bubble.h=setTimeout(()=>b.style.opacity=0,1800)}
+function renderStrip(){
+  $('stripLbl').textContent=progMode?'Program:':'Yapılanlar:';
+  $('progBtns').classList.toggle('hidden',!progMode);$('histBtn').classList.toggle('hidden',progMode);
+  if(!progMode){$('chips').innerHTML='<span class="empty">Okutulan düğmeler burada görünür</span>';return}
+  const ch=$('chips');ch.innerHTML='';
+  if(!prog.length){ch.innerHTML='<span class="empty">Etiket okut, kod burada dizilsin</span>';return}
+  prog.forEach((k,i)=>{const s=document.createElement('span');s.className='chip'+(i===prog.length-1?' new':'');s.textContent=(i+1)+'. '+CMDS[k].e+' '+CMDS[k].t;ch.appendChild(s)});
+}
+function hilite(i){document.querySelectorAll('#chips .chip').forEach((c,j)=>{c.classList.toggle('run',j===i);c.classList.remove('new')})}
+function addHist(k){
+  const ch=$('chips');const e=ch.querySelector('.empty');if(e)e.remove();
+  ch.querySelectorAll('.new').forEach(x=>x.classList.remove('new'));
   const s=document.createElement('span');s.className='chip new';s.textContent=CMDS[k].e+' '+CMDS[k].t;ch.appendChild(s);
   while(ch.children.length>14)ch.removeChild(ch.firstChild);
 }
-function clearStrip(){$('chips').innerHTML=''}
+function clearStrip(){renderStrip()}
 function anim(cls,ms){const r=$('robotInner');r.classList.remove(cls);void r.offsetWidth;r.classList.add(cls);return wait(ms).then(()=>r.classList.remove(cls))}
 
 async function move(d){
@@ -12722,8 +12873,7 @@ async function move(d){
   if(nx<0||ny<0||nx>=W||ny>=H){beep(140,.25,'square',.12);bubble('Duvar! 🧱');await anim('shake',420);return}
   rx=nx;ry=ny;placeRobot();beep(520,.07);beep(660,.07,'sine',.15,.08);await wait(520);checkStar();
 }
-async function exec({k,who}){
-  addChip(k);bubble((who?who+': ':'')+CMDS[k].t);
+async function doCmd(k){
   const map={ileri:0,sag:1,geri:2,sol:3};
   if(k in map){
     if(mode==='kay'){const d=map[k];if(d!==dir){setDir(d);await wait(260)}await move(d)}
@@ -12736,44 +12886,31 @@ async function exec({k,who}){
   else if(k==='zipla'){beep(400,.1,'square',.1);beep(700,.1,'square',.1,.12);await anim('hop',720)}
   else if(k==='isik'){lightIdx=(lightIdx+1)%LIGHTS.length;$('ant').setAttribute('fill',LIGHTS[lightIdx]);document.querySelectorAll('.eye').forEach(e=>e.setAttribute('fill',LIGHTS[lightIdx]));$('heart').setAttribute('fill',LIGHTS[(lightIdx+2)%LIGHTS.length]);beep(1200,.06);await wait(400)}
   else if(k==='ses'){melody([392,440,494,523,587,659,698,784],.12);await wait(1000)}
-  else if(k==='selam'){say(who&&who!=='Öğretmen'&&who!=='Kumanda'?'Merhaba '+who+'! Ben Robi.':'Merhaba! Ben Robi.');await anim('wave',1500)}
-  await wait(120);
-}
-function newRound(){
-  document.querySelectorAll('.star').forEach(s=>s.parentNode.remove());stars=[];
-  const n=4;let guard=0;
-  while(stars.length<n&&guard++<200){const x=Math.floor(Math.random()*W),y=Math.floor(Math.random()*H);
-    if((x===rx&&y===ry)||stars.some(s=>s.x===x&&s.y===y))continue;
-    const el=document.createElement('div');el.className='cellObj';el.style.left=(x/W*100)+'%';el.style.top=(y/H*100)+'%';el.innerHTML='<span class="star">⭐</span>';
-    $('grid').appendChild(el);stars.push({x,y,el})}
+  else if(k==='selam'){say('Merhaba! Ben Robi.');await anim('wave',1500)}
 }
 function checkStar(){
+  if(MAP!=='star')return;
   const i=stars.findIndex(s=>s.x===rx&&s.y===ry);if(i<0)return;
   const s=stars.splice(i,1)[0];s.el.firstChild.classList.add('pop');setTimeout(()=>s.el.remove(),500);
   score++;$('score').textContent=score;melody([784,988,1319],.09);
-  if(!stars.length){bubble('Tebrikler! 🎉');say('Harika! Bütün yıldızları topladınız!');burst();setTimeout(newRound,2600)}
+  if(!stars.length){bubble('Tebrikler! 🎉');say('Harika! Bütün yıldızları topladınız!');burst();setTimeout(()=>newTask(false),2600)}
 }
 function burst(){const b=$('burst');const em=['🎉','⭐','🎈','✨','🤖'];for(let i=0;i<30;i++){const s=document.createElement('span');s.className='bit';s.textContent=em[i%em.length];s.style.left=Math.random()*100+'%';s.style.top=(-10-Math.random()*30)+'%';s.style.animationDelay=(Math.random()*.6)+'s';b.appendChild(s);setTimeout(()=>s.remove(),2600)}}
 
 /* ---------- CONTROLLER ---------- */
-let cPeer=null,cConn=null,cRoom=null,myName=ls('rbt_ad')||'',pending=[];
+let cPeer=null,cConn=null,cRoom=null,myName=ls('rbt_ad')||'',pending=[],pendingK=null;
+let bState={progMode:true,prog:[],running:false};
 function showJoin(){$('joinCard').classList.remove('hidden');$('joinCode').focus()}
-function joinFromInput(){const v=$('joinCode').value.replace(/\D/g,'');if(v.length!==4){toast('4 haneli kodu yaz');return}location.href=baseUrl()+'?oda='+v}
+function joinFromInput(){const v=$('joinCode').value.replace(/\D/g,'');if(v.length!==4){toast('4 haneli kodu yaz');return}location.href=baseUrl()+'?oda='+v+(pendingK?'&k='+pendingK:'')}
 function startCtrl(code,autoCmd){
   cRoom=code;ls('rbt_son_oda',code);show('ctrl');$('cTitle').textContent='Oda '+code;
   if(!myName){myName=(prompt('Adın ne?')||'').trim().slice(0,16);if(myName)ls('rbt_ad',myName)}
   $('nameBtn').textContent='👤 '+(myName||'İsim');
-  const order=['ileri','sol','sag','geri','dans','isik','ses','selam','zipla'];
-  const layout=['selam','ileri','dans','sol','zipla','sag','isik','geri','ses'];
-  layout.forEach(k=>{const b=document.createElement('button');b.innerHTML='<span>'+CMDS[k].e+'</span>'+CMDS[k].t;b.onclick=()=>{tap();send(k)};$('pad').appendChild(b)});
-  order.forEach(k=>{const b=document.createElement('button');b.innerHTML='<span>'+CMDS[k].e+'</span>'+CMDS[k].t;b.onclick=()=>{tap();seqAdd(k)};$('kpal').appendChild(b)});
-  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
-    document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
-    ['dokun','tara','kodla'].forEach(t=>$('p-'+t).classList.toggle('hidden',t!==b.dataset.t));
-    if(b.dataset.t!=='tara')stopCam();
-  });
-  if(autoCmd&&CMDS[autoCmd])pending.push({t:'cmd',c:autoCmd});
-  connectCtrl();
+  ROBOT_LAYOUT.forEach(k=>{const b=document.createElement('button');b.style.background=CMDS[k].c;b.innerHTML='<span>'+CMDS[k].e+'</span>'+CMDS[k].t;b.onclick=()=>{tap();localFlash(k);send(k)};$('pad').appendChild(b)});
+  ACTIONS.forEach(k=>{const b=document.createElement('button');b.innerHTML='<span>'+CMDS[k].e+'</span>'+CMDS[k].t;b.onclick=()=>{tap();seqAdd(k)};$('kpal').appendChild(b)});
+  segInit('tabs',t=>{['dokun','tara','kodla'].forEach(x=>$('p-'+x).classList.toggle('hidden',x!==t));if(t!=='tara')stopCam();renderProgView()});
+  if(autoCmd&&CMDS[autoCmd]){pending.push({t:'cmd',c:autoCmd});localFlash(autoCmd)}
+  renderProgView();connectCtrl();
 }
 function askName(){const n=(prompt('Adın ne?',myName)||'').trim().slice(0,16);if(n){myName=n;ls('rbt_ad',n);$('nameBtn').textContent='👤 '+n;sendRaw({t:'hello'})}}
 function connectCtrl(){
@@ -12781,65 +12918,106 @@ function connectCtrl(){
   if(!cPeer||cPeer.destroyed){
     cPeer=new Peer();
     cPeer.on('open',openConn);
-    cPeer.on('error',e=>{setDot(false);if(e.type==='peer-unavailable')toast('Bu kodda açık tahta yok');setTimeout(retry,2500)});
-    cPeer.on('disconnected',()=>{setDot(false);setTimeout(()=>{try{cPeer.reconnect()}catch(x){}},1500)});
+    cPeer.on('error',e=>{setConn(false);if(e.type==='peer-unavailable'){$('notConn').textContent='⚠️ '+cRoom+' kodunda açık tahta yok. Tahtayı açıp QR’ı yeniden okut.'}setTimeout(retry,2500)});
+    cPeer.on('disconnected',()=>{setConn(false);setTimeout(()=>{try{cPeer.reconnect()}catch(x){}},1500)});
   }else openConn();
 }
 function retry(){if(cConn&&cConn.open)return;if(cPeer&&cPeer.open)openConn();else connectCtrl()}
 function openConn(){
   cConn=cPeer.connect(PREFIX+cRoom,{reliable:true});
-  cConn.on('open',()=>{setDot(true);sendRaw({t:'hello'});while(pending.length)sendRaw(pending.shift())});
-  cConn.on('close',()=>{setDot(false);setTimeout(retry,1500)});
-  cConn.on('error',()=>{setDot(false)});
+  cConn.on('open',()=>{setConn(true);sendRaw({t:'hello'});while(pending.length)sendRaw(pending.shift())});
+  cConn.on('data',onBoardData);
+  cConn.on('close',()=>{setConn(false);setTimeout(retry,1500)});
+  cConn.on('error',()=>setConn(false));
 }
-function setDot(on){$('cDot').classList.toggle('on',on)}
-function sendRaw(o){o.ad=myName||'Kumanda';if(cConn&&cConn.open){cConn.send(o);return true}pending.push(o);if(pending.length>10)pending.shift();toast('Tahtaya bağlanılıyor…');retry();return false}
+function setConn(on){$('cDot').classList.toggle('on',on);$('notConn').classList.toggle('hidden',on);if(!on)$('notConn').textContent='⚠️ Tahtaya bağlanılıyor… Bağlanmadan okutulanlar gitmez.'}
+function sendRaw(o){o.ad=myName||'Kumanda';if(cConn&&cConn.open){cConn.send(o);return true}pending.push(o);if(pending.length>10)pending.shift();retry();return false}
 function send(k){sendRaw({t:'cmd',c:k})}
-function tap(){try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}beep(660,.05,'sine',.1)}
+function tap(){try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}beep(660,.05,'sine',.1)}
+function onBoardData(d){
+  if(!d||typeof d!=='object')return;
+  if(d.t==='state'){bState={progMode:!!d.progMode,prog:Array.isArray(d.prog)?d.prog:[],running:!!d.running};renderProgView()}
+  if(d.t==='ack'){const k=d.c,c=CMDS[k]||{e:'🤖',t:''};
+    const M={added:[c.e,c.t+' eklendi ✓',d.n+'. adım'],run:['▶️','Robi çalışıyor!','Tahtaya bak 👀'],cleared:['❌','Kod silindi',''],empty:['🤔','Önce kod okut','Ok etiketlerini okut, sonra ▶'],
+      busy:['⏳','Robi şu an çalışıyor','Biraz bekle'],full:['✋','Program dolu','En fazla 20 adım'],ran:[c.e,c.t+' ✓','Robi yaptı'],nomode:['ℹ️','Hemen yap modu açık','Başlat gerekmez']};
+    const m=M[d.res];if(m){flash(m[0],m[1],m[2]);if(d.res==='added'||d.res==='ran')beep(990,.08);if(d.res==='run')melody([523,659,784],.1);if(['empty','busy','full'].includes(d.res))beep(200,.2,'square',.08)}}
+}
+function renderProgView(){
+  const v=$('progView');const tab=(document.querySelector('#tabs button.on')||{}).dataset;
+  if(!bState.progMode||(tab&&tab.t==='kodla')){v.classList.add('hidden');return}
+  v.classList.remove('hidden');
+  v.innerHTML='<span class="t">'+(bState.running?'▶ Çalışıyor:':'Program:')+'</span>';
+  if(!bState.prog.length){v.insertAdjacentHTML('beforeend','<span class="hint" style="font-size:14px">boş — ok etiketlerini okut</span>');return}
+  bState.prog.forEach((k,i)=>{if(!CMDS[k])return;const s=document.createElement('span');s.className='chip';s.textContent=(i+1)+'.'+CMDS[k].e;v.appendChild(s)});
+}
+let flashT=null;
+function flash(e,t,s){const f=$('flash');f.querySelector('.fe').textContent=e;f.querySelector('.ft').textContent=t;f.querySelector('.fs').textContent=s||'';f.classList.add('on');clearTimeout(flashT);flashT=setTimeout(()=>f.classList.remove('on'),1100)}
+function localFlash(k){const c=CMDS[k];if(!c)return;flash(c.e,c.t,(cConn&&cConn.open)?'okundu…':'okundu — tahtaya bağlanılıyor')}
 /* kodla */
 let seq=[];
-function seqAdd(k){if(seq.length>=12){toast('En fazla 12 blok');return}seq.push(k);renderSeq()}
+function seqAdd(k){if(seq.length>=20){toast('En fazla 20 blok');return}seq.push(k);renderSeq()}
 function seqDel(){seq.pop();renderSeq()}
 function renderSeq(){const s=$('seq');s.innerHTML='';seq.forEach((k,i)=>{const c=document.createElement('span');c.className='chip';c.textContent=(i+1)+'. '+CMDS[k].e+' '+CMDS[k].t;s.appendChild(c)})}
-function seqSend(){if(!seq.length){toast('Önce blok ekle');return}sendRaw({t:'seq',list:seq.slice()});toast('Kod gönderildi ▶');beep(880,.1)}
+function seqSend(){if(!seq.length){toast('Önce blok ekle');return}sendRaw({t:'seq',list:seq.slice()});beep(880,.1)}
 /* camera scan */
 let stream=null,scanTimer=null,cur=null,lastSeen=0;
 const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
 async function toggleCam(){if(stream){stopCam();return}
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640},height:{ideal:480}},audio:false})}
-  catch(e){toast('Kamera açılamadı — izin ver');$('camMsg').textContent='Kamera izni gerekli';return}
+  catch(e){toast('Kamera açılamadı — kamera iznini ver');$('camMsg').textContent='Kamera izni gerekli';return}
   const v=$('cam');v.srcObject=stream;await v.play().catch(()=>{});
   $('camBtn').textContent='⏹ Kamerayı Kapat';$('camMsg').textContent='Etiketi çerçeveye getir';
-  scanTimer=setInterval(scan,140);
+  scanTimer=setInterval(scan,130);
 }
 function stopCam(){if(scanTimer)clearInterval(scanTimer);scanTimer=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('camBtn').textContent='📷 Kamerayı Aç';$('camMsg').textContent='Kamerayı aç'}
+function parseCode(s){
+  if(!s)return null;
+  if(s.indexOf('RBT:')===0)return{k:s.slice(4)};
+  try{const u=new URL(s);const k=u.searchParams.get('k'),o=(u.searchParams.get('oda')||'').replace(/\D/g,'');if(k&&CMDS[k])return{k};if(o.length===4)return{oda:o,url:s}}catch(e){}
+  return null;
+}
 function scan(){
   const v=$('cam');if(!v.videoWidth||typeof jsQR==='undefined')return;
   const s=Math.min(1,480/v.videoWidth),w=Math.round(v.videoWidth*s),h=Math.round(v.videoHeight*s);
   cv.width=w;cv.height=h;cx.drawImage(v,0,0,w,h);
   let r=null;try{r=jsQR(cx.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'dontInvert'})}catch(e){}
-  const now=Date.now();
-  if(r&&r.data&&r.data.indexOf('RBT:')===0){
-    const k=r.data.slice(4);lastSeen=now;
-    if(CMDS[k]&&k!==cur){cur=k;send(k);tap();$('camFrame').classList.add('hit');$('camMsg').textContent=CMDS[k].e+' '+CMDS[k].t+'!';setTimeout(()=>$('camFrame').classList.remove('hit'),400)}
-  }else if(cur&&now-lastSeen>700){cur=null;$('camMsg').textContent='Sıradaki düğme…'}
+  const now=Date.now();const p=r&&parseCode(r.data);
+  if(p&&p.oda){if(p.oda!==cRoom){stopCam();location.href=p.url}return}
+  if(p&&p.k&&CMDS[p.k]){
+    lastSeen=now;
+    if(p.k!==cur){cur=p.k;tap();localFlash(p.k);send(p.k);const f=$('camFrame');f.classList.add('hit');setTimeout(()=>f.classList.remove('hit'),500);$('camMsg').textContent=CMDS[p.k].e+' '+CMDS[p.k].t+' okundu ✓'}
+  }else if(cur&&now-lastSeen>700){cur=null;$('camMsg').textContent='Sıradaki etiketi göster'}
 }
 
 /* ---------- LABELS ---------- */
-function startLabels(){
-  show('labels');const sh=$('sheet');sh.innerHTML='';
-  const order=['ileri','geri','sol','sag','dans','zipla','isik','ses','selam'];
-  order.forEach(k=>{const q=qrcode(0,'M');q.addData('RBT:'+k);q.make();
-    const d=document.createElement('div');d.className='tag';d.innerHTML='<div class="e">'+CMDS[k].e+'</div>'+q.createSvgTag({cellSize:4,margin:2,scalable:true})+'<b>'+CMDS[k].t+'</b>';sh.appendChild(d)});
-  const r=ls('rbt_oda');
-  if(r){const base=baseUrl();$('nfcInfo').innerHTML='<b>İsteğe bağlı — NFC etiketi:</b> Ucuz NFC çıkartmalarına (NTAG213) ücretsiz bir NFC yazma uygulamasıyla aşağıdaki bağlantıları yazarsan, telefonu robota <i>dokundurmak</i> yeterli olur; kamera bile gerekmez. Tahta kodun sabit kalır: <b>'+r+'</b><br>'+order.map(k=>CMDS[k].e+' '+CMDS[k].t+': <code>'+base+'?oda='+r+'&k='+k+'</code>').join('<br>')}
+let lblSize='kart';
+function startLabels(){show('labels');segInit('sizeSeg',v=>{lblSize=v;renderLabels()});renderLabels()}
+function renderLabels(){
+  const hosted=/^https?:/.test(location.protocol);
+  [['sheet',ROBOT_LAYOUT],['sheet2',EXTRA]].forEach(([id,list])=>{
+    const sh=$(id);sh.className='sheet '+lblSize;sh.innerHTML='';
+    list.forEach(k=>{
+      const data=(lblSize==='kart'&&hosted)?baseUrl()+'?k='+k:'RBT:'+k;
+      const q=qrcode(0,lblSize==='kart'&&hosted?'L':'M');q.addData(data);q.make();
+      const d=document.createElement('div');d.className='tag';d.style.borderColor=CMDS[k].c;
+      const hd='<div class="hd" style="'+(lblSize==='kart'?'background:'+CMDS[k].c:'color:'+CMDS[k].c)+'">'+CMDS[k].e+' '+CMDS[k].t+'</div>';
+      const svg=q.createSvgTag({cellSize:4,margin:2,scalable:true});
+      d.innerHTML=lblSize==='kart'?hd+svg:svg+hd;sh.appendChild(d);
+    });
+  });
+  $('lblHint').innerHTML=lblSize==='kart'
+    ?'Renkli yazdır, kes. Kartlar masada kod dizmek için ya da robotun yanına koymak için.'+(hosted?' Bu kartları telefonun <b>normal kamerası</b> da okur; ama en hızlısı kumandadaki <b>📷 Etiket okut</b> ekranıdır.':'')
+    :'Küçük etiketleri kesip robotun düğmelerinin üstüne yapıştır — düzen robottakiyle aynı. Bunlar kumandadaki <b>📷 Etiket okut</b> ekranıyla okunur.';
+  const base=baseUrl();
+  $('nfcInfo').innerHTML=hosted?'<b>İsteğe bağlı — NFC:</b> NFC çıkartmalarına (NTAG213) ücretsiz bir NFC yazma uygulamasıyla bu bağlantıları yazarsan telefonu robota dokundurmak yeterli olur.<br>'+ROBOT_LAYOUT.concat(EXTRA).map(k=>CMDS[k].e+' '+CMDS[k].t+': <code>'+base+'?k='+k+'</code>').join('<br>'):'';
 }
 
 /* ---------- ROUTER ---------- */
 (function(){
   const p=new URLSearchParams(location.search);
-  const oda=(p.get('oda')||'').replace(/\D/g,'');
-  if(oda.length===4)startCtrl(oda,p.get('k'));
+  const oda=(p.get('oda')||'').replace(/\D/g,''),k=p.get('k');
+  if(oda.length===4)startCtrl(oda,k);
+  else if(k&&CMDS[k]){const last=ls('rbt_son_oda');if(last)startCtrl(last,k);else{show('start');pendingK=k;showJoin();toast('Önce tahtadaki 4 haneli kodu yaz')}}
   else if(p.get('mod')==='etiket')startLabels();
   else if(p.get('mod')==='tahta'){show('start');startBoard()}
   else{show('start');const last=ls('rbt_son_oda');if(last)$('joinCode').value=last}
