@@ -1,0 +1,707 @@
+<title>Zihin Hattı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Lexend:wght@300..600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 3B beyin ağı tam ekran arka planda; üstte metro hattı haritası, solda durak paneli, altta yolculuk kontrolü. Tek koyu tema (akıllı tahtaya yansıtma için bilinçli seçim). */
+:root{
+  --ink:#0a0f24; --ink2:#121a3d; --panel:rgba(13,19,46,.82); --line:rgba(170,185,255,.16);
+  --fg:#eef1ff; --mute:#a3acd6;
+  --amber:#ffb547; --cyan:#45d4e6; --lilac:#b49bff; --mint:#5fe3a1; --coral:#ff7a6b;
+  --lc:#ffd27a;
+  --f-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Lexend','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html{font-size:clamp(15px,.55vw + 11px,21px)}
+html,body{height:100%}
+body{background:radial-gradient(120% 90% at 75% 40%,#1a2458 0%,var(--ink) 60%) var(--ink);color:var(--fg);font-family:var(--f-body);font-size:1rem;line-height:1.55;overflow:hidden}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.app{position:relative;z-index:1;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--lc);outline-offset:3px}
+
+/* üst bar + metro haritası */
+.top{display:flex;align-items:center;gap:14px;padding:12px 16px 6px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.05rem;letter-spacing:-.01em;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.brand i{width:14px;height:14px;border-radius:50%;border:3px solid var(--lc);display:inline-block;transition:border-color .6s}
+.map{flex:1;min-width:0;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;padding:6px 2px}
+.map::-webkit-scrollbar{display:none}
+.stop{position:relative;flex:0 0 auto;width:38px;height:30px;border:0;background:none;cursor:pointer;padding:0}
+.stop::before{content:"";position:absolute;top:50%;left:0;right:0;height:5px;margin-top:-2.5px;background:var(--c);opacity:.45}
+.stop:first-child::before{left:50%}.stop:last-child::before{right:50%}
+.stop span{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--ink);border:3px solid var(--c);transition:transform .3s,background .3s,box-shadow .3s}
+.stop.done span{background:var(--c)}
+.stop.on span{background:var(--c);transform:scale(1.45);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent),0 0 18px var(--c)}
+.stop:hover span{transform:scale(1.3)}
+
+/* ana panel */
+main{min-height:0;display:flex;padding:6px 16px;overflow:hidden}
+.panel{width:min(640px,100%);max-height:100%;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:24px;padding:clamp(18px,2.2vw,30px);align-self:flex-start;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.panel.enter{animation:enter .55s cubic-bezier(.2,.7,.2,1)}
+@keyframes enter{from{transform:translateY(14px);opacity:.35}to{transform:none;opacity:1}}
+.sign{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);flex-wrap:wrap}
+.sign .dot{width:12px;height:12px;border-radius:50%;background:var(--lc);box-shadow:0 0 12px var(--lc)}
+.sign b{color:var(--lc);font-weight:600}
+.sign .sno{margin-left:auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(3rem,8vw,6rem);line-height:.92;letter-spacing:-.035em;font-weight:800;margin:.25em 0 .2em}
+h1 em{font-style:normal;color:var(--lc)}
+h2{font-size:clamp(1.75rem,3.4vw,2.6rem);line-height:1.02;letter-spacing:-.025em;font-weight:800;margin:.45em 0 .35em}
+.lead{font-size:1.06rem;color:#dfe3fb;max-width:62ch;margin:0 0 1.1em}
+.lead strong{color:var(--lc);font-weight:600}
+.widget{display:flex;flex-direction:column;gap:14px}
+.tiny{font-size:.78rem;color:var(--mute);margin:0}
+.lbl{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row.center{justify-content:center}
+.btn{--b:var(--lc);border:0;border-radius:999px;padding:.62em 1.15em;background:var(--b);color:#0a0f24;font-weight:600;cursor:pointer;transition:transform .15s,filter .15s;font-size:.92rem}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--b)}
+.btn[disabled]{opacity:.4;cursor:default;transform:none}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;align-self:flex-start}
+.seg button{border:0;background:none;border-radius:999px;padding:.4em .9em;cursor:pointer;color:var(--mute);font-size:.85rem}
+.seg button.on{background:var(--lc);color:#0a0f24;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:none;border-radius:999px;padding:.35em .8em;font-size:.82rem;cursor:pointer;color:var(--mute)}
+.chips button.on{border-color:var(--lc);color:var(--fg);background:color-mix(in srgb,var(--lc) 18%,transparent)}
+.cvwrap{border:1px solid var(--line);border-radius:16px;background:rgba(6,10,28,.55);padding:6px}
+canvas.cv,.cvwrap canvas{display:block;width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.86rem;color:var(--mute)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.legend b{color:var(--fg);font-variant-numeric:tabular-nums}
+.box{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:rgba(6,10,28,.45)}
+
+/* kanıt kutusu */
+.ev{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
+.evh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.evh b{font-size:.92rem}
+.evh .evt{margin-left:auto;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.sig{display:inline-flex;align-items:flex-end;gap:3px;height:16px}
+.sig i{width:5px;border-radius:2px;background:rgba(255,255,255,.15)}
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:11px}.sig i:nth-child(3){height:16px}
+.sig i.on{background:var(--sc)}
+.ev p{margin:0;font-size:.88rem;color:#cfd4ef;max-width:65ch}
+.ev .refs{margin-top:6px;font-size:.74rem;color:var(--mute);font-family:var(--f-mono)}
+details.note{margin-top:14px;font-size:.85rem;color:var(--mute)}
+details.note summary{cursor:pointer;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+details.note p{margin:.5em 0 0}
+
+/* alt bar */
+.bottom{display:flex;align-items:center;gap:10px;padding:8px 16px 14px}
+.bottom .cnt{font-family:var(--f-mono);font-size:.8rem;color:var(--mute);font-variant-numeric:tabular-nums}
+.bottom .spacer{flex:1}
+.navb{border:1px solid var(--line);background:rgba(13,19,46,.7);border-radius:999px;padding:.55em 1.1em;cursor:pointer;font-weight:600;font-size:.9rem}
+.navb.main{background:var(--lc);color:#0a0f24;border-color:transparent}
+.navb[disabled]{opacity:.35;cursor:default}
+
+/* kapak */
+.lines{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.ln{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(6,10,28,.4);cursor:pointer;text-align:left}
+.ln i{flex:0 0 14px;height:14px;border-radius:50%;margin-top:4px;border:3px solid var(--c)}
+.ln b{display:block;font-size:.9rem}.ln small{color:var(--mute);font-size:.76rem;line-height:1.35;display:block}
+.ln:hover{border-color:var(--c)}
+
+/* odak */
+.split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:560px){.split{grid-template-columns:minmax(0,1fr)}}
+.checks{display:flex;flex-direction:column;gap:6px}
+.chk{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--line);cursor:pointer;font-size:.9rem}
+.chk input{width:18px;height:18px;accent-color:var(--lc);flex:0 0 auto}
+.chk:has(input:checked){border-color:var(--lc);background:color-mix(in srgb,var(--lc) 12%,transparent)}
+.bar{height:8px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;width:0;background:var(--lc);transition:width .4s}
+.timer{display:flex;flex-direction:column;align-items:center;gap:10px}
+.ring{position:relative;width:min(190px,60vw);aspect-ratio:1;max-width:100%}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9}
+.ring .rb{stroke:rgba(255,255,255,.08)}
+.ring .rf{stroke:var(--lc);stroke-linecap:round;transition:stroke-dashoffset .3s linear}
+.ring .tc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18%}
+.ring .tc b{font-family:var(--f-mono);font-size:2rem;font-variant-numeric:tabular-nums}
+.ring .tc span{font-size:.72rem;color:var(--mute);line-height:1.25}
+
+/* leitner */
+.boxes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bx{border:1px solid var(--line);border-radius:14px;padding:8px 10px;text-align:center;transition:border-color .3s,background .3s}
+.bx b{display:block;font-family:var(--f-display);font-size:1.6rem;line-height:1.1}
+.bx span{font-size:.8rem}.bx small{display:block;color:var(--mute);font-size:.7rem}
+.bx.hit{border-color:var(--lc);background:color-mix(in srgb,var(--lc) 15%,transparent)}
+.card3d{position:relative;height:190px;perspective:900px;cursor:pointer}
+.cf{position:absolute;inset:0;border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;gap:6px;backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:transform .6s cubic-bezier(.2,.7,.2,1);border:1px solid var(--line)}
+.cf small{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lc)}
+.cf p{margin:0;font-family:var(--f-display);font-size:1.3rem;line-height:1.2;font-weight:700}
+.cf em{font-style:normal;font-size:.78rem;color:var(--mute)}
+.front{background:linear-gradient(150deg,#1c2660,#111836)}
+.back{background:linear-gradient(150deg,color-mix(in srgb,var(--lc) 35%,#111836),#111836);transform:rotateY(180deg)}
+.card3d.flip .front{transform:rotateY(-180deg)}.card3d.flip .back{transform:rotateY(0)}
+
+/* hafıza sarayı */
+.scene{position:relative;height:280px;perspective:820px;overflow:hidden;border-radius:18px;border:1px solid var(--line);background:radial-gradient(80% 70% at 50% 35%,#202b66,#0b1130)}
+.room{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;transform:scale(var(--s,1)) rotateX(-17deg) rotateY(var(--ry,20deg));transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
+.fc{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.fc.floor{width:330px;height:290px;margin:-145px 0 0 -165px;transform:translateY(88px) rotateX(90deg);background:repeating-linear-gradient(0deg,transparent 0 28px,color-mix(in srgb,var(--lc) 22%,transparent) 28px 29px),repeating-linear-gradient(90deg,transparent 0 28px,color-mix(in srgb,var(--lc) 22%,transparent) 28px 29px),rgba(20,28,70,.9)}
+.fc.wall{background:linear-gradient(180deg,rgba(40,52,120,.85),rgba(24,32,80,.9));border:1px solid rgba(170,185,255,.18)}
+.fc.back{width:330px;height:176px;margin:-88px 0 0 -165px;transform:translateZ(-145px)}
+.fc.left{width:290px;height:176px;margin:-88px 0 0 -145px;transform:translateX(-165px) rotateY(90deg)}
+.fc.right{width:290px;height:176px;margin:-88px 0 0 -145px;transform:translateX(165px) rotateY(-90deg)}
+.door{position:absolute;left:58%;bottom:0;width:62px;height:120px;background:#3a2a55;border:2px solid rgba(255,255,255,.25);border-bottom:0;border-radius:6px 6px 0 0}
+.door::after{content:"";position:absolute;right:8px;top:55%;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.win{position:absolute;left:28%;top:22%;width:96px;height:66px;border:3px solid rgba(255,255,255,.35);background:linear-gradient(180deg,#7fd3ff55,#ffd27a33);border-radius:4px}
+.win::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;background:rgba(255,255,255,.35)}
+.tv{position:absolute;left:38%;top:26%;width:94px;height:56px;background:#05081a;border:3px solid #4a5590;border-radius:6px;box-shadow:0 0 22px color-mix(in srgb,var(--lc) 35%,transparent)}
+.lo{position:absolute;left:0;top:0;transform-style:preserve-3d;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
+.lo .pin{transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:auto}
+.lo .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:.85rem;background:var(--ink);border:3px solid var(--lc);transition:transform .3s,background .3s,color .3s}
+.lo .nm{font-size:.66rem;background:rgba(10,15,36,.85);padding:2px 7px;border-radius:999px;white-space:nowrap;color:var(--mute)}
+.lo.on .num{background:var(--lc);color:#0a0f24;transform:scale(1.35);box-shadow:0 0 20px var(--lc)}
+.lo.ok .num{background:var(--mint);border-color:var(--mint);color:#0a0f24}
+.pinfo{min-height:96px}
+.pinfo h3{font-size:1.25rem;margin-bottom:4px}
+.pinfo h3 small{font-family:var(--f-mono);font-size:.7rem;color:var(--mute);font-weight:400;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:2px}
+.pinfo p{margin:0;color:#dfe3fb}
+
+/* anahtar kelime */
+.kw{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.kc{position:relative;height:150px;perspective:700px;cursor:pointer;border:0;background:none;padding:0;text-align:left}
+.kc .cf{padding:12px 14px;border-radius:14px}
+.kc .cf p{font-size:1.15rem}
+.kc .back p{font-size:.86rem;font-family:var(--f-body);font-weight:400;line-height:1.35}
+.kc.flip .front{transform:rotateY(-180deg)}.kc.flip .back{transform:rotateY(0)}
+.form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:6px}
+@media (max-width:560px){.form3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+input[type=text],textarea{font:inherit;font-size:.88rem;color:var(--fg);background:rgba(6,10,28,.6);border:1px solid var(--line);border-radius:10px;padding:.55em .7em;min-width:0;width:100%}
+input[type=text]:focus,textarea:focus{border-color:var(--lc);outline:none}
+
+/* karışık */
+.tiles{display:flex;gap:4px;flex-wrap:wrap}
+.tiles span{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:.82rem;color:#0a0f24;animation:pop .4s backwards}
+@keyframes pop{from{transform:scale(.6) translateY(6px)}}
+.q{font-family:var(--f-display);font-size:1.25rem;font-weight:700;line-height:1.25}
+.fb{font-size:.9rem;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05)}
+.fb.ok{border-left:3px solid var(--mint)}.fb.no{border-left:3px solid var(--coral)}
+
+/* neden zinciri */
+.steps{display:flex;flex-direction:column;gap:10px;position:relative}
+.st{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start;animation:enter .45s}
+.st .n{width:30px;height:30px;border-radius:50%;border:3px solid var(--lc);display:grid;place-items:center;font-family:var(--f-mono);font-size:.8rem;font-weight:600}
+.st .qq{font-weight:600;margin:4px 0 6px}
+.st .ans{font-size:.9rem;color:#dfe3fb;background:color-mix(in srgb,var(--lc) 12%,transparent);border-radius:12px;padding:10px 12px}
+
+/* uyku */
+.night{position:relative;height:46px;border-radius:12px;background:linear-gradient(90deg,#2a2f6a,#0b1030 30%,#0b1030 70%,#3a3f7a);overflow:hidden;border:1px solid var(--line)}
+.night .sl{position:absolute;top:6px;bottom:6px;border-radius:8px;background:var(--lc);transition:left .3s,width .3s;opacity:.85}
+.night .tk{position:absolute;bottom:2px;font-family:var(--f-mono);font-size:.62rem;color:var(--mute);transform:translateX(-50%)}
+input[type=range]{width:100%;accent-color:var(--lc)}
+.big{font-family:var(--f-display);font-size:2.4rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+
+/* nefes */
+.breath{position:relative;height:240px;display:grid;place-items:center}
+.orb{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff8,var(--lc) 45%,color-mix(in srgb,var(--lc) 20%,transparent) 75%);box-shadow:0 0 60px color-mix(in srgb,var(--lc) 50%,transparent);transition:transform 5s ease-in-out}
+.orb.in{transform:scale(2.2)}
+.breath .bt{position:absolute;font-family:var(--f-display);font-weight:800;font-size:1.4rem;color:#0a0f24;pointer-events:none}
+.reap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media (max-width:520px){.reap{grid-template-columns:minmax(0,1fr)}}
+.reap div{border-radius:14px;padding:12px;font-size:.9rem;border:1px solid var(--line)}
+.reap .old{color:var(--mute);text-decoration:line-through;text-decoration-color:var(--coral)}
+.reap .new{border-color:var(--mint);background:color-mix(in srgb,var(--mint) 10%,transparent)}
+
+/* hata */
+.er{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px}
+.er b{font-size:.92rem}.er small{display:block;color:var(--mute);font-size:.76rem}
+.er .hb{grid-column:1/-1;height:6px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.er .hb i{display:block;height:100%;background:var(--lc);transition:width .4s}
+.ctr{display:flex;align-items:center;gap:6px}
+.ctr button{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:none;cursor:pointer;font-size:1.05rem;line-height:1}
+.ctr span{min-width:22px;text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.er.top1{border-color:var(--lc);background:color-mix(in srgb,var(--lc) 10%,transparent)}
+
+/* efsane */
+.myth{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.myth p{margin:0;font-weight:600}
+.myth .row button{font-size:.82rem;padding:.45em .9em}
+.myth.r-ok{border-color:var(--mint)}.myth.r-no{border-color:var(--coral)}
+
+/* plan */
+.pledge{border-radius:20px;padding:20px;background:linear-gradient(140deg,#202a6b,#121a3d);border:1px solid var(--line);position:relative;overflow:hidden}
+.pledge::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;border:14px solid color-mix(in srgb,var(--lc) 35%,transparent)}
+.pledge h3{font-size:1.5rem;margin-bottom:6px}
+.pledge ol{margin:.4em 0 0;padding-left:1.2em}
+.pledge li{margin:.2em 0}
+.techs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.refs-list{font-size:.78rem;color:var(--mute);columns:2 260px;column-gap:20px;margin:0;padding-left:1.1em}
+.refs-list li{break-inside:avoid;margin-bottom:.35em}
+details.src summary{cursor:pointer;font-weight:600}
+
+@media (max-width:700px){
+  .top{padding-top:10px}
+  .brand span{display:none}
+  main{padding:4px 10px}
+  .panel{border-radius:20px;background:rgba(13,19,46,.88)}
+  .bottom{padding:8px 10px 12px}
+  .fsb{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01s!important}
+}
+</style>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="app">
+  <header class="top">
+    <div class="brand"><i></i><span>Zihin Hattı</span></div>
+    <nav class="map" id="map" aria-label="Duraklar"></nav>
+  </header>
+  <main><article class="panel" id="panel" aria-live="polite"></article></main>
+  <footer class="bottom">
+    <button class="navb" id="prev">← Önceki</button>
+    <span class="cnt" id="cnt"></span>
+    <span class="spacer"></span>
+    <button class="navb fsb" id="fs">Tam ekran</button>
+    <button class="navb main" id="next">Sonraki durak →</button>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const LINES={
+  kalkis:{n:'Kalkış',c:'#ffd27a'},
+  odak:{n:'Odak Hattı',c:'#ffb547'},
+  hafiza:{n:'Hafıza Hattı',c:'#45d4e6'},
+  anlama:{n:'Anlama Hattı',c:'#b49bff'},
+  beden:{n:'Beden Hattı',c:'#5fe3a1'},
+  sinav:{n:'Sınav Hattı',c:'#ff7a6b'}
+};
+const LV={g:['Güçlü kanıt',3,'#5fe3a1'],o:['Orta kanıt',2,'#ffb547'],s:['Sınırlı / tartışmalı',1,'#ff7a6b'],i:['Etiketler nasıl okunur?',0,'#eef1ff']};
+
+/* ---------- yardımcılar ---------- */
+let reg={iv:[],rs:[],tok:0};
+const every=(fn,ms)=>{reg.iv.push(setInterval(fn,ms))};
+const later=(fn,ms)=>{reg.iv.push(setTimeout(fn,ms))};
+const onResize=fn=>reg.rs.push(fn);
+function clearReg(){reg.iv.forEach(id=>{clearInterval(id);clearTimeout(id)});reg={iv:[],rs:[],tok:reg.tok+1}}
+function anim(fn){const t=reg.tok;const f=now=>{if(t!==reg.tok)return;if(fn(now)!==false)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('zh_'+k));localStorage.setItem('zh_'+k,JSON.stringify(v))}catch(e){return null}}
+function setupCanvas(cv,h){const dpr=Math.min(2,window.devicePixelRatio||1);const w=Math.max(200,cv.clientWidth||cv.parentElement.clientWidth-12);cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h}}
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const MUTE='#a3acd6',GRID='rgba(170,185,255,.14)';
+
+/* ---------- 0 kapak ---------- */
+function wCover(el){
+  const L=[['odak','Bölünmeden, derin çalışmak'],['hafiza','Unutmayı yavaşlatmak, hatırlamak'],['anlama','Ezber değil, gerçekten anlamak'],['beden','Uyku, hareket, nefes'],['sinav','Deneme, hata, sınav anı']];
+  el.innerHTML=`<div class="lines">${L.map(([k,t])=>`<button class="ln" data-l="${k}" style="--c:${LINES[k].c}"><i></i><span><b>${LINES[k].n}</b><small>${t}</small></span></button>`).join('')}</div>
+  <div class="row"><button class="btn" id="go1">Yolculuğa başla</button><span class="tiny">Akıllı tahtada ← → tuşlarıyla, telefonda kaydırarak ilerle.</span></div>`;
+  $('#go1',el).onclick=()=>go(1);
+  $$('.ln',el).forEach(b=>b.onclick=()=>{const i=S.findIndex(s=>s.line===b.dataset.l);go(i)});
+}
+
+/* ---------- 1 dikkat kalıntısı ---------- */
+function wResidue(el){
+  el.innerHTML=`<div class="row"><button class="btn" id="rA" style="--b:#ff7a6b">Bildirimler açık</button><button class="btn" id="rB" style="--b:#5fe3a1">Telefon başka odada</button></div>
+  <div class="cvwrap"><canvas id="rc"></canvas></div>
+  <div class="legend"><span><i style="background:#ff7a6b"></i>Bildirimler açık · derin odak: <b id="rAo">—</b></span><span><i style="background:#5fe3a1"></i>Telefon uzakta · derin odak: <b id="rBo">—</b></span></div>
+  <p class="tiny">45 dakikalık çalışmanın temsili modeli: her bildirimde odak düşer ve yavaşça yeniden ısınır. Rakamlar ölçüm değil, fikri göstermek için.</p>`;
+  const cv=$('#rc',el);let C=setupCanvas(cv,210);const runs={};
+  const model=on=>{const it=on?[8,17,27,36]:[];const p=[];let f=.2;for(let m=0;m<=45.001;m+=.25){if(it.some(t=>Math.abs(t-m)<.12))f=.18;f+=(.93-f)*.05;p.push([m,f])}return p};
+  function draw(){const{ctx,w,h}=C;ctx.clearRect(0,0,w,h);const L=30,R=10,T=14,B=24;const X=m=>L+(w-L-R)*m/45,Y=f=>T+(h-T-B)*(1-f);
+    ctx.font='11px "JetBrains Mono",monospace';ctx.lineWidth=1;
+    for(let m=0;m<=45;m+=15){ctx.strokeStyle=GRID;ctx.beginPath();ctx.moveTo(X(m),T);ctx.lineTo(X(m),h-B);ctx.stroke();ctx.fillStyle=MUTE;ctx.textAlign=m===45?'right':m?'center':'left';ctx.fillText(m+' dk',X(m),h-7)}
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.moveTo(L,Y(.75));ctx.lineTo(w-R,Y(.75));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#dfe3fb';ctx.textAlign='left';ctx.fillText('derin odak',L+4,Y(.75)-6);
+    ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillStyle=MUTE;ctx.fillText('odak',0,0);ctx.restore();
+    for(const k in runs){const r=runs[k];const n=Math.floor(r.p.length*r.t);if(n<2)continue;ctx.strokeStyle=r.c;ctx.lineWidth=2.6;ctx.beginPath();for(let i=0;i<n;i++){const[m,f]=r.p[i];i?ctx.lineTo(X(m),Y(f)):ctx.moveTo(X(m),Y(f))}ctx.stroke();
+      if(r.on){r.it.forEach(t=>{if(t<=45*r.t){ctx.fillStyle=r.c;ctx.beginPath();ctx.arc(X(t),Y(.12),4,0,7);ctx.fill()}})}}
+    if(runs.a){ctx.fillStyle='#ff7a6b';ctx.textAlign='left';ctx.fillText('● bildirim',L+4,Y(.04))}
+  }
+  function run(k,on,c,out){const p=model(on);runs[k]={p,t:0,c,on,it:[8,17,27,36]};const deep=p.filter(q=>q[1]>.75).length*.25;$(out,el).textContent='…';const t0=performance.now();
+    anim(now=>{runs[k].t=Math.min(1,(now-t0)/2400);draw();if(runs[k].t>=1){$(out,el).textContent=Math.round(deep)+' dk';return false}})}
+  $('#rA',el).onclick=()=>run('a',1,'#ff7a6b','#rAo');$('#rB',el).onclick=()=>run('b',0,'#5fe3a1','#rBo');
+  draw();onResize(()=>{C=setupCanvas(cv,210);draw()});
+}
+
+/* ---------- 2 odak bloğu ---------- */
+function wFocus(el){
+  const items=['Telefon başka odada ya da kapalı','Masada yalnızca bu dersin malzemesi','Hedef yazılı: “30 paragraf sorusu”','Su, kalem ve müsvedde hazır'];
+  el.innerHTML=`<div class="split"><div><div class="lbl">Kalkış kontrolü</div><div class="checks">${items.map((t,i)=>`<label class="chk"><input type="checkbox" id="fc${i}"><span>${t}</span></label>`).join('')}</div><div class="bar"><i id="fcB"></i></div><p class="tiny" id="fcT">0 / 4 hazır</p></div>
+  <div class="timer"><div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="rb"/><circle cx="60" cy="60" r="52" class="rf" id="tR"/></svg><div class="tc"><b id="tN">25:00</b><span id="tL">Odak bloğu</span></div></div>
+  <div class="seg" id="tSeg" style="align-self:center"><button data-m="25" class="on">25 dk</button><button data-m="40">40 dk</button><button data-m="50">50 dk</button></div>
+  <div class="row center"><button class="btn" id="tGo">Başlat</button><button class="btn ghost" id="tRs">Sıfırla</button></div></div></div>
+  <p class="tiny">Blok bitince mola: 25 ve 40 dakikada 5, 50 dakikada 10 dakika. Molada ekrana bakma; kalk, su iç, pencereden dışarı bak.</p>`;
+  const upd=()=>{const n=items.filter((_,i)=>$('#fc'+i,el).checked).length;$('#fcB',el).style.width=n*25+'%';$('#fcT',el).textContent=n===4?'Hazırsın. Zamanlayıcıyı başlat.':n+' / 4 hazır'};
+  items.forEach((_,i)=>$('#fc'+i,el).onchange=upd);
+  let len=25,phase='odak',left=len*60,end=0,running=false;const CIR=2*Math.PI*52;const ring=$('#tR',el);ring.style.strokeDasharray=CIR;
+  const brk=()=>len>=50?10:5;const go=$('#tGo',el);
+  function show(){const tot=(phase==='odak'?len:brk())*60;const s=Math.ceil(left);$('#tN',el).textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');ring.style.strokeDashoffset=CIR*(1-left/tot);$('#tL',el).textContent=phase==='odak'?'Odak bloğu':'Mola zamanı';ring.style.stroke=phase==='odak'?'var(--lc)':'#5fe3a1'}
+  function tick(){if(!running)return;left=Math.max(0,(end-Date.now())/1000);if(left<=0){if(phase==='odak'){phase='mola';left=brk()*60;end=Date.now()+left*1000}else{running=false;phase='odak';left=len*60;go.textContent='Yeni blok'}}show()}
+  every(tick,250);
+  go.onclick=()=>{running=!running;if(running){end=Date.now()+left*1000;go.textContent='Duraklat'}else go.textContent='Devam et'};
+  const reset=()=>{running=false;phase='odak';left=len*60;go.textContent='Başlat';show()};
+  $('#tRs',el).onclick=reset;
+  $$('#tSeg button',el).forEach(b=>b.onclick=()=>{$$('#tSeg button',el).forEach(x=>x.classList.toggle('on',x===b));len=+b.dataset.m;reset()});
+  show();
+}
+
+/* ---------- 3 unutma eğrisi ---------- */
+function wCurve(el){
+  const days=[1,3,7,14,21,27,29];const P={none:[],cram:[27,29],spaced:[1,3,7,14,21,27]};let sel=new Set(P.spaced);
+  el.innerHTML=`<div class="seg" id="cP"><button data-p="none">Hiç tekrar yok</button><button data-p="cram">Son günlere yığma</button><button data-p="spaced" class="on">Aralıklı tekrar</button></div>
+  <div class="cvwrap"><canvas id="cc"></canvas></div>
+  <div><div class="lbl">Tekrar günleri · dokun, ekle ya da çıkar</div><div class="chips" id="cD">${days.map(d=>`<button data-d="${d}">${d}. gün</button>`).join('')}</div></div>
+  <div class="legend"><span>Sınav günü (30. gün): <b id="cE">—</b></span><span>Sınavdan 15 gün sonra: <b id="cL">—</b></span></div>
+  <p class="tiny">Temsili model: her tekrar bilgiyi tazeler ve sonraki unutmayı yavaşlatır. Gerçek oranlar konuya ve kişiye göre değişir; burada önemli olan eğrilerin şekli.</p>`;
+  const cv=$('#cc',el);let C=setupCanvas(cv,220);
+  function curve(){const rev=[...sel].sort((a,b)=>a-b);let S=1.4,last=0;const ev=[];for(const d of rev){const r=Math.exp(-(d-last)/S);S*=1.3+1.7*(1-r)*(r>.15?1:.3);last=d;ev.push([d,S])}
+    return t=>{let s=1.4,l=0;for(const[d,ss]of ev){if(d<=t){s=ss;l=d}}return Math.exp(-(t-l)/s)}}
+  let prog=1,R=curve();
+  function draw(){const{ctx,w,h}=C;ctx.clearRect(0,0,w,h);const L=34,Rt=12,T=16,B=24,X=d=>L+(w-L-Rt)*d/45,Y=r=>T+(h-T-B)*(1-r);
+    ctx.font='11px "JetBrains Mono",monospace';ctx.lineWidth=1;
+    [0,.5,1].forEach(r=>{ctx.strokeStyle=GRID;ctx.beginPath();ctx.moveTo(L,Y(r));ctx.lineTo(w-Rt,Y(r));ctx.stroke();ctx.fillStyle=MUTE;ctx.textAlign='right';ctx.fillText(Math.round(r*100)+'%',L-5,Y(r)+4)});
+    [0,15,30,45].forEach(d=>{ctx.fillStyle=MUTE;ctx.textAlign=d===45?'right':d?'center':'left';ctx.fillText(d+'. gün',X(d),h-7)});
+    ctx.strokeStyle='#ff7a6b';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(X(30),T-6);ctx.lineTo(X(30),h-B);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ff7a6b';ctx.textAlign='center';ctx.fillText('SINAV',X(30),T-4+8);
+    const end=45*prog;const col=getComputedStyle(document.documentElement).getPropertyValue('--lc').trim()||'#45d4e6';
+    ctx.beginPath();ctx.moveTo(X(0),Y(0));for(let t=0;t<=end;t+=.05)ctx.lineTo(X(t),Y(R(t)));ctx.lineTo(X(end),Y(0));ctx.closePath();ctx.fillStyle=col+'2a';ctx.fill();
+    ctx.beginPath();for(let t=0;t<=end;t+=.05){t?ctx.lineTo(X(t),Y(R(t))):ctx.moveTo(X(t),Y(R(t)))}ctx.strokeStyle=col;ctx.lineWidth=2.6;ctx.stroke();
+    [...sel].forEach(d=>{if(d<=end){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(X(d),Y(1),4,0,7);ctx.fill()}});
+  }
+  function upd(){R=curve();$$('#cD button',el).forEach(b=>b.classList.toggle('on',sel.has(+b.dataset.d)));$('#cE',el).textContent=Math.round(R(30)*100)+'%';$('#cL',el).textContent=Math.round(R(45)*100)+'%';
+    prog=0;const t0=performance.now();anim(now=>{prog=Math.min(1,(now-t0)/1100);draw();return prog<1})}
+  $$('#cP button',el).forEach(b=>b.onclick=()=>{$$('#cP button',el).forEach(x=>x.classList.toggle('on',x===b));sel=new Set(P[b.dataset.p]);upd()});
+  $$('#cD button',el).forEach(b=>b.onclick=()=>{const d=+b.dataset.d;sel.has(d)?sel.delete(d):sel.add(d);$$('#cP button',el).forEach(x=>x.classList.remove('on'));upd()});
+  upd();onResize(()=>{C=setupCanvas(cv,220);draw()});
+}
+
+/* ---------- 4 geri çağırma / leitner ---------- */
+const CARDS=[
+ ['Fen Bilimleri','DNA’nın yapı birimi nedir?','Nükleotit'],
+ ['Fen Bilimleri','Mevsimlerin oluşmasının iki nedeni nedir?','Dünya’nın eksen eğikliği ve Güneş etrafında dolanması'],
+ ['İnkılap Tarihi','TBMM hangi tarihte açıldı?','23 Nisan 1920'],
+ ['İnkılap Tarihi','Mustafa Kemal Samsun’a hangi tarihte çıktı?','19 Mayıs 1919'],
+ ['Türkçe','Mecaz anlam nedir?','Sözcüğün gerçek anlamından uzaklaşarak kazandığı yeni anlam'],
+ ['Matematik','√50 hangi iki ardışık tam sayı arasındadır?','7 ile 8 (49 < 50 < 64)'],
+ ['Matematik','2⁻³ kaçtır?','1/8'],
+ ['İngilizce','“Chop” ne demek?','Doğramak']];
+function wLeitner(el){
+  let box=store('leitner');if(!Array.isArray(box)||box.length!==CARDS.length)box=CARDS.map(()=>1);let idx=-1;
+  el.innerHTML=`<div class="boxes">${[1,2,3].map(b=>`<div class="bx" id="bx${b}"><b>0</b><span>Kutu ${b}</span><small>${['her gün','2 günde bir','haftada bir'][b-1]}</small></div>`).join('')}</div>
+  <div class="card3d" id="lc" role="button" tabindex="0" aria-label="Kartı çevir"><div class="cf front"><small id="lS"></small><p id="lQ"></p><em>Önce cevabı aklından söyle, sonra kartı çevir.</em></div><div class="cf back"><small>Cevap</small><p id="lA"></p></div></div>
+  <div class="row center" id="lB"></div>`;
+  const card=$('#lc',el),btns=$('#lB',el);
+  function counts(hit){[1,2,3].forEach(b=>{const x=$('#bx'+b,el);$('b',x).textContent=box.filter(v=>v===b).length;x.classList.toggle('hit',b===hit)})}
+  function next(){const min=Math.min(...box);if(min===3){card.classList.remove('flip');$('#lS',el).textContent='Tebrikler';$('#lQ',el).textContent='Bütün kartlar 3. kutuda.';btns.innerHTML='<button class="btn ghost" id="lR">Baştan başla</button>';$('#lR',el).onclick=()=>{box=CARDS.map(()=>1);store('leitner',box);counts();next()};return}
+    const c=box.map((b,i)=>b===min&&i!==idx?i:-1).filter(i=>i>=0);idx=c.length?c[Math.floor(Math.random()*c.length)]:idx;
+    card.classList.remove('flip');later(()=>{$('#lS',el).textContent=CARDS[idx][0]+' · Kutu '+box[idx];$('#lQ',el).textContent=CARDS[idx][1];$('#lA',el).textContent=CARDS[idx][2]},200);
+    btns.innerHTML='<button class="btn" id="lF">Kartı çevir</button>';$('#lF',el).onclick=flip}
+  function flip(){if(card.classList.contains('flip')||Math.min(...box)===3)return;card.classList.add('flip');
+    btns.innerHTML='<button class="btn" style="--b:#ff7a6b" id="lN">Bilemedim → Kutu 1</button><button class="btn" style="--b:#5fe3a1" id="lY">Bildim → ileri</button>';
+    $('#lN',el).onclick=()=>rate(false);$('#lY',el).onclick=()=>rate(true)}
+  function rate(ok){box[idx]=ok?Math.min(3,box[idx]+1):1;store('leitner',box);counts(box[idx]);next()}
+  card.onclick=flip;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};
+  counts();next();
+}
+
+/* ---------- 5 hafıza sarayı ---------- */
+const LOCI=[
+ {n:'Kapı',i:'Cumhuriyetçilik',t:'Kapının önünde bir seçim sandığı var. İçeri girmek için oyunu atman gerekiyor.',p:[-163,20,70],ry:42},
+ {n:'Ayakkabılık',i:'Milliyetçilik',t:'Ayakkabılığın üstünde kocaman bir Türk bayrağı katlı duruyor; ayakkabılar ona hazır ol vaziyetinde.',p:[-150,60,-40],ry:30},
+ {n:'Koltuk',i:'Halkçılık',t:'Koltukta çiftçi, doktor ve öğrenci omuz omuza oturuyor. Kimseye ayrıcalık yok, herkes eşit sıkışık.',p:[-60,64,-118],ry:14},
+ {n:'Televizyon',i:'Devletçilik',t:'Ekranda devletin kurduğu dev bir fabrikanın açılışı var; bacalardan konfeti çıkıyor.',p:[20,-12,-143],ry:-4},
+ {n:'Mutfak masası',i:'Laiklik',t:'Masada iki ayrı tabak var: biri din işleri, biri devlet işleri. Çatallar asla birbirine karışmıyor.',p:[118,64,-70],ry:-24},
+ {n:'Pencere',i:'İnkılapçılık',t:'Pencereden eski bir at arabası çıkıp gidiyor, yerine ışıl ışıl yeni bir tren giriyor.',p:[163,-18,40],ry:-42}];
+function wPalace(el){
+  el.innerHTML=`<div class="scene" id="sc"><div class="room" id="rm">
+   <div class="fc floor"></div>
+   <div class="fc wall back"><div class="tv"></div></div>
+   <div class="fc wall left"><div class="door"></div></div>
+   <div class="fc wall right"><div class="win"></div></div>
+   ${LOCI.map((l,i)=>`<div class="lo" data-i="${i}"><div class="pin"><span class="num">${i+1}</span><span class="nm">${l.n}</span></div></div>`).join('')}
+  </div></div>
+  <div class="box pinfo" id="pi"><h3><small>Örnek: Atatürk ilkeleri · 8. sınıf</small>Evinde 6 durak var</h3><p>Yürüyüşe başla. Her durakta bir ilkeyi tuhaf ve canlı bir sahneye dönüştüreceğiz. Sahne ne kadar tuhafsa o kadar akılda kalır.</p></div>
+  <div class="row" id="pB"><button class="btn" id="pW">Yürüyüşe başla</button><button class="btn ghost" id="pT">Kendini test et</button></div>`;
+  const sc=$('#sc',el),rm=$('#rm',el),los=$$('.lo',el),info=$('#pi',el),pb=$('#pB',el);let cur=-1,ry=20;
+  function place(){const s=Math.min(1,(sc.clientWidth-20)/440);rm.style.setProperty('--s',s);rm.style.setProperty('--ry',ry+'deg');
+    los.forEach((lo,i)=>{const[x,y,z]=LOCI[i].p;lo.style.transform=`translate3d(${x}px,${y}px,${z}px) rotateY(${-ry}deg) rotateX(17deg)`})}
+  function at(i){cur=i;ry=LOCI[i].ry;place();los.forEach((l,k)=>l.classList.toggle('on',k===i));const L=LOCI[i];
+    info.innerHTML=`<h3><small>Durak ${i+1} · ${L.n}</small>${L.i}</h3><p>${L.t}</p>`;
+    pb.innerHTML=`<button class="btn ghost" id="pP" ${i?'':'disabled'}>← Geri</button><button class="btn" id="pN">${i<5?'Sonraki durak →':'Şimdi kendini test et'}</button>`;
+    $('#pP',el).onclick=()=>at(i-1);$('#pN',el).onclick=()=>i<5?at(i+1):test()}
+  function test(){ry=20;place();los.forEach(l=>l.classList.remove('on','ok'));let step=0;const ch=shuffle(LOCI.map(l=>l.i));
+    info.innerHTML=`<h3><small>Test</small>Evinde yürü: 1. duraktan başla</h3><p>Her durakta ne vardı? İlkeleri yürüyüş sırasıyla seç.</p>`;
+    pb.innerHTML=`<div class="chips" id="pc">${ch.map(c=>`<button>${c}</button>`).join('')}</div>`;
+    $$('#pc button',el).forEach(b=>b.onclick=()=>{if(b.textContent===LOCI[step].i){b.disabled=true;b.classList.add('on');los[step].classList.add('ok');step++;
+      if(step===6){info.innerHTML=`<h3><small>Sonuç</small>Altısını da sırayla hatırladın</h3><p>Şimdi aynı yöntemi kendi evinle dene: Kurtuluş Savaşı cepheleri, kongreler ya da fen terimleri için yeni bir rota kur.</p>`;pb.innerHTML='<button class="btn ghost" id="pW2">Yürüyüşü tekrarla</button>';$('#pW2',el).onclick=()=>at(0)}
+      else info.querySelector('h3').lastChild.textContent=`Doğru. Şimdi ${step+1}. durak: ${LOCI[step].n}`}
+     else{b.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}],{duration:250});info.querySelector('p').textContent=`${LOCI[step].n} durağını hayal et. Orada ne görüyordun?`}})}
+  $('#pW',el).onclick=()=>at(0);$('#pT',el).onclick=test;
+  place();onResize(place);
+  let auto=0;every(()=>{if(cur<0){auto+=1;ry=20+Math.sin(auto/2)*10;place()}},1600);
+}
+
+/* ---------- 6 anahtar kelime ---------- */
+const KW=[['chop','doğramak','çöp','Doğradığın sebzelerin kabuklarını çöpe atıyorsun.'],['boil','kaynatmak','boy','Boyun kadar bir tencerede su fokur fokur kaynıyor.'],['pour','dökmek','porsiyon','Garson porsiyonu tabağa değil, masaya döküveriyor.'],['brave','cesur','bravo','Cesur itfaiyeciye bütün mahalle “Bravo!” diye bağırıyor.'],['cheat','kopya çekmek','çit','Çitin arkasına saklanıp kopya çekmeye çalışan biri yakalanıyor.']];
+function wKeyword(el){
+  let mine=store('kw');if(!Array.isArray(mine))mine=[];
+  el.innerHTML=`<div class="kw" id="kw"></div>
+  <div><div class="lbl">Kendi kartını yap</div><form class="form3" id="kf"><input type="text" id="kf1" placeholder="İngilizce kelime" required><input type="text" id="kf2" placeholder="Anlamı" required><input type="text" id="kf3" placeholder="Benzeyen ses + sahne" required><button class="btn" type="submit">Ekle</button></form></div>
+  <p class="tiny">Kartlara dokun, arkasında sesli bağ ve zihin sahnesi var. Senin kartların bu cihazda saklanır.</p>`;
+  function render(){const all=KW.map(k=>({w:k[0],m:k[1],h:`<b>“${k[2]}”</b> diye duyuluyor.<br>${k[3]}`})).concat(mine.map(k=>({w:k[0],m:k[1],h:k[2],own:1})));
+    $('#kw',el).innerHTML=all.map((k,i)=>`<button class="kc" data-i="${i}" aria-label="${k.w}"><div class="cf front"><small>${k.own?'Senin kartın':'İngilizce · 8. sınıf'}</small><p>${k.w}</p><em>${k.m}</em></div><div class="cf back"><small>${k.m}</small><p>${k.h}</p></div></button>`).join('');
+    $$('.kc',el).forEach(b=>b.onclick=()=>b.classList.toggle('flip'))}
+  const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  $('#kf',el).onsubmit=e=>{e.preventDefault();const a=[$('#kf1',el).value,$('#kf2',el).value,$('#kf3',el).value].map(v=>esc(v.trim()));if(a.some(v=>!v))return;mine.push(a);store('kw',mine);e.target.reset();render()};
+  render();
+}
+
+/* ---------- 7 karışık çalışma ---------- */
+const IQ=[['3² · 3³ = ?','u','Üslü ifadeler: tabanlar aynı, üsler toplanır → 3⁵ = 243'],['√12 + √27 = ?','k','Kareköklü ifadeler: 2√3 + 3√3 = 5√3'],['Bir zar atılıyor. Asal sayı gelme olasılığı kaçtır?','o','Olasılık: asal sayılar 2, 3, 5 → 3/6 = 1/2'],['0,0004 sayısını bilimsel gösterimle yaz.','u','Üslü ifadeler: 4 · 10⁻⁴'],['√48 sayısını a√b biçiminde yaz.','k','Kareköklü ifadeler: √(16·3) = 4√3'],['Torbada 3 kırmızı, 5 mavi top var. Kırmızı çekme olasılığı?','o','Olasılık: 3 / (3+5) = 3/8']];
+function wInter(el){
+  const C={u:['Ü','Üslü','#ffb547'],k:['K','Köklü','#45d4e6'],o:['O','Olasılık','#ff7a6b']};
+  const tiles=s=>s.split('').map((k,i)=>`<span style="background:${C[k][2]};animation-delay:${i*60}ms">${C[k][0]}</span>`).join('');
+  el.innerHTML=`<div class="box"><div class="lbl">Bloklu çalışma</div><div class="tiles">${tiles('uuuukkkkoooo')}</div><div class="lbl" style="margin-top:10px">Karışık çalışma</div><div class="tiles">${tiles('ukokouokuoku')}</div><p class="tiny" style="margin-top:8px">Karışıkta her soruda önce şu karar verilir: bu hangi tür soru?</p></div>
+  <div class="box"><div class="lbl" id="iN">Soru 1 / 6 · önce türünü seç</div><div class="q" id="iQ"></div><div class="row" id="iB" style="margin-top:10px"></div><div id="iF" style="margin-top:10px"></div></div>`;
+  let qs=shuffle(IQ),n=0,score=0;
+  function show(){if(n>=qs.length){$('#iN',el).textContent='Bitti';$('#iQ',el).textContent=`${qs.length} sorudan ${score} tanesinin türünü ilk denemede doğru seçtin.`;$('#iB',el).innerHTML='<button class="btn ghost" id="iR">Yeniden karıştır</button>';$('#iF',el).innerHTML='';$('#iR',el).onclick=()=>{qs=shuffle(IQ);n=0;score=0;show()};return}
+    const q=qs[n];$('#iN',el).textContent=`Soru ${n+1} / ${qs.length} · önce türünü seç`;$('#iQ',el).textContent=q[0];$('#iF',el).innerHTML='';
+    $('#iB',el).innerHTML=Object.keys(C).map(k=>`<button class="btn ghost" data-k="${k}" style="--b:${C[k][2]}">${C[k][1]}</button>`).join('');let first=true;
+    $$('#iB button',el).forEach(b=>b.onclick=()=>{const ok=b.dataset.k===q[1];if(ok&&first)score++;first=false;
+      $('#iF',el).innerHTML=`<div class="fb ${ok?'ok':'no'}">${ok?'Doğru tür. ':'Bu tür değil, tekrar dene. '}${ok?q[2]:''}</div>`+(ok?'<div class="row" style="margin-top:8px"><button class="btn" id="iX">Sonraki soru</button></div>':'');
+      if(ok){$$('#iB button',el).forEach(x=>x.disabled=true);$('#iX',el).onclick=()=>{n++;show()}}})}
+  show();
+}
+
+/* ---------- 8 neden zinciri ---------- */
+const WHY={mev:{t:'Mevsimler neden oluşur?',d:'Fen Bilimleri · 8. sınıf',s:[
+  ['Kendi cümlenle: Mevsimler neden oluşur?','Dünya’nın dönme ekseni yaklaşık 23° 27′ eğiktir ve Dünya Güneş’in etrafında dolanırken bu eğiklik hep aynı yönde kalır.'],
+  ['Neden? Eksen eğikliği neyi değiştirir?','Yıl boyunca güneş ışınlarının bir yere geliş açısı ve gündüz süresi değişir.'],
+  ['Nasıl? Geliş açısı sıcaklığı nasıl etkiler?','Dik gelen ışın daha küçük bir alana düşer, birim alana daha çok enerji verir. Eğik gelen ışın aynı enerjiyi daha geniş bir alana yayar.'],
+  ['Peki Dünya Güneş’e yaklaştığı için mi yaz olur?','Hayır. Kuzey Yarım Küre’de yaz yaşanırken Dünya Güneş’ten en uzak konumuna yakındır. Belirleyici olan uzaklık değil, eksen eğikliğidir.']]},
+ kuva:{t:'Kuvâ-yı Milliye neden kuruldu?',d:'İnkılap Tarihi · 8. sınıf',s:[
+  ['Kendi cümlenle: Kuvâ-yı Milliye neden kuruldu?','Mondros Ateşkes Antlaşması’ndan sonra başlayan işgallere karşı halk, yurdunu korumak için bölgesel silahlı direniş birlikleri kurdu.'],
+  ['Neden halk kendisi örgütlendi?','Osmanlı ordusu ateşkesle büyük ölçüde terhis edilmiş, silahlarına el konulmaya başlanmıştı. İstanbul hükümeti de işgallere karşı etkili bir direniş göstermiyordu.'],
+  ['Ne işe yaradı?','Düzenli ordu kurulana kadar düşmanı oyaladı, ilerleyişini yavaşlattı ve millî direniş fikrinin halkta güçlenmesini sağladı.'],
+  ['Neden zamanla yerini düzenli orduya bıraktı?','Bölgesel ve dağınık oldukları için büyük savaşları yürütmeye yetmiyordu; disiplin ve tek merkezden yönetim gerekiyordu. Bu yüzden TBMM düzenli orduyu kurdu.']]}};
+function wWhy(el){
+  el.innerHTML=`<div class="seg" id="wS"><button data-k="mev" class="on">Mevsimler</button><button data-k="kuva">Kuvâ-yı Milliye</button></div><div class="steps" id="wL"></div>
+  <p class="tiny">Kural: Kitap kapalı. Önce yüksek sesle ya da kâğıda kendi cevabını ver, sonra örnek cevapla karşılaştır. Takıldığın soru, çalışma listendeki ilk madde olur.</p>`;
+  let k='mev',n=0;
+  function render(){const T=WHY[k];const L=$('#wL',el);L.innerHTML=`<div class="lbl">${T.d}</div>`+T.s.slice(0,n+1).map((s,i)=>`<div class="st"><span class="n">${i+1}</span><div><div class="qq">${s[0]}</div>${i<n?`<div class="ans">${s[1]}</div>`:`<button class="btn" id="wR">Cevabımı söyledim, örneği göster</button>`}</div></div>`).join('');
+    const r=$('#wR',el);if(r)r.onclick=()=>{n++;if(n>=T.s.length){n=T.s.length;render();L.insertAdjacentHTML('beforeend','<div class="fb ok">Zincir tamam. Dört “neden” sorusuna cevap verebiliyorsan konuyu ezberlememiş, anlamışsın.</div>');return}render()}}
+  $$('#wS button',el).forEach(b=>b.onclick=()=>{$$('#wS button',el).forEach(x=>x.classList.toggle('on',x===b));k=b.dataset.k;n=0;render()});
+  render();
+}
+
+/* ---------- 9 uyku ---------- */
+function wSleep(el){
+  el.innerHTML=`<div class="split"><div><div class="lbl">Yatış saati</div><input type="range" id="sB" min="0" max="18" value="8" aria-label="Yatış saati"><div class="lbl" style="margin-top:8px">Kalkış saati</div><input type="range" id="sW" min="0" max="10" value="4" aria-label="Kalkış saati"></div>
+  <div style="text-align:center"><div class="big" id="sH">—</div><div class="tiny" id="sT"></div><div id="sS" style="margin-top:6px;font-weight:600"></div></div></div>
+  <div class="night" id="sN"><div class="sl" id="sL"></div></div>
+  <div class="box"><div class="lbl">Uyku öncesi</div><p style="margin:0;font-size:.9rem">Yatmadan önce ekranı bırak; hem ışığı hem bildirimleri azaltırsın. Gün içinde çalıştığın konuları kısaca geri çağırıp uyumak, uykunun o bilgiyi işlemesine fırsat verir. Ertesi gün kısa bir yürüyüş ya da hareket arası, çalışmaya dönmeden önce dikkatini tazeleyebilir.</p></div>`;
+  const fmt=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+  const N=$('#sN',el);[20,22,24,26,28,30].forEach(h=>N.insertAdjacentHTML('beforeend',`<span class="tk" style="left:${(h-19)/13*100}%">${String(h%24).padStart(2,'0')}:00</span>`));
+  function upd(){const b=20*60+30+ +$('#sB',el).value*15, w=24*60+5*60+30+ +$('#sW',el).value*15;const hrs=(w-b)/60;
+    $('#sH',el).textContent=Math.floor(hrs)+(hrs%1?' sa '+Math.round(hrs%1*60)+' dk':' saat');$('#sT',el).textContent=fmt(b)+' → '+fmt(w);
+    const ok=hrs>=8&&hrs<=10;$('#sS',el).textContent=ok?'Önerilen aralıkta (8–10 saat)':hrs<8?'Önerilenin altında: 13–18 yaş için 8–10 saat':'Önerilenin üstünde';$('#sS',el).style.color=ok?'#5fe3a1':'#ffb547';
+    const L=$('#sL',el);L.style.left=((b/60-19)/13*100)+'%';L.style.width=(hrs/13*100)+'%';L.style.background=ok?'#5fe3a1':'#ffb547'}
+  $('#sB',el).oninput=upd;$('#sW',el).oninput=upd;upd();
+}
+
+/* ---------- 10 nefes ---------- */
+function wBreath(el){
+  el.innerHTML=`<div class="breath"><div class="orb" id="bo"></div><span class="bt" id="bt">Hazır</span></div>
+  <div class="row center"><button class="btn" id="bg2">Nefese başla</button><span class="tiny" id="bc">5 sn al · 5 sn ver</span></div>
+  <div><div class="lbl">Heyecanı yeniden yorumla · karta dokun</div><div class="reap" id="rp"></div></div>`;
+  const P=[['Kalbim çarpıyor, kesin batıracağım.','Kalbim çarpıyor; vücudum enerji topluyor, buna hazırım.'],['Bu soruyu bilmiyorum, her şey bitti.','Bu soruyu sona bırakıyorum, turlayıp geri döneceğim.'],['Herkes benden hızlı çözüyor.','Ben kendi sınavımı çözüyorum, kendi hızımda.']];let pi=0;
+  const rp=$('#rp',el);const showP=()=>{rp.innerHTML=`<div class="old">${P[pi][0]}</div><div class="new">${P[pi][1]}</div>`};rp.onclick=()=>{pi=(pi+1)%P.length;showP()};rp.style.cursor='pointer';showP();
+  let on=false,c=0,ph=0;const o=$('#bo',el),t=$('#bt',el),b=$('#bg2',el);
+  function step(){if(!on)return;ph=1-ph;o.classList.toggle('in',ph===1);t.textContent=ph===1?'Al':'Ver';if(ph===0){c++;$('#bc',el).textContent=c+' tur tamam · 6 tur ≈ 1 dakika'}}
+  b.onclick=()=>{on=!on;b.textContent=on?'Durdur':'Devam et';if(on){ph=0;step()}else{o.classList.remove('in');t.textContent='Duraklatıldı'}};
+  every(step,5000);
+}
+
+/* ---------- 11 hata defteri ---------- */
+const ER=[['Bilgi eksiği','Konuyu bilmiyordum.','Konuyu kısa tekrar et, sonra 10 soruyla geri çağır. Eksik bilgiyi Leitner kartına çevir.'],['İşlem / dikkat hatası','Biliyordum ama yanlış yaptım.','Soruyu yeniden çöz, hatanın olduğu adımı hata defterine yaz. Sınavda o adımda bilinçli yavaşla.'],['Soru kökünü yanlış okuma','“değildir”, “kesinlikle” gibi ifadeyi kaçırdım.','Soru kökündeki olumsuz ve kesin ifadelerin altını çizme alışkanlığı kazan.'],['Süre yetmedi','Son sorulara zaman kalmadı.','Turlama yöntemini dene: ilk turda emin olduklarını çöz, zorları sona bırak. Haftada bir süreli mini deneme çöz.']];
+function wErr(el){
+  let v=store('err');if(!Array.isArray(v)||v.length!==4)v=[4,6,2,3];
+  el.innerHTML=`<div class="lbl">Son denemendeki yanlışları türüne göre say <span style="text-transform:none;letter-spacing:0">(başlangıçtaki sayılar örnektir)</span></div><div class="widget" id="eL" style="gap:8px"></div><div class="box" id="eP"></div>`;
+  function render(){const mx=Math.max(1,...v),top=v.indexOf(Math.max(...v)),tot=v.reduce((a,b)=>a+b,0);
+    $('#eL',el).innerHTML=ER.map((e,i)=>`<div class="er ${tot&&i===top?'top1':''}"><div><b>${e[0]}</b><small>${e[1]}</small></div><div class="ctr"><button data-i="${i}" data-d="-1" aria-label="azalt">−</button><span>${v[i]}</span><button data-i="${i}" data-d="1" aria-label="artır">+</button></div><div class="hb"><i style="width:${v[i]/mx*100}%"></i></div></div>`).join('');
+    $$('.ctr button',el).forEach(b=>b.onclick=()=>{const i=+b.dataset.i;v[i]=Math.max(0,v[i]+ +b.dataset.d);store('err',v);render()});
+    $('#eP',el).innerHTML=tot?`<div class="lbl">Bu haftanın önceliği · ${tot} yanlışın ${v[top]} tanesi</div><p style="margin:0"><b>${ER[top][0]}:</b> ${ER[top][2]}</p>`:'<p style="margin:0">Yanlışlarını girdiğinde öncelikli çalışma önerin burada çıkar.</p>'}
+  render();
+}
+
+/* ---------- 12 efsane mi gerçek mi ---------- */
+const MY=[['Doğru teknikle okuduğun her şeyi ezberleyebilirsin.',0,'Efsane. Hiçbir teknik her şeyi ezberletmez. En güçlü yöntemler bile aralıklı tekrar ve emek ister.'],
+ ['Görsel öğrenen biri yalnızca görsel çalışmalı.',0,'Efsane. Öğretimi “öğrenme stiline” göre ayarlamanın faydasını gösteren sağlam bir kanıt bulunamadı (Pashler ve ark., 2008).'],
+ ['Kendini test etmek, tekrar tekrar okumaktan daha kalıcıdır.',1,'Gerçek. Test etkisi öğrenme biliminin en sağlam bulgularından biri (Roediger ve Karpicke, 2006).'],
+ ['Altını çizmek tek başına çok verimli bir yöntemdir.',0,'Efsane. Altını çizme ve tekrar okuma düşük faydalı bulundu (Dunlosky ve ark., 2013). Altını çizdiğin yeri sonra soruya çevirirsen işe yarar hale gelir.'],
+ ['Beynimizin yalnızca %10’unu kullanırız.',0,'Efsane. Beyin görüntüleme çalışmaları gün içinde beynin neredeyse tüm bölgelerinin işlev gördüğünü gösterir.'],
+ ['Sınavdan önceki geceyi uykusuz çalışarak geçirmek puanı artırır.',0,'Efsane. Uykusuzluk hem yeni bilgiyi öğrenmeyi hem de öğrendiğini hatırlamayı zorlaştırır.'],
+ ['Konuları karıştırarak çalışmak zor hissettirir ama işe yarar.',1,'Gerçek. Zorlanma hissi öğrenmenin kötü gittiği anlamına gelmez (Rohrer ve Taylor, 2007).']];
+function wMyth(el){
+  let sc=0,done=0;
+  el.innerHTML=`<div class="legend"><span>Puan: <b id="mS">0 / ${MY.length}</b></span></div>`+MY.map((m,i)=>`<div class="myth" id="m${i}"><p>${m[0]}</p><div class="row"><button class="btn ghost" data-a="1" style="--b:#5fe3a1">Gerçek</button><button class="btn ghost" data-a="0" style="--b:#ff7a6b">Efsane</button></div></div>`).join('');
+  MY.forEach((m,i)=>{const box=$('#m'+i,el);$$('button',box).forEach(b=>b.onclick=()=>{const ok=+b.dataset.a===m[1];if(ok)sc++;done++;box.classList.add(ok?'r-ok':'r-no');$('.row',box).outerHTML=`<div class="fb ${ok?'ok':'no'}">${ok?'Doğru. ':'Tersi. '}${m[2]}</div>`;$('#mS',el).textContent=sc+' / '+MY.length})});
+}
+
+/* ---------- 13 plan ---------- */
+const TECH=['Telefon başka odada çalışmak','25–50 dakikalık odak blokları','Aralıklı tekrar takvimi','Kitabı kapatıp geri çağırma','Leitner kartları','Hafıza sarayı (sıralı listeler)','Anahtar kelime (İngilizce)','Karışık soru çözme','“Neden?” zinciriyle kendine anlatma','8–10 saat uyku','Sınav öncesi yavaş nefes','Hata defteri ve deneme analizi'];
+const REFS=['Atkinson, R. C. & Raugh, M. R. (1975). J. of Experimental Psychology: Human Learning and Memory.','Cepeda, N. J. ve ark. (2006). Psychological Bulletin.','Chi, M. T. H. ve ark. (1989). Cognitive Science.','Diekelmann, S. & Born, J. (2010). Nature Reviews Neuroscience.','Dresler, M. ve ark. (2017). Neuron.','Dunlosky, J. ve ark. (2013). Psychological Science in the Public Interest.','Ebbinghaus, H. (1885). Über das Gedächtnis.','Hillman, C. H. ve ark. (2009). Neuroscience.','Jamieson, J. P. ve ark. (2010). J. of Experimental Social Psychology.','Leroy, S. (2009). Organizational Behavior and Human Decision Processes.','Maguire, E. A. ve ark. (2003). Nature Neuroscience.','Metcalfe, J. (2017). Annual Review of Psychology.','Monsell, S. (2003). Trends in Cognitive Sciences.','Newport, C. (2016). Deep Work. (kitap)','Pashler, H. ve ark. (2008). Psychological Science in the Public Interest.','Paruthi, S. ve ark. (2016). J. of Clinical Sleep Medicine.','Ramirez, G. & Beilock, S. L. (2011). Science.','Roediger, H. L. & Karpicke, J. D. (2006). Psychological Science.','Rohrer, D. & Taylor, K. (2007). Instructional Science.','Rohrer, D. ve ark. (2020). J. of Educational Psychology.','Ward, A. F. ve ark. (2017). J. of the Association for Consumer Research.','Zaccaro, A. ve ark. (2018). Frontiers in Human Neuroscience.'];
+function wPlan(el){
+  let st=store('plan')||{name:'',sel:[]};
+  el.innerHTML=`<input type="text" id="pN" placeholder="Adın" aria-label="Adın" maxlength="40">
+  <div><div class="lbl">Bu hafta deneyeceğim 3 yöntem</div><div class="techs">${TECH.map((t,i)=>`<label class="chk"><input type="checkbox" data-i="${i}"><span>${t}</span></label>`).join('')}</div></div>
+  <div class="pledge" id="pl"></div>
+  <div class="row"><button class="btn" id="pC">Sözümü kopyala</button><span class="tiny" id="pM"></span></div>
+  <details class="src box"><summary>Kaynakça</summary><ul class="refs-list">${REFS.map(r=>`<li>${r}</li>`).join('')}</ul></details>`;
+  const nm=$('#pN',el);nm.value=st.name||'';
+  $$('.techs input',el).forEach(c=>{c.checked=st.sel.includes(+c.dataset.i);c.onchange=()=>{let s=$$('.techs input:checked',el).map(x=>+x.dataset.i);if(s.length>3){c.checked=false;$('#pM',el).textContent='En fazla 3 yöntem seç; azı çoktur.';return}$('#pM',el).textContent='';st.sel=s;save()}});
+  nm.oninput=()=>{st.name=nm.value;save()};
+  const txt=()=>`${(st.name||'Ben').trim()} olarak bu hafta Zihin Hattı'nda şu 3 yöntemi deneyeceğim:\n`+(st.sel.length?st.sel.map((i,k)=>`${k+1}. ${TECH[i]}`).join('\n'):'(henüz seçilmedi)')+`\nHafta sonunda koçumla neyin işe yaradığını konuşacağım.`;
+  function save(){store('plan',st);const e=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    $('#pl',el).innerHTML=`<div class="lbl">Zihin Hattı sözüm · ${new Date().toLocaleDateString('tr-TR')}</div><h3>${e((st.name||'Adını yaz').trim())}</h3>${st.sel.length?`<ol>${st.sel.map(i=>`<li>${TECH[i]}</li>`).join('')}</ol>`:'<p class="tiny">Yukarıdan 3 yöntem seç.</p>'}<p class="tiny" style="margin-top:8px">Hafta sonunda koçumla neyin işe yaradığını konuşacağım.</p>`}
+  $('#pC',el).onclick=()=>{const t=txt();const ok=()=>$('#pM',el).textContent='Kopyalandı.';
+    const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){$('#pM',el).textContent='Kopyalanamadı; kartın ekran görüntüsünü al.'}ta.remove()};
+    try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}};
+  save();
+}
+
+/* ---------- duraklar ---------- */
+const S=[
+ {line:'kalkis',hero:1,title:'Zihin <em>Hattı</em>',kicker:'LGS Koçluk · Barış Öğretmen',
+  lead:'Beynin bir şehir gibi; bilgiler hatlarda yolculuk ediyor. 13 durakta, araştırmalarla desteklenen çalışma yöntemlerini <strong>deneyerek</strong> öğreneceğiz. Sihirli bir teknik yok: her durakta yöntemin ne kadar sağlam bir kanıta dayandığını göreceksin.',
+  w:wCover,ev:{l:'i',t:'Her durağın altında sinyal çubukları var. Üç çubuk: çok sayıda deneyle tekrar tekrar desteklenmiş. İki çubuk: destekleyen çalışmalar var ama koşula ya da konuya göre değişiyor. Bir çubuk: sonuçlar karışık ya da az çalışılmış.'},
+  note:'Açılışta öğrencilere sor: “Sosyal medyada gördüğünüz en iddialı çalışma tekniği hangisiydi?” Cevapları 12. durakta tekrar hatırlat.'},
+ {line:'odak',title:'Dikkat kalıntısı',
+  lead:'Matematik çözerken telefona 20 saniye baktın. Kaybın gerçekten 20 saniye mi? Bir işten başka bir işe geçince dikkatin bir kısmı önceki işte takılı kalır. Buna <strong>dikkat kalıntısı</strong> denir. Aşağıda iki çalışma oturumunu karşılaştır.',
+  w:wResidue,ev:{l:'o',t:'Sophie Leroy (2009) yarım bırakılan bir işten sonra yeni işteki performansın düştüğünü yetişkinlerle yaptığı deneylerde gösterdi. Görev değiştirmenin zaman ve hata maliyeti ise çok sayıda deneyle desteklenir. Ortaokul öğrencileriyle doğrudan yapılan çalışmalar daha az.',r:'Leroy, 2009 · Monsell, 2003'},
+  note:'Önce tahmin ettir: “Telefon her çaldığında kaç dakika kaybederiz?” Sonra iki simülasyonu sırayla çalıştır.'},
+ {line:'odak',title:'Derin odak bloğu',
+  lead:'Cal Newport bölünmeden, zor bir işe uzun süre yoğunlaşmaya <strong>derin çalışma</strong> diyor. Bu bir kas gibi: 25 dakikayla başla, haftalar içinde 40–50 dakikaya çık. Önce kalkış kontrolünü yap, sonra zamanlayıcıyı başlat.',
+  w:wFocus,ev:{l:'o',t:'Derin Çalışma bir kitaptır, deneysel bir yöntem değildir; ama dayandığı fikir (bölünmenin maliyeti) deneylerle desteklenir. Telefonun yalnızca masada durmasının bile dikkati azalttığını bulan çalışma, sonraki tekrar denemelerinde her zaman aynı sonucu vermedi. Bildirimlerin seni böldüğü ise kesin; telefonu başka odaya koymak bunu sıfırlar.',r:'Newport, 2016 · Ward ve ark., 2017'},
+  note:'Akıllı tahtada zamanlayıcıyı sınıfça 25 dakikalık bir soru çözümünde gerçekten kullanabilirsin.'},
+ {line:'hafiza',title:'Unutma eğrisi',
+  lead:'Ebbinghaus 1885’te kendini denek yaparak öğrendiklerinin ilk günlerde hızla unutulduğunu gösterdi. İyi haber: her tekrar unutmayı yavaşlatıyor. Aynı tekrar süresini son günlere yığmak yerine haftalara yaymak, bilgiyi <strong>sınavdan sonra da</strong> akılda tutar.',
+  w:wCurve,ev:{l:'g',t:'Aralıklı tekrar öğrenme araştırmalarının en sağlam bulgularından biri. 300’ü aşkın deneyi bir araya getiren çalışma ve on öğrenme tekniğini karşılaştıran kapsamlı inceleme bunu yüksek faydalı buldu.',r:'Ebbinghaus, 1885 · Cepeda ve ark., 2006 · Dunlosky ve ark., 2013'},
+  note:'“Son günlere yığma” ile “aralıklı tekrar”ı art arda göster. Sınav günü ikisi yakın çıkabiliyor; farkı “15 gün sonra” değerinde vurgula. LGS’de 8. sınıfın başındaki konular da sorulur.'},
+ {line:'hafiza',title:'Geri çağırma',
+  lead:'Tekrar tekrar okumak tanıdık gelir ama aklında kaldığı anlamına gelmez. Kitabı kapatıp hatırlamaya çalışmak, beynin o bilgiye giden yolu güçlendirir. <strong>Leitner kutuları</strong> bunu düzene sokar: bildiğin kart ileri kutuya geçer, bilemediğin baştan başlar.',
+  w:wLeitner,ev:{l:'g',t:'Bir metni okuyup sonra kendini test eden öğrenciler, bir hafta sonra metni tekrar tekrar okuyanlardan belirgin şekilde daha fazlasını hatırladı. Kendini test etmek, on teknik arasında en yüksek fayda grubunda yer aldı.',r:'Roediger ve Karpicke, 2006 · Dunlosky ve ark., 2013'},
+  note:'Kartı çevirmeden önce sınıfça cevabı yüksek sesle söyletin. Kâğıttan üç kutu yapmayı ödev ver.'},
+ {line:'hafiza',title:'Hafıza sarayı',
+  lead:'Sıralı listeler için 2500 yıllık bir yöntem: Çok iyi bildiğin bir mekânda yürüdüğünü düşün ve her durağa hatırlayacağın şeyi <strong>tuhaf, canlı bir sahne</strong> olarak bırak. Sınavda aynı yolu zihninde yeniden yürürsün.',
+  w:wPalace,ev:{l:'o',t:'Loci yöntemi liste ve sıra hatırlamada etkili bulunmuştur; hafıza yarışmacılarının çoğu bu yöntemi kullanır. Sıradan katılımcılarla yapılan 40 günlük antrenman çalışması da aylar sonra süren bir gelişme gösterdi. Ancak yalnızca listeleri hatırlamaya yarar; konuyu anlamanın yerini tutmaz.',r:'Maguire ve ark., 2003 · Dresler ve ark., 2017'},
+  note:'Yürüyüşte öğrencilerden sahneyi gözlerini kapatıp hayal etmelerini iste. Testten sonra kendi evleriyle yeni bir rota kurdurt.'},
+ {line:'hafiza',title:'Anahtar kelime',
+  lead:'İngilizce kelimeler için: kelimeye sesçe benzeyen Türkçe bir kelime bul, ikisini tek bir komik sahnede birleştir. <strong>chop</strong> (doğramak) → “çöp”: doğradığın sebzelerin kabuklarını çöpe atıyorsun.',
+  w:wKeyword,ev:{l:'o',t:'Bu yöntemle yabancı dilde kelime öğrenen öğrencilerin belirgin şekilde daha iyi hatırladığı gösterildi. Kapsamlı incelemede ise genel faydası düşük bulundu: her konuya uymuyor ve bazı çalışmalarda uzun vadede daha hızlı unutuldu. Kelime ve terimler için iyi bir başlangıç; sonrasında kartla geri çağırma şart.',r:'Atkinson ve Raugh, 1975 · Dunlosky ve ark., 2013'},
+  note:'Sınıftan her öğrenci bir ünite kelimesi için kendi sahnesini bulsun; en komik olanı tahtaya ekleyin.'},
+ {line:'anlama',title:'Karışık çalışma',
+  lead:'Hep aynı tür soruyu art arda çözünce hangi yöntemi kullanacağını düşünmene gerek kalmaz. LGS’de ise sorular karışık gelir. Konuları karıştırarak çalışmak <strong>“bu hangi tür soru?”</strong> kararını antrenman ettirir.',
+  w:wInter,ev:{l:'o',t:'Matematikte konuları karıştırarak çalışan öğrenciler, bir hafta sonraki testte bloklu çalışanlardan daha başarılı oldu. 7. sınıf öğrencileriyle sınıf içinde yapılan geniş bir çalışma da bunu destekliyor. Çalışırken daha zor hissettirir; bu normal.',r:'Rohrer ve Taylor, 2007 · Rohrer ve ark., 2020'},
+  note:'Öğrencilere soruyu çözdürmeden önce yalnızca türünü seçtir. Asıl beceri bu karar.'},
+ {line:'anlama',title:'Neden zinciri',
+  lead:'Bir konuyu gerçekten bilip bilmediğini anlamanın hızlı yolu: kitabı kapat, <strong>“Neden?” ve “Nasıl?”</strong> sorularına kendi cümlelerinle cevap ver. Takıldığın yer, çalışman gereken yerdir.',
+  w:wWhy,ev:{l:'o',t:'Kendine “neden?” diye sormak ve öğrendiğini kendine açıklamak, kapsamlı incelemede orta faydalı bulundu. Kendine açıklama yapan öğrencilerin problem çözmede daha başarılı olduğu ilk kez Chi ve arkadaşlarının çalışmasında gösterildi.',r:'Chi ve ark., 1989 · Dunlosky ve ark., 2013'},
+  note:'Eşli çalışma: biri soruyu okusun, diğeri anlatsın, sonra yer değiştirsinler.'},
+ {line:'beden',title:'Uyku ve hareket',
+  lead:'Gün içinde öğrendiklerin uykuda yeniden işlenir ve güçlenir. Sınavdan önceki geceyi uykusuz geçirmek, çalıştığın şeyin bir kısmını feda etmek demektir. Kendi uyku saatlerini ayarla ve bak.',
+  w:wSleep,ev:{l:'g',t:'Uykunun bellek pekiştirmedeki rolü çok sayıda çalışmayla desteklenir. Amerikan Uyku Tıbbı Akademisi 13–18 yaş için gecede 8–10 saat önerir. Kısa egzersizin çocuklarda dikkati artırdığına dair bulgular umut verici ama daha sınırlı.',r:'Diekelmann ve Born, 2010 · Paruthi ve ark., 2016 · Hillman ve ark., 2009'},
+  note:'Öğrencilerden gerçek yatış saatlerini girmelerini iste; kaç kişinin 8 saatin altında kaldığını sınıfça say.'},
+ {line:'beden',title:'Sınav anında nefes',
+  lead:'Sınavda kalbinin hızlanması bozulduğun anlamına gelmez; vücudun enerji topluyor. Yavaş nefes bu heyecanı yönetilebilir hale getirir. Dene: <strong>5 saniye al, 5 saniye ver.</strong>',
+  w:wBreath,ev:{l:'o',t:'Yavaş nefesin kaygıyı ve bedensel uyarılmayı azalttığını gösteren çalışmalar var. Heyecanı “vücudum hazırlanıyor” diye yorumlamanın sınav performansına katkısı da bir deneyde gösterildi. Sınav öncesi kaygıları kâğıda yazmanın faydası ise sonraki tekrar denemelerinde her zaman bulunamadı.',r:'Zaccaro ve ark., 2018 · Jamieson ve ark., 2010 · Ramirez ve Beilock, 2011'},
+  note:'Sınıfça 6 tur (yaklaşık 1 dakika) birlikte nefes alın. Deneme sınavlarından önce rutin haline getirin.'},
+ {line:'sinav',title:'Hata defteri',
+  lead:'Deneme sınavının asıl değeri puanında değil, yanlışlarında. Her yanlışın bir türü vardır; <strong>türünü bulursan çözümünü de bulursun.</strong> Son denemendeki yanlışları say.',
+  w:wErr,ev:{l:'o',t:'Hatadan hemen sonra doğru cevapla geri bildirim almak öğrenmeyi güçlendirir. Yanlışları türüne göre sınıflandırmak bu geri bildirimi düzene sokmanın pratik bir yoludur; sınıflandırmanın kendisi bir koçluk uygulamasıdır, ayrıca test edilmiş bir yöntem değildir.',r:'Metcalfe, 2017'},
+  note:'Bir sonraki deneme sonucuyla bu ekranı birlikte doldurun; öncelik önerisini haftalık plana ekleyin.'},
+ {line:'sinav',title:'Efsane mi, gerçek mi?',
+  lead:'Sosyal medyada çalışma taktikleri çok. Bazıları araştırmayla destekleniyor, bazıları yalnızca kulağa hoş geliyor. “3 kat hızlı öğren” ya da “okuduğun her şeyi ezberle” diyen bir iddia görünce şunu sor: <strong>Kanıtı nerede?</strong>',
+  w:wMyth,ev:{l:'g',t:'Öğrenme stilleri iddiası sistematik olarak incelendi ve öğretimi stile göre ayarlamanın faydasını gösteren sağlam bir kanıt bulunamadı. Altını çizme ve tekrar okuma düşük faydalı, kendini test etme ve aralıklı tekrar yüksek faydalı bulundu.',r:'Pashler ve ark., 2008 · Dunlosky ve ark., 2013'},
+  note:'Açılıştaki “en iddialı teknik” cevaplarına dönün ve sınıfça kanıt sorusunu sorun.'},
+ {line:'sinav',title:'Benim hattım',
+  lead:'Yolculuğun sonu. Hepsini birden yapmana gerek yok. Bu hafta deneyeceğin <strong>3 yöntemi</strong> seç, sözünü yaz. Bir hafta sonra neyin işe yaradığını birlikte konuşacağız.',
+  w:wPlan,note:'Öğrencilerin söz kartının ekran görüntüsünü almasını ya da kopyalayıp sana göndermesini iste.'}
+];
+
+/* ---------- 3B beyin ağı ---------- */
+const Brain=(()=>{
+  if(!window.THREE)return{focus(){}};
+  try{
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cv=$('#bg');const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(2,devicePixelRatio||1));R.setClearColor(0x000000,0);
+  const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x0a0f24,.032);
+  const cam=new THREE.PerspectiveCamera(52,1,.1,200);const g=new THREE.Group();scene.add(g);
+  const rnd=()=>Math.random()*2-1;const P=[];
+  while(P.length<620){const d=new THREE.Vector3(rnd(),rnd(),rnd());const len=d.length();if(len<.05||len>1)continue;d.normalize();let v;
+    if(Math.random()<.88){const side=Math.random()<.5?-1:1,k=.8+Math.random()*.2;v=new THREE.Vector3(side*.62+d.x*.88*k,d.y*.82*k+.1,d.z*1.25*k);if(side*v.x<.06)v.x=side*(.06+Math.random()*.15)}
+    else{const k=.4+Math.random()*.6;v=new THREE.Vector3(d.x*.6*k,d.y*.32*k-.72,d.z*.42*k-.98)}
+    P.push(v.multiplyScalar(6))}
+  const N=P.length,E=[],adj=P.map(()=>[]),seen=new Set();
+  for(let i=0;i<N;i++){const ds=[];for(let j=0;j<N;j++)if(j!==i)ds.push([P[i].distanceToSquared(P[j]),j]);ds.sort((a,b)=>a[0]-b[0]);
+    for(let k=0;k<3;k++){const[dd,j]=ds[k];if(dd>6)break;const key=i<j?i+'_'+j:j+'_'+i;if(seen.has(key))continue;seen.add(key);adj[i].push(E.length);adj[j].push(E.length);E.push([i,j])}}
+  const tex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.25,'rgba(255,255,255,.8)');gr.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
+  const pg=new THREE.BufferGeometry().setFromPoints(P);
+  const pm=new THREE.PointsMaterial({size:.22,map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:0x9fb0ff,opacity:.9});g.add(new THREE.Points(pg,pm));
+  const lp=new Float32Array(E.length*6);E.forEach(([a,b],k)=>{lp.set([P[a].x,P[a].y,P[a].z,P[b].x,P[b].y,P[b].z],k*6)});
+  const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(lp,3));
+  const lm=new THREE.LineBasicMaterial({color:0xffd27a,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false});g.add(new THREE.LineSegments(lg,lm));
+  const M=reduce?0:90,pulses=[],pp=new Float32Array(Math.max(1,M)*3);
+  for(let i=0;i<M;i++){const e=Math.floor(Math.random()*E.length);pulses.push({e,f:Math.random()<.5,t:Math.random(),s:.008+Math.random()*.018})}
+  const pgeo=new THREE.BufferGeometry();pgeo.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  const pmat=new THREE.PointsMaterial({size:.55,map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,color:0xffd27a});g.add(new THREE.Points(pgeo,pmat));
+  const mk=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:0xffd27a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));mk.scale.set(2.4,2.4,1);g.add(mk);
+  // durak hedefleri: beyin etrafında sarmal bir rota
+  const T=[];for(let k=0;k<S.length;k++){if(k===0){T.push(-1);continue}const a=(k-1)/(S.length-1)*Math.PI*2.1-1.2;const tgt=new THREE.Vector3(Math.cos(a)*5,Math.sin(k*1.3)*2.2+.6,Math.sin(a)*6.5);let best=0,bd=1e9;P.forEach((p,i)=>{const d=p.distanceToSquared(tgt);if(d<bd){bd=d;best=i}});T.push(best)}
+  const camPos=new THREE.Vector3(0,3,22),look=new THREE.Vector3(),wantPos=camPos.clone(),wantLook=new THREE.Vector3();
+  const col=new THREE.Color(0xffd27a),want=new THREE.Color(0xffd27a);let idx=0,w=1,h=1;
+  function size(){w=innerWidth;h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;if(w>900){cam.setViewOffset(w,h,-w*.2,0,w,h)}else{cam.clearViewOffset()}cam.updateProjectionMatrix()}
+  addEventListener('resize',size);size();
+  function targets(){g.updateMatrixWorld();if(T[idx]<0){wantLook.set(0,0,0);wantPos.set(0,2.5,h>w?30:21);mk.visible=false;return}
+    const p=P[T[idx]].clone().applyMatrix4(g.matrixWorld);wantLook.copy(p);const out=p.clone().setY(p.y*.4);if(out.length()<.1)out.set(0,0,1);out.normalize();
+    wantPos.copy(p).addScaledVector(out,h>w?11:7.5).add(new THREE.Vector3(0,1.4,0));mk.visible=true;mk.position.copy(P[T[idx]])}
+  let t0=0;
+  function loop(now){requestAnimationFrame(loop);if(document.hidden)return;const dt=Math.min(.05,(now-t0)/1000||.016);t0=now;
+    if(!reduce)g.rotation.y+=dt*.035;targets();const k=reduce?1:1-Math.pow(.02,dt);camPos.lerp(wantPos,k);look.lerp(wantLook,k);cam.position.copy(camPos);cam.lookAt(look);
+    col.lerp(want,reduce?1:Math.min(1,dt*2.5));lm.color.copy(col);pmat.color.copy(col);mk.material.color.copy(col);
+    const s=2.2+Math.sin(now/400)*.5;mk.scale.set(s,s,1);
+    for(let i=0;i<M;i++){const q=pulses[i];q.t+=q.s*dt*60;if(q.t>=1){const end=E[q.e][q.f?0:1];const opts=adj[end];q.e=opts[Math.floor(Math.random()*opts.length)];q.f=E[q.e][1]===end;q.t=0}
+      const[a,b]=E[q.e];const A=P[q.f?b:a],B=P[q.f?a:b];pp[i*3]=A.x+(B.x-A.x)*q.t;pp[i*3+1]=A.y+(B.y-A.y)*q.t;pp[i*3+2]=A.z+(B.z-A.z)*q.t}
+    pgeo.attributes.position.needsUpdate=true;R.render(scene,cam)}
+  requestAnimationFrame(loop);
+  return{focus(i,c){idx=i;want.set(c)}};
+  }catch(e){return{focus(){}}}
+})();
+
+/* ---------- gezinti ---------- */
+const panel=$('#panel'),map=$('#map');let cur=0;
+map.innerHTML=S.map((s,i)=>`<button class="stop" style="--c:${LINES[s.line].c}" data-i="${i}" aria-label="Durak ${i}: ${s.title.replace(/<[^>]+>/g,'')}" title="${s.title.replace(/<[^>]+>/g,'')}"><span></span></button>`).join('');
+$$('.stop',map).forEach(b=>b.onclick=()=>go(+b.dataset.i));
+function evHTML(e){if(!e)return'';const[n,b,c]=LV[e.l];return`<section class="ev"><div class="evh">${b?`<span class="sig" style="--sc:${c}">${[1,2,3].map(k=>`<i class="${k<=b?'on':''}"></i>`).join('')}</span>`:`<span class="sig" style="--sc:#5fe3a1"><i class="on" style="background:#ff7a6b"></i><i class="on" style="background:#ffb547"></i><i class="on"></i></span>`}<b>${n}</b><span class="evt">Bilimsel dayanak</span></div><p>${e.t}</p>${e.r?`<p class="refs">${e.r}</p>`:''}</section>`}
+function go(i){
+  i=Math.max(0,Math.min(S.length-1,i));clearReg();cur=i;const s=S[i],L=LINES[s.line];
+  document.documentElement.style.setProperty('--lc',L.c);
+  panel.innerHTML=`<div class="sign"><span class="dot"></span><b>${s.hero?s.kicker:L.n}</b><span class="sno">${i?'Durak '+String(i).padStart(2,'0')+' / '+(S.length-1):'Kalkış'}</span></div>
+   ${s.hero?`<h1>${s.title}</h1>`:`<h2>${s.title}</h2>`}<p class="lead">${s.lead}</p><div class="widget" id="wg"></div>${evHTML(s.ev)}${s.note?`<details class="note"><summary>Sunucu notu</summary><p>${s.note}</p></details>`:''}`;
+  panel.scrollTop=0;panel.classList.remove('enter');void panel.offsetWidth;panel.classList.add('enter');
+  try{s.w&&s.w($('#wg'))}catch(e){console.error(e)}
+  $$('.stop',map).forEach((b,k)=>{b.classList.toggle('on',k===i);b.classList.toggle('done',k<i)});
+  const on=$('.stop.on',map);if(on)map.scrollTo({left:on.offsetLeft-map.clientWidth/2,behavior:'smooth'});
+  $('#cnt').textContent=i?`${i} / ${S.length-1}`:'Kalkış';$('#prev').disabled=i===0;
+  const nx=$('#next');nx.disabled=i===S.length-1;nx.textContent=i===0?'Yolculuğa başla →':i===S.length-1?'Son durak':'Sonraki durak →';
+  Brain.focus(i,L.c);try{history.replaceState(null,'','#d'+i)}catch(e){}
+}
+$('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
+$('#fs').onclick=()=>{try{const d=document;if(d.fullscreenElement)d.exitFullscreen();else{const p=d.documentElement.requestFullscreen&&d.documentElement.requestFullscreen();p&&p.catch&&p.catch(()=>{})}}catch(e){}};
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(e.key==='ArrowRight'||e.key==='PageDown')go(cur+1);else if(e.key==='ArrowLeft'||e.key==='PageUp')go(cur-1)});
+let tx=0,ty=0;panel.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+panel.addEventListener('touchend',e=>{if(e.target.closest('.widget'))return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>70&&Math.abs(dy)<45)go(cur+(dx<0?1:-1))},{passive:true});
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>reg.rs.forEach(f=>f()),150)});
+const h=/^#d(\d+)$/.exec(location.hash||'');go(h?+h[1]:0);
+})();
+</script>
