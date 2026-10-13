@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="8.1">
+<meta name="surum" content="8.2">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='8.1';
+const PANEL_SURUM='8.2';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1107,6 +1107,66 @@ function bgpBasla(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='un
   if(BGP.abone)return;BGP.abone=true;try{db.collection('site_ayarlari').doc('begeniler').onSnapshot(d=>{BGP.sayi=(d.exists&&d.data().sayilar)||{};bgpCiz()},()=>{})}catch{}
   setInterval(()=>{if(!document.getElementById('bgp-kutu'))bgpCiz()},3000)}
 bgpBasla();
+})();
+
+</script>
+<script>
+/* ===================== v8.2 · 🆕 SON YÜKLENEN DOSYALAR EN ÜSTTE · başlık/açıklama dosyadan ===================== */
+(function(){
+'use strict';
+const SY={liste:[],t:0,yuk:null,siralaniyor:false};
+function sDepo(){const o=local.get('repo',null);if(o&&o.owner&&o.repo)return{owner:o.owner,repo:o.repo};try{const u=new URL(base),m=u.hostname.match(/^([^.]+)\.github\.io$/i);if(m)return{owner:m[1],repo:u.pathname.split('/').filter(Boolean)[0]||m[1]+'.github.io'}}catch{}return{owner:'baris-ogretmen',repo:'site-1'}}
+async function sGh(yol){const r=sDepo(),tok=local.get('ghToken','');const h={Accept:'application/vnd.github+json'};if(tok)h.Authorization='Bearer '+tok;const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(r.owner)}/${encodeURIComponent(r.repo)}${yol}`,{headers:h,cache:'no-store'});if(!res.ok)throw new Error(res.status===403?'GitHub saatlik sorgu sınırı doldu; birkaç dakika sonra yenilenir.':'GitHub yanıtı: '+res.status);return res.json()}
+const ICERIK=/\.(html?|pdf|mp4|webm|mp3)$/i;
+/* son 12 yüklemedeki dosyalar, en yeni en başta (3 dk önbellek) */
+async function sonYuklenenler(zorla){if(!zorla&&SY.liste.length&&Date.now()-SY.t<180000)return SY.liste;if(SY.yuk)return SY.yuk;
+  const c=local.get('sonYuklenen',null);if(!zorla&&c&&Date.now()-c.t<180000){SY.liste=c.L;SY.t=c.t;return SY.liste}
+  SY.yuk=(async()=>{try{const cm=await sGh('/commits?per_page=12');const gor=new Map();
+      for(const k of cm){let d;try{d=await sGh('/commits/'+k.sha)}catch(e){break}const t=Date.parse(k.commit?.committer?.date||k.commit?.author?.date||'')||0;
+        for(const f of d.files||[]){if(f.status==='removed'||!ICERIK.test(f.filename)||/(^|\/)\.github\//.test(f.filename))continue;if(!gor.has(f.filename))gor.set(f.filename,{f:f.filename,t,yeni:f.status==='added'})}}
+      SY.liste=[...gor.values()].sort((a,b)=>b.t-a.t);SY.t=Date.now();local.set('sonYuklenen',{t:SY.t,L:SY.liste})}catch(e){SY.hata=String(e.message||e);if(c)SY.liste=c.L}
+    SY.yuk=null;return SY.liste})();
+  return SY.yuk}
+/* öneri listesi (datalist): son yüklenenler en üstte, sonra diğerleri */
+function dlSirala(){const dl=document.getElementById('x-repo-files');if(!dl||SY.siralaniyor||!SY.liste.length)return;const sira=new Map(SY.liste.map((x,n)=>[x.f,n]));const op=[...dl.options];if(!op.length)return;
+  const ilk=op.slice(0,SY.liste.length).map(o=>o.value).join('|'),bek=op.filter(o=>sira.has(o.value)).sort((a,b)=>sira.get(a.value)-sira.get(b.value)).map(o=>o.value).join('|');if(ilk===bek)return;
+  SY.siralaniyor=true;op.sort((a,b)=>{const x=sira.has(a.value)?sira.get(a.value):1e6,y=sira.has(b.value)?sira.get(b.value):1e6;return x-y||a.value.localeCompare(b.value,'tr')});dl.replaceChildren(...op);op.forEach(o=>{const s=SY.liste[sira.get(o.value)];if(s)o.label='🆕 '+sureYazi(s.t)});setTimeout(()=>{SY.siralaniyor=false},0)}
+function dlIzle(n=0){const dl=document.getElementById('x-repo-files');if(!dl){if(n<120)setTimeout(()=>dlIzle(n+1),500);return}new MutationObserver(()=>dlSirala()).observe(dl,{childList:true});dlSirala()}
+function sureYazi(t){if(!t)return'';const d=Math.round((Date.now()-t)/60000);if(d<1)return'az önce';if(d<60)return d+' dk önce';const s=Math.round(d/60);if(s<24)return s+' saat önce';const g=Math.round(s/24);return g===1?'dün':g+' gün önce'}
+/* bu dosya sitede bir içerikte kullanılıyor mu? */
+function kullaniliyor(f){const tam=new URL(f,base).href;return (records||[]).some(r=>{const l=String(r.link||'').trim();if(!l)return false;try{return new URL(l,base).href===tam||decodeURIComponent(new URL(l,base).href)===decodeURIComponent(tam)}catch{return l===f}})}
+/* “Bağlantı” alanının altında: 🆕 Son yüklenenler */
+function kutuCiz(){const alan=document.getElementById('link-field');if(!alan)return;let k=document.getElementById('sy-kutu');if(!k){alan.insertAdjacentHTML('beforeend','<div id="sy-kutu" class="sy-kutu"><div class="sy-bas"><b>🆕 Son yüklediğin dosyalar</b><button type="button" class="sy-yenile" id="sy-yenile" aria-label="Listeyi yenile">↻</button></div><div id="sy-liste" class="sy-liste"><span class="sy-bos">Yükleniyor…</span></div></div>');k=document.getElementById('sy-kutu');
+    document.getElementById('sy-yenile').onclick=()=>{document.getElementById('sy-liste').innerHTML='<span class="sy-bos">Yenileniyor…</span>';sonYuklenenler(true).then(()=>{kutuCiz();dlSirala()})};
+    k.addEventListener('click',e=>{const b=e.target.closest('[data-sy]');if(!b)return;const inp=document.getElementById('edit-link');inp.value=b.dataset.sy;inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));doldur(b.dataset.sy);toast('🔗 Bağlantı yazıldı: '+b.dataset.sy)})}
+  const L=SY.liste.slice(0,10),box=document.getElementById('sy-liste');if(!box)return;
+  box.innerHTML=L.length?L.map(x=>{const v=kullaniliyor(x.f);return `<button type="button" class="sy-dosya${v?' sy-var':''}" data-sy="${esc(x.f)}"><span class="sy-ad">${/\.pdf$/i.test(x.f)?'📄':/\.(mp4|webm)$/i.test(x.f)?'🎬':/\.mp3$/i.test(x.f)?'🎵':'🎮'} ${esc(x.f)}</span><small>${esc(sureYazi(x.t))}${v?' · sitede var':x.yeni?' · henüz eklenmedi':''}</small></button>`}).join(''):`<span class="sy-bos">${SY.hata?esc(SY.hata):'Son yüklemelerde içerik dosyası bulunamadı.'}</span>`}
+/* dosya seçilince başlık ve açıklama boşsa dosyanın kendisinden doldur */
+async function doldur(f){try{if(!/\.html?$/i.test(f))return;const bas=document.getElementById('edit-title'),ac=document.getElementById('edit-description');if(!bas||(bas.value.trim()&&ac&&ac.value.trim()))return;
+  const r=await fetch(new URL(f,base).href+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=new DOMParser().parseFromString(await r.text(),'text/html');let kim=null;try{const k=d.getElementById('calisma-kimligi');if(k)kim=JSON.parse(k.textContent)}catch{}
+  const meta=n=>d.querySelector(`meta[name="${n}"],meta[property="${n}"]`)?.getAttribute('content')?.trim()||'';
+  const t=(kim&&kim.ad)||meta('og:title')||String(d.title||'').split(/\s+[|–—]\s+/)[0].trim(),o=(kim&&kim.ozet)||meta('description')||meta('og:description');let n=0;
+  if(t&&!bas.value.trim()){bas.value=t;bas.dispatchEvent(new Event('input',{bubbles:true}));n++}if(o&&ac&&!ac.value.trim()){ac.value=o.slice(0,700);ac.dispatchEvent(new Event('input',{bubbles:true}));n++}
+  if(n)toast('✍️ Başlık'+(n>1?' ve açıklama':'')+' dosyanın içinden yazıldı; istersen düzelt.')}catch{}}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='edit-link'){const v=e.target.value.trim();if(v&&!/^https?:/i.test(v))doldur(v)}});
+/* başlat: giriş yapılınca ve “Bağlantı” alanına dokununca tazele */
+function basla(n=0){if(typeof currentUser==='undefined'||!currentUser){if(n<240)setTimeout(()=>basla(n+1),500);return}
+  dlIzle();sonYuklenenler().then(()=>{kutuCiz();dlSirala()});
+  document.addEventListener('focusin',e=>{if(e.target&&(e.target.id==='edit-link'||e.target.getAttribute('list')==='x-repo-files')){sonYuklenenler().then(()=>{kutuCiz();dlSirala()})}});
+  setInterval(()=>{if(document.getElementById('link-field')&&!document.getElementById('sy-kutu'))kutuCiz()},2000)}
+basla();
+document.head.insertAdjacentHTML('beforeend',`<style>
+.sy-kutu{margin-top:10px;border:1px solid #c7d2fe;background:linear-gradient(135deg,#eef2ff,#f0fdfa);border-radius:14px;padding:10px 12px}
+.sy-bas{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:.85rem}
+.sy-yenile{background:#fff;border:1px solid #c7d2fe;border-radius:10px;width:34px;height:34px;cursor:pointer;font-size:16px}
+.sy-liste{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.sy-dosya{flex:0 0 auto;max-width:240px;text-align:left;border:1px solid #c7d2fe;background:#fff;border-radius:12px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;font:inherit}
+.sy-dosya:hover,.sy-dosya:focus-visible{border-color:#4f46e5;outline:none;box-shadow:0 0 0 3px #c7d2fe}
+.sy-ad{font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1e1b4b}
+.sy-dosya small{color:#475569;font-size:.72rem}.sy-dosya:not(.sy-var) small{color:#047857;font-weight:700}
+.sy-dosya.sy-var{opacity:.62}.sy-bos{font-size:.82rem;color:#64748b;padding:6px 0}
+.dark-mode .sy-kutu{background:#0f172a;border-color:#334155}.dark-mode .sy-dosya{background:#1e293b;border-color:#334155}.dark-mode .sy-ad{color:#e2e8f0}
+</style>`);
 })();
 
 </script>
