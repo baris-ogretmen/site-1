@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Robi'nin Adası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deniz1:#3fc1c9; --deniz2:#1f8fa6; --cim:#7ed957; --cim2:#5cbf3a; --toprak:#6a3fa0; --toprak2:#4b2878;
+  --yol:#e2b679; --yol2:#c9955a; --krem:#fff8ec; --koyu:#1d3a4a; --turuncu:#ffb547; --pembe:#ff5d8f; --mor:#7b5cff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:'Baloo 2',system-ui,sans-serif;color:var(--koyu);
+  background:radial-gradient(circle at 50% 40%,#5fd6db 0%,var(--deniz1) 40%,var(--deniz2) 100%);user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none}
+.ekran{position:fixed;inset:0;display:none;flex-direction:column;align-items:center}
+.ekran.aktif{display:flex}
+.dalga{position:fixed;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(ellipse 60px 14px at 15% 20%,#fff6 40%,transparent 41%),radial-gradient(ellipse 50px 12px at 80% 70%,#fff5 40%,transparent 41%),radial-gradient(ellipse 70px 14px at 70% 15%,#fff4 40%,transparent 41%),radial-gradient(ellipse 40px 10px at 25% 85%,#fff5 40%,transparent 41%);
+  animation:dalga 8s ease-in-out infinite alternate}
+@keyframes dalga{to{transform:translate(20px,8px)}}
+.nilufer{position:fixed;width:56px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#8be06b,#3f9f36);box-shadow:0 0 0 8px #ffffff22;pointer-events:none}
+.nilufer::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:10px;border-radius:50%;background:var(--pembe);transform:translate(-50%,-60%)}
+
+/* Kartlar ve düğmeler */
+.kart{background:var(--krem);border-radius:28px;box-shadow:0 8px 0 #0002,0 20px 40px #0003;padding:22px}
+.btn{background:#fff;border-radius:18px;padding:10px 18px;font-size:20px;font-weight:700;color:var(--koyu);box-shadow:0 5px 0 #0002;transition:transform .1s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0002}
+.btn.sari{background:var(--turuncu)} .btn.yesil{background:#6fdc6f} .btn.pembe{background:var(--pembe);color:#fff} .btn.mor{background:var(--mor);color:#fff}
+.btn:disabled{opacity:.45}
+input{font-family:inherit;font-size:22px;padding:12px 16px;border-radius:16px;border:3px solid #d8e9ee;width:100%;outline:none;color:var(--koyu)}
+input:focus{border-color:var(--turuncu)}
+
+/* Giriş */
+#giris{justify-content:center;padding:16px}
+#giris .kart{width:min(460px,100%);text-align:center}
+#giris h1{margin:0;font-size:38px;line-height:1.1;color:var(--toprak)}
+#giris p{margin:4px 0 14px;font-size:18px}
+.etiket{display:block;text-align:left;font-weight:700;margin:10px 4px 4px}
+.cipler{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.cip{background:#e9f8fb;border-radius:999px;padding:6px 14px;font-size:17px;font-weight:700;color:var(--koyu)}
+
+/* Üst çubuk */
+.ust{position:relative;z-index:5;width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px}
+.ust .bas{font-size:24px;font-weight:800;color:#fff;text-shadow:0 2px 0 #0003;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yuvarlak{width:52px;height:52px;border-radius:50%;background:#ffffffee;font-size:26px;display:grid;place-items:center;box-shadow:0 4px 0 #0002;flex:none}
+.ogr-rozet{background:#ffffffe6;border-radius:999px;padding:6px 14px;font-weight:800;font-size:18px;box-shadow:0 4px 0 #0002;white-space:nowrap}
+
+/* Menü */
+#menu .icerik{flex:1;width:100%;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:6px 16px 24px;gap:18px}
+.logo{display:flex;align-items:center;gap:14px}
+.logo h1{margin:0;font-size:clamp(34px,6vw,58px);color:#fff;text-shadow:0 4px 0 var(--toprak2)}
+.mod-kart{width:min(860px,100%)}
+.mod-kart h2{margin:0 0 4px;font-size:28px;display:flex;align-items:center;gap:10px}
+.mod-kart p{margin:0 0 12px;font-size:18px}
+.adalar{display:flex;flex-wrap:wrap;gap:14px}
+.ada-btn{width:86px;height:86px;border-radius:24px;background:linear-gradient(#8ee66a,#56b83a);box-shadow:0 8px 0 var(--toprak),0 12px 18px #0003;font-size:34px;font-weight:800;color:#fff;text-shadow:0 2px 0 #0004;position:relative}
+.ada-btn .yildiz{position:absolute;left:0;right:0;bottom:-30px;font-size:16px;text-shadow:none;letter-spacing:-2px}
+.ada-btn:active{transform:translateY(4px)}
+
+/* Oyun */
+#sahne{flex:1;width:100%;position:relative;padding-bottom:4%;perspective:1100px;perspective-origin:50% 25%;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0}
+#tahta{position:relative;transform-style:preserve-3d;transform:rotateX(48deg);transition:transform .6s}
+.karo{position:absolute;transform-style:preserve-3d}
+.karo .ust-yuz{position:absolute;inset:4px;border-radius:10px;overflow:hidden;
+  background:radial-gradient(circle at 30% 25%,#9cf06f,var(--cim) 45%,var(--cim2));box-shadow:inset 0 0 0 3px #ffffff40}
+.karo.su .ust-yuz{background:radial-gradient(circle at 35% 30%,#9ef0ff,#45c4e6 50%,#2a9fd0)}
+.karo .on-yuz{position:absolute;left:4px;right:4px;bottom:4px;transform-origin:50% 100%;transform:rotateX(90deg);
+  border-radius:0 0 8px 8px;background-color:var(--toprak);
+  background-image:linear-gradient(transparent 80%,#0000002a 80%),radial-gradient(circle,#ffffff38 2px,transparent 3px);background-size:100% 100%,14px 14px}
+.karo.su .on-yuz{background:#2672a8}
+.karo .don{position:absolute;inset:0;transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
+.karo.donebilir{cursor:pointer}
+.karo.donebilir .ust-yuz::after{content:"";position:absolute;inset:6px;border-radius:8px;border:3px dashed #ffffff70}
+.karo.zip{animation:zip .35s}
+@keyframes zip{40%{transform:translateZ(22px)}}
+.karo.parla .ust-yuz{box-shadow:inset 0 0 0 5px #fff,0 0 20px #fff}
+.iz{position:absolute;inset:0;display:grid;place-items:center;font-size:30%;opacity:.55}
+.ayakta{position:absolute;transform-origin:50% 100%;pointer-events:none;line-height:1;text-align:center}
+.ayakta .ic{display:block}
+#robi{transition:left .42s ease-in-out,top .42s ease-in-out;z-index:3}
+#robi.zipla .ic{animation:hop .42s}
+@keyframes hop{50%{transform:translateY(-28%)}}
+#robi.salla .ic{animation:salla .5s}
+@keyframes salla{20%,60%{transform:translateX(-12%) rotate(-8deg)}40%,80%{transform:translateX(12%) rotate(8deg)}}
+#robi.mutlu .ic{animation:mutlu .6s 3}
+@keyframes mutlu{50%{transform:translateY(-35%) rotate(10deg)}}
+
+.alt{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 12px 16px;position:relative;z-index:5}
+.satir{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+.ok-btn{width:78px;height:78px;border-radius:22px;font-size:44px;font-weight:800;color:#fff;box-shadow:0 6px 0 #0003;display:grid;place-items:center}
+.ok-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #0003}
+.ok-u{background:#ff7a59}.ok-d{background:#4fa3ff}.ok-l{background:#ffb72b}.ok-r{background:#38c172}
+#program{display:flex;gap:6px;background:#ffffffd9;border-radius:20px;padding:8px;min-height:68px;max-width:100%;overflow-x:auto;box-shadow:0 4px 0 #0002}
+.slot{width:52px;height:52px;border-radius:14px;border:3px dashed #b8d7df;flex:none;display:grid;place-items:center;font-size:30px;color:#fff;font-weight:800}
+.slot.dolu{border:none;box-shadow:0 3px 0 #0003}
+.slot.simdi{outline:4px solid var(--pembe);transform:scale(1.12)}
+.ipucu-yazi{background:#ffffffd9;border-radius:16px;padding:6px 14px;font-size:19px;font-weight:700;text-align:center;max-width:94%}
+
+/* Kutlama */
+.kaplama{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.kaplama.acik{display:flex}
+.kaplama .kart{width:min(520px,100%);max-height:92vh;overflow:auto;text-align:center;position:relative}
+.kaplama h2{margin:0 0 6px;font-size:32px;color:var(--toprak)}
+.buyuk-yildiz{font-size:56px;letter-spacing:4px;animation:pul .6s}
+@keyframes pul{0%{transform:scale(.2)}70%{transform:scale(1.2)}}
+.kapat-x{position:absolute;right:12px;top:10px;width:40px;height:40px;border-radius:50%;background:#eee;font-size:20px}
+#konfeti{position:fixed;inset:0;pointer-events:none;z-index:60}
+
+/* Ayarlar & panel */
+.ayar-satir{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:2px solid #eef3f5;text-align:left;font-size:18px}
+.anahtar{width:58px;height:32px;border-radius:999px;background:#ccd;position:relative;flex:none;transition:.2s}
+.anahtar::after{content:"";position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.anahtar.acik{background:#38c172}.anahtar.acik::after{left:30px}
+.bolum-bas{font-weight:800;font-size:20px;text-align:left;margin:16px 0 4px}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{padding:7px 6px;border-bottom:1px solid #e6eef1;text-align:left}
+th{background:#eaf7fa}
+textarea{width:100%;min-height:90px;font-family:monospace;font-size:13px;border-radius:12px;border:2px solid #d8e9ee;padding:8px}
+.kucuk{font-size:14px;opacity:.75}
+
+/* ZİRVE yüzen araçlar (varsayılan gizli) */
+.yuzen{position:fixed;z-index:40;background:#ffffffd0;border-radius:999px;padding:6px 12px;font-weight:800;font-size:15px;opacity:.55;box-shadow:0 3px 8px #0002;display:none}
+.yuzen.gor{display:block}
+.yuzen:hover{opacity:1}
+#tahtaAraclar{position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:45;display:none;flex-direction:column;gap:6px;background:#ffffffd9;padding:6px;border-radius:18px;box-shadow:0 4px 12px #0003}
+#tahtaAraclar.gor{display:flex}
+#tahtaAraclar button{width:46px;height:46px;border-radius:14px;background:#f1f7f9;font-size:22px}
+#tahtaAraclar button.secili{background:var(--turuncu)}
+#spot{position:fixed;inset:0;z-index:44;pointer-events:none;display:none}
+#cizim{position:fixed;inset:0;z-index:43;display:none;touch-action:none}
+#lazer{position:fixed;width:22px;height:22px;border-radius:50%;background:radial-gradient(#fff,#ff2b2b 40%,#ff000000 70%);z-index:46;pointer-events:none;display:none;transform:translate(-50%,-50%)}
+#dikkat{position:fixed;inset:0;z-index:70;background:linear-gradient(135deg,#7b5cff,#ff5d8f);display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:clamp(40px,8vw,96px);font-weight:800;text-align:center}
+#sayac{position:fixed;right:12px;top:76px;z-index:46;background:#fff;border-radius:18px;padding:6px 16px;font-size:34px;font-weight:800;display:none;box-shadow:0 4px 0 #0002}
+#damga{position:fixed;left:50%;top:45%;z-index:65;font-size:min(40vw,260px);transform:translate(-50%,-50%) scale(0);pointer-events:none;transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(120px);background:var(--koyu);color:#fff;padding:10px 18px;border-radius:16px;font-size:17px;font-weight:700;z-index:80;transition:transform .3s;max-width:90%;text-align:center}
+#toast.gor{transform:translateX(-50%) translateY(0)}
+.adimlar{text-align:left;font-size:18px;margin:10px 0;padding:0;list-style:none}
+.adimlar li{display:flex;gap:10px;align-items:center;padding:7px 0}
+.adimlar b{background:var(--turuncu);border-radius:50%;width:32px;height:32px;display:grid;place-items:center;flex:none;color:#fff}
+@media (max-width:600px){.ok-btn{width:64px;height:64px;font-size:36px}.slot{width:44px;height:44px;font-size:26px}.ada-btn{width:70px;height:70px;font-size:28px}}
+@media print{html{zoom:1!important}}
+</style>
+</head>
+<body>
+<div class="dalga"></div>
+<div class="nilufer" style="left:6%;top:30%"></div>
+<div class="nilufer" style="right:7%;top:22%;transform:scale(.8)"></div>
+<div class="nilufer" style="left:10%;bottom:16%;transform:scale(.7)"></div>
+<div class="nilufer" style="right:12%;bottom:24%"></div>
+
+<!-- GİRİŞ -->
+<section id="giris" class="ekran">
+  <div class="kart">
+    <div id="girisRobi" style="width:120px;margin:-70px auto 0"></div>
+    <h1>Robi'nin Adası</h1>
+    <p>Yolu bul, Robi'yi evine götür! 🏡</p>
+    <label class="etiket" for="adIn">Ad Soyad</label>
+    <input id="adIn" placeholder="Örn: Elif Yılmaz" autocomplete="off">
+    <label class="etiket" for="sinifIn">Sınıf / Grup</label>
+    <input id="sinifIn" placeholder="Örn: Papatyalar (5 yaş)" autocomplete="off">
+    <button class="btn sari" style="width:100%;margin-top:16px;font-size:26px" id="girBtn">Oyuna Gir ▶</button>
+    <div id="sonCocuklar" class="cipler"></div>
+  </div>
+</section>
+
+<!-- MENÜ -->
+<section id="menu" class="ekran">
+  <div class="ust">
+    <div class="bas"></div>
+    <button class="ogr-rozet" id="ogrRozet" title="Öğrenci değiştir">👤</button>
+    <button class="yuvarlak" id="ayarBtn1" title="Ayarlar">⚙️</button>
+  </div>
+  <div class="icerik">
+    <div class="logo"><div id="menuRobi" style="width:90px"></div><h1>Robi'nin Adası</h1></div>
+    <div class="kart mod-kart">
+      <h2>🔄 Yolu Döndür</h2>
+      <p>Parçalara dokun, yolu çevir, Robi'yi evine ulaştır.</p>
+      <div class="adalar" id="adalarDon"></div>
+    </div>
+    <div class="kart mod-kart" style="margin-top:14px">
+      <h2>🧭 Kodla Yürüt</h2>
+      <p>Okları sırayla diz, Başlat'a bas, Robi senin kodunla yürüsün.</p>
+      <div class="adalar" id="adalarKod"></div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</section>
+
+<!-- OYUN -->
+<section id="oyun" class="ekran">
+  <div class="ust">
+    <button class="yuvarlak" id="geriBtn" title="Menü">🏠</button>
+    <div class="bas" id="oyunBas"></div>
+    <button class="yuvarlak" id="sesYonBtn" title="Yönergeyi dinle">🔊</button>
+    <button class="yuvarlak" id="ayarBtn2" title="Ayarlar">⚙️</button>
+  </div>
+  <div id="sahne"><div id="tahta"></div></div>
+  <div class="alt" id="altDon">
+    <div class="ipucu-yazi" id="donYazi">Parçalara dokun, yolu çevir! 👆</div>
+    <div class="satir">
+      <button class="btn" id="geriAlBtn">↩️ Geri Al</button>
+      <button class="btn" id="karistirBtn">🔀 Yeniden</button>
+      <button class="btn sari" id="gonderBtn" style="font-size:24px">▶ Robi Yürüsün</button>
+    </div>
+  </div>
+  <div class="alt" id="altKod">
+    <div id="program"></div>
+    <div class="satir">
+      <button class="ok-btn ok-l" data-ok="l">⬅</button>
+      <button class="ok-btn ok-u" data-ok="u">⬆</button>
+      <button class="ok-btn ok-d" data-ok="d">⬇</button>
+      <button class="ok-btn ok-r" data-ok="r">➡</button>
+    </div>
+    <div class="satir">
+      <button class="btn" id="silBtn">⌫ Sil</button>
+      <button class="btn" id="temizleBtn">🗑️ Temizle</button>
+      <button class="btn" id="ipucuBtn">💡 İpucu</button>
+      <button class="btn yesil" id="baslatBtn" style="font-size:24px">▶ Başlat</button>
+    </div>
+  </div>
+</section>
+
+<!-- KUTLAMA -->
+<div class="kaplama" id="kutlama"><div class="kart">
+  <div id="kutRobi" style="width:110px;margin:0 auto"></div>
+  <h2 id="kutBas">Aferin!</h2>
+  <div class="buyuk-yildiz" id="kutYildiz">⭐⭐⭐</div>
+  <p id="kutYazi" style="font-size:20px;margin:6px 0 14px"></p>
+  <div class="satir">
+    <button class="btn" id="kutTekrar">🔁 Tekrar</button>
+    <button class="btn" id="kutMenu">🏝️ Adalar</button>
+    <button class="btn sari" id="kutSonraki">Sonraki ▶</button>
+  </div>
+</div></div>
+
+<!-- AYARLAR -->
+<div class="kaplama" id="ayarlar"><div class="kart" style="width:min(620px,100%)">
+  <button class="kapat-x" data-kapat="ayarlar">✕</button>
+  <h2>⚙️ Ayarlar</h2>
+  <div class="ayar-satir">🔊 Sesli yönergeler <span class="anahtar" data-ayar="ses"></span></div>
+  <div class="ayar-satir">🎵 Efekt sesleri <span class="anahtar" data-ayar="efekt"></span></div>
+  <div class="ayar-satir">👣 Kolay seviyelerde yol izi <span class="anahtar" data-ayar="iz"></span></div>
+  <div class="bolum-bas">🧰 Araçlar</div>
+  <div class="ayar-satir">🖍️ Tahta araç çubuğu (spot, lazer, kalem, sayaç…) <span class="anahtar" data-arac="tahtaAraclar"></span></div>
+  <div class="ayar-satir">📲 QR ile paylaş düğmesi <span class="anahtar" data-arac="qrPill"></span></div>
+  <div class="ayar-satir">📺 Ekran modu düğmesi <span class="anahtar" data-arac="ekranPill"></span></div>
+  <div class="ayar-satir">❓ Yardım düğmesi <span class="anahtar" data-arac="yardimPill"></span></div>
+  <div class="satir" style="margin-top:12px">
+    <button class="btn" onclick="ZIRVE_paylasAc()">📲 QR Aç</button>
+    <button class="btn" id="ekranDongu">📺 Ekran: <span id="ekranAd">Otomatik</span></button>
+    <button class="btn" onclick="karsilamaAc()">❓ Nasıl oynanır</button>
+    <button class="btn" onclick="tamEkran()">⛶ Tam ekran</button>
+  </div>
+  <div class="bolum-bas">👩‍🏫 Öğretmen</div>
+  <div class="satir"><button class="btn mor" id="panelBtn">📊 Öğretmen Paneli</button></div>
+</div></div>
+
+<!-- ÖĞRETMEN PANELİ -->
+<div class="kaplama" id="panel"><div class="kart" style="width:min(820px,100%)">
+  <button class="kapat-x" data-kapat="panel">✕</button>
+  <h2>📊 Öğretmen Paneli</h2>
+  <div id="panelKilit">
+    <p>Öğretmen şifresi (ilk şifre: <b>1234</b>)</p>
+    <input id="pinIn" type="password" inputmode="numeric" style="max-width:220px;text-align:center">
+    <div style="margin-top:10px"><button class="btn sari" id="pinBtn">Aç</button></div>
+  </div>
+  <div id="panelIcerik" style="display:none">
+    <p class="kucuk" id="panelKaynak"></p>
+    <div class="satir" style="margin-bottom:8px">
+      <input id="panelAra" placeholder="🔎 Ad veya sınıf ara" style="max-width:280px;font-size:17px;padding:8px 12px">
+      <button class="btn" id="panelYenile">🔄 Yenile</button>
+      <button class="btn" id="panelKopya">📋 Listeyi Kopyala</button>
+    </div>
+    <div style="overflow:auto;max-height:46vh"><table id="panelTablo"></table></div>
+    <div class="bolum-bas">☁️ Tüm cihazları tek panelde görmek için (Firebase)</div>
+    <p class="kucuk" style="text-align:left">Firebase projendeki <b>firebaseConfig</b> yazısını aşağıya bir kez yapıştır. Girişler <b>robi_adasi_girisler</b> ve <b>robi_adasi_ogrenciler</b> koleksiyonlarına yazılır. Yapıştırmazsan liste yalnız bu cihazda tutulur.</p>
+    <textarea id="fbIn" placeholder='const firebaseConfig = { apiKey: "...", projectId: "..." ... }'></textarea>
+    <div class="satir" style="margin-top:8px">
+      <button class="btn yesil" id="fbKaydet">💾 Kaydet ve Test Et</button>
+      <span id="fbDurum" class="kucuk"></span>
+    </div>
+    <div class="bolum-bas">🔐 Şifre</div>
+    <div class="satir"><input id="yeniPin" placeholder="Yeni şifre" style="max-width:200px;font-size:17px;padding:8px 12px"><button class="btn" id="pinDegis">Değiştir</button></div>
+  </div>
+</div></div>
+
+<!-- KARŞILAMA -->
+<div class="kaplama" id="karsilama"><div class="kart" style="background:linear-gradient(160deg,#fff8ec,#e6fbff)">
+  <div id="karRobi" style="width:120px;margin:0 auto"></div>
+  <h2>Merhaba! Ben Robi 👋</h2>
+  <p style="font-size:18px;margin:0">Evimin yolunu kaybettim. Bana yardım eder misin?</p>
+  <ul class="adimlar">
+    <li><b>1</b>Öğrencinin adını ve sınıfını yaz, oyuna gir.</li>
+    <li><b>2</b>🔄 <span><b style="all:unset;font-weight:800">Yolu Döndür:</b> parçalara dokun, yolu birleştir, "Robi Yürüsün"e bas.</span></li>
+    <li><b>3</b>🧭 <span><b style="all:unset;font-weight:800">Kodla Yürüt:</b> okları sırayla diz, "Başlat"a bas.</span></li>
+    <li><b>4</b>Yanlış olursa sorun yok! Robi durur, birlikte düzeltiriz. 💛</li>
+    <li><b>5</b>Öğretmen: ⚙️ Ayarlar → Öğretmen Paneli'nden kimin oynadığını gör.</li>
+  </ul>
+  <button class="btn sari" data-kapat="karsilama" style="font-size:24px">Hadi Başlayalım! 🚀</button>
+</div></div>
+
+<!-- QR -->
+<div class="kaplama" id="qrPencere"><div class="kart">
+  <button class="kapat-x" data-kapat="qrPencere">✕</button>
+  <h2>📲 Telefonla Aç</h2>
+  <div id="qrKutu" style="background:#fff;padding:14px;border-radius:18px;display:inline-block;min-width:200px;min-height:200px"></div>
+  <p id="qrNot" class="kucuk"></p>
+  <div class="satir"><button class="btn" id="qrKopya">🔗 Linki Kopyala</button><button class="btn" id="qrIndir">⬇️ PNG İndir</button></div>
+</div></div>
+
+<!-- Yüzen araçlar (varsayılan gizli) -->
+<button class="yuzen" id="qrPill" style="right:10px;bottom:10px" onclick="ZIRVE_paylasAc()">📲 QR</button>
+<button class="yuzen" id="ekranPill" style="right:80px;bottom:10px">📺 mod</button>
+<button class="yuzen" id="yardimPill" style="right:160px;bottom:10px" onclick="karsilamaAc()">?</button>
+<div id="tahtaAraclar">
+  <button data-t="spot" title="Spot ışığı">🔦</button>
+  <button data-t="lazer" title="Lazer">🔴</button>
+  <button data-t="kalem" title="Kalem">✏️</button>
+  <button data-t="sayac" title="Zamanlayıcı">⏱️</button>
+  <button data-t="dikkat" title="Dikkat ekranı">🤫</button>
+  <button data-t="damga" title="Yıldız damga">⭐</button>
+  <button data-t="aferin" title="Aferin">🎉</button>
+</div>
+<canvas id="spot"></canvas><canvas id="cizim"></canvas><div id="lazer"></div>
+<div id="dikkat"><div>👀</div><div>Gözler tahtada!</div></div>
+<div id="sayac"></div><div id="damga">⭐</div>
+<canvas id="konfeti"></canvas>
+<div id="toast"></div>
+
+<script>
+/* ============ Yardımcılar ============ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const LS={al(k,v){try{const x=localStorage.getItem('robi_'+k);return x==null?v:JSON.parse(x)}catch(e){return v}},
+          koy(k,v){try{localStorage.setItem('robi_'+k,JSON.stringify(v))}catch(e){}}};
+function toast(t,ms=2600){const e=$('#toast');e.textContent=t;e.classList.add('gor');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('gor'),ms)}
+const AYAR=Object.assign({ses:true,efekt:true,iz:true},LS.al('ayar',{}));
+const N=1,E=2,S=4,W=8, YON={u:[-1,0],d:[1,0],l:[0,-1],r:[0,1]};
+function dondurMaske(m,k){k=((k%4)+4)%4;for(let i=0;i<k;i++)m=((m<<1)|(m>>3))&15;return m}
+function bit(dr,dc){return dr<0?N:dr>0?S:dc>0?E:W}
+function ters(b){return b===N?S:b===S?N:b===E?W:E}
+function rastgele(seed){let s=seed%2147483647||7;return()=>(s=s*16807%2147483647)/2147483647}
+
+/* ============ Ses ============ */
+let sesCtx=null;
+function bip(f=600,d=.12,tip='sine',v=.15){if(!AYAR.efekt)return;try{sesCtx=sesCtx||new (window.AudioContext||window.webkitAudioContext)();
+  const o=sesCtx.createOscillator(),g=sesCtx.createGain();o.type=tip;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(sesCtx.destination);
+  const t=sesCtx.currentTime;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d)}catch(e){}}
+function melodi(notlar,ara=.13){notlar.forEach((f,i)=>setTimeout(()=>bip(f,.18,'triangle',.18),i*ara*1000))}
+let trSes=null;
+function sesleriBul(){try{const v=speechSynthesis.getVoices();trSes=v.find(x=>/tr/i.test(x.lang))||null}catch(e){}}
+try{speechSynthesis.onvoiceschanged=sesleriBul;sesleriBul()}catch(e){}
+function konus(t){if(!AYAR.ses)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';if(trSes)u.voice=trSes;u.rate=.92;u.pitch=1.15;speechSynthesis.speak(u)}catch(e){}}
+
+/* ============ Çizimler ============ */
+const ROBI_SVG=`<svg viewBox="0 0 100 120" width="100%" style="display:block;overflow:visible">
+<ellipse cx="50" cy="116" rx="30" ry="5" fill="#0003"/>
+<line x1="50" y1="14" x2="50" y2="4" stroke="#4b2878" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="5" r="6" fill="#ff5d8f"/>
+<rect x="14" y="14" width="72" height="54" rx="22" fill="#5fd3e6" stroke="#1d3a4a" stroke-width="4"/>
+<rect x="24" y="25" width="52" height="32" rx="14" fill="#1d3a4a"/>
+<circle cx="39" cy="41" r="7" fill="#9ff7ff"/><circle cx="61" cy="41" r="7" fill="#9ff7ff"/><circle cx="41" cy="39" r="2.5" fill="#fff"/><circle cx="63" cy="39" r="2.5" fill="#fff"/>
+<path d="M42 51 Q50 56 58 51" stroke="#9ff7ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="20" cy="53" r="4" fill="#ff9bb8"/><circle cx="80" cy="53" r="4" fill="#ff9bb8"/>
+<rect x="26" y="70" width="48" height="34" rx="14" fill="#ffb547" stroke="#1d3a4a" stroke-width="4"/>
+<circle cx="50" cy="86" r="7" fill="#fff" stroke="#1d3a4a" stroke-width="3"/>
+<rect x="8" y="76" width="16" height="10" rx="5" fill="#5fd3e6" stroke="#1d3a4a" stroke-width="3"/><rect x="76" y="76" width="16" height="10" rx="5" fill="#5fd3e6" stroke="#1d3a4a" stroke-width="3"/>
+<rect x="30" y="102" width="14" height="12" rx="5" fill="#4b2878"/><rect x="56" y="102" width="14" height="12" rx="5" fill="#4b2878"/></svg>`;
+const EV_SVG=`<svg viewBox="0 0 100 110" width="100%" style="display:block;overflow:visible">
+<ellipse cx="50" cy="106" rx="34" ry="5" fill="#0003"/>
+<path d="M24 60 L24 102 Q50 108 76 102 L76 60 Z" fill="#fff1d6" stroke="#8a5a2b" stroke-width="3"/>
+<path d="M40 102 L40 80 Q50 68 60 80 L60 102 Z" fill="#8a5a2b"/><circle cx="56" cy="91" r="2" fill="#ffd36b"/>
+<circle cx="66" cy="74" r="6" fill="#9ff7ff" stroke="#8a5a2b" stroke-width="3"/>
+<path d="M6 62 Q8 10 50 8 Q92 10 94 62 Q50 72 6 62 Z" fill="#ff4f7b" stroke="#b8264f" stroke-width="3"/>
+<circle cx="30" cy="34" r="7" fill="#fff"/><circle cx="58" cy="24" r="6" fill="#fff"/><circle cx="74" cy="44" r="7" fill="#fff"/><circle cx="46" cy="50" r="5" fill="#fff"/><circle cx="18" cy="52" r="4" fill="#fff"/></svg>`;
+function yolSVG(m,ozel){let p='';const w=34,a=50-w/2;
+  if(m&N)p+=`<rect x="${a}" y="-2" width="${w}" height="52"/>`;
+  if(m&S)p+=`<rect x="${a}" y="50" width="${w}" height="52"/>`;
+  if(m&E)p+=`<rect x="50" y="${a}" width="52" height="${w}"/>`;
+  if(m&W)p+=`<rect x="-2" y="${a}" width="52" height="${w}"/>`;
+  p+=`<circle cx="50" cy="50" r="${w/2}"/>`;
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%" style="position:absolute;inset:0">
+   <g fill="#c9955a" transform="translate(0,2)">${p}</g><g fill="#e2b679">${p}</g>
+   <g fill="#f3d3a0" opacity=".6"><circle cx="44" cy="44" r="3"/><circle cx="58" cy="56" r="2"/></g>${ozel||''}</svg>`}
+
+/* ============ Seviyeler ============ */
+// Yolu Döndür: yol hücreleri sırayla (ilk = Robi, son = ev). tuzak: boş hücrelere şaşırtıcı parça sayısı
+const DON_SEV=[
+ {n:2,yol:[[0,0],[0,1],[1,1]],tuzak:0},
+ {n:3,yol:[[1,0],[1,1],[1,2]],tuzak:0},
+ {n:3,yol:[[0,0],[0,1],[0,2],[1,2],[2,2]],tuzak:0},
+ {n:3,yol:[[2,0],[1,0],[1,1],[0,1],[0,2]],tuzak:0},
+ {n:3,yol:[[0,0],[1,0],[1,1],[1,2],[2,2]],tuzak:1},
+ {n:4,yol:[[0,0],[0,1],[1,1],[2,1],[2,2],[2,3],[3,3]],tuzak:1},
+ {n:4,yol:[[3,0],[2,0],[2,1],[1,1],[0,1],[0,2],[0,3],[1,3],[2,3]],tuzak:2},
+ {n:4,yol:[[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[3,3],[3,2],[3,1],[2,1],[2,2]],tuzak:2},
+];
+// Kodla Yürüt: bas=Robi, ev, engel (a=ağaç, k=kaya, s=su), yildiz=bonus
+const KOD_SEV=[
+ {n:3,bas:[1,0],ev:[1,2],engel:[]},
+ {n:3,bas:[2,1],ev:[0,1],engel:[]},
+ {n:3,bas:[0,0],ev:[2,2],engel:[[1,1,'a'],[1,0,'a']]},
+ {n:4,bas:[3,0],ev:[0,3],engel:[[2,1,'a'],[1,2,'k'],[3,2,'a']]},
+ {n:4,bas:[0,0],ev:[3,0],engel:[[1,0,'a'],[2,0,'a'],[0,3,'k']]},
+ {n:4,bas:[1,0],ev:[1,3],engel:[[1,1,'s'],[1,2,'s'],[0,2,'s'],[0,1,'s']]},
+ {n:5,bas:[4,0],ev:[0,4],engel:[[3,0,'a'],[3,1,'a'],[1,2,'k'],[2,3,'s'],[2,2,'s'],[0,1,'a']]},
+ {n:5,bas:[2,0],ev:[2,4],engel:[[2,1,'s'],[2,2,'s'],[2,3,'s'],[1,1,'a'],[0,3,'k'],[4,1,'a']]},
+];
+
+/* ============ Durum ============ */
+let OGR=LS.al('aktifOgr',null);
+let mod='don', sev=0, hucre=[], robiPos=[0,0], calisiyor=false, T=100, hata=0, gecmis=[], program=[];
+function ogrId(o){return (o.ad+'_'+o.sinif).toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]+/g,'-')}
+function ilerleme(){return LS.al('ilerleme',{})}
+function yildizAl(m,i){const p=ilerleme()[ogrId(OGR)]||{};return (p[m]||{})[i]||0}
+function yildizKoy(m,i,y){const p=ilerleme(),id=ogrId(OGR);p[id]=p[id]||{don:{},kod:{}};p[id][m][i]=Math.max(p[id][m][i]||0,y);LS.koy('ilerleme',p);
+  const top=Object.values(p[id].don).reduce((a,b)=>a+b,0)+Object.values(p[id].kod).reduce((a,b)=>a+b,0);
+  bulutOgrenci({yildiz:top,don:Object.keys(p[id].don).length,kod:Object.keys(p[id].kod).length,son:m+(i+1)})}
+
+/* ============ Ekranlar ============ */
+function ekran(id){$$('.ekran').forEach(e=>e.classList.toggle('aktif',e.id===id));if(id==='oyun')setTimeout(yerlesim,30)}
+function robiCiz(){['#girisRobi','#menuRobi','#kutRobi','#karRobi'].forEach(s=>{const e=$(s);if(e)e.innerHTML=ROBI_SVG})}
+
+function girisHazirla(){
+  const son=LS.al('sonCocuklar',[]);const k=$('#sonCocuklar');k.innerHTML='';
+  if(son.length){k.insertAdjacentHTML('beforeend','<div class="kucuk" style="width:100%">Son oynayanlar — dokun, hemen gir:</div>')}
+  son.slice(0,12).forEach(o=>{const b=document.createElement('button');b.className='cip';b.textContent=o.ad+' · '+o.sinif;b.onclick=()=>girisYap(o.ad,o.sinif);k.appendChild(b)});
+  const s=LS.al('sonSinif','');if(s)$('#sinifIn').value=s;
+}
+function girisYap(ad,sinif){
+  ad=(ad||'').trim().replace(/\s+/g,' ');sinif=(sinif||'').trim();
+  if(ad.length<2){toast('Lütfen öğrencinin adını yaz ✍️');$('#adIn').focus();return}
+  if(!sinif){toast('Lütfen sınıfı / grubu yaz 🏫');$('#sinifIn').focus();return}
+  OGR={ad,sinif};LS.koy('aktifOgr',OGR);LS.koy('sonSinif',sinif);
+  let son=LS.al('sonCocuklar',[]).filter(o=>!(o.ad===ad&&o.sinif===sinif));son.unshift(OGR);LS.koy('sonCocuklar',son.slice(0,30));
+  const kayit={ad,sinif,cihaz:cihazAd(),ts:Date.now()};const g=LS.al('girisler',[]);g.unshift(kayit);LS.koy('girisler',g.slice(0,2000));
+  bulutGiris(kayit);bulutOgrenci({});
+  bip(700,.1);menuAc();konus('Hoş geldin '+ad.split(' ')[0]+'! Hangi adaya gidelim?');
+}
+function cihazAd(){const w=screen.width,t='ontouchstart'in window;return w>=1600&&t?'Akıllı Tahta':w<700?'Telefon':t?'Tablet':'Bilgisayar'}
+
+function menuAc(){
+  if(!OGR){ekran('giris');girisHazirla();return}
+  $('#ogrRozet').textContent='👤 '+OGR.ad.split(' ')[0]+' · '+OGR.sinif;
+  [['don','#adalarDon',DON_SEV],['kod','#adalarKod',KOD_SEV]].forEach(([m,s,L])=>{
+    const k=$(s);k.innerHTML='';L.forEach((_,i)=>{const y=yildizAl(m,i);const b=document.createElement('button');b.className='ada-btn';
+      b.innerHTML=(i+1)+`<span class="yildiz">${y?'⭐'.repeat(y):'·'}</span>`;b.onclick=()=>{bip(520);oyunBasla(m,i)};k.appendChild(b)})});
+  ekran('menu');
+}
+
+/* ============ Tahta (3B ada) ============ */
+function tahtaKur(n){
+  const t=$('#tahta');t.innerHTML='';t.style.width=n*T+'px';t.style.height=n*T+'px';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){const h=hucre[r][c];
+    const d=document.createElement('div');d.className='karo'+(h.su?' su':'')+(h.donebilir?' donebilir':'');
+    d.style.cssText=`left:${c*T}px;top:${r*T}px;width:${T}px;height:${T}px`;
+    d.innerHTML=`<div class="on-yuz" style="height:${T*.38}px"></div><div class="ust-yuz"><div class="don">${h.maske?yolSVG(h.maske):''}</div><div class="iz"></div></div>`;
+    h.el=d;h.donEl=d.querySelector('.don');h.donEl.style.transform=`rotate(${(h.rot||0)*90}deg)`;
+    if(h.donebilir)d.addEventListener('pointerdown',()=>karoDondur(r,c));
+    t.appendChild(d);}
+  // Süsler ve engeller
+  const rnd=rastgele(sev*97+(mod==='kod'?13:5)+n);
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){const h=hucre[r][c];
+    if(h.engel&&h.engel!=='s')ayakta(h.engel==='a'?'🌳':'🪨',r,c,T*.7,0);
+    else if(!h.maske&&!h.su&&!h.ozel&&rnd()<.75){const sus=['🍄','🌷','🌼','🌸','🌿','🍄','🌻'];
+      ayakta(sus[Math.floor(rnd()*sus.length)],r,c,T*.32,(rnd()-.5)*.5,(rnd()-.5)*.4)}}
+  ayakta(EV_SVG,...hedef(),T*.72,0,.12,'ev');
+  const rb=ayakta(ROBI_SVG,robiPos[0],robiPos[1],T*.62,0,0,'robi');rb.id='robi';
+}
+function ayakta(icerik,r,c,boy,dx=0,dy=0,tur){
+  const e=document.createElement('div');e.className='ayakta';
+  const svg=icerik.startsWith('<svg');e.style.width=(svg?boy:boy*1.3)+'px';if(!svg)e.style.fontSize=boy+'px';
+  e.innerHTML=`<span class="ic">${icerik}</span>`;konumla(e,r,c,dx,dy);if(tur)e.dataset.tur=tur;$('#tahta').appendChild(e);return e}
+function konumla(e,r,c,dx=0,dy=0){e.style.left=((c+.5+dx)*T)+'px';e.style.top=((r+.62+dy)*T)+'px';e.style.transform='translate3d(-50%,-100%,4px) rotateX(-48deg)'}
+function hedef(){return mod==='don'?DON_SEV[sev].yol.at(-1):KOD_SEV[sev].ev}
+function yerlesim(){
+  if(!hucre.length)return;const n=hucre.length,sh=$('#sahne');
+  const yeni=Math.floor(Math.max(48,Math.min(170,(sh.clientWidth-30)/(n*1.14),(sh.clientHeight-30)/(n*.8+.45))));
+  if(yeni!==T){T=yeni;tahtaKur(n)}
+}
+addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(yerlesim,120)});
+
+/* ============ Oyun başlat ============ */
+function oyunBasla(m,i){
+  mod=m;sev=i;hata=0;calisiyor=false;gecmis=[];program=[];
+  $('#altDon').style.display=m==='don'?'flex':'none';$('#altKod').style.display=m==='kod'?'flex':'none';
+  $('#oyunBas').textContent=(m==='don'?'🔄 Yolu Döndür':'🧭 Kodla Yürüt')+' · Ada '+(i+1);
+  if(m==='don')donKur();else kodKur();
+  ekran('oyun');T=0;setTimeout(()=>{yerlesim();yonerge()},40);
+}
+function yonerge(){konus(mod==='don'?'Parçalara dokun, yolu çevir. Yol birleşince Robi yürüsün düğmesine bas!':'Okları sırayla diz. Robi\'yi evine götür. Sonra başlat düğmesine bas!')}
+
+/* --- Yolu Döndür --- */
+function donKur(){
+  const L=DON_SEV[sev],n=L.n,rnd=rastgele(Date.now()%100000+sev);
+  hucre=Array.from({length:n},()=>Array.from({length:n},()=>({maske:0,rot:0})));
+  L.yol.forEach(([r,c],k)=>{let m=0;const on=L.yol[k-1],ar=L.yol[k+1];
+    if(on)m|=bit(on[0]-r,on[1]-c);if(ar)m|=bit(ar[0]-r,ar[1]-c);
+    const h=hucre[r][c];h.maske=m;h.ozel=(k===0||k===L.yol.length-1);h.donebilir=!h.ozel});
+  // tuzak parçalar
+  const bos=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(!hucre[r][c].maske)bos.push([r,c]);
+  for(let t=0;t<L.tuzak&&bos.length;t++){const [r,c]=bos.splice(Math.floor(rnd()*bos.length),1)[0];const h=hucre[r][c];h.maske=rnd()<.5?(N|S):(N|E);h.donebilir=true}
+  // karıştır (çözülmüş başlamasın)
+  let deneme=0;do{for(const sat of hucre)for(const h of sat)if(h.donebilir){const duz=(h.maske===(N|S)||h.maske===(E|W));h.rot=1+Math.floor(rnd()*(duz?1:3))}deneme++}while(yolBul().vardi&&deneme<20);
+  robiPos=[...L.yol[0]];$('#donYazi').textContent='Parçalara dokun, yolu çevir! 👆';
+}
+function etkin(h){return dondurMaske(h.maske,h.rot||0)}
+function karoDondur(r,c){if(calisiyor)return;const h=hucre[r][c];gecmis.push([r,c]);h.rot=(h.rot||0)+1;
+  h.donEl.style.transform=`rotate(${h.rot*90}deg)`;h.el.classList.remove('zip');void h.el.offsetWidth;h.el.classList.add('zip');bip(380+Math.random()*120,.08,'square',.06);
+  yolKontrol(true)}
+function yolKontrol(sesli){const s=yolBul();$$('.karo.parla').forEach(e=>e.classList.remove('parla'));
+  if(s.vardi){s.yol.forEach(([a,b])=>hucre[a][b].el.classList.add('parla'));$('#donYazi').textContent='Yol hazır! ▶ Robi Yürüsün 🎉';if(sesli)melodi([660,880])}
+  else $('#donYazi').textContent='Parçalara dokun, yolu çevir! 👆';}
+function yolBul(){const L=DON_SEV[sev],n=L.n,ev=L.yol.at(-1);let [r,c]=L.yol[0];const yol=[[r,c]],gor=new Set([r+','+c]);
+  while(true){const m=etkin(hucre[r][c]);let ilerle=null;
+    for(const [b,dr,dc] of [[N,-1,0],[E,0,1],[S,1,0],[W,0,-1]]){if(!(m&b))continue;const a=r+dr,d=c+dc;
+      if(a<0||d<0||a>=n||d>=n||gor.has(a+','+d))continue;const k=hucre[a][d];if(k.maske&&(etkin(k)&ters(b))){ilerle=[a,d];break}}
+    if(!ilerle)return{vardi:false,yol};[r,c]=ilerle;yol.push([r,c]);gor.add(r+','+c);if(r===ev[0]&&c===ev[1])return{vardi:true,yol}}}
+async function robiyiGonder(){if(calisiyor)return;calisiyor=true;const s=yolBul();
+  for(let k=1;k<s.yol.length;k++){await adim(s.yol[k])}
+  if(s.vardi){kazandi(hata?2:3)}else{hata++;const rb=$('#robi');rb.classList.remove('salla');void rb.offsetWidth;rb.classList.add('salla');bip(200,.3,'sawtooth',.08);
+    konus('Ups! Yol burada bitiyor. Parçaları çevirip tekrar deneyelim!');$('#donYazi').textContent='Yol burada bitti 🤔 Parçaları çevir, tekrar dene!';
+    await bekle(1300);robiPos=[...DON_SEV[sev].yol[0]];konumla($('#robi'),...robiPos);calisiyor=false}}
+const bekle=ms=>new Promise(r=>setTimeout(r,ms));
+async function adim([r,c]){const rb=$('#robi');robiPos=[r,c];rb.classList.remove('zipla');void rb.offsetWidth;rb.classList.add('zipla');konumla(rb,r,c);bip(520+r*30+c*30,.08,'triangle',.12);await bekle(460)}
+
+/* --- Kodla Yürüt --- */
+function kodKur(){const L=KOD_SEV[sev],n=L.n;
+  hucre=Array.from({length:n},()=>Array.from({length:n},()=>({maske:0})));
+  L.engel.forEach(([r,c,t])=>{const h=hucre[r][c];h.engel=t;if(t==='s')h.su=true});
+  hucre[L.bas[0]][L.bas[1]].ozel=true;hucre[L.ev[0]][L.ev[1]].ozel=true;robiPos=[...L.bas];programCiz();}
+function enKisa(){const L=KOD_SEV[sev],n=L.n,q=[[...L.bas,[]]],gor=new Set([L.bas+'']);
+  while(q.length){const [r,c,y]=q.shift();if(r===L.ev[0]&&c===L.ev[1])return y;
+    for(const k of 'urdl'){const [dr,dc]=YON[k],a=r+dr,b=c+dc;if(a<0||b<0||a>=n||b>=n||gor.has(a+','+b)||hucre[a][b].engel)continue;gor.add(a+','+b);q.push([a,b,[...y,k]])}}return[]}
+const OK_SEMBOL={u:'⬆',d:'⬇',l:'⬅',r:'➡'},OK_RENK={u:'#ff7a59',d:'#4fa3ff',l:'#ffb72b',r:'#38c172'},OK_AD={u:'yukarı',d:'aşağı',l:'sola',r:'sağa'};
+function programCiz(aktif=-1){const p=$('#program');p.innerHTML='';const top=Math.max(program.length+1,Math.min(10,enKisa().length+1));
+  for(let i=0;i<Math.min(top,12);i++){const k=program[i],d=document.createElement('div');d.className='slot'+(k?' dolu':'')+(i===aktif?' simdi':'');
+    if(k){d.textContent=OK_SEMBOL[k];d.style.background=OK_RENK[k];d.onclick=()=>{if(calisiyor)return;program.splice(i,1);bip(300);programCiz()}}p.appendChild(d)}}
+function izGoster(sure){const L=KOD_SEV[sev];let [r,c]=L.bas;$$('.iz').forEach(e=>e.textContent='');
+  enKisa().forEach(k=>{r+=YON[k][0];c+=YON[k][1];if(!(r===L.ev[0]&&c===L.ev[1]))hucre[r][c].el.querySelector('.iz').innerHTML='<span style="font-size:'+T*.3+'px">👣</span>'});
+  if(sure)setTimeout(()=>$$('.iz').forEach(e=>e.textContent=''),sure)}
+async function programCalistir(){if(calisiyor)return;if(!program.length){toast('Önce ok ekle ⬆➡');konus('Önce okları ekleyelim!');return}
+  calisiyor=true;const L=KOD_SEV[sev],n=L.n;robiPos=[...L.bas];konumla($('#robi'),...robiPos);await bekle(250);
+  for(let i=0;i<program.length;i++){programCiz(i);const k=program[i],a=robiPos[0]+YON[k][0],b=robiPos[1]+YON[k][1];konus(OK_AD[k]);
+    if(a<0||b<0||a>=n||b>=n){await takil('Dur! Orası deniz. Robi adadan düşmesin!');return}
+    const h=hucre[a][b];if(h.engel){await takil(h.engel==='s'?'Ups! Robi yüzemez. Başka yoldan gidelim!':h.engel==='a'?'Ups! Önünde ağaç var. Başka yoldan gidelim!':'Ups! Önünde kaya var. Başka yoldan gidelim!');return}
+    await adim([a,b]);if(a===L.ev[0]&&b===L.ev[1]){programCiz();kazandi(hata?2:3);return}}
+  programCiz();hata++;konus('Robi henüz evine varmadı. Biraz daha ok ekleyelim!');toast('Robi henüz evine varmadı 🏡 Ok ekle!');await bekle(900);
+  robiPos=[...L.bas];konumla($('#robi'),...robiPos);calisiyor=false}
+async function takil(m){hata++;const rb=$('#robi');rb.classList.remove('salla');void rb.offsetWidth;rb.classList.add('salla');bip(200,.3,'sawtooth',.08);
+  await bekle(350);konus(m);toast(m,3200);await bekle(1500);const L=KOD_SEV[sev];robiPos=[...L.bas];konumla(rb,...robiPos);programCiz();calisiyor=false}
+
+/* --- Kazanma --- */
+function kazandi(y){calisiyor=false;const rb=$('#robi');rb.classList.add('mutlu');yildizKoy(mod,sev,y);
+  const ad=OGR.ad.split(' ')[0];melodi([523,659,784,1046,784,1046],.12);konfeti();
+  setTimeout(()=>{$('#kutBas').textContent='Aferin '+ad+'! 🎉';$('#kutYildiz').textContent='⭐'.repeat(y)+'☆'.repeat(3-y);
+    $('#kutYazi').textContent=y===3?'İlk denemede başardın! Robi evine ulaştı.':'Denedin, düzelttin, başardın! Robi evine ulaştı.';
+    const L=mod==='don'?DON_SEV:KOD_SEV;$('#kutSonraki').style.display=sev<L.length-1?'':'none';
+    $('#kutlama').classList.add('acik');konus('Harika '+ad+'! Robi evine ulaştı!')},1300)}
+
+/* ============ Konfeti ============ */
+function konfeti(){const cv=$('#konfeti'),x=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
+  const P=Array.from({length:140},()=>({x:innerWidth/2,y:innerHeight*.45,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,r:Math.random()*8+4,c:['#ff5d8f','#ffb547','#7ed957','#5fd3e6','#7b5cff'][Math.floor(Math.random()*5)],a:Math.random()*6}));
+  let t=0;(function f(){x.clearRect(0,0,cv.width,cv.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.45;p.a+=.2;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore()});
+    if(++t<110)requestAnimationFrame(f);else x.clearRect(0,0,cv.width,cv.height)})()}
+
+/* ============ Bulut (Firebase Firestore REST — isteğe bağlı) ============ */
+const GOMULU_FIREBASE=''; // İstersen firebaseConfig yazısını buraya bir kez yapıştır
+function fbAyar(){const t=LS.al('fbConfig','')||GOMULU_FIREBASE;const k=(t.match(/apiKey["']?\s*:\s*["']([^"']+)/)||[])[1],p=(t.match(/projectId["']?\s*:\s*["']([^"']+)/)||[])[1];return k&&p?{k,p}:null}
+function fsUrl(yol){const a=fbAyar();return a?`https://firestore.googleapis.com/v1/projects/${a.p}/databases/(default)/documents/${yol}${yol.includes('?')?'&':'?'}key=${a.k}`:null}
+function alanlar(o){const f={};for(const [k,v] of Object.entries(o))f[k]=typeof v==='number'?{integerValue:String(Math.round(v))}:{stringValue:String(v)};return{fields:f}}
+function coz(d){const o={};for(const [k,v] of Object.entries(d.fields||{}))o[k]=v.integerValue!=null?Number(v.integerValue):v.stringValue;return o}
+function kuyrukEkle(is){const q=LS.al('kuyruk',[]);q.push(is);LS.koy('kuyruk',q.slice(-500));kuyrukGonder()}
+let gonderiyor=false;
+async function kuyrukGonder(){if(gonderiyor||!fbAyar()||!navigator.onLine)return;gonderiyor=true;let q=LS.al('kuyruk',[]);
+  while(q.length){const is=q[0];try{const r=await fetch(fsUrl(is.yol),{method:is.m,headers:{'Content-Type':'application/json'},body:JSON.stringify(alanlar(is.v))});if(!r.ok&&r.status!==400)break}catch(e){break}q.shift();LS.koy('kuyruk',q)}
+  gonderiyor=false}
+function bulutGiris(k){kuyrukEkle({yol:'robi_adasi_girisler',m:'POST',v:k})}
+function bulutOgrenci(ek){if(!OGR)return;const v=Object.assign({ad:OGR.ad,sinif:OGR.sinif,cihaz:cihazAd(),ts:Date.now()},ek);
+  const maske=Object.keys(v).map(k=>'updateMask.fieldPaths='+k).join('&');kuyrukEkle({yol:'robi_adasi_ogrenciler/'+encodeURIComponent(ogrId(OGR))+'?'+maske,m:'PATCH',v})}
+addEventListener('online',()=>{toast('🌐 İnternet geldi');kuyrukGonder()});addEventListener('offline',()=>toast('📴 İnternet koptu — oyun çalışmaya devam eder'));
+
+/* ============ Öğretmen paneli ============ */
+let panelVeri=[];
+async function panelYukle(){const yerel=LS.al('girisler',[]),ilr=ilerleme(),harita={};
+  const ekle=(g,kaynak)=>{const id=ogrId(g),h=harita[id]=harita[id]||{ad:g.ad,sinif:g.sinif,giris:0,son:0,cihaz:new Set(),yildiz:0};h.giris++;h.son=Math.max(h.son,g.ts||0);if(g.cihaz)h.cihaz.add(g.cihaz)};
+  let bulut=false;
+  if(fbAyar()){try{const r=await fetch(fsUrl('robi_adasi_girisler?pageSize=1000'));if(r.ok){const j=await r.json();(j.documents||[]).forEach(d=>ekle(coz(d)));bulut=true}
+      const r2=await fetch(fsUrl('robi_adasi_ogrenciler?pageSize=1000'));if(r2.ok){const j=await r2.json();(j.documents||[]).forEach(d=>{const o=coz(d),id=ogrId(o);if(harita[id])harita[id].yildiz=Math.max(harita[id].yildiz,o.yildiz||0);else harita[id]={ad:o.ad,sinif:o.sinif,giris:1,son:o.ts||0,cihaz:new Set([o.cihaz]),yildiz:o.yildiz||0}})}}catch(e){}}
+  if(!bulut)yerel.forEach(g=>ekle(g));
+  for(const [id,p] of Object.entries(ilr)){if(harita[id]){const t=Object.values(p.don||{}).reduce((a,b)=>a+b,0)+Object.values(p.kod||{}).reduce((a,b)=>a+b,0);harita[id].yildiz=Math.max(harita[id].yildiz,t)}}
+  panelVeri=Object.values(harita).sort((a,b)=>b.son-a.son);
+  $('#panelKaynak').textContent=bulut?'☁️ Tüm cihazlardan gelen girişler gösteriliyor.':'📱 Yalnız bu cihazdaki girişler gösteriliyor (tüm cihazlar için aşağıdan Firebase bağla).';panelCiz()}
+function panelCiz(){const a=$('#panelAra').value.toLocaleLowerCase('tr');const v=panelVeri.filter(x=>(x.ad+' '+x.sinif).toLocaleLowerCase('tr').includes(a));
+  $('#panelTablo').innerHTML='<tr><th>Öğrenci</th><th>Sınıf</th><th>Giriş</th><th>⭐</th><th>Son giriş</th><th>Cihaz</th></tr>'+
+   (v.map(x=>`<tr><td><b>${esc(x.ad)}</b></td><td>${esc(x.sinif)}</td><td>${x.giris}</td><td>${x.yildiz}</td><td>${x.son?new Date(x.son).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${esc([...x.cihaz].join(', '))}</td></tr>`).join('')||'<tr><td colspan="6">Henüz giriş yok.</td></tr>')}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ============ ZİRVE: Ekran modu, QR, Karşılama, Araçlar ============ */
+const EKRAN_MOD=[['Otomatik',0],['Tablet',1],['Akıllı Tahta',1.35],['Büyük Tahta',1.6]];
+let ekranI=LS.al('ekranMod',0);
+function ekranUygula(){let z=EKRAN_MOD[ekranI][1];if(!z){const w=screen.width,t=('ontouchstart'in window)||navigator.maxTouchPoints>0,d=devicePixelRatio||1;z=w>=2500?1.6:(w>=1600&&t&&d<=1.25)?1.35:1}
+  document.documentElement.style.zoom=z;$('#ekranAd').textContent=EKRAN_MOD[ekranI][0];setTimeout(yerlesim,60)}
+window.ZIRVE_ekranReset=()=>{document.documentElement.style.zoom=1};window.ZIRVE_ekranGeri=ekranUygula;
+function ekranDongu(){ekranI=(ekranI+1)%EKRAN_MOD.length;LS.koy('ekranMod',ekranI);ekranUygula();toast('📺 '+EKRAN_MOD[ekranI][0])}
+$('#ekranDongu').onclick=ekranDongu;$('#ekranPill').onclick=ekranDongu;
+
+window.ZIRVE_paylasAc=function(){const url=(window.PAYLAS&&PAYLAS.url)||location.href;$('#qrPencere').classList.add('acik');
+  $('#qrNot').textContent=location.protocol==='file:'?'⚠️ Dosya bilgisayardan açılmış; QR başka cihazda çalışmaz. Siteye yükleyip oradan açın.':url;
+  const ciz=()=>{const q=qrcode(0,'M');q.addData(url);q.make();$('#qrKutu').innerHTML=q.createSvgTag({cellSize:6,margin:2});$('#qrKutu svg').style.cssText='width:240px;height:240px'};
+  if(window.qrcode)ciz();else{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';s.onload=ciz;s.onerror=()=>$('#qrKutu').textContent='QR yüklenemedi (internet?)';document.head.appendChild(s)}};
+$('#qrKopya').onclick=()=>{navigator.clipboard?.writeText(location.href).then(()=>toast('🔗 Link kopyalandı'))};
+$('#qrIndir').onclick=()=>{const s=$('#qrKutu svg');if(!s)return;const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=600;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,600,600);x.drawImage(img,0,0,600,600);const a=document.createElement('a');a.download='Robinin_Adasi_QR.png';a.href=c.toDataURL();a.click()};img.src='data:image/svg+xml;base64,'+btoa(new XMLSerializer().serializeToString(s))};
+
+function karsilamaAc(){$('#karsilama').classList.add('acik');konus('Merhaba! Ben Robi. Evimin yolunu kaybettim. Bana yardım eder misin?')}
+function tamEkran(){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}}
+
+window.ZIRVE_kontroller=['tahtaAraclar','qrPill','ekranPill','yardimPill'];
+let ARAC=LS.al('araclar',{});
+function araclariUygula(){ZIRVE_kontroller.forEach(id=>$('#'+id).classList.toggle('gor',!!ARAC[id]));
+  $$('[data-arac]').forEach(e=>e.classList.toggle('acik',!!ARAC[e.dataset.arac]));$$('[data-ayar]').forEach(e=>e.classList.toggle('acik',!!AYAR[e.dataset.ayar]))}
+window.ZIRVE_kontrolleriGeriGetir=()=>{ZIRVE_kontroller.forEach(k=>ARAC[k]=true);LS.koy('araclar',ARAC);araclariUygula()};
+$$('[data-arac]').forEach(e=>e.onclick=()=>{const k=e.dataset.arac;ARAC[k]=!ARAC[k];LS.koy('araclar',ARAC);araclariUygula();if(!ARAC.tahtaAraclar)tahtaAracKapat()});
+$$('[data-ayar]').forEach(e=>e.onclick=()=>{const k=e.dataset.ayar;AYAR[k]=!AYAR[k];LS.koy('ayar',AYAR);araclariUygula();if(k==='ses'&&!AYAR.ses)try{speechSynthesis.cancel()}catch(x){}});
+
+/* ============ Tahta Stüdyosu araçları ============ */
+let aktifArac=null,spotR=160,fare=[innerWidth/2,innerHeight/2],sayacT=null;
+function tahtaAracKapat(){aktifArac=null;$('#spot').style.display='none';$('#lazer').style.display='none';$('#cizim').style.display='none';$$('#tahtaAraclar button').forEach(b=>b.classList.remove('secili'))}
+function spotCiz(){const c=$('#spot');if(c.style.display==='none')return;c.width=innerWidth;c.height=innerHeight;const x=c.getContext('2d');x.fillStyle='#000c';x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation='destination-out';x.beginPath();x.arc(fare[0],fare[1],spotR,0,7);x.fill();x.globalCompositeOperation='source-over'}
+addEventListener('pointermove',e=>{fare=[e.clientX,e.clientY];if(aktifArac==='spot')spotCiz();if(aktifArac==='lazer'){const l=$('#lazer');l.style.left=e.clientX+'px';l.style.top=e.clientY+'px'}});
+addEventListener('wheel',e=>{if(aktifArac==='spot'){spotR=Math.max(60,Math.min(500,spotR-e.deltaY*.3));spotCiz()}});
+addEventListener('keydown',e=>{if(aktifArac==='spot'&&(e.key==='+'||e.key==='-')){spotR+=e.key==='+'?30:-30;spotCiz()}if(e.key==='Escape')tahtaAracKapat()});
+(function(){const c=$('#cizim'),x=c.getContext('2d');let ciz=false;
+  c.addEventListener('pointerdown',e=>{ciz=true;x.beginPath();x.moveTo(e.clientX,e.clientY)});
+  c.addEventListener('pointermove',e=>{if(!ciz)return;x.lineTo(e.clientX,e.clientY);x.strokeStyle='#ff2b6b';x.lineWidth=7;x.lineCap='round';x.stroke()});
+  addEventListener('pointerup',()=>ciz=false)})();
+$$('#tahtaAraclar button').forEach(b=>b.onclick=()=>{const t=b.dataset.t;
+  if(t==='dikkat'){$('#dikkat').style.display='flex';melodi([880,660,880]);return}
+  if(t==='damga'){const d=$('#damga');d.style.transform='translate(-50%,-50%) scale(1)';melodi([784,1046]);setTimeout(()=>d.style.transform='translate(-50%,-50%) scale(0)',1400);return}
+  if(t==='aferin'){konfeti();melodi([523,659,784,1046]);konus('Aferin! Harikasınız!');return}
+  if(t==='sayac'){const s=$('#sayac');if(sayacT){clearInterval(sayacT);sayacT=null;s.style.display='none';return}
+    let sn=60*(parseInt(prompt('Kaç dakika? (1-10)','2'))||2);s.style.display='block';const g=()=>{s.textContent='⏱️ '+Math.floor(sn/60)+':'+String(sn%60).padStart(2,'0')};g();
+    sayacT=setInterval(()=>{sn--;g();if(sn<=0){clearInterval(sayacT);sayacT=null;melodi([880,880,880,1046],.25);s.textContent='⏰ Süre bitti!';setTimeout(()=>s.style.display='none',4000)}},1000);return}
+  const ayni=aktifArac===t;tahtaAracKapat();if(ayni)return;aktifArac=t;b.classList.add('secili');
+  if(t==='spot'){$('#spot').style.display='block';spotCiz()}
+  if(t==='lazer'){$('#lazer').style.display='block'}
+  if(t==='kalem'){const c=$('#cizim');c.width=innerWidth;c.height=innerHeight;c.style.display='block';toast('✏️ Çiz! Kapatmak için ✏️ düğmesine tekrar bas')}});
+$('#dikkat').onclick=()=>$('#dikkat').style.display='none';
+
+/* ============ Olaylar ============ */
+$('#girBtn').onclick=()=>girisYap($('#adIn').value,$('#sinifIn').value);
+$('#sinifIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#girBtn').click()});
+$('#ogrRozet').onclick=()=>{OGR=null;LS.koy('aktifOgr',null);$('#adIn').value='';ekran('giris');girisHazirla()};
+$('#ayarBtn1').onclick=$('#ayarBtn2').onclick=()=>{araclariUygula();$('#ayarlar').classList.add('acik')};
+$$('[data-kapat]').forEach(b=>b.addEventListener('click',()=>{$('#'+b.dataset.kapat).classList.remove('acik');if(b.dataset.kapat==='karsilama')LS.koy('karsilamaGoruldu',true)}));
+$('#geriBtn').onclick=()=>{if(calisiyor)return;try{speechSynthesis.cancel()}catch(e){}menuAc()};
+$('#sesYonBtn').onclick=yonerge;
+$('#geriAlBtn').onclick=()=>{if(calisiyor||!gecmis.length)return;const [r,c]=gecmis.pop(),h=hucre[r][c];h.rot--;h.donEl.style.transform=`rotate(${h.rot*90}deg)`;bip(300,.08);yolKontrol()};
+$('#karistirBtn').onclick=()=>{if(!calisiyor)oyunBasla(mod,sev)};
+$('#gonderBtn').onclick=robiyiGonder;
+$$('[data-ok]').forEach(b=>b.onclick=()=>{if(calisiyor)return;if(program.length>=12){toast('Şerit doldu! 🙂');return}const k=b.dataset.ok;program.push(k);bip({u:660,d:440,l:550,r:770}[k],.1,'triangle');konus(OK_AD[k]);programCiz()});
+$('#silBtn').onclick=()=>{if(!calisiyor){program.pop();bip(300);programCiz()}};
+$('#temizleBtn').onclick=()=>{if(!calisiyor){program=[];bip(250);programCiz()}};
+$('#ipucuBtn').onclick=()=>{izGoster(3500);const y=enKisa();konus('İpucu: ilk ok '+OK_AD[y[0]]+'.')};
+$('#baslatBtn').onclick=programCalistir;
+$('#kutTekrar').onclick=()=>{$('#kutlama').classList.remove('acik');oyunBasla(mod,sev)};
+$('#kutMenu').onclick=()=>{$('#kutlama').classList.remove('acik');menuAc()};
+$('#kutSonraki').onclick=()=>{$('#kutlama').classList.remove('acik');oyunBasla(mod,sev+1)};
+$('#panelBtn').onclick=()=>{$('#ayarlar').classList.remove('acik');$('#panel').classList.add('acik');$('#panelKilit').style.display='';$('#panelIcerik').style.display='none';$('#pinIn').value='';$('#fbIn').value=LS.al('fbConfig','')};
+$('#pinBtn').onclick=()=>{if($('#pinIn').value===LS.al('pin','1234')){$('#panelKilit').style.display='none';$('#panelIcerik').style.display='';panelYukle()}else toast('Şifre yanlış')};
+$('#pinIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#pinBtn').click()});
+$('#pinDegis').onclick=()=>{const p=$('#yeniPin').value.trim();if(p.length<4){toast('En az 4 karakter');return}LS.koy('pin',p);$('#yeniPin').value='';toast('🔐 Şifre değişti')};
+$('#panelAra').oninput=panelCiz;$('#panelYenile').onclick=panelYukle;
+$('#panelKopya').onclick=()=>{const t=panelVeri.map(x=>`${x.ad}\t${x.sinif}\t${x.giris} giriş\t${x.yildiz} yıldız`).join('\n');navigator.clipboard?.writeText(t).then(()=>toast('📋 Liste kopyalandı'))};
+$('#fbKaydet').onclick=async()=>{LS.koy('fbConfig',$('#fbIn').value.trim());const d=$('#fbDurum');if(!fbAyar()){d.textContent=$('#fbIn').value.trim()?'⛔ apiKey / projectId bulunamadı':'Firebase kaldırıldı (yalnız bu cihaz).';return}
+  d.textContent='⏳ Test ediliyor…';try{const r=await fetch(fsUrl('robi_adasi_girisler?pageSize=1'));d.textContent=r.ok?'✅ Bağlandı! Girişler artık tüm cihazlardan burada.':'⛔ Bağlanamadı ('+r.status+'). Firestore kurallarında robi_adasi_ koleksiyonlarına okuma/yazma izni olmalı.';if(r.ok){kuyrukGonder();panelYukle()}}catch(e){d.textContent='⛔ İnternet yok gibi görünüyor.'}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)kuyrukGonder()});
+
+/* ============ Başlangıç ============ */
+robiCiz();ekranUygula();araclariUygula();kuyrukGonder();
+if(OGR)menuAc();else{ekran('giris');girisHazirla()}
+if(!LS.al('karsilamaGoruldu',false))setTimeout(karsilamaAc,500);
+</script>
+</body>
+</html>
