@@ -286,7 +286,7 @@ header.ucb-sahne{position:relative;isolation:isolate;overflow:hidden}
 .nehir-soz.gor{opacity:.95;transform:none}
 @media(prefers-reduced-motion:reduce){.nehir-soz{transition:none}}
 </style>
-<meta name="surum" content="9.1">
+<meta name="surum" content="9.2">
 <script>(function(){try{var q=(location.search.match(/[?&]tema=([a-z]+)/)||[])[1],t=q||localStorage.getItem("bi_tema");var h=document.documentElement;if(/^(sinematik|pastel|dogal|sade|robotik|okyanus|gunbatimi|kraft|defter|uzay|orman|lavanta|sakura|limon|neon|gecealtin)$/.test(t)){h.classList.add("tema-m","tema-"+t);if(/^(robotik|uzay|neon|gecealtin)$/.test(t)&&!h.classList.contains("dark-mode")){h.classList.add("dark-mode");h.dataset.temaDark="1"}}var st=(location.search.match(/[?&]stil=([a-z]+)/)||[])[1]||localStorage.getItem("bi_stil");if(/^(keskin|cam|kabarcik)$/.test(st))h.classList.add("stil-"+st);}catch(e){}})()</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;1,500&family=Space+Grotesk:wght@600;700&display=swap"></head><body>
 <a class="sr-only skip-link" href="#kesfet">İçeriklere geç</a>
@@ -1426,7 +1426,7 @@ const SD=[
  {k:'kesfet',b:['kesfet'],haric:['#fav-serit'],i:'🔍',a:'Yeni Eklenenler & Keşfet',s:'Bütün içeriklerde ara, süz',r:['#475569','#1e293b'],ac:()=>{const b=document.getElementById('kp-kesfet');if(b&&b.getAttribute('aria-expanded')!=='true')b.click()}},
  {k:'guncel',b:['guncel'],i:'⚡',a:'Güncel İçerikler',s:'Son eklenen her şey',r:['#9333ea','#6b21a8']},
  {k:'tavsiyeler',b:['tavsiyeler'],i:'💡',a:'Tavsiyeler',s:'Kitap, uygulama, kaynak önerileri',r:['#65a30d','#3f6212']}];
-const EVDE=new Set(['hero','vitrin-serit']);/* ana sayfada kalanlar: Günün sözü & Şans çarkı, Yeni kitap / Son yazı şeridi */
+const EVDE=new Set(['hero','vitrin-serit','kimdir']);/* ana sayfada kalanlar: Günün sözü & Şans çarkı, Yeni kitap / Son yazı şeridi */
 const say=col=>{try{return allItems.filter(i=>i.col===col).length}catch{return 0}};
 const yeniVar=d=>{try{const cols={oyunlar:'projeler',ebeveyn:'yazilar',kitaplar:'kitaplar',videolar:'videolar'}[d.k];if(d.k==='ayet-hadis')return allItems.some(i=>window.ahMi&&window.ahMi(i)&&Date.now()-millis(i.tarih)<7*864e5);return !!cols&&allItems.some(i=>i.col===cols&&Date.now()-millis(i.tarih)<7*864e5)}catch{return false}};
 const SADE={acik:true,aktif:null};
@@ -1607,6 +1607,13 @@ html.sade-doklu #sade-serit{display:none!important}
 @media (prefers-reduced-motion:reduce){.dk,.dk.on::after{animation:none}}
 .dark-mode .sade-dok{background:rgba(15,23,42,.72);box-shadow:0 18px 40px -20px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.08)}.dark-mode .dk.on{box-shadow:0 0 0 3px #0f172a,0 0 0 5px var(--s1)}
 
+/* v9.2 · ana sayfa: üst kart tam genişlik, baloncuklar onun altından başlar */
+html.sade-doklu:not(.sade-bolum) main>.hero-split{margin-left:-64px}
+.sy-o.sy-ev.on{background:linear-gradient(135deg,#334155,#0f172a)!important;color:#fff}
+
+.sade-dok{transition:transform .45s cubic-bezier(.3,1.3,.5,1),opacity .3s}
+.sade-dok.dok-sakli{transform:translateX(-130%);opacity:0;pointer-events:none}
+
 </style>
 <script>
 /* ===================== v8.7 · 🗺️ OYUN ATLASI (seçim şeridi + büyük vitrin + bilgi paneli) · geniş ekranda sol bölüm menüsü ===================== */
@@ -1662,20 +1669,23 @@ let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{let g=
 try{ciz()}catch(e){console.warn('atlas',e)}
 /* ---------------- 🧭 geniş ekranda sol bölüm menüsü (bölüm açıkken) ---------------- */
 const main=document.querySelector('main');
-function yan(){if(!main)return;const bar=$1('#sade-bar');const H=document.documentElement;const bolum=!!(bar&&!bar.hidden&&H.classList.contains('sade-acik'));H.classList.toggle('sade-bolum',bolum);
-  const genis=innerWidth>=768;H.classList.toggle('sade-yan',bolum&&genis);H.classList.toggle('sade-seritli',bolum&&!genis);H.classList.toggle('sade-doklu',bolum&&!genis);let a=$1('#sade-yan'),sr=$1('#sade-serit');
-  if(!bolum||genis)dokGizle();
-  if(!bolum){if(a)a.hidden=true;if(sr)sr.hidden=true;return}
+function yan(){if(!main)return;const bar=$1('#sade-bar');const H=document.documentElement;const bolum=!!(bar&&!bar.hidden&&H.classList.contains('sade-acik'));H.classList.toggle('sade-bolum',bolum);const nav=H.classList.contains('sade-acik');
+  const genis=innerWidth>=768;H.classList.toggle('sade-yan',nav&&genis);H.classList.toggle('sade-seritli',bolum&&!genis);H.classList.toggle('sade-doklu',nav&&!genis);let a=$1('#sade-yan'),sr=$1('#sade-serit');
+  if(!nav||genis)dokGizle();
+  if(!nav){if(a)a.hidden=true;if(sr)sr.hidden=true;return}
   const kaynak=[...document.querySelectorAll('#sade-menu .sade-k, #sade-alt .sade-k')];const gor=new Map();kaynak.forEach(k=>{if(!gor.has(k.dataset.sade))gor.set(k.dataset.sade,k)});
   const aktif=(location.hash.match(/^#bolum\/([\w-]+)/)||[])[1]||'';
   const ogeler=ek=>[...gor.values()].map(k=>{const ik=k.querySelector('.sade-ik')?.textContent||'',ad=k.querySelector('.sade-yazi b')?.textContent||'',y=!!k.querySelector('.sade-yeni');return `<button type="button" class="sy-o${ek}${k.dataset.sade===aktif?' on':''}" data-sade="${esc(k.dataset.sade)}" ${k.dataset.sade===aktif?'aria-current="page"':''} style="--s1:${k.style.getPropertyValue('--s1')};--s2:${k.style.getPropertyValue('--s2')}"><span>${ik}</span>${esc(ad)}${y?'<i class="sy-y" aria-label="yeni"></i>':''}</button>`}).join('');
-  if(genis){if(sr)sr.hidden=true;const html=`<p class="sy-bas">Barış Öğretmen</p><button type="button" class="sy-o sy-ev" data-sade="ev"><span>🏠</span>Ana sayfa</button>${ogeler('')}`;
+  if(genis){if(sr)sr.hidden=true;const html=`<p class="sy-bas">Barış Öğretmen</p><button type="button" class="sy-o sy-ev${aktif?'':' on'}" data-sade="ev"><span>🏠</span>Ana sayfa</button>${ogeler('')}`;
     if(!a){main.insertAdjacentHTML('afterbegin','<nav id="sade-yan" class="sade-yan" aria-label="Bölümler"></nav>');a=$1('#sade-yan')}a.hidden=false;if(a.dataset.h!==html){a.innerHTML=html;a.dataset.h=html}if(main.firstElementChild!==a)main.prepend(a);return}
   /* telefon: solda akışkan, renkli bölüm baloncukları (parmağı gezdir: büyür, adı görünür; bırak: açılır) */
   if(a)a.hidden=true;if(sr)sr.hidden=true;dokCiz([...gor.values()],aktif)}
-function dokCiz(L,aktif){let d=$1('#sade-dok');const html=`<button type="button" class="dk dk-ev" data-sade="ev" style="--s1:#334155;--s2:#0f172a;--i:0" aria-label="Ana sayfa"><span class="dk-ik">🏠</span><b class="dk-ad">Ana sayfa</b></button>`+L.map((k,n)=>{const ik=k.querySelector('.sade-ik')?.textContent||'',ad=k.querySelector('.sade-yazi b')?.textContent||'',y=!!k.querySelector('.sade-yeni');return `<button type="button" class="dk${k.dataset.sade===aktif?' on':''}" data-sade="${esc(k.dataset.sade)}" ${k.dataset.sade===aktif?'aria-current="page"':''} aria-label="${esc(ad)}" style="--s1:${k.style.getPropertyValue('--s1')};--s2:${k.style.getPropertyValue('--s2')};--i:${n+1}"><span class="dk-ik">${ik}</span><b class="dk-ad">${esc(ad)}</b>${y?'<i class="dk-y"></i>':''}</button>`}).join('');
+function dokCiz(L,aktif){let d=$1('#sade-dok');const html=`<button type="button" class="dk dk-ev${aktif?'':' on'}" data-sade="ev" style="--s1:#334155;--s2:#0f172a;--i:0" aria-label="Ana sayfa"><span class="dk-ik">🏠</span><b class="dk-ad">Ana sayfa</b></button>`+L.map((k,n)=>{const ik=k.querySelector('.sade-ik')?.textContent||'',ad=k.querySelector('.sade-yazi b')?.textContent||'',y=!!k.querySelector('.sade-yeni');return `<button type="button" class="dk${k.dataset.sade===aktif?' on':''}" data-sade="${esc(k.dataset.sade)}" ${k.dataset.sade===aktif?'aria-current="page"':''} aria-label="${esc(ad)}" style="--s1:${k.style.getPropertyValue('--s1')};--s2:${k.style.getPropertyValue('--s2')};--i:${n+1}"><span class="dk-ik">${ik}</span><b class="dk-ad">${esc(ad)}</b>${y?'<i class="dk-y"></i>':''}</button>`}).join('');
   if(!d){document.body.insertAdjacentHTML('beforeend','<nav id="sade-dok" class="sade-dok" aria-label="Bölümler"></nav>');d=$1('#sade-dok');dokOlay(d)}d.hidden=false;if(d.dataset.h!==html){d.innerHTML=html;d.dataset.h=html}dokBoyut()}
-function dokBoyut(){const d=$1('#sade-dok');if(!d||d.hidden)return;const n=d.children.length||1,ust=($1('#sade-bar')?.getBoundingClientRect().bottom||90),yuk=innerHeight-Math.max(ust,70)-74;const b=Math.max(30,Math.min(44,Math.floor((yuk-16)/n)-6));d.style.setProperty('--b',b+'px');d.style.top=Math.max(ust,70)+12+'px'}
+function dokBoyut(){const d=$1('#sade-dok');if(!d||d.hidden)return;const n=d.children.length||1;const bar=$1('#sade-bar');const bolum=bar&&!bar.hidden;const ust=bolum?Math.max(bar.getBoundingClientRect().bottom,70)+12:12;
+  const b=Math.max(28,Math.min(44,Math.floor((innerHeight-ust-74-16)/n)-6));d.style.setProperty('--b',b+'px');d.style.top=ust+'px';
+  /* ana sayfanın en üstünde (başlık, Günün sözü, Şans çarkı ekrandayken) baloncuklar soldan gizli; aşağı kaydırınca akarak gelir */
+  let gizli=false;if(!bolum){const h=$1('main .hero-split');if(h&&h.getBoundingClientRect().bottom>ust+40)gizli=true}d.classList.toggle('dok-sakli',gizli)}
 function dokOlay(d){let sec=null,hareket=false,y0=0;
   const buyut=y=>{let en=null,ed=1e9;[...d.children].forEach(b=>{const r=b.getBoundingClientRect(),m=r.top+r.height/2,dd=Math.abs(y-m);const z=1+.75*Math.max(0,1-dd/95);b.style.setProperty('--z',z.toFixed(3));if(dd<ed){ed=dd;en=b}});d.querySelectorAll('.dk.yakin').forEach(b=>b!==en&&b.classList.remove('yakin'));if(en)en.classList.add('yakin');sec=en;d.classList.add('dokun')};
   const sifirla=()=>{[...d.children].forEach(b=>{b.style.removeProperty('--z');b.classList.remove('yakin')});d.classList.remove('dokun');sec=null};
