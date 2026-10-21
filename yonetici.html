@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="8.5">
+<meta name="surum" content="8.6">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='8.5';
+const PANEL_SURUM='8.6';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1465,6 +1465,20 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .yn-kart ul{margin:8px 0 0;padding-left:18px;line-height:1.6}.yn-kart li{margin:4px 0}
 .dark-mode .bm-zil,.dark-mode .bm-pano,.dark-mode .bm-x{background:#1e293b;color:#e2e8f0;border-color:#334155}.dark-mode .bm-oge,.dark-mode .ck-satir{background:#0f172a;border-color:#334155}.dark-mode .bm-ic small,.dark-mode .ck-bilgi span{color:#cbd5e1}.dark-mode .yn-kart{background:#1e293b;border-color:#334155}.dark-mode .sv-bant{background:#450a0a;color:#fecaca;border-color:#7f1d1d}
 </style>`);
+})();
+
+</script>
+<script>
+/* ===================== v8.6 · 🏠 Ana sayfa görünümü: Sade (düğmeli) / Uzun (eski) ===================== */
+(function(){
+'use strict';
+let sade=true;
+function ciz(){const k=document.getElementById('as-kart');if(!k)return;k.querySelectorAll('[data-as]').forEach(b=>{const on=(b.dataset.as==='sade')===sade;b.classList.toggle('primary',on);b.setAttribute('aria-pressed',String(on))});document.getElementById('as-durum').textContent=sade?'Şu an: Sade. Ana sayfada Günün sözü, Şans çarkı ve bölüm düğmeleri var; düğmeye basınca yalnızca o bölüm açılır.':'Şu an: Uzun. Bütün bölümler ana sayfada alt alta.'}
+function kur(n=0){const yer=document.getElementById('ahp-buyuk')||document.querySelector('.quick-dashboard');if(!yer){if(n<60)setTimeout(()=>kur(n+1),500);return}if(document.getElementById('as-kart'))return;
+  yer.insertAdjacentHTML('afterend',`<div id="as-kart" class="as-kart"><b>🏠 Ana sayfa görünümü</b><div class="row" style="gap:8px;margin:8px 0 6px;flex-wrap:wrap"><button type="button" class="btn small" data-as="sade">🧭 Sade (düğmeli)</button><button type="button" class="btn small" data-as="uzun">📜 Uzun (eski)</button><a class="btn small subtle" href="index.html" target="_blank" rel="noopener">↗ Siteye bak</a></div><p class="small muted" id="as-durum" style="margin:0"></p><p class="small muted" style="margin:6px 0 0">Bir bölümü gizlersen (Ayarlar › Sayfa düzeni) düğmesi de kalkar.</p></div>`);
+  document.getElementById('as-kart').addEventListener('click',e=>{const b=e.target.closest('[data-as]');if(!b)return;const v=b.dataset.as==='sade';busy(b,async()=>{requireDB();await db.collection('site_ayarlari').doc('ana_sayfa').set({sade:v,guncellendi:stamp()},{merge:true});sade=v;ciz();toast(v?'🧭 Ana sayfa sade görünümde.':'📜 Ana sayfa uzun görünümde.')})});ciz()}
+(function bekle(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='undefined'||!currentUser){if(n<240)setTimeout(()=>bekle(n+1),500);return}kur();try{db.collection('site_ayarlari').doc('ana_sayfa').onSnapshot(d=>{sade=!(d.exists&&d.data().sade===false);ciz()},()=>{})}catch{}})();
+document.head.insertAdjacentHTML('beforeend','<style>.as-kart{margin:12px 0 4px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#ecfeff,#eef2ff);border:1px solid #c7d2fe}.dark-mode .as-kart{background:#1e293b;border-color:#334155}</style>');
 })();
 
 </script>
