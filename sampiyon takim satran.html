@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Şampiyon Takım — Satranç Kampı</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d2a44;--soft:#6b7488;--gold:#d9a521;--gold2:#fff4d6;--ok:#1f9d55;--bad:#d64545;--line:#e6e1d6;--light:#efe2c4;--dark:#b58a5a;--sel:#f5d76e;--last:#cdd96a;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;cursor:pointer;border:none}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+.brand{font-weight:800;font-size:20px;letter-spacing:.3px}
+.brand small{display:block;font-weight:500;font-size:13px;color:var(--soft)}
+.chip{white-space:nowrap;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn{background:var(--ink);color:#fff;border-radius:12px;padding:12px 18px;font-weight:700;font-size:16px}
+.btn.gold{background:var(--gold);color:#1d1400}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.ok{background:var(--ok)}
+.btn:disabled{opacity:.45}
+.hero{background:var(--ink);color:#fff;border-radius:var(--r);padding:20px;display:grid;gap:14px}
+.hero h1{margin:0;font-size:26px}
+.hero p{margin:0;opacity:.85}
+.cd{display:flex;gap:10px;flex-wrap:wrap}
+.cd div{background:rgba(255,255,255,.1);border-radius:12px;padding:8px 14px;text-align:center;min-width:70px}
+.cd b{display:block;font-size:26px;color:var(--gold)}
+.cd span{font-size:12px;opacity:.8}
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pl{background:var(--card);color:var(--ink);border-radius:14px;padding:12px;text-align:center;border:3px solid transparent}
+.pl.on{border-color:var(--gold)}
+.pl .ms{font-size:12px;color:var(--soft);font-weight:700}
+.pl .nm{font-size:18px;font-weight:800;margin:4px 0}
+.pl .st{font-size:13px;color:var(--soft)}
+h2.sec{font-size:15px;text-transform:uppercase;letter-spacing:1px;color:var(--soft);margin:22px 4px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-align:left;display:flex;gap:12px;align-items:center;color:var(--ink)}
+.tile .ic{font-size:30px;width:46px;height:46px;display:grid;place-items:center;background:var(--gold2);border-radius:12px;flex:none}
+.tile b{display:block;font-size:16px}
+.tile span{font-size:13px;color:var(--soft)}
+.bar{height:6px;background:var(--line);border-radius:6px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold)}
+.screen{display:none}.screen.on{display:block}
+.play{display:grid;grid-template-columns:minmax(0,auto) 1fr;gap:18px;align-items:start}
+.side{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px}
+.side h3{margin:0;font-size:20px}
+.task{font-size:22px;font-weight:800}
+.turn{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid #333}
+.msg{border-radius:12px;padding:12px;font-weight:600;min-height:48px}
+.msg.ok{background:#e3f6ea;color:#11683a}.msg.bad{background:#fde7e7;color:#a12a2a}.msg.info{background:var(--gold2);color:#6b4d00}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.stars{font-size:22px;letter-spacing:2px}
+.board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--bs);height:var(--bs);border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.18);user-select:none;touch-action:manipulation}
+.sq{position:relative;display:grid;place-items:center;cursor:pointer;min-height:0;min-width:0;overflow:hidden}
+.sq.l{background:var(--light)}.sq.d{background:var(--dark)}
+.sq.last{box-shadow:inset 0 0 0 999px rgba(205,217,106,.55)}
+.sq.sel{box-shadow:inset 0 0 0 999px rgba(245,215,110,.8)}
+.sq.hint{box-shadow:inset 0 0 0 5px #2b7de9}
+.sq.chk{background:radial-gradient(circle,#ff6b6b 0,#e03131 45%,transparent 75%)}
+.sq .tg{position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(29,42,68,.32)}
+.sq .tg.cap{width:86%;height:86%;background:none;border:5px solid rgba(29,42,68,.32)}
+.pc{font-size:calc(var(--bs)/8*.78);line-height:1;font-family:"Segoe UI Symbol","Noto Sans Symbols2","DejaVu Sans","Apple Symbols",serif;pointer-events:none;position:relative;z-index:1}
+.pc.w{color:#fff;-webkit-text-stroke:1.6px #1a1a1a;text-shadow:0 2px 2px rgba(0,0,0,.25)}
+.pc.b{color:#161616;text-shadow:0 1px 0 rgba(255,255,255,.25)}
+.co{position:absolute;font-size:11px;font-weight:700;opacity:.7;pointer-events:none}
+.co.f{bottom:2px;right:4px}.co.r{top:2px;left:4px}
+.sq.l .co{color:var(--dark)}.sq.d .co{color:var(--light)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:12px}
+.card h3{margin:0 0 8px}
+.card ul,.card ol{margin:6px 0;padding-left:22px;line-height:1.6}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.opts{display:grid;gap:10px}
+.opt{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:14px;text-align:left;font-size:17px;font-weight:600;color:var(--ink)}
+.opt.ok{border-color:var(--ok);background:#e3f6ea}.opt.bad{border-color:var(--bad);background:#fde7e7}
+.big{font-size:44px;font-weight:900}
+.clock{position:fixed;inset:0;background:#111;display:none;flex-direction:column;z-index:50}
+.clock.on{display:flex}
+.half{flex:1;display:grid;place-items:center;font-size:min(22vw,160px);font-weight:900;color:#fff;background:#333;font-variant-numeric:tabular-nums;border:none;width:100%}
+.half.act{background:var(--ok)}.half.low{background:var(--bad)}.half.flag{background:#000;color:var(--bad)}
+.half.top{transform:rotate(180deg)}
+.cbar{display:flex;gap:8px;justify-content:center;padding:10px;background:#111}
+.score{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.score div{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.score div.act{border-color:var(--gold);background:var(--gold2)}
+.score b{display:block;font-size:28px}
+.timer{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums}
+input,select{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);width:100%}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--card);border-radius:var(--r);padding:20px;max-width:440px;width:100%;display:grid;gap:12px}
+.back{background:none;color:var(--ink);font-weight:700;font-size:16px;padding:8px 0}
+.note{font-size:13px;color:var(--soft)}
+.conf{position:fixed;pointer-events:none;font-size:28px;z-index:70;animation:fall 1.4s ease-in forwards}
+@keyframes fall{from{transform:translateY(-10vh) rotate(0)}to{transform:translateY(105vh) rotate(540deg);opacity:.3}}
+@media (max-width:820px){.play{grid-template-columns:1fr}.team{grid-template-columns:repeat(2,1fr)}.task{font-size:19px}.hero h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">♛ Şampiyon Takım<small>Beylikdüzü Okullar Arası Satranç — Minikler A</small></div>
+    <button class="chip" id="whoChip" onclick="openWho()">👤 Kim çalışıyor?</button>
+  </div>
+
+  <!-- ANA SAYFA -->
+  <section class="screen on" id="s-home">
+    <div class="hero">
+      <div>
+        <h1>Hedef: Kupa ve Madalya! 🏆</h1>
+        <p>3 Kasım Salı · 1. tur saat 10.00 · 7 tur · 15 dk + hamle başına 5 sn</p>
+      </div>
+      <div class="cd" id="cd"></div>
+      <div class="team" id="teamCards"></div>
+    </div>
+
+    <h2 class="sec">Antrenman</h2>
+    <div class="grid">
+      <button class="tile" onclick="startSet('m1')"><div class="ic">♛</div><div><b>Mat Avcısı</b><span id="pg-m1">1 hamlede mat</span><div class="bar"><i id="br-m1"></i></div></div></button>
+      <button class="tile" onclick="startSet('m2')"><div class="ic">🧠</div><div><b>Mat Ustası</b><span id="pg-m2">2 hamlede mat</span><div class="bar"><i id="br-m2"></i></div></div></button>
+      <button class="tile" onclick="startSet('tk')"><div class="ic">⚔️</div><div><b>Taktik Avı</b><span id="pg-tk">Çatal, şiş, bedava taş</span><div class="bar"><i id="br-tk"></i></div></div></button>
+      <button class="tile" onclick="startSet('sv')"><div class="ic">🛡️</div><div><b>Savunma Kalesi</b><span id="pg-sv">Mat tehdidini durdur</span><div class="bar"><i id="br-sv"></i></div></div></button>
+      <button class="tile" onclick="openEnd()"><div class="ic">👑</div><div><b>Oyun Sonu Kampı</b><span>Vezir ve kale ile mat, PAT'a dikkat</span></div></button>
+      <button class="tile" onclick="openBot()"><div class="ic">🤖</div><div><b>Robot Rakip</b><span>Tam maç oyna, 15+5 saatle</span></div></button>
+      <button class="tile" onclick="startQuiz()"><div class="ic">📜</div><div><b>Hakem Testi</b><span>Turnuva kuralları</span></div></button>
+    </div>
+
+    <h2 class="sec">Prova</h2>
+    <div class="grid">
+      <button class="tile" onclick="openRace()"><div class="ic">🏆</div><div><b>Takım Yarışı</b><span>Akıllı tahtada 4 kişi sırayla</span></div></button>
+      <button class="tile" onclick="startFinal()"><div class="ic">🎯</div><div><b>Final Provası</b><span>12 bulmaca, süreli sınav</span></div></button>
+      <button class="tile" onclick="openClock()"><div class="ic">⏱️</div><div><b>Turnuva Saati</b><span>15 dk + 5 sn prova maçı</span></div></button>
+      <button class="tile" onclick="show('match')"><div class="ic">📋</div><div><b>Takım Maçı Tablosu</b><span>4 masa puan hesabı</span></div></button>
+    </div>
+
+    <h2 class="sec">Turnuva Bilgisi</h2>
+    <div class="grid">
+      <button class="tile" onclick="show('plan')"><div class="ic">🗓️</div><div><b>Hazırlık Planı</b><span>Gün gün program</span></div></button>
+      <button class="tile" onclick="show('day')"><div class="ic">🧭</div><div><b>Turnuva Günü</b><span>Saatler, altın kurallar</span></div></button>
+      <button class="tile" onclick="openCoach()"><div class="ic">🧑‍🏫</div><div><b>Antrenör Paneli</b><span>Masa sırası, ilerleme</span></div></button>
+    </div>
+    <p class="note" style="margin-top:18px">İlerleme bu cihazda saklanır. Öğrenci kendi telefonundan çalışınca "İlerlememi gönder" ile öğretmene iletebilir.</p>
+  </section>
+
+  <!-- BULMACA -->
+  <section class="screen" id="s-puz">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div class="play">
+      <div id="pzBoard" class="board"></div>
+      <div class="side">
+        <div class="row" style="justify-content:space-between;align-items:center"><span class="chip" id="pzCount"></span><span class="stars" id="pzStars"></span></div>
+        <h3 id="pzTitle"></h3>
+        <div class="task" id="pzTask"></div>
+        <div class="turn" id="pzTurn"></div>
+        <div class="msg info" id="pzMsg"></div>
+        <div class="row">
+          <button class="btn ghost" onclick="pzHint()">💡 İpucu</button>
+          <button class="btn ghost" onclick="pzShow()">👁️ Çözümü göster</button>
+          <button class="btn ghost" onclick="pzReset()">↺ Baştan</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost" onclick="pzNav(-1)">◀ Önceki</button>
+          <button class="btn gold" id="pzNext" onclick="pzNav(1)">Sonraki ▶</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OYUN SONU -->
+  <section class="screen" id="s-end">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div class="play">
+      <div id="enBoard" class="board"></div>
+      <div class="side">
+        <h3>👑 Oyun Sonu Kampı</h3>
+        <div class="row">
+          <button class="btn ghost" onclick="endNew('q')">Vezir Matı</button>
+          <button class="btn ghost" onclick="endNew('r')">Kale Matı</button>
+          <button class="btn ghost" onclick="endNew('rr')">İki Kale</button>
+        </div>
+        <div class="task" id="enTask"></div>
+        <div class="msg info" id="enMsg"></div>
+        <div class="card" style="margin:0">
+          <b>Şampiyon tüyosu</b>
+          <ul id="enTips"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROBOT -->
+  <section class="screen" id="s-bot">
+    <button class="back" onclick="botQuit()">← Ana sayfa</button>
+    <div class="play">
+      <div id="btBoard" class="board"></div>
+      <div class="side">
+        <h3>🤖 Robot Rakip</h3>
+        <div class="row" id="botSetup">
+          <select id="btLvl"><option value="1">Seviye 1 — Çırak</option><option value="2" selected>Seviye 2 — Kalfa</option><option value="3">Seviye 3 — Usta</option></select>
+          <select id="btCol"><option value="w">Ben beyazım</option><option value="b">Ben siyahım</option></select>
+          <label class="row" style="align-items:center;gap:6px"><input type="checkbox" id="btClk" style="width:auto" checked> 15+5 turnuva saatiyle</label>
+          <button class="btn gold" onclick="botStart()">Maçı başlat</button>
+        </div>
+        <div class="row" style="justify-content:space-between"><span class="timer" id="btTime">15:00</span><span class="chip" id="btMat">Malzeme: =</span></div>
+        <div class="msg info" id="btMsg">Seviyeni seç ve maçı başlat. Her hamleden önce DUR-BAK-DÜŞÜN!</div>
+        <div class="row">
+          <button class="btn ghost" onclick="botUndo()">↶ Geri al</button>
+          <button class="btn ghost" onclick="botResign()">🏳️ Pes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="screen" id="s-quiz">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div class="card"><div class="row" style="justify-content:space-between"><b id="qzNo"></b><b id="qzSc"></b></div><h3 id="qzQ" style="font-size:22px;margin-top:12px"></h3></div>
+    <div class="opts" id="qzOpts"></div>
+    <div class="msg info" id="qzMsg" style="margin-top:12px;display:none"></div>
+    <div class="row" style="margin-top:12px"><button class="btn gold" id="qzNext" onclick="qzNext()" style="display:none">Devam ▶</button></div>
+  </section>
+
+  <!-- TAKIM YARIŞI -->
+  <section class="screen" id="s-race">
+    <button class="back" onclick="raceStop()">← Ana sayfa</button>
+    <div class="score" id="raScore"></div>
+    <div class="play" style="margin-top:14px">
+      <div id="raBoard" class="board"></div>
+      <div class="side">
+        <div class="row" style="justify-content:space-between"><span class="chip" id="raRound"></span><span class="timer" id="raTime"></span></div>
+        <div class="big" id="raWho"></div>
+        <div class="task" id="raTask"></div>
+        <div class="turn" id="raTurn"></div>
+        <div class="msg info" id="raMsg"></div>
+        <button class="btn gold" id="raBtn" onclick="raceNext()">Başla ▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL PROVA -->
+  <section class="screen" id="s-final">
+    <button class="back" onclick="finalStop()">← Ana sayfa</button>
+    <div class="play">
+      <div id="fnBoard" class="board"></div>
+      <div class="side">
+        <div class="row" style="justify-content:space-between"><span class="chip" id="fnNo"></span><span class="timer" id="fnTime"></span></div>
+        <div class="task" id="fnTask"></div>
+        <div class="turn" id="fnTurn"></div>
+        <div class="msg info" id="fnMsg">Her bulmaca için tek hakkın var. Acele etme, iyice bak!</div>
+        <div class="row"><span class="chip" id="fnSc"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAÇ TABLOSU -->
+  <section class="screen" id="s-match">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div class="card">
+      <h3>📋 Takım Maçı Tablosu</h3>
+      <p class="note">Prova maçlarında ya da turnuvada her tur sonunda masa sonuçlarını gir. Galibiyet 1, beraberlik ½, yenilgi 0 masa puanı.</p>
+      <div class="row" style="margin:10px 0"><select id="mtRound"></select></div>
+      <table id="mtTable"></table>
+      <div class="msg info" id="mtRes" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><h3>Turnuva Toplamı</h3><table id="mtTotal"></table><p class="note">Sıralama ve eşitlik bozma resmî olarak TSF yarışma prosedürüne göre yapılır; bu tablo takımın takibi içindir.</p></div>
+  </section>
+
+  <!-- PLAN -->
+  <section class="screen" id="s-plan">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div id="planBox"></div>
+  </section>
+
+  <!-- TURNUVA GÜNÜ -->
+  <section class="screen" id="s-day">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div id="dayBox"></div>
+  </section>
+
+  <!-- ANTRENÖR -->
+  <section class="screen" id="s-coach">
+    <button class="back" onclick="goHome()">← Ana sayfa</button>
+    <div class="card">
+      <h3>Masa Sırası</h3>
+      <p class="note">⚠️ Yönergeye göre masa sırası, kayıt sistemine girilen sıradır ve turnuva sonuna kadar değişmez. Yanlış masaya oturan sporcu hükmen yenik sayılır. Kayıt son gün: <b>31 Ekim 2026, 17.00</b>.</p>
+      <div id="coachOrder" style="display:grid;gap:8px"></div>
+    </div>
+    <div class="card"><h3>İlerleme (bu cihaz)</h3><table id="coachTable"></table>
+      <div class="row" style="margin-top:12px"><button class="btn ghost" onclick="resetAll()">Bu cihazdaki ilerlemeyi sıfırla</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- SAAT -->
+<div class="clock" id="clock">
+  <button class="half top" id="ck0" onclick="ckTap(0)">15:00</button>
+  <div class="cbar">
+    <select id="ckMode" style="width:auto" onchange="ckReset()"><option value="15">15+5 (turnuva)</option><option value="10">10+5</option><option value="5">5+3</option></select>
+    <button class="btn ghost" onclick="ckPause()" id="ckP">⏸</button>
+    <button class="btn ghost" onclick="ckReset()">↺</button>
+    <button class="btn ghost" onclick="closeClock()">✕</button>
+  </div>
+  <button class="half" id="ck1" onclick="ckTap(1)">15:00</button>
+</div>
+
+<div class="modal" id="mod"><div class="box" id="modBox"></div></div>
+
+<script>
+/* ====== VERİ ====== */
+const PZ = {"m1":[{"f":"6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1","t":"Koridor Matı","h":"Siyah şahın önü kendi piyonlarıyla kapalı. Kaleyi en arka sıraya götür!","sol":["Ra8#"]},{"f":"6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1","t":"Vezirle Koridor","h":"Vezir de kale gibi düz gider. 8. sıraya bak.","sol":["Qd8#"]},{"f":"r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4","t":"Çoban Matı","h":"f7 karesi en zayıf kare. Fil de oraya bakıyor!","sol":["Qxf7#"]},{"f":"7k/8/6K1/8/8/8/8/Q7 w - - 0 1","t":"Vezir + Şah","h":"Şahın kaçacağı tek sıra kaldı: en üst sıra.","sol":["Qa8#","Qg7#"]},{"f":"k7/8/1K6/8/8/8/8/7R w - - 0 1","t":"Kale + Şah","h":"Senin şahın kaçış karelerini tutuyor. Kale son sıraya!","sol":["Rh8#"]},{"f":"6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1","t":"Boğulmuş Mat","h":"Şahın etrafı kendi taşlarıyla dolu. Hangi taş atlayarak şah çeker?","sol":["Nf7#"]},{"f":"3r2k1/8/8/8/8/8/5PPP/6K1 b - - 0 1","t":"Siyahla Koridor","h":"Bu sefer SİYAHSIN. Beyaz şahın önü kapalı!","sol":["Rd1#"]},{"f":"6k1/5p1p/5PpQ/8/8/8/8/6K1 w - - 0 1","t":"Piyon Destekli Vezir","h":"Vezir şahın burnuna gidebilir, çünkü piyon onu koruyor.","sol":["Qg7#"]},{"f":"rnbqkbnr/ppppp2p/5p2/6p1/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3","t":"Aptal Matı","h":"Siyah şahın yanındaki çapraz açıldı. Vezirini çaprazdan gönder!","sol":["Qh5#"]},{"f":"rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2","t":"Siyahın Aptal Matı","h":"SİYAHSIN. Beyaz şahın çaprazı bomboş!","sol":["Qh4#"]},{"f":"1k6/6R1/8/8/8/8/8/6KR w - - 0 1","t":"İki Kale Merdiveni","h":"Bir kale 7. sırayı kapatıyor, diğeri 8. sıraya çıksın.","sol":["Rh8#"]},{"f":"7k/R7/5N2/8/8/8/8/6K1 w - - 0 1","t":"Arap Matı","h":"At hem g8'i hem h7'yi koruyor. Kale h7'ye!","sol":["Rh7#"]},{"f":"6k1/5ppp/8/8/8/8/1B4Q1/7K w - - 0 1","t":"Fil Destekli Vezir","h":"Fil uzun çaprazdan g7'ye bakıyor. Vezir oraya!","sol":["Qa8#","Qxg7#"]},{"f":"1r4k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1","t":"Siyah Kale Koridoru","h":"SİYAHSIN. Beyazın en alt sırası boş!","sol":["Rb1#"]},{"f":"k7/8/1K6/8/8/8/8/2Q5 w - - 0 1","t":"Vezir Öpücüğü","h":"Şah a7 ve b7'ye gidemiyor. Vezir 8. sırayı kapatsın.","sol":["Qc8#"]},{"f":"4k3/8/4K3/8/8/8/8/R7 w - - 0 1","t":"Kale Matı (Ortada)","h":"Şahlar karşı karşıya. Kale en üst sıraya!","sol":["Ra8#"]},{"f":"r7/8/8/8/8/4k3/8/4K3 b - - 0 1","t":"Siyah Kale Matı","h":"SİYAHSIN. Şahın beyaz şahı kilitledi. Kale en alt sıraya!","sol":["Ra1#"]},{"f":"k7/2P5/1K6/8/8/8/8/8 w - - 0 1","t":"Terfi Matı","h":"Piyon son kareye çıkınca vezir olur!","sol":["c8=Q#","c8=R#"]},{"f":"2r3k1/5ppp/8/8/8/8/5PPP/2R3K1 w - - 0 1","t":"Alarak Mat","h":"Bazen mat hamlesi aynı zamanda bir taşı almaktır.","sol":["Rxc8#"]},{"f":"5rk1/6p1/6PQ/8/8/8/8/6K1 w - - 0 1","t":"Piyonlu Vezir Matı","h":"g6 piyonu h7'yi koruyor.","sol":["Qh7#"]},{"f":"r1b1k1nr/pppp1ppp/2n5/2b1p3/2B1P2q/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 0 1","t":"f2 Saldırısı","h":"SİYAHSIN. Beyazın en zayıf karesi f2. Fil de oraya bakıyor!","sol":["Qxf2#"]},{"f":"6k1/8/8/8/6n1/8/6PP/6RK b - - 0 1","t":"Siyah Boğulmuş Mat","h":"SİYAHSIN. Beyaz şah kendi taşlarıyla kapalı. At atlasın!","sol":["Nf2#"]},{"f":"5rk1/5ppp/8/6NQ/8/8/8/6K1 w - - 0 1","t":"h7 Matı","h":"At g5'ten h7'yi koruyor. Vezir h7'deki piyonu alsın!","sol":["Qxh7#"]},{"f":"3k4/8/3K4/8/8/8/8/7Q w - - 0 1","t":"Vezirle Sıra Matı","h":"Şahın kaçış karelerini senin şahın tutuyor.","sol":["Qa8#","Qh8#"]}],"m2":[{"f":"6k1/8/8/8/8/8/R7/1R4K1 w - - 0 1","t":"Kale Merdiveni","h":"Önce bir kaleyi 7. sıraya koy, sonra diğeri 8. sıraya!","sol":["Ra7","Rb7"]},{"f":"7k/8/5K2/8/8/8/8/6R1 w - - 0 1","t":"Sessiz Hamle","h":"Şahın zaten yakın. Kaleyle doğru kareyi seç, PAT yapma!","sol":["Kf7"]},{"f":"2k5/8/2K5/8/8/8/8/3Q4 w - - 0 1","t":"Vezir Yaklaşıyor","h":"Vezirle şahı köşeye sıkıştır.","sol":["Kb6","Qd7+"]},{"f":"k7/8/8/1K6/8/8/8/7Q w - - 0 1","t":"Şah Yardıma Gelir","h":"Vezir tek başına mat edemez. Önce şahını yaklaştır!","sol":["Ka6+","Kb6+"]},{"f":"2k5/8/1K6/8/8/8/8/7R w - - 0 1","t":"Bekleme Hamlesi","h":"Kaleyle sessiz bir hamle yap, siyah şah nereye giderse gitsin mat var.","sol":["Rd1"]},{"f":"5k2/8/4K3/8/8/8/8/R7 w - - 0 1","t":"Kaleyle Kapı Kapat","h":"Siyah şahın kaçacağı yolu önceden kapat.","sol":["Rg1"]},{"f":"6k1/5ppp/4q3/8/8/8/5PPP/1Q2R1K1 w - - 0 1","t":"Vezir Fedası","h":"Vezirini feda et! Siyah alırsa kale ne yapar?","sol":["Qb8+"]}],"tk":[{"f":"r3k3/8/8/3N4/8/8/8/4K3 w - - 0 1","t":"At Çatalı","h":"At aynı anda şahı ve kaleyi tehdit edebilir mi?","sol":["Nc7+"]},{"f":"q3k3/8/8/8/8/8/8/4K2R w - - 0 1","t":"Kale Şişi","h":"Şah çek! Şah kaçınca arkasındaki vezir açıkta kalır.","sol":["Rh8+"]},{"f":"4k3/8/8/3q4/8/8/8/3RK3 w - - 0 1","t":"Bedava Taş","h":"Rakip bir taşını korumasız bıraktı. Gözünü aç!","sol":["Rxd5"]},{"f":"4k3/8/8/2n1r3/8/3P4/8/6K1 w - - 0 1","t":"Piyon Çatalı","h":"Küçük piyon iki büyük taşa birden saldırabilir.","sol":["d4"]},{"f":"2q3k1/8/8/5N2/8/8/8/6K1 w - - 0 1","t":"Kraliyet Çatalı","h":"At şah çekip veziri de tehdit etsin.","sol":["Ne7+"]},{"f":"6r1/8/8/3k4/8/8/8/1B2K3 w - - 0 1","t":"Fil Şişi","h":"Fil çapraz gider. Şahın arkasında kim var?","sol":["Ba2+"]},{"f":"6k1/5ppp/8/3r4/8/8/5PPP/3R2K1 b - - 0 1","t":"Siyah Fırsat","h":"SİYAHSIN. Rakibin kalesini almak sadece taş kazanmak mı?","sol":["Rxd1#"]},{"f":"r3k2r/8/8/8/8/8/8/4K2Q w - - 0 1","t":"Uzun Çapraz","h":"Vezirin önünde uzun bir çapraz var. Ucunda ne duruyor?","sol":["Qxa8+","Qxh8+"]}],"sv":[{"f":"r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3","t":"Çoban Matını Durdur!","h":"Beyaz vezir ve fil f7'ye bakıyor. f7'yi koru ya da veziri kov!","sol":["Qe7","Qf6","Qg5","Qh4","Ke7","Nh6","d5","g6"]},{"f":"rnbqkbnr/pppp1ppp/8/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 2 2","t":"Çoban Matı 2","h":"Vezir f3'te, fil c4'te. f7'ye saldırı var!","sol":["Qe7","Qf6","Qg5","Qh4","Ke7","Nh6","Nf6","d5","f6","f5"]},{"f":"6k1/5ppp/8/8/8/8/5PPP/3R2K1 b - - 0 1","t":"Koridora Hava Aç","h":"Kale arka sıraya gelirse mat olursun. Şahına bir kaçış karesi aç!","sol":["Kf8","f6","f5","g6","g5","h6","h5"]},{"f":"r1b1k1nr/pppp1ppp/2n5/2b1p3/2B1P2q/8/PPPP1PPP/RNBQK1NR w KQkq - 0 1","t":"f2'yi Koru","h":"BEYAZSIN. Siyah vezir ve fil f2'ye bakıyor!","sol":["Bxf7+","d4","g3","Qe2","Qf3","Qg4","Qh5","Ke2","Nh3"]},{"f":"rnbqkbnr/ppppp2p/5p2/6p1/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3","t":"Aptal Matından Kaç","h":"Beyaz vezir h5'e gelirse mat! Şahın yanındaki çaprazı kapat.","sol":["Kf7","Bg7","Bh6","Nh6","d6","d5","e6","e5","h5","g4"]},{"f":"r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 4 4","t":"Vezir f3 Tehdidi","h":"Beyaz Vxf7 matı istiyor. Nasıl durdurursun?","sol":["Qe7","Qf6","Qg5","Qh4","Ke7","Nh6","Nf6","d5","f6","f5","Bxf2+"]}]};
+const KINDS = {m1:'1 hamlede MAT et!',m2:'2 hamlede MAT et!',tk:'Taş kazan!',sv:'Mat tehdidini durdur!'};
+const TOUR = new Date('2026-11-03T10:00:00+03:00');
+const KEY = 'sampiyonTakim_v1';
+let DB = {order:['Poyraz','Sarp','Mustafa','Aras'],cur:null,p:{},match:{}};
+try{const s=localStorage.getItem(KEY);if(s)DB=Object.assign(DB,JSON.parse(s));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+function stu(n){n=n||DB.cur||'Misafir';if(!DB.p[n])DB.p[n]={s:{},quiz:0,final:0,end:0,bot:0};return DB.p[n];}
+
+/* ====== SES (sadece kısa tonlar) ====== */
+let AC=null;
+function tone(f,d,t){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.value=.12;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+function sOk(){tone(660,.15);setTimeout(()=>tone(880,.22),120);}
+function sBad(){tone(220,.3,'triangle');}
+function sMove(){tone(420,.06,'square');}
+function confetti(){const e=['⭐','🏆','♛','🎉','✨'];for(let i=0;i<22;i++){const d=document.createElement('div');d.className='conf';d.textContent=e[i%e.length];d.style.left=Math.random()*100+'vw';d.style.animationDelay=Math.random()*.4+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),2000);}}
+
+/* ====== EKRANLAR ====== */
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');window.scrollTo({top:0});
+  if(id==='home')renderHome(); if(id==='plan')renderPlan(); if(id==='day')renderDay(); if(id==='match')renderMatch(); setTimeout(sizeBoards,30);}
+function goHome(){show('home');}
+function modal(html){document.getElementById('modBox').innerHTML=html;document.getElementById('mod').classList.add('on');}
+function closeModal(){document.getElementById('mod').classList.remove('on');}
+document.getElementById('mod').addEventListener('click',e=>{if(e.target.id==='mod')closeModal();});
+
+/* ====== TAHTA ====== */
+const GL={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
+const FILES='abcdefgh';
+function sizeBoards(){const wide=window.innerWidth>820;let s=wide?Math.min(window.innerHeight-120,window.innerWidth*0.56,720):Math.min(window.innerWidth-32,window.innerHeight*0.62);s=Math.max(260,Math.floor(s/8)*8);document.querySelectorAll('.board').forEach(b=>b.style.setProperty('--bs',s+'px'));}
+window.addEventListener('resize',sizeBoards);
+function Board(el){this.el=el;this.g=null;this.flip=false;this.sel=null;this.tg=[];this.last=null;this.hint=null;this.lock=false;this.onMove=null;this.human=null;
+  el.addEventListener('click',e=>{const sq=e.target.closest('.sq');if(sq)this.tap(sq.dataset.s);});}
+Board.prototype.set=function(g,flip){this.g=g;this.flip=flip;this.sel=null;this.tg=[];this.last=null;this.hint=null;this.draw();};
+Board.prototype.tap=function(s){if(this.lock||!this.g)return;const g=this.g;
+  if(this.human&&g.turn()!==this.human)return;
+  if(this.sel&&this.tg.includes(s)){const from=this.sel;this.sel=null;this.tg=[];this.draw();if(this.onMove)this.onMove(from,s);return;}
+  const p=g.get(s);
+  if(p&&p.color===g.turn()){this.sel=s;this.tg=g.moves({square:s,verbose:true}).map(m=>m.to);}else{this.sel=null;this.tg=[];}
+  this.draw();};
+Board.prototype.draw=function(){const g=this.g;let h='';let ks=null;
+  if(g&&g.in_check()){const b=g.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p&&p.type==='k'&&p.color===g.turn())ks=FILES[c]+(8-r);}}
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const f=this.flip?7-c:c, rk=this.flip?r+1:8-r, s=FILES[f]+rk, light=(f+rk)%2===1;
+    let cls='sq '+(light?'l':'d');
+    if(this.last&&(this.last.from===s||this.last.to===s))cls+=' last';
+    if(this.sel===s)cls+=' sel';
+    if(this.hint&&(this.hint.from===s||this.hint.to===s))cls+=' hint';
+    if(ks===s)cls+=' chk';
+    const p=g?g.get(s):null;
+    h+='<div class="'+cls+'" data-s="'+s+'">';
+    if(this.tg.includes(s))h+='<span class="tg'+(p?' cap':'')+'"></span>';
+    if(p)h+='<span class="pc '+p.color+'">'+GL[p.type]+'\uFE0E</span>';
+    if(c===0)h+='<span class="co r">'+rk+'</span>';
+    if(r===7)h+='<span class="co f">'+FILES[f]+'</span>';
+    h+='</div>';}
+  this.el.innerHTML=h;};
+function turnHtml(g){const w=g.turn()==='w';return '<span class="dot" style="background:'+(w?'#fff':'#161616')+'"></span> Sıra '+(w?'BEYAZDA':'SİYAHTA')+(w?'':' — sen siyahsın!');}
+function sanToMove(g,san){const m=g.moves({verbose:true}).find(x=>x.san===san);return m;}
+
+/* ====== BULMACA KONTROLCÜSÜ ====== */
+// Ortak: bir bulmacayı tahtaya kurar, hamleleri değerlendirir.
+function Solver(board,cb){this.b=board;this.cb=cb;}
+Solver.prototype.load=function(kind,p,retry){this.kind=kind;this.p=p;this.retry=retry;this.phase=0;this.miss=0;this.done=false;
+  this.g=new Chess(p.f);this.b.human=null;this.b.set(this.g,this.g.turn()==='b');this.b.lock=false;
+  this.b.onMove=(f,t)=>this.move(f,t);};
+Solver.prototype.move=function(from,to){if(this.done)return;const g=this.g,b=this.b;
+  const mv=g.move({from,to,promotion:'q'});if(!mv)return;sMove();b.last={from,to};b.draw();
+  const k=this.kind,p=this.p;let res=null;
+  if(k==='m1')res=g.in_checkmate()?'win':'wrong';
+  else if(k==='tk')res=p.sol.includes(mv.san)?'win':'wrong';
+  else if(k==='sv')res=p.sol.includes(mv.san)?'win':'svbad';
+  else if(k==='m2'){
+    if(this.phase===0){ if(g.in_checkmate())res='win'; else if(p.sol.includes(mv.san))res='reply'; else res='wrong'; }
+    else res=g.in_checkmate()?'win':'wrong';}
+  if(res==='win'){this.done=true;sOk();this.cb('win',this.miss);return;}
+  if(res==='reply'){b.lock=true;this.cb('info','Güzel hamle! Rakip düşünüyor…');setTimeout(()=>{const ms=g.moves({verbose:true});const r=ms[Math.floor(Math.random()*ms.length)];g.move(r);sMove();b.last={from:r.from,to:r.to};this.phase=1;b.lock=false;b.draw();this.cb('info','Rakip '+r.san+' oynadı. Şimdi MAT et!');},700);return;}
+  this.miss++;sBad();
+  if(res==='svbad'){b.lock=true;const mm=g.moves({verbose:true}).find(x=>{g.move(x);const c=g.in_checkmate();g.undo();return c;});
+    this.cb('bad','Dikkat! Bak rakip ne yapıyor…');
+    setTimeout(()=>{if(mm){g.move(mm);b.last={from:mm.from,to:mm.to};b.draw();this.cb('bad','MAT oldun! ('+mm.san+') Tehdidi durduracak başka hamle bul.');}
+      setTimeout(()=>{if(!this.retry){this.done=true;this.cb('lost',this.miss);return;}if(mm)g.undo();g.undo();b.last=null;b.lock=false;b.draw();},1600);},600);return;}
+  const why={m1:'Bu hamle mat değil. Şah kaçabiliyor mu, araya taş girebiliyor mu? Tekrar bak!',m2:'Bu yol matla bitmiyor. Rakibin cevaplarını düşün!',tk:'Bu hamle taş kazandırmıyor. Hangi taşın korumasız?'}[k];
+  b.lock=true;this.cb('bad',why);
+  setTimeout(()=>{if(!this.retry){this.done=true;this.cb('lost',this.miss);return;}g.undo();b.last=null;b.lock=false;b.draw();},900);};
+Solver.prototype.solution=function(){const g=this.g;let san=null;
+  if(this.kind==='m1'||(this.kind==='m2'&&this.phase===1)){const m=g.moves({verbose:true}).find(x=>{g.move(x);const c=g.in_checkmate();g.undo();return c;});return m;}
+  san=this.p.sol[0];return sanToMove(g,san);};
+
+/* ====== ANTRENMAN SETLERİ ====== */
+let PS={kind:null,i:0};const pzB=new Board(document.getElementById('pzBoard'));
+const pzS=new Solver(pzB,(t,x)=>{
+  const m=document.getElementById('pzMsg');
+  if(t==='win'){const st=x===0?3:x<3?2:1;const rec=stu().s;const id=PS.kind+PS.i;rec[id]=Math.max(rec[id]||0,PS.shown?1:st);save();
+    m.className='msg ok';m.innerHTML=['','Çözdün! Bir dahakine daha hızlı 💪','Süper! ⭐⭐','MÜKEMMEL! İlk denemede! 🏆'][PS.shown?1:st];
+    document.getElementById('pzStars').textContent='⭐'.repeat(PS.shown?1:st);if(st===3&&!PS.shown)confetti();}
+  else if(t==='bad'){m.className='msg bad';m.textContent=x;}
+  else{m.className='msg info';m.textContent=x;}
+});
+function startSet(k){if(!DB.cur){openWho(()=>startSet(k));return;}PS.kind=k;const rec=stu().s;let i=PZ[k].findIndex((p,j)=>!rec[k+j]);PS.i=i<0?0:i;show('puz');loadPz();}
+function loadPz(){const k=PS.kind,p=PZ[k][PS.i];PS.shown=false;pzS.load(k,p,true);
+  document.getElementById('pzCount').textContent=(PS.i+1)+' / '+PZ[k].length;
+  document.getElementById('pzTitle').textContent=p.t;document.getElementById('pzTask').textContent=KINDS[k];
+  document.getElementById('pzTurn').innerHTML=turnHtml(pzS.g);
+  const r=stu().s[k+PS.i];document.getElementById('pzStars').textContent=r?'⭐'.repeat(r):'';
+  const m=document.getElementById('pzMsg');m.className='msg info';m.textContent='Taşa dokun, sonra gideceği kareye dokun.';}
+function pzNav(d){PS.i=(PS.i+d+PZ[PS.kind].length)%PZ[PS.kind].length;loadPz();}
+function pzReset(){loadPz();}
+function pzHint(){const m=document.getElementById('pzMsg');m.className='msg info';m.textContent='💡 '+pzS.p.h;}
+function pzShow(){const mv=pzS.solution();if(!mv)return;PS.shown=true;pzB.hint={from:mv.from,to:mv.to};pzB.draw();const m=document.getElementById('pzMsg');m.className='msg info';m.textContent='Mavi karelere bak: '+mv.san+' — şimdi sen oyna!';}
+
+/* ====== OYUN SONU ====== */
+const enB=new Board(document.getElementById('enBoard'));let EN={g:null,n:0,type:'q',over:false};
+const EN_TIPS={q:['Vezirle şahı kenara doğru it, "at hamlesi" mesafesinde takip et.','Şah kenara gelince KENDİ şahını yaklaştır.','PAT tehlikesi: Şahın hiç hamlesi yoksa ve şah çekmiyorsan oyun BERABERE biter!'],r:['Kale bir sırayı/sütunu kapatır, şah o çizginin dışına çıkamaz.','Şahları karşı karşıya getir (opozisyon), sonra kale şah çeksin.','Kale saldırıya uğrarsa uzaklaştır ama çizgiyi bırakma.'],rr:['Merdiven matı: kaleler sırayla şah çeker.','Bir kale bir sırayı kapatır, diğeri bir sonraki sıraya şah çeker.','Şah kaleye yaklaşırsa kaleyi tahtanın diğer ucuna götür.']};
+function openEnd(){if(!DB.cur){openWho(openEnd);return;}show('end');endNew(EN.type);}
+function endNew(t){EN.type=t;EN.n=0;EN.over=false;let fen;
+  for(let k=0;k<200;k++){const sqs=[];for(const f of FILES)for(let r=1;r<=8;r++)sqs.push(f+r);
+    const bk=['c4','d4','e4','f4','c5','d5','e5','f5','d6','e6','d3','e3'][Math.floor(Math.random()*12)];
+    const g=new Chess('8/8/8/8/8/8/8/8 w - - 0 1');g.clear();g.put({type:'k',color:'b'},bk);g.put({type:'k',color:'w'},'e1');
+    if(t==='q')g.put({type:'q',color:'w'},'d1');else if(t==='r')g.put({type:'r',color:'w'},'a1');else{g.put({type:'r',color:'w'},'a1');g.put({type:'r',color:'w'},'h1');}
+    fen=g.fen();const t2=new Chess(fen);if(!t2.in_check()&&!t2.game_over())break;}
+  EN.g=new Chess(fen);enB.human='w';enB.set(EN.g,false);enB.onMove=endMove;
+  document.getElementById('enTask').textContent={q:'Vezir + Şah ile MAT et',r:'Kale + Şah ile MAT et',rr:'İki kale ile MAT et'}[t];
+  document.getElementById('enTips').innerHTML=EN_TIPS[t].map(x=>'<li>'+x+'</li>').join('');
+  enMsg('info','Hedef: '+({q:15,r:25,rr:12})[t]+' hamlenin altında mat. Hadi!');}
+function enMsg(c,t){const m=document.getElementById('enMsg');m.className='msg '+c;m.textContent=t;}
+function endMove(from,to){if(EN.over)return;const g=EN.g;const mv=g.move({from,to,promotion:'q'});if(!mv)return;EN.n++;sMove();enB.last={from,to};enB.draw();
+  if(endCheck())return;enB.lock=true;
+  setTimeout(()=>{const ms=g.moves({verbose:true});let best=null,bs=-1e9;
+    for(const m of ms){g.move(m);const f=FILES.indexOf(m.to[0]),r=+m.to[1]-1;const center=-(Math.abs(3.5-f)+Math.abs(3.5-r));
+      const cap=m.captured?100:0;const mob=g.moves().length; // beyaz hamleleri (az olsun)
+      const s=cap+center*2-mob*0.05+Math.random()*0.5;g.undo();if(s>bs){bs=s;best=m;}}
+    if(best){g.move(best);enB.last={from:best.from,to:best.to};}enB.lock=false;enB.draw();endCheck();},450);}
+function endCheck(){const g=EN.g;
+  if(g.in_checkmate()){EN.over=true;sOk();confetti();const goal={q:15,r:25,rr:12}[EN.type];enMsg('ok','MAT! 🏆 '+EN.n+' hamlede bitirdin. '+(EN.n<=goal?'Hedefin altında, harika!':'Bir dahaki sefere daha az hamlede dene.'));const s=stu();s.end=(s.end||0)+1;save();return true;}
+  if(g.in_stalemate()){EN.over=true;sBad();enB.lock=true;enMsg('bad','PAT! 😱 Rakip şahın hiç hamlesi yok ama şah da çekmedin. Oyun BERABERE. Turnuvada bu yarım puan kaybı demek! Yeniden dene.');return true;}
+  if(g.insufficient_material()){EN.over=true;enMsg('bad','Taşın alındı, mat imkânsız. Taşlarını korumayı unutma!');return true;}
+  if(EN.n>=50){EN.over=true;enMsg('bad','50 hamle oldu. Daha planlı oyna: önce kenara it, sonra şahını getir.');return true;}
+  if(g.in_check())enMsg('info','Şah! ('+EN.n+'. hamle)');else enMsg('info',EN.n+'. hamle — şahı kenara itmeye devam.');return false;}
+
+/* ====== ROBOT RAKİP ====== */
+const btB=new Board(document.getElementById('btBoard'));let BT={g:null,on:false,lvl:2,me:'w',clk:false,t:900,iv:null,think:false};
+const PV={p:100,n:310,b:325,r:500,q:900,k:0};
+function evalW(g){let s=0;const b=g.board();for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(!p)continue;let v=PV[p.type];
+  if(p.type==='p'||p.type==='n'||p.type==='b'){v+=(3.5-Math.abs(3.5-c))*4+(3.5-Math.abs(3.5-r))*3;}
+  if(p.type==='p')v+=(p.color==='w'?(6-r):(r-1))*4;
+  s+=p.color==='w'?v:-v;}return s;}
+function nega(g,d,a,b){if(g.in_checkmate())return -100000-d;if(g.in_draw()||g.in_stalemate())return 0;
+  if(d===0){const e=evalW(g);return g.turn()==='w'?e:-e;}
+  const ms=g.moves({verbose:true});ms.sort((x,y)=>(y.captured?PV[y.captured]*10-PV[y.piece]:0)-(x.captured?PV[x.captured]*10-PV[x.piece]:0));
+  let best=-1e9;for(const m of ms){g.move(m);const v=-nega(g,d-1,-b,-a);g.undo();if(v>best)best=v;if(v>a)a=v;if(a>=b)break;}return best;}
+function botPick(g,lvl){const ms=g.moves({verbose:true});if(!ms.length)return null;
+  if(lvl===1&&Math.random()<0.35)return ms[Math.floor(Math.random()*ms.length)];
+  const d=lvl===1?1:lvl===2?2:3;let best=null,bv=-1e9;ms.sort(()=>Math.random()-.5);
+  let al=-1e9;for(const m of ms){g.move(m);const raw=-nega(g,d-1,-1e9,-(al-15));g.undo();if(raw>al)al=raw;const v=raw+Math.random()*(lvl===3?4:12);if(v>bv){bv=v;best=m;}}return best;}
+function openBot(){if(!DB.cur){openWho(openBot);return;}show('bot');BT.g=new Chess();btB.human='x';btB.set(BT.g,false);document.getElementById('botSetup').style.display='flex';}
+function botStart(){BT.lvl=+document.getElementById('btLvl').value;BT.me=document.getElementById('btCol').value;BT.clk=document.getElementById('btClk').checked;
+  BT.g=new Chess();BT.on=true;BT.t=900;btB.human=BT.me;btB.set(BT.g,BT.me==='b');btB.onMove=botMove;document.getElementById('botSetup').style.display='none';
+  btMsg('info','Maç başladı! Her hamleden önce: Rakip ne tehdit ediyor?');botTime();clearInterval(BT.iv);
+  if(BT.clk)BT.iv=setInterval(()=>{if(!BT.on||BT.g.turn()!==BT.me)return;BT.t-=0.1;if(BT.t<=0){BT.t=0;botEnd('Süren bitti! ⏱️ Turnuvada bu YENİLGİ demek. Saati unutma.');}botTime();},100);
+  if(BT.me==='b')botReply();}
+function botTime(){const e=document.getElementById('btTime');if(!BT.clk){e.textContent='Saat kapalı';return;}const t=Math.max(0,BT.t);e.textContent=Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');e.style.color=t<120?'var(--bad)':'';}
+function btMsg(c,t){const m=document.getElementById('btMsg');m.className='msg '+c;m.textContent=t;}
+function botMat(){const v=Math.round(evalMat(BT.g)/100)*(BT.me==='w'?1:-1);document.getElementById('btMat').textContent='Malzeme: '+(v>0?'+'+v:v===0?'=':v);}
+function evalMat(g){let s=0;for(const r of g.board())for(const p of r)if(p)s+=(p.color==='w'?1:-1)*PV[p.type];return s;}
+function botMove(from,to){if(!BT.on)return;const mv=BT.g.move({from,to,promotion:'q'});if(!mv)return;sMove();if(BT.clk)BT.t+=5;botTime();btB.last={from,to};btB.draw();botMat();
+  if(botOver())return;botReply();}
+function botReply(){btB.lock=true;btMsg('info','🤖 Robot düşünüyor…');setTimeout(()=>{const m=botPick(BT.g,BT.lvl);if(m){BT.g.move(m);btB.last={from:m.from,to:m.to};sMove();}btB.lock=false;btB.draw();botMat();
+  if(botOver())return;if(BT.g.in_check())btMsg('bad','ŞAH! Şahını kurtar: kaç, araya gir ya da al.');else if(m&&m.captured)btMsg('bad','Robot '+m.san+' ile taş aldı. Taşların korumalı mı?');else btMsg('info','Robot '+(m?m.san:'')+' oynadı. Rakip ne tehdit ediyor?');},250);}
+function botOver(){const g=BT.g;if(!g.game_over())return false;
+  if(g.in_checkmate()){const win=g.turn()!==BT.me;if(win){sOk();confetti();const s=stu();s.bot=Math.max(s.bot||0,BT.lvl);save();}botEnd(win?'MAT! 🏆 Robotu yendin! Seviye '+BT.lvl+' geçildi.':'Mat oldun. Son hamlelerine bak: tehdidi nerede kaçırdın?');}
+  else botEnd(g.in_stalemate()?'PAT — berabere. Kazanırken PAT\'a dikkat!':'Berabere.');return true;}
+function botEnd(t){BT.on=false;clearInterval(BT.iv);btB.lock=true;btMsg(t.startsWith('MAT! 🏆')?'ok':'bad',t);document.getElementById('botSetup').style.display='flex';}
+function botUndo(){if(!BT.on||btB.lock)return;BT.g.undo();if(BT.g.turn()!==BT.me)BT.g.undo();btB.last=null;btB.draw();botMat();btMsg('info','Geri aldın. Turnuvada geri alma YOK — orada dokunduğun taşı oynamak zorundasın!');}
+function botResign(){if(BT.on)botEnd('Pes ettin. Turnuvada son ana kadar savaş — rakip de hata yapabilir!');}
+function botQuit(){BT.on=false;clearInterval(BT.iv);goHome();}
+
+/* ====== HAKEM TESTİ ====== */
+const QZ=[
+['Turnuvada her oyuncunun düşünme süresi ne kadar?',['15 dakika + her hamlede 5 saniye eklenir','30 dakika','5 dakika','Süre yok'],0,'Yönergede 15 dakika + hamle başına 5 saniye eklemeli tempo yazıyor.'],
+['Bir taşına dokundun ama oynamak istemiyorsun. Ne olur?',['Dokunduğun taşı oynamak zorundasın','Başka taş oynayabilirsin','Rakibe sorarsın','Hiçbir şey olmaz'],0,'Dokunulan taş oynanır! Sadece düzeltmek istiyorsan önce "düzeltiyorum" demelisin.'],
+['Hamleni yaptın. Saate hangi elinle basarsın?',['Hamleyi yaptığım elle','Diğer elimle','İki elimle','Hakem basar'],0,'Hamleyi yapan elle saate basılır.'],
+['Kural dışı bir hamle yaptın (mesela şahını tehlikeye soktun). Ne olur?',['Hakem rakibe ek süre verir, ikinci kez olursa oyunu kaybedersin','Hiçbir şey','Oyun baştan başlar','Rakip iki hamle oynar'],0,'Hızlı satrançta kural dışı hamlenin cezası vardır; ikincisi oyunu kaybettirir. Her hamlede dikkat!'],
+['Rakibinin şahının hiç hamlesi yok ve şahta değil. Sıra onda. Sonuç?',['PAT — berabere','Sen kazandın','Rakip kazandı','Rakip pas geçer'],0,'Bu PAT\'tır ve oyun berabere biter. Kazanırken çok dikkat et!'],
+['Turnuvaya kaç dakika geç kalırsan hükmen yenik sayılırsın?',['15 dakika','1 saat','5 dakika','Geç kalmak sorun değil'],0,'Yönergeye göre hükmen yenik sayılma süresi 15 dakika. Zamanında orada ol!'],
+['Takımda kaç masada oynanır?',['4 masa','2 masa','6 masa','1 masa'],0,'Takımlar dört masa üzerinden oynar. Her yarım puan takım için önemli!'],
+['Masa sıranı kim belirler?',['Kayıtta girilen sıra; turnuva boyunca değişmez','Her tur ben seçerim','Hakem her tur değiştirir','Kura çekilir'],0,'Ana liste nasıl verildiyse o sıra kullanılır. Yanlış masaya oturan hükmen yenik sayılır!'],
+['Oyun sırasında telefonun yanında olabilir mi?',['Hayır, oyun alanında elektronik cihaz olmaz','Evet, sessizde olursa','Evet, saat bakmak için','Sadece kapalıyken cebimde'],0,'Oyun alanına telefon/elektronik cihaz getirmek kaybettirebilir. Telefonunu öğretmenine bırak.'],
+['Oyun sırasında bir sorun oldu. Ne yaparsın?',['Saati durdurup elimi kaldırır, hakemi çağırırım','Rakiple tartışırım','Arkadaşıma sorarım','Masadan kalkarım'],0,'Sorun olursa sakin ol, elini kaldır ve hakemi çağır.'],
+['Kazanılmış konumdasın ama süren 1 dakika. En iyisi?',['Hızlı ama güvenli, basit hamleler oynarım','Saatime bakmam','Çok uzun düşünürüm','Beraberlik teklif ederim'],0,'+5 saniye sayesinde hızlı ve güvenli oynarsan süren bitmez.'],
+['Açılışta en iyi fikir hangisi?',['Merkeze piyon, at ve filleri çıkar, rok yap','Veziri hemen dışarı çıkar','Hep kenar piyonlarını oyna','Aynı taşı sürekli oyna'],0,'Merkez + gelişim + rok = sağlam başlangıç.'],
+['Rakip 3. hamlede vezirini h5\'e çıkardı ve fil c4\'te. Ne tehdit ediyor?',['f7\'de Çoban Matı','Hiçbir şey','Kalemi almayı','Rok yapmayı'],0,'Vezir + fil f7\'ye bakıyorsa Çoban Matı tehlikesi var. f7\'yi koru!'],
+['Oyun bitti. Ne yaparsın?',['Rakiple tokalaşır, sonucu birlikte hakeme bildiririz','Hemen koşarım','Taşları dağıtırım','Bağırırım'],0,'Centilmenlik! Sonucu bildir, sonra sakin ol ve sonraki tura hazırlan.'],
+['Bir oyunu kaybettin. Sonraki tur için en doğru düşünce?',['Geçti, şimdi yeni oyuna odaklanıyorum','Turnuva bitti benim için','Ağlarım ve oynamam','Takımım kızar'],0,'7 tur var! Her tur yeni bir şans. Takım seninle!']];
+let QS={i:0,sc:0,ord:[]};
+function startQuiz(){if(!DB.cur){openWho(startQuiz);return;}QS={i:0,sc:0,ord:QZ.map((q,i)=>i).sort(()=>Math.random()-.5)};show('quiz');qzLoad();}
+function qzLoad(){const q=QZ[QS.ord[QS.i]];document.getElementById('qzNo').textContent='Soru '+(QS.i+1)+' / '+QZ.length;document.getElementById('qzSc').textContent='Puan: '+QS.sc;
+  document.getElementById('qzQ').textContent=q[0];const o=q[1].map((t,i)=>({t,i})).sort(()=>Math.random()-.5);
+  document.getElementById('qzOpts').innerHTML=o.map(x=>'<button class="opt" data-i="'+x.i+'">'+x.t+'</button>').join('');
+  document.querySelectorAll('#qzOpts .opt').forEach(b=>b.onclick=()=>qzAns(b));document.getElementById('qzMsg').style.display='none';document.getElementById('qzNext').style.display='none';}
+function qzAns(btn){if(document.getElementById('qzNext').style.display!=='none')return;const q=QZ[QS.ord[QS.i]];const ok=+btn.dataset.i===q[2];
+  document.querySelectorAll('#qzOpts .opt').forEach(b=>{if(+b.dataset.i===q[2])b.classList.add('ok');});if(!ok)btn.classList.add('bad');
+  if(ok){QS.sc++;sOk();}else sBad();const m=document.getElementById('qzMsg');m.style.display='block';m.className='msg '+(ok?'ok':'bad');m.textContent=(ok?'Doğru! ':'Yanlış. ')+q[3];
+  document.getElementById('qzSc').textContent='Puan: '+QS.sc;document.getElementById('qzNext').style.display='inline-block';}
+function qzNext(){QS.i++;if(QS.i<QZ.length){qzLoad();return;}const s=stu();s.quiz=Math.max(s.quiz||0,QS.sc);save();if(QS.sc>=13)confetti();
+  modal('<h3>Hakem Testi Bitti</h3><div class="big">'+QS.sc+' / '+QZ.length+'</div><p>'+(QS.sc===QZ.length?'Kusursuz! Kuralları bir hakem gibi biliyorsun. 🏅':QS.sc>=12?'Çok iyi! Yanlış yaptığın soruları bir kez daha çöz.':'Bir kez daha çöz, turnuvadan önce hepsini bilmelisin!')+'</p><div class="row"><button class="btn gold" onclick="closeModal();startQuiz()">Tekrar</button><button class="btn ghost" onclick="closeModal();goHome()">Ana sayfa</button></div>');}
+
+/* ====== TAKIM YARIŞI (akıllı tahta) ====== */
+const raB=new Board(document.getElementById('raBoard'));let RA={on:false,turn:0,total:12,sc:{},iv:null,t:0,pool:[],busy:false};
+const raS=new Solver(raB,(t,x)=>{const m=document.getElementById('raMsg');
+  if(t==='win'){clearInterval(RA.iv);const who=DB.order[RA.turn%4];const pts=10+Math.ceil(RA.t/6);RA.sc[who]+=pts;m.className='msg ok';m.textContent='DOĞRU! +'+pts+' puan 🎉';confetti();raEnd();}
+  else if(t==='lost'){clearInterval(RA.iv);m.className='msg bad';m.textContent='Olmadı! Doğru cevap mavi karelerde.';const mv=raSol();raEnd();}
+  else if(t==='bad'){m.className='msg bad';m.textContent=x;} else {m.className='msg info';m.textContent=x;}});
+function raSol(){const g=new Chess(raS.p.f);let mv=null;if(raS.kind==='m1'){mv=g.moves({verbose:true}).find(x=>{g.move(x);const c=g.in_checkmate();g.undo();return c;});}else mv=sanToMove(g,raS.p.sol[0]);
+  raS.g=g;raB.set(g,g.turn()==='b');if(mv){raB.hint={from:mv.from,to:mv.to};raB.draw();}return mv;}
+function openRace(){RA={on:true,turn:-1,total:12,sc:{},iv:null,t:0,pool:[],busy:false};DB.order.forEach(n=>RA.sc[n]=0);
+  ['m1','tk','sv'].forEach(k=>PZ[k].forEach(p=>RA.pool.push([k,p])));RA.pool.sort(()=>Math.random()-.5);
+  show('race');raB.set(new Chess(),false);raB.lock=true;raScore();document.getElementById('raWho').textContent='Hazır mısınız?';document.getElementById('raTask').textContent='4 oyuncu sırayla bulmaca çözer. Her oyuncuya 3 soru, her soru 60 saniye.';
+  document.getElementById('raTurn').innerHTML='';document.getElementById('raRound').textContent='0 / 12';document.getElementById('raTime').textContent='';document.getElementById('raMsg').className='msg info';document.getElementById('raMsg').textContent='Tahtanın başına ilk oyuncu gelsin!';
+  const bt=document.getElementById('raBtn');bt.style.display='block';bt.textContent='Başla ▶';}
+function raScore(){document.getElementById('raScore').innerHTML=DB.order.map((n,i)=>'<div class="'+(RA.turn>=0&&RA.turn%4===i&&RA.busy?'act':'')+'"><span class="note">'+(i+1)+'. masa</span><b>'+RA.sc[n]+'</b>'+n+'</div>').join('');}
+function raceNext(){if(RA.turn+1>=RA.total){raFinish();return;}RA.turn++;RA.busy=true;const [k,p]=RA.pool[RA.turn%RA.pool.length];raS.load(k,p,false);
+  document.getElementById('raWho').textContent='Sıra: '+DB.order[RA.turn%4];document.getElementById('raTask').textContent=KINDS[k]+' — '+p.t;document.getElementById('raTurn').innerHTML=turnHtml(raS.g);
+  document.getElementById('raRound').textContent=(RA.turn+1)+' / '+RA.total;document.getElementById('raBtn').style.display='none';const m=document.getElementById('raMsg');m.className='msg info';m.textContent='Takım arkadaşları sessiz! Sadece '+DB.order[RA.turn%4]+' oynar.';
+  RA.t=60;raT();raScore();clearInterval(RA.iv);RA.iv=setInterval(()=>{RA.t--;raT();if(RA.t<=10&&RA.t>0)tone(900,.05);if(RA.t<=0){clearInterval(RA.iv);raS.done=true;raB.lock=true;sBad();const m=document.getElementById('raMsg');m.className='msg bad';m.textContent='Süre bitti! ⏱️ Doğru cevap mavi karelerde.';raSol();raEnd();}},1000);}
+function raT(){const e=document.getElementById('raTime');e.textContent=RA.t+' sn';e.style.color=RA.t<=10?'var(--bad)':'';}
+function raEnd(){RA.busy=false;raB.lock=true;raScore();const bt=document.getElementById('raBtn');bt.style.display='block';bt.textContent=RA.turn+1>=RA.total?'Sonuçları gör 🏆':'Sıradaki: '+DB.order[(RA.turn+1)%4]+' ▶';}
+function raFinish(){const arr=DB.order.map(n=>[n,RA.sc[n]]).sort((a,b)=>b[1]-a[1]);const tot=arr.reduce((a,b)=>a+b[1],0);confetti();
+  modal('<h3>🏆 Takım Yarışı Sonucu</h3><table>'+arr.map((x,i)=>'<tr><td>'+['🥇','🥈','🥉','🏅'][i]+' '+x[0]+'</td><td><b>'+x[1]+'</b></td></tr>').join('')+'</table><p><b>Takım toplamı: '+tot+'</b> — '+(tot>=200?'Şampiyonluk formu! 🔥':tot>=140?'Çok iyi gidiyoruz!':'Cuma provasında daha da iyisi!')+'</p><button class="btn gold" onclick="closeModal();goHome()">Tamam</button>');}
+function raceStop(){clearInterval(RA.iv);RA.on=false;goHome();}
+
+/* ====== FİNAL PROVASI ====== */
+const fnB=new Board(document.getElementById('fnBoard'));let FN={i:0,list:[],sc:0,t:0,iv:null};
+const fnS=new Solver(fnB,(t,x)=>{const m=document.getElementById('fnMsg');
+  if(t==='win'){FN.sc++;m.className='msg ok';m.textContent='Doğru! ✅';setTimeout(fnNext,900);}
+  else if(t==='lost'){m.className='msg bad';m.textContent='Olmadı ❌ Sıradaki bulmacaya geçiyoruz.';setTimeout(fnNext,1300);}
+  else if(t==='bad'){m.className='msg bad';m.textContent=x;} else {m.className='msg info';m.textContent=x;}
+  document.getElementById('fnSc').textContent='Doğru: '+FN.sc;});
+function startFinal(){if(!DB.cur){openWho(startFinal);return;}const pick=(k,n)=>PZ[k].map(p=>[k,p]).sort(()=>Math.random()-.5).slice(0,n);
+  FN={i:-1,sc:0,t:0,iv:null,list:[...pick('m1',6),...pick('tk',2),...pick('sv',2),...pick('m2',2)]};
+  show('final');clearInterval(FN.iv);FN.iv=setInterval(()=>{FN.t++;document.getElementById('fnTime').textContent=Math.floor(FN.t/60)+':'+String(FN.t%60).padStart(2,'0');},1000);fnNext();}
+function fnNext(){FN.i++;if(FN.i>=FN.list.length){fnDone();return;}const [k,p]=FN.list[FN.i];fnS.load(k,p,false);
+  document.getElementById('fnNo').textContent=(FN.i+1)+' / '+FN.list.length;document.getElementById('fnTask').textContent=KINDS[k];document.getElementById('fnTurn').innerHTML=turnHtml(fnS.g);
+  const m=document.getElementById('fnMsg');m.className='msg info';m.textContent=p.t+' — tek hakkın var, iyice bak!';document.getElementById('fnSc').textContent='Doğru: '+FN.sc;}
+function fnDone(){clearInterval(FN.iv);const s=stu();s.final=Math.max(s.final||0,FN.sc);save();const ok=FN.sc>=10;if(ok)confetti();
+  modal('<h3>🎯 Final Provası</h3><div class="big">'+FN.sc+' / 12</div><p>Süre: '+Math.floor(FN.t/60)+' dk '+(FN.t%60)+' sn</p><p>'+(FN.sc===12?'KUSURSUZ! Turnuvaya tamamen hazırsın! 🏆':ok?'Harika! Turnuvaya hazırsın. 💪':FN.sc>=7?'İyi! Hatalı türdeki bulmacaları biraz daha çalış.':'Mat Avcısı ve Savunma Kalesi\'ni tekrar çöz, sonra provayı yeniden dene.')+'</p><div class="row"><button class="btn gold" onclick="closeModal();startFinal()">Tekrar dene</button><button class="btn ghost" onclick="closeModal();goHome()">Ana sayfa</button></div>');}
+function finalStop(){clearInterval(FN.iv);goHome();}
+
+/* ====== TURNUVA SAATİ ====== */
+let CK={t:[900,900],act:-1,inc:5,iv:null,run:false,last:0};
+function openClock(){document.getElementById('clock').classList.add('on');ckReset();}
+function closeClock(){clearInterval(CK.iv);document.getElementById('clock').classList.remove('on');}
+function ckReset(){clearInterval(CK.iv);const m=+document.getElementById('ckMode').value;CK={t:[m*60,m*60],act:-1,inc:m===5?3:5,iv:null,run:false,last:0};ckDraw();}
+function ckFmt(s){s=Math.max(0,s);return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+(s<10?'.'+Math.floor((s*10)%10):'');}
+function ckDraw(){for(let i=0;i<2;i++){const e=document.getElementById('ck'+i);e.textContent=CK.t[i]<=0?'⚑ '+ckFmt(0):ckFmt(CK.t[i]);e.className='half'+(i===0?' top':'')+(CK.act===i&&CK.run?' act':'')+(CK.t[i]<60&&CK.t[i]>0?' low':'')+(CK.t[i]<=0?' flag':'');}document.getElementById('ckP').textContent=CK.run?'⏸':'▶';}
+function ckTap(i){if(CK.t[0]<=0||CK.t[1]<=0)return;
+  if(CK.act===-1){CK.act=1-i;ckRun();return;}
+  if(CK.act!==i||!CK.run)return;CK.t[i]+=CK.inc;CK.act=1-i;tone(500,.05);ckDraw();}
+function ckRun(){CK.run=true;CK.last=performance.now();clearInterval(CK.iv);CK.iv=setInterval(()=>{const n=performance.now();CK.t[CK.act]-=(n-CK.last)/1000;CK.last=n;if(CK.t[CK.act]<=0){CK.t[CK.act]=0;CK.run=false;clearInterval(CK.iv);tone(300,.8,'square');}ckDraw();},100);ckDraw();}
+function ckPause(){if(CK.act===-1)return;if(CK.run){CK.run=false;clearInterval(CK.iv);ckDraw();}else ckRun();}
+
+/* ====== TAKIM MAÇI TABLOSU ====== */
+function renderMatch(){const sel=document.getElementById('mtRound');if(!sel.options.length){for(let i=1;i<=7;i++)sel.add(new Option(i+'. Tur',i));sel.onchange=renderMatch;}
+  const r=sel.value;const M=DB.match[r]||(DB.match[r]={opp:'',res:[null,null,null,null]});
+  let h='<tr><th>Masa</th><th>Oyuncu</th><th>Sonuç</th></tr>';
+  DB.order.forEach((n,i)=>{h+='<tr><td>'+(i+1)+'</td><td><b>'+n+'</b></td><td class="row">'+[1,0.5,0].map(v=>'<button class="btn '+(M.res[i]===v?'gold':'ghost')+'" style="padding:8px 12px" onclick="mtSet('+r+','+i+','+v+')">'+(v===0.5?'½':v)+'</button>').join('')+'</td></tr>';});
+  document.getElementById('mtTable').innerHTML=h;
+  const done=M.res.every(x=>x!==null);const sum=M.res.reduce((a,b)=>a+(b||0),0);
+  document.getElementById('mtRes').innerHTML=done?(sum>2?'✅ <b>Maç KAZANILDI</b> — '+sum+' : '+(4-sum):sum===2?'🤝 <b>Maç berabere</b> — 2 : 2':'❌ <b>Maç kaybedildi</b> — '+sum+' : '+(4-sum)+'. Sonraki tura odak!'):'Masa puanı: '+sum+' (tüm masaları girin)';
+  let t='<tr><th>Tur</th><th>Masa puanı</th><th>Maç</th></tr>',tb=0,tw=0,td=0;
+  for(let i=1;i<=7;i++){const x=DB.match[i];if(!x||!x.res.every(v=>v!==null))continue;const s=x.res.reduce((a,b)=>a+b,0);tb+=s;if(s>2)tw++;else if(s===2)td++;t+='<tr><td>'+i+'</td><td>'+s+'</td><td>'+(s>2?'G':s===2?'B':'M')+'</td></tr>';}
+  t+='<tr><th>Toplam</th><th>'+tb+'</th><th>'+tw+'G '+td+'B · Maç puanı '+(tw*2+td)+'</th></tr>';document.getElementById('mtTotal').innerHTML=t;}
+function mtSet(r,i,v){DB.match[r].res[i]=v;save();renderMatch();}
+
+/* ====== PLAN & TURNUVA GÜNÜ ====== */
+function renderPlan(){const P=[
+['28 Ekim Çarşamba','Akıllı tahta günü',['Hakem Testi (sınıfça, yüksek sesle)','Mat Avcısı: ilk 12 bulmaca (sırayla tahtaya)','Savunma Kalesi: Çoban Matını durdurmak','Takım Yarışı (12 soru)','Ev ödevi: Mat Avcısı\'nın kalanını bitir']],
+['29 Ekim Perşembe','Cumhuriyet Bayramı — evde, telefonla 🇹🇷',['Mat Avcısı\'nı tamamla (24 bulmaca)','Taktik Avı (8 bulmaca)','Robot Rakip Seviye 1 ile 1 maç']],
+['30 Ekim Cuma','SON PROVA 🎯',['Final Provası (herkes ayrı, hedef 10/12)','Turnuva Saati ile 15+5 iç maçlar: 1-2 ve 3-4. masalar','Takım Maçı Tablosu ile sonuçları gir','Turnuva Günü kurallarını birlikte oku','Turnuva Günü sayfasındaki çanta listesini kontrol et']],
+['31 Ekim Cumartesi','Evde hafif çalışma',['Mat Ustası (2 hamlede mat)','Oyun Sonu Kampı: Vezir Matı ve Kale Matı','⚠️ Öğretmen: KAYIT son gün saat 17.00 — masa sırasını doğru gir!']],
+['1 Kasım Pazar','Maç günü provası',['Robot Rakip Seviye 2 ile 15+5 saatli 2 maç','Hakem Testi bir kez daha']],
+['2 Kasım Pazartesi','Dinlenme günü',['Sadece 10 mat bulmacası, eğlencesine','Erken yat, iyi uyu 😴']],
+['3 Kasım Salı','TURNUVA GÜNÜ 🏆',['08.30 kayıt kontrol — erken orada ol!','Bilim Yaşam Okulları','Turnuva Günü sayfasındaki altın kuralları hatırla']]];
+  document.getElementById('planBox').innerHTML='<div class="card"><h3>🗓️ Şampiyonluk Planı</h3><p class="note">Bugünden turnuvaya kadar gün gün ne yapacağız.</p></div>'+P.map(d=>'<div class="card"><h3>'+d[0]+' · <span style="color:var(--gold)">'+d[1]+'</span></h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');}
+function renderDay(){const S=[['08.30–09.00','Kayıt kontrol'],['09.00','Teknik toplantı'],['09.20','1. tur eşleştirmesi ilanı'],['10.00','1. Tur'],['11.00','2. Tur'],['12.00','3. Tur'],['13.00','4. Tur'],['14.30','5. Tur'],['15.30','6. Tur'],['16.30','7. Tur'],['17.30','Ödül töreni 🏆']];
+  document.getElementById('dayBox').innerHTML=
+  '<div class="card"><h3>🧭 3 Kasım Salı — Minikler Programı</h3><p class="note">Yer: Bilim Yaşam Okulları · Takım İsviçre/Berger sistemi · 15 dk + 5 sn</p><table>'+S.map(x=>'<tr><td><b>'+x[0]+'</b></td><td>'+x[1]+'</td></tr>').join('')+'</table></div>'+
+  '<div class="card"><h3>⭐ Altın Kural: DUR – BAK – DÜŞÜN</h3><ol><li><b>DUR:</b> Rakip hamle yaptı. Elini hemen taşa götürme.</li><li><b>BAK:</b> Rakip ne tehdit ediyor? Şah mı, alma mı, mat mı?</li><li><b>DÜŞÜN:</b> Benim için ŞAH – ALMA – TEHDİT var mı? Taşım güvende mi?</li><li>Sonra hamleni yap ve aynı elle saate bas.</li></ol></div>'+
+  '<div class="card"><h3>♟️ Açılışın 5 Kuralı</h3><ol><li>Merkeze piyon (e4/d4 veya e5/d5).</li><li>Atları ve filleri çıkar.</li><li>Erken rok yap.</li><li>Veziri erken çıkarma.</li><li>f7 (siyahsan) / f2 (beyazsan) karesini koru — Çoban Matına düşme!</li></ol></div>'+
+  '<div class="card"><h3>⏱️ Saat Yönetimi</h3><ul><li>15 dakikan var, her hamlede 5 saniye eklenir.</li><li>Açılışta hızlı, kritik anlarda (taş alışı, şah çekme) yavaş düşün.</li><li>Süren 2 dakikanın altına inerse basit ve güvenli oyna.</li><li>Kazanıyorsan acele etme — ama PAT yapmamaya dikkat!</li></ul></div>'+
+  '<div class="card"><h3>🤝 Davranış Kuralları</h3><ul><li>Oyuna tokalaşarak başla, tokalaşarak bitir.</li><li>Dokunduğun taşı oynarsın. Düzeltmek için önce "düzeltiyorum" de.</li><li>Oyun sırasında konuşma yok. Sorun olursa elini kaldır, hakemi çağır.</li><li>Telefon oyun alanına girmez — öğretmene bırak.</li><li>Kendi masana otur! Masa sırası değişmez.</li><li>Oyun bitince sonucu rakibinle birlikte hakeme bildir.</li><li>Kaybettiysen üzülme: 7 tur var, takım seninle! 💙</li></ul></div>'+
+  '<div class="card"><h3>🎒 Çanta Listesi</h3><ul><li>Su şişesi</li><li>Meyve ve sağlıklı atıştırmalık (öğle arası 13.00–14.30 civarı)</li><li>Hırka</li><li>Okul forması / takım kıyafeti</li><li>Kalem (isteğe bağlı)</li></ul><p class="note">Okul spor lisansı ve kayıt işlemlerini öğretmen yürütür.</p></div>';}
+
+/* ====== KİM ÇALIŞIYOR ====== */
+let whoCb=null;
+function openWho(cb){whoCb=cb||null;modal('<h3>Kim çalışıyor?</h3><div class="team">'+DB.order.map(n=>'<button class="pl" style="border-color:var(--line)" onclick="setWho(\''+n.replace(/'/g,"\\'")+'\')"><div class="nm">'+n+'</div></button>').join('')+'</div><button class="btn ghost" onclick="setWho(\'Misafir\')">Misafir olarak devam</button>'+(DB.cur&&DB.cur!=='Misafir'?'<button class="btn ghost" onclick="shareProg()">📤 İlerlememi öğretmene gönder</button>':''));}
+function setWho(n){DB.cur=n;save();closeModal();renderHome();if(whoCb){const c=whoCb;whoCb=null;c();}}
+function progText(n){const s=stu(n);const c=k=>PZ[k].filter((p,i)=>s.s[k+i]).length;
+  return '♛ Şampiyon Takım — '+n+'\nMat Avcısı: '+c('m1')+'/'+PZ.m1.length+'\nMat Ustası: '+c('m2')+'/'+PZ.m2.length+'\nTaktik Avı: '+c('tk')+'/'+PZ.tk.length+'\nSavunma Kalesi: '+c('sv')+'/'+PZ.sv.length+'\nOyun sonu matları: '+(s.end||0)+'\nRobot Rakip en yüksek seviye: '+(s.bot||0)+'\nHakem Testi: '+(s.quiz||0)+'/'+QZ.length+'\nFinal Provası: '+(s.final||0)+'/12';}
+function shareProg(){const t=progText(DB.cur);if(navigator.share){navigator.share({text:t}).catch(()=>{});}else{try{navigator.clipboard.writeText(t);}catch(e){}modal('<h3>İlerleme</h3><pre style="white-space:pre-wrap">'+t+'</pre><p class="note">Kopyalandı — öğretmenine mesajla gönder.</p><button class="btn gold" onclick="closeModal()">Tamam</button>');}}
+
+/* ====== ANTRENÖR ====== */
+function openCoach(){show('coach');renderCoach();}
+function renderCoach(){document.getElementById('coachOrder').innerHTML=DB.order.map((n,i)=>'<div class="row" style="align-items:center;flex-wrap:nowrap"><b style="width:70px">'+(i+1)+'. masa</b><input value="'+n.replace(/"/g,'&quot;')+'" onchange="renameP('+i+',this.value)"><button class="btn ghost" onclick="moveP('+i+',-1)">▲</button><button class="btn ghost" onclick="moveP('+i+',1)">▼</button></div>').join('')+'<p class="note">Öneri: En güçlü oyuncu 1. masaya. Buradaki sıra kayıtta girdiğiniz sırayla AYNI olmalı.</p>';
+  const ks=['m1','m2','tk','sv'];let h='<tr><th>Öğrenci</th><th>Mat1</th><th>Mat2</th><th>Taktik</th><th>Savunma</th><th>Hakem</th><th>Prova</th><th>Robot</th></tr>';
+  DB.order.forEach(n=>{const s=stu(n);h+='<tr><td><b>'+n+'</b></td>'+ks.map(k=>'<td>'+PZ[k].filter((p,i)=>s.s[k+i]).length+'/'+PZ[k].length+'</td>').join('')+'<td>'+(s.quiz||0)+'/'+QZ.length+'</td><td>'+(s.final||0)+'/12</td><td>'+(s.bot?'Sv '+s.bot:'–')+'</td></tr>';});
+  document.getElementById('coachTable').innerHTML=h;}
+function renameP(i,v){v=v.trim();if(!v)return;const old=DB.order[i];if(DB.p[old]&&!DB.p[v]){DB.p[v]=DB.p[old];delete DB.p[old];}if(DB.cur===old)DB.cur=v;DB.order[i]=v;save();renderCoach();}
+function moveP(i,d){const j=i+d;if(j<0||j>3)return;[DB.order[i],DB.order[j]]=[DB.order[j],DB.order[i]];save();renderCoach();}
+function resetAll(){if(!confirm('Bu cihazdaki tüm ilerleme silinsin mi?'))return;DB.p={};DB.match={};save();renderCoach();}
+
+/* ====== ANA SAYFA ====== */
+function renderHome(){const all=['m1','m2','tk','sv'];
+  document.getElementById('teamCards').innerHTML=DB.order.map((n,i)=>{const s=stu(n);const tot=all.reduce((a,k)=>a+PZ[k].filter((p,j)=>s.s[k+j]).length,0);const max=all.reduce((a,k)=>a+PZ[k].length,0);
+    return '<button class="pl'+(DB.cur===n?' on':'')+'" onclick="setWho(\''+n.replace(/'/g,"\\'")+'\')"><div class="ms">'+(i+1)+'. MASA</div><div class="nm">'+n+'</div><div class="st">🧩 '+tot+'/'+max+' · 🎯 '+(s.final||0)+'/12</div></button>';}).join('');
+  document.getElementById('whoChip').textContent='👤 '+(DB.cur||'Kim çalışıyor?');
+  const s=stu();all.forEach(k=>{const c=PZ[k].filter((p,i)=>s.s[k+i]).length;document.getElementById('br-'+k).style.width=(c/PZ[k].length*100)+'%';
+    document.getElementById('pg-'+k).textContent={m1:'1 hamlede mat',m2:'2 hamlede mat',tk:'Çatal, şiş, bedava taş',sv:'Mat tehdidini durdur'}[k]+' · '+c+'/'+PZ[k].length;});}
+function tick(){const d=TOUR-new Date();const e=document.getElementById('cd');if(d<=0){e.innerHTML='<div><b>🏆</b><span>Turnuva zamanı!</span></div>';return;}
+  const D=Math.floor(d/864e5),H=Math.floor(d/36e5)%24,M=Math.floor(d/6e4)%60;e.innerHTML='<div><b>'+D+'</b><span>gün</span></div><div><b>'+H+'</b><span>saat</span></div><div><b>'+M+'</b><span>dakika</span></div><div style="flex:1;text-align:left;min-width:180px"><b style="font-size:16px">1. tura kalan süre</b><span>Her gün biraz çalış, şampiyon ol!</span></div>';}
+if(typeof Chess==='undefined'){document.body.innerHTML='<div style="padding:30px;font:18px system-ui">Satranç motoru yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenileyin.</div>';}
+else{renderHome();tick();setInterval(tick,30000);sizeBoards();}
+</script>
+</body>
+</html>
