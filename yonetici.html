@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="9.5">
+<meta name="surum" content="9.6">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='9.5';
+const PANEL_SURUM='9.6';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1532,6 +1532,43 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .ok-k-bas{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ok-k-bas small{margin-left:auto;color:#64748b}
 .ok-sil{opacity:.55}
 .dark-mode .ok-form,.dark-mode .ok-k{background:#0f172a;border-color:#334155}.dark-mode .ok-k p{color:#cbd5e1}.dark-mode .ok-kirmizi{background:#450a0a;color:#fecaca}.dark-mode .ok-yesil{background:#052e1a;color:#bbf7d0}
+</style>`);
+})();
+
+</script>
+<script>
+/* ===================== v9.6 · 👁 SİTEDE GÖSTER / 🙈 GİZLE: her içerikte tek dokunuş · Özet’te “Gizlenenler” ===================== */
+(function(){
+'use strict';
+const kayit=k=>{try{return typeof findRecord==='function'?findRecord(k):null}catch{return null}};
+async function degistir(k,gizle){requireDB();const i=kayit(k);if(!i)throw new Error('İçerik bulunamadı.');await db.collection(i.col).doc(i.id).set({arsivlendi:gizle,guncellendi:stamp()},{merge:true});i.arsivlendi=gizle;toast(gizle?'🙈 “'+(i.baslik||'İçerik')+'” sitede gizlendi. Panelde duruyor; istediğinde tek dokunuşla geri açarsın.':'👁 “'+(i.baslik||'İçerik')+'” sitede yeniden görünüyor.');boya();gizliCiz()}
+const etiket=i=>i&&i.arsivlendi?'👁 Sitede göster':'🙈 Sitede gizle';
+/* her içerik kartında “Düzenle” düğmesinin yanına anahtar */
+function boya(){document.querySelectorAll('[data-action="edit"][data-key]').forEach(ed=>{const k=ed.dataset.key,i=kayit(k);if(!i)return;const kap=ed.parentElement;if(!kap)return;let b=kap.querySelector(`.gor-dg[data-gor="${CSS.escape(k)}"]`);if(!b){ed.insertAdjacentHTML('afterend',`<button type="button" class="btn-mini gor-dg" data-gor="${esc(k)}"></button>`);b=kap.querySelector(`.gor-dg[data-gor="${CSS.escape(k)}"]`)}const t=etiket(i);if(b.textContent!==t)b.textContent=t;b.classList.toggle('gizli',!!i.arsivlendi);
+  const kart=ed.closest('.card,.panel,.x-cand,.dash-row,article,li');if(kart)kart.classList.toggle('gor-kart-gizli',!!i.arsivlendi)})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-gor]');if(!b)return;e.preventDefault();e.stopPropagation();const i=kayit(b.dataset.gor);busy(b,()=>degistir(b.dataset.gor,!(i&&i.arsivlendi)))},true);
+let zz=null;new MutationObserver(()=>{clearTimeout(zz);zz=setTimeout(boya,60)}).observe(document.body,{childList:true,subtree:true});
+/* düzenleyicide: büyük görünürlük anahtarı */
+function edAnahtar(){const f=document.querySelector('#editor-form .form-footer');if(!f)return;let s=document.getElementById('gor-ed');const ed=typeof editing!=='undefined'?editing:null;const i=ed?kayit(ed.col+':'+ed.id):null;
+  if(!i){if(s)s.hidden=true;return}if(!s){f.insertAdjacentHTML('beforebegin','<div id="gor-ed" class="gor-ed"><div><b id="gor-ed-b"></b><small id="gor-ed-s"></small></div><button type="button" class="btn" id="gor-ed-dg"></button></div>');s=document.getElementById('gor-ed');document.getElementById('gor-ed-dg').onclick=e=>{const ed2=typeof editing!=='undefined'?editing:null;if(!ed2)return;const k=ed2.col+':'+ed2.id,x=kayit(k);busy(e.currentTarget,async()=>{await degistir(k,!(x&&x.arsivlendi));edAnahtar()})}}
+  s.hidden=false;s.classList.toggle('kapali',!!i.arsivlendi);document.getElementById('gor-ed-b').textContent=i.arsivlendi?'🙈 Bu içerik sitede GİZLİ':'👁 Bu içerik sitede GÖRÜNÜYOR';document.getElementById('gor-ed-s').textContent=i.arsivlendi?'Ziyaretçiler göremez. Yarışma/etkinlik zamanı gelince aç.':'Herkes görebilir. İşin bitince tek dokunuşla gizleyebilirsin.';document.getElementById('gor-ed-dg').textContent=i.arsivlendi?'👁 Sitede göster':'🙈 Sitede gizle'}
+{const _f=fillEditor;fillEditor=function(){const r=_f.apply(this,arguments);setTimeout(edAnahtar,0);return r}}
+{const _n=freshEditor;freshEditor=function(){const r=_n.apply(this,arguments);setTimeout(edAnahtar,0);return r}}
+/* Özet: 🙈 Gizlenenler kutusu */
+function gizliCiz(n=0){const yer=document.getElementById('as-kart')||document.getElementById('ahp-buyuk')||document.querySelector('.quick-dashboard');if(!yer){if(n<60)setTimeout(()=>gizliCiz(n+1),500);return}let k=document.getElementById('gz-kutu');
+  if(!k){yer.insertAdjacentHTML('afterend','<div id="gz-kutu" class="gz-kutu"><div class="row between" style="align-items:center;gap:8px"><b>🙈 Sitede gizlenenler</b><small id="gz-say" class="muted"></small></div><p class="small muted" style="margin:6px 0 10px">Burada olanlar panelde duruyor ama sitede görünmüyor. Herhangi bir içeriği gizlemek için içerik kartındaki <b>🙈 Sitede gizle</b> düğmesine bas.</p><div id="gz-liste"></div></div>');k=document.getElementById('gz-kutu')}
+  const L=(typeof records!=='undefined'?records:[]).filter(i=>i.arsivlendi).sort((a,b)=>((b.guncellendi&&b.guncellendi.seconds)||0)-((a.guncellendi&&a.guncellendi.seconds)||0));document.getElementById('gz-say').textContent=L.length?L.length+' içerik':'';
+  document.getElementById('gz-liste').innerHTML=L.length?L.slice(0,25).map(i=>{const key=i.col+':'+i.id;return `<div class="gz-satir"><span>${esc(i.baslik||'İçerik')}</span><button type="button" class="btn-mini gor-dg gizli" data-gor="${esc(key)}">👁 Sitede göster</button></div>`}).join('')+(L.length>25?`<p class="small muted">İlk 25 gösteriliyor. Hepsi: Tüm İçerikler & Arşiv.</p>`:''):'<p class="small muted" style="margin:0">Şu an gizli içerik yok; her şey sitede görünüyor.</p>'}
+(function bekle(n=0){if(typeof currentUser==='undefined'||!currentUser||typeof records==='undefined'||!records.length){if(n<240)setTimeout(()=>bekle(n+1),500);return}gizliCiz();boya();setInterval(()=>{gizliCiz();edAnahtar()},4000)})();
+document.head.insertAdjacentHTML('beforeend',`<style>
+.gor-dg{background:#ecfdf5!important;color:#065f46!important;border:1px solid #a7f3d0!important;font-weight:800}
+.gor-dg:not(.gizli){background:#fff7ed!important;color:#9a3412!important;border-color:#fed7aa!important}
+.gor-kart-gizli{opacity:.62;outline:2px dashed #f59e0b;outline-offset:2px}
+.gor-ed{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0;padding:14px 16px;border-radius:16px;background:#ecfdf5;border:2px solid #86efac}
+.gor-ed.kapali{background:#fff7ed;border-color:#fdba74}.gor-ed b{display:block}.gor-ed small{color:#475569}
+.gz-kutu{margin:12px 0 4px;padding:14px 16px;border-radius:18px;background:#fffbeb;border:1px solid #fde68a}
+.gz-satir{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid #fde68a}.gz-satir span{font-weight:700;font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dark-mode .gz-kutu{background:#1e293b;border-color:#334155}.dark-mode .gor-ed{background:#052e1a;border-color:#166534}.dark-mode .gor-ed.kapali{background:#431407;border-color:#7c2d12}.dark-mode .gor-ed small{color:#cbd5e1}
 </style>`);
 })();
 
