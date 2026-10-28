@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="9.4">
+<meta name="surum" content="9.5">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='9.4';
+const PANEL_SURUM='9.5';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1479,6 +1479,60 @@ function kur(n=0){const yer=document.getElementById('ahp-buyuk')||document.query
   document.getElementById('as-kart').addEventListener('click',e=>{const b=e.target.closest('[data-as]');if(!b)return;const v=b.dataset.as==='sade';busy(b,async()=>{requireDB();await db.collection('site_ayarlari').doc('ana_sayfa').set({sade:v,guncellendi:stamp()},{merge:true});sade=v;ciz();toast(v?'🧭 Ana sayfa sade görünümde.':'📜 Ana sayfa uzun görünümde.')})});ciz()}
 (function bekle(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='undefined'||!currentUser){if(n<240)setTimeout(()=>bekle(n+1),500);return}kur();try{db.collection('site_ayarlari').doc('ana_sayfa').onSnapshot(d=>{sade=!(d.exists&&d.data().sade===false);ciz()},()=>{})}catch{}})();
 document.head.insertAdjacentHTML('beforeend','<style>.as-kart{margin:12px 0 4px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#ecfeff,#eef2ff);border:1px solid #c7d2fe}.dark-mode .as-kart{background:#1e293b;border-color:#334155}</style>');
+})();
+
+</script>
+<script>
+/* ===================== v9.5 · 🔒 ÖZEL KASA: yalnızca senin hesabınla görünen çalışmalar (kendini sınar; koruma yoksa kilitli kalır) ===================== */
+(function(){
+'use strict';
+const KOL='ozel_kasa',MAKS=700*1024;
+const g=id=>document.getElementById(id);
+const pid=()=>{try{return firebase.app().options.projectId}catch{return 'shaped-totem-481514-c5'}};
+const eposta=()=>{try{return currentUser&&currentUser.email||''}catch{return''}};
+/* korumayı dışarıdan (girişsiz) sına: okunabiliyorsa kasa AÇIK demektir */
+async function korumaTest(){try{const r=await fetch(`https://firestore.googleapis.com/v1/projects/${encodeURIComponent(pid())}/databases/(default)/documents/${KOL}?pageSize=1`,{cache:'no-store'});if(r.status===403||r.status===401)return 'korumali';if(r.ok)return 'acik';return 'bilinmiyor'}catch{return 'bilinmiyor'}}
+const kural=()=>`match /${KOL}/{belge} {\n  allow read, write: if request.auth != null && request.auth.token.email == "${eposta()||'GİRİŞ E-POSTAN'}";\n}`;
+const boyut=n=>n<1024*1024?Math.round(n/1024)+' KB':(n/1048576).toFixed(1)+' MB';
+const tarih=t=>{try{const d=t&&t.toDate?t.toDate():new Date((t&&t.seconds||0)*1000);return d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}catch{return''}};
+let durum='bilinmiyor',silinenler=false;
+async function ac(){openModal('🔒 Özel Kasa',`<div id="ok-durum" class="ok-durum">⏳ Koruma sınanıyor…</div><div id="ok-govde"></div>`,true);durum=await korumaTest();ciz()}
+function ciz(){const d=g('ok-durum'),b=g('ok-govde');if(!d||!b)return;
+  if(durum!=='korumali'){d.className='ok-durum ok-kirmizi';d.innerHTML=`<b>${durum==='acik'?'⚠️ Kasa şu an korumasız: buraya konan şeyi başkaları da okuyabilir.':'⚠️ Koruma sınanamadı (internet ya da Firebase yanıtı).'}</b><span>Öğrencilerine ait bilgileri güvenle saklayabilmek için Firebase veritabanı kurallarına bir ek gerekiyor. Ek yapılana kadar kasaya kayıt eklenemez.</span>
+    <details open><summary>Ne yapmalıyım?</summary><ol><li>Firebase konsolu › Firestore Database › <b>Rules</b> (Kurallar) sekmesindeki metnin <b>tamamını kopyala</b> ve bana gönder.</li><li>Ben mevcut kurallarınla birleştirip, diğer uygulamalarını (ekosistem, ders planı) bozmayan tam metni vereyim; sen <b>Publish</b>’e bas.</li><li>Sonra burada <b>↻ Yeniden sına</b>’ya bas; yeşil olunca kasa açılır.</li></ol><p class="small muted">Eklenecek kuralın özü (e-postan hazır):</p><pre class="ok-kod">${esc(kural())}</pre></details>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn small" id="ok-kopya">📋 Kural ekini kopyala</button><button type="button" class="btn small primary" id="ok-sina">↻ Yeniden sına</button></div>`;
+    g('ok-kopya').onclick=()=>navigator.clipboard?.writeText(kural()).then(()=>toast('📋 Kopyalandı.'),()=>toast('Kopyalanamadı.',true));g('ok-sina').onclick=async()=>{d.innerHTML='⏳ Sınanıyor…';durum=await korumaTest();ciz()};b.innerHTML='';return}
+  d.className='ok-durum ok-yesil';d.innerHTML=`<b>✅ Kasa korumalı.</b><span>Burayı yalnızca <b>${esc(eposta())}</b> hesabıyla giriş yapan görebilir. Sitede ve aramada hiç görünmez.</span>`;
+  b.innerHTML=`<form id="ok-form" class="ok-form"><div class="ok-ikili"><input id="ok-baslik" maxlength="140" placeholder="Başlık · örn. TÜBİTAK projesi – Elif, Ali, Zeynep, Can" required><input id="ok-etiket" maxlength="40" placeholder="Etiket · örn. Yarışma"></div><textarea id="ok-not" rows="3" maxlength="4000" placeholder="Not · öğrenciler, teslim tarihi, yapılacaklar…"></textarea><input id="ok-link" maxlength="600" placeholder="Bağlantı (isteğe bağlı) · Drive, YouTube, sitedeki bir dosya…"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="btn small" id="ok-dosya-sec">📎 Dosya ekle (en fazla 700 KB)</button><span class="small muted" id="ok-dosya-ad"></span></div><button type="submit" class="btn primary" id="ok-kaydet">🔒 Kasaya kaydet</button><p class="small muted" style="margin:0">Büyük dosyalar için Google Drive’a yükleyip “yalnızca ben” paylaşımlı bağlantısını yapıştır. Siteye (GitHub’a) yüklenen dosyalar herkese açıktır; gizli belgeleri oraya koyma.</p></form>
+  <div class="row between" style="margin:16px 0 8px;align-items:center"><h3 style="margin:0">Kasadakiler</h3><label class="check-row small"><input type="checkbox" id="ok-silinen" ${silinenler?'checked':''}> Kaldırılanları da göster</label></div><div id="ok-liste">Yükleniyor…</div>`;
+  let dosya=null;
+  g('ok-dosya-sec').onclick=()=>{const i=document.createElement('input');i.type='file';i.onchange=async()=>{const f=i.files[0];if(!f)return;if(f.size>MAKS){toast('Dosya '+boyut(f.size)+'; en fazla 700 KB. Büyük dosyayı Drive bağlantısıyla ekle.',true);return}const r=new FileReader();r.onload=()=>{dosya={ad:f.name,tur:f.type||'application/octet-stream',veri:String(r.result),boyut:f.size};g('ok-dosya-ad').textContent='📎 '+f.name+' · '+boyut(f.size)};r.readAsDataURL(f)};i.click()};
+  g('ok-silinen').onchange=e=>{silinenler=e.target.checked;liste()};
+  g('ok-form').onsubmit=e=>{e.preventDefault();busy(g('ok-kaydet'),async()=>{requireDB();const baslik=g('ok-baslik').value.trim();if(!baslik)throw new Error('Başlık yaz.');const link=g('ok-link').value.trim();if(link&&!safeURL(link))throw new Error('Bağlantı geçersiz.');
+    await db.collection(KOL).add({baslik,etiket:g('ok-etiket').value.trim(),not:g('ok-not').value.trim(),link:link||'',dosya:dosya||null,sahip:eposta(),tarih:stamp(),silindi:false});
+    g('ok-form').reset();dosya=null;g('ok-dosya-ad').textContent='';toast('🔒 Kasaya kaydedildi.');liste()})};
+  liste()}
+async function liste(){const box=g('ok-liste');if(!box)return;try{const s=await db.collection(KOL).get();const L=s.docs.map(d=>({...d.data(),_id:d.id})).filter(x=>silinenler||!x.silindi).sort((a,b)=>((b.tarih&&b.tarih.seconds)||0)-((a.tarih&&a.tarih.seconds)||0));
+  box.innerHTML=L.length?L.map(x=>`<div class="ok-k${x.silindi?' ok-sil':''}"><div class="ok-k-bas"><b>${esc(x.baslik||'')}</b>${x.etiket?`<span class="pill">${esc(x.etiket)}</span>`:''}<small>${esc(tarih(x.tarih))}</small></div>${x.not?`<p>${esc(x.not).replace(/\n/g,'<br>')}</p>`:''}<div class="row" style="gap:6px;flex-wrap:wrap">${x.link?`<a class="btn small" href="${esc(x.link)}" target="_blank" rel="noopener">🔗 Aç</a>`:''}${x.dosya?`<button type="button" class="btn small" data-ok-dosya="${esc(x._id)}">📎 ${esc(x.dosya.ad||'Dosya')}</button>`:''}<button type="button" class="btn small subtle" data-ok-sil="${esc(x._id)}">${x.silindi?'↩ Geri al':'🗂 Kaldır'}</button></div></div>`).join(''):'<p class="small muted">Kasa boş. Yukarıdan ilk çalışmanı ekle.</p>';
+  box.querySelectorAll('[data-ok-dosya]').forEach(b=>b.onclick=()=>{const x=L.find(y=>y._id===b.dataset.okDosya);if(!x||!x.dosya)return;try{const [bas,veri]=x.dosya.veri.split(',');const bin=atob(veri);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([a],{type:x.dosya.tur||'application/octet-stream'}));const w=window.open(url,'_blank');if(!w){const l=document.createElement('a');l.href=url;l.download=x.dosya.ad||'dosya';l.click()}setTimeout(()=>URL.revokeObjectURL(url),60000)}catch{toast('Dosya açılamadı.',true)}});
+  box.querySelectorAll('[data-ok-sil]').forEach(b=>b.onclick=()=>busy(b,async()=>{const x=L.find(y=>y._id===b.dataset.okSil);await db.collection(KOL).doc(x._id).update({silindi:!x.silindi});toast(x.silindi?'↩ Geri alındı.':'🗂 Kaldırıldı (silinmedi; “Kaldırılanları göster” ile görebilirsin).');liste()}))}catch(e){box.innerHTML='<p class="small" style="color:#b91c1c">Kasa okunamadı: '+esc(errText(e))+'</p>'}}
+/* kısayollar */
+function kisayol(n=0){const q=document.querySelector('.quick-dashboard');if(!q){if(n<60)setTimeout(()=>kisayol(n+1),500);return}if(!q.querySelector('[data-ok-ac]'))q.insertAdjacentHTML('beforeend','<button class="btn small" data-ok-ac>🔒 Özel Kasa</button>')}
+document.addEventListener('click',e=>{if(e.target.closest('[data-ok-ac]')){e.preventDefault();ac()}});
+(function bekle(n=0){if(typeof currentUser==='undefined'||!currentUser){if(n<240)setTimeout(()=>bekle(n+1),500);return}kisayol();try{if(new URLSearchParams(location.search).get('kasa')==='1')setTimeout(ac,700)}catch{}})();
+window.ozelKasa=ac;
+document.head.insertAdjacentHTML('beforeend',`<style>
+.ok-durum{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;margin-bottom:14px;font-size:.92rem;line-height:1.5}
+.ok-kirmizi{background:#fef2f2;border:2px solid #fca5a5;color:#7f1d1d}.ok-yesil{background:#ecfdf5;border:2px solid #86efac;color:#14532d}
+.ok-durum ol{margin:6px 0;padding-left:20px}.ok-durum summary{cursor:pointer;font-weight:800}
+.ok-kod{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;padding:10px 12px;border-radius:10px;font-size:.78rem;overflow:auto}
+.ok-form{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0}
+.ok-ikili{display:grid;grid-template-columns:2fr 1fr;gap:8px}@media(max-width:560px){.ok-ikili{grid-template-columns:1fr}}
+.ok-k{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;margin-bottom:8px}.ok-k p{margin:6px 0 8px;font-size:.88rem;color:#334155}
+.ok-k-bas{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ok-k-bas small{margin-left:auto;color:#64748b}
+.ok-sil{opacity:.55}
+.dark-mode .ok-form,.dark-mode .ok-k{background:#0f172a;border-color:#334155}.dark-mode .ok-k p{color:#cbd5e1}.dark-mode .ok-kirmizi{background:#450a0a;color:#fecaca}.dark-mode .ok-yesil{background:#052e1a;color:#bbf7d0}
+</style>`);
 })();
 
 </script>
