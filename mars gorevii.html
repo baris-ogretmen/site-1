@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Mars Görevi — Gezgin Robot Kodlama</title>
+<meta name="theme-color" content="#140c09">
+<style>
+:root{--ui:1;--bg:#140c09;--panel:rgba(30,19,14,.92);--kenar:rgba(255,200,160,.14);--yazi:#fbeee4;--soluk:#c9a894;--vurgu:#ff8a3d;--yesil:#22c55e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--yazi);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;font-size:calc(16px * var(--ui));-webkit-user-select:none;user-select:none}
+input,select{-webkit-user-select:text;user-select:text}
+button{font-family:inherit;cursor:pointer}
+#uygulama{position:fixed;inset:0;display:flex;flex-direction:column}
+#sahneKap{position:relative;flex:1;min-height:0;overflow:hidden}
+#sahne{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#dok{flex:none;background:var(--panel);border-top:1px solid var(--kenar);padding:.6rem .7rem calc(.6rem + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:.55rem;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+@media (min-width:900px) and (min-aspect-ratio:5/4){#uygulama{flex-direction:row}#dok{width:calc(370px * var(--ui));border-top:0;border-left:1px solid var(--kenar);padding:1rem;overflow:auto;justify-content:flex-end}#program{flex-wrap:wrap;overflow:visible!important;align-content:flex-start;min-height:9rem!important}}
+.ust{position:absolute;top:calc(env(safe-area-inset-top) + .6rem);left:.6rem;right:.6rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;pointer-events:none;z-index:5}
+.ust>*{pointer-events:auto}
+.hap{background:rgba(20,12,9,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--kenar);border-radius:999px;padding:.45rem .85rem;font-size:.9rem;font-weight:700;color:var(--yazi);display:inline-flex;align-items:center;gap:.45rem}
+.ikonlar{display:flex;gap:.4rem}
+.ikon{width:2.6rem;height:2.6rem;border-radius:50%;border:1px solid var(--kenar);background:rgba(20,12,9,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:1.15rem;display:grid;place-items:center;padding:0}
+.gorevKart{position:absolute;left:.6rem;top:calc(env(safe-area-inset-top) + 3.6rem);max-width:min(30rem,calc(100% - 1.2rem));background:rgba(20,12,9,.58);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--kenar);border-radius:1rem;padding:.55rem .8rem;font-size:.86rem;line-height:1.35;z-index:4;color:#f6e3d6}
+.gorevKart b{color:#ffb27a}
+.gorevKart.kucuk #gorevMetin{display:none}
+.yildiz{color:#4a3a32;font-size:1rem;letter-spacing:-1px}.yildiz.dolu{color:#ffc93c;text-shadow:0 0 8px rgba(255,190,60,.6)}
+.sayac{position:absolute;right:.6rem;bottom:.6rem;z-index:4;display:flex;gap:.35rem;align-items:center}
+#program{display:flex;gap:.4rem;overflow-x:auto;align-items:center;background:rgba(0,0,0,.28);border-radius:.9rem;padding:.45rem;min-height:3.5rem;scrollbar-width:none}
+#program::-webkit-scrollbar{display:none}
+#program .bos{color:var(--soluk);font-size:.85rem;padding:0 .4rem}
+.blok{flex:none;width:2.6rem;height:2.6rem;border-radius:.7rem;display:grid;place-items:center;font-size:1.2rem;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);transition:transform .15s}
+.b-ileri{background:linear-gradient(#4f8ff7,#2f6ee0)}.b-sol,.b-sag{background:linear-gradient(#9b6cf7,#7748e0)}.b-topla{background:linear-gradient(#22c58b,#0f9e6c)}.b-foto{background:linear-gradient(#f472b6,#db2777)}
+.blok.aktif{outline:3px solid #fff;transform:scale(1.1);box-shadow:0 0 18px rgba(255,255,255,.7)}
+.blok.hata{outline:3px solid #ff4d4d;box-shadow:0 0 18px rgba(255,60,60,.8)}
+.dongu{flex:none;display:flex;align-items:center;gap:.3rem;padding:.25rem .4rem;border:2px solid #f59e0b;border-radius:.85rem;background:rgba(245,158,11,.13)}
+.dongu.acik{border-style:dashed;animation:nabiz 1.2s infinite}
+.dongu .bas{font-weight:800;color:#fbbf24;font-size:.95rem;white-space:nowrap;padding:0 .15rem}
+.dongu.aktif{box-shadow:0 0 16px rgba(245,158,11,.75)}
+@keyframes nabiz{50%{background:rgba(245,158,11,.26)}}
+.palet{display:grid;grid-template-columns:repeat(6,1fr);gap:.35rem}
+.komut{height:3.3rem;border-radius:.9rem;border:0;color:#fff;font-size:1.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.05rem;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25);padding:0}
+.komut small{font-size:.58rem;white-space:nowrap;font-weight:700;opacity:.92}
+.komut:active{transform:translateY(2px)}
+.k-ileri{background:linear-gradient(#4f8ff7,#2f6ee0)}.k-don{background:linear-gradient(#9b6cf7,#7748e0)}.k-topla{background:linear-gradient(#22c58b,#0f9e6c)}.k-foto{background:linear-gradient(#f472b6,#db2777)}.k-dongu{background:linear-gradient(#f7b23b,#e08a0b)}.k-kapat{background:linear-gradient(#fbbf24,#d97706)}
+.gizli{display:none!important}
+.eylem{display:flex;gap:.4rem}
+.eylem button{height:3.1rem;border:0;border-radius:.9rem;font-size:1.05rem;font-weight:800;color:#fff;background:#3a2a22;padding:0 .9rem}
+#calistir{flex:1;background:linear-gradient(#2ed573,#16a34a);font-size:1.15rem;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22)}
+#calistir.dur{background:linear-gradient(#ff6b6b,#dc2626)}
+.modal{position:fixed;inset:0;background:rgba(8,4,2,.62);display:none;place-items:center;z-index:50;padding:1rem;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal.acik{display:grid}
+.kutu{background:linear-gradient(#2a1a12,#1d120d);border:1px solid var(--kenar);border-radius:1.2rem;width:min(30rem,100%);max-height:88vh;overflow:auto;padding:1.2rem;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.kutu h2{margin:.1rem 0 .6rem;font-size:1.3rem}
+.kutu p{color:#ead6c8;line-height:1.45;margin:.4rem 0}
+.btn{border:0;border-radius:.8rem;padding:.75rem 1rem;font-weight:700;font-size:1rem;background:#3a2a22;color:var(--yazi)}
+.btn.ana{background:linear-gradient(#ff9a4d,#f06a1d);color:#fff}
+.btn.yesil{background:linear-gradient(#2ed573,#16a34a);color:#fff}
+.satir{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+.satir .btn{flex:1}
+.alan{width:100%;padding:.75rem .85rem;border-radius:.75rem;border:1px solid var(--kenar);background:#140c09;color:#fff;font-size:1rem;margin:.3rem 0 .7rem}
+label.et{font-size:.85rem;color:var(--soluk);font-weight:700}
+#tost{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 4.6rem);transform:translateX(-50%) translateY(-10px);background:rgba(20,12,9,.92);border:1px solid var(--kenar);color:#fff;padding:.6rem 1rem;border-radius:999px;font-weight:700;font-size:.9rem;opacity:0;transition:.25s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+#tost.goster{opacity:1;transform:translateX(-50%) translateY(0)}
+.buyukYildiz{font-size:2.6rem;text-align:center;margin:.3rem 0}
+.bilgi{background:rgba(54,198,224,.1);border:1px solid rgba(54,198,224,.35);border-radius:.9rem;padding:.7rem .85rem;margin-top:.7rem;font-size:.92rem;line-height:1.45;color:#d7f5fb}
+.harita{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem;margin-top:.6rem}
+.hk{border:1px solid var(--kenar);background:#2c1d16;border-radius:.9rem;padding:.7rem;text-align:left;color:#fff}
+.hk b{display:block;font-size:.95rem}.hk span{font-size:.8rem;color:var(--soluk)}
+.hk.kilit{opacity:.45}
+.hk.simdi{border-color:#ff8a3d;box-shadow:0 0 0 2px rgba(255,138,61,.35)}
+.bolum{margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--kenar)}
+.bolum h3{margin:0 0 .5rem;font-size:1rem;color:#ffb27a}
+.arac{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem 0}
+.arac span{font-size:.95rem}
+.arac .btn{padding:.5rem .8rem;font-size:.9rem;min-width:8rem}
+table.liste{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:.5rem}
+table.liste th{text-align:left;color:var(--soluk);font-weight:700;padding:.35rem .3rem;border-bottom:1px solid var(--kenar)}
+table.liste td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,200,160,.07)}
+.durumBant{border-radius:.8rem;padding:.6rem .8rem;font-size:.88rem;font-weight:700;margin:.4rem 0}
+.durumBant.ok{background:rgba(34,197,94,.14);color:#86efac}.durumBant.yerel{background:rgba(245,158,11,.14);color:#fcd34d}
+.adimlar{margin:.6rem 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.adimlar li{display:flex;gap:.6rem;align-items:flex-start;background:rgba(255,255,255,.04);border-radius:.8rem;padding:.6rem .7rem;line-height:1.4;font-size:.95rem}
+.adimlar li i{font-style:normal;font-size:1.4rem;flex:none}
+.karsilamaUst{text-align:center;font-size:3rem;margin:-.2rem 0 .1rem}
+.sayiSec{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.6rem}
+.sayiSec button{height:3.2rem;border-radius:.8rem;border:0;background:linear-gradient(#f7b23b,#e08a0b);color:#fff;font-size:1.3rem;font-weight:800}
+#yukleniyor{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#5a2a16,#140c09 70%);z-index:40;text-align:center;transition:opacity .6s}
+#yukleniyor .gz{font-size:3.4rem;animation:sall 1.6s ease-in-out infinite}
+@keyframes sall{50%{transform:translateX(12px) rotate(4deg)}}
+#yukleniyor p{color:#f3cdb3;font-weight:700}
+.sertifika{text-align:center;border:3px double #ffc93c;border-radius:1rem;padding:1rem;background:radial-gradient(circle,#3a2414,#22140d)}
+.sertifika .ad{font-size:1.4rem;font-weight:900;color:#ffd77a;margin:.3rem 0}
+#flas{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:45;transition:opacity .45s}
+#flas.ac{opacity:.85;transition:none}
+.fotolar{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-top:.6rem}
+.fotolar img{width:100%;border-radius:.7rem;border:2px solid rgba(255,200,160,.25);display:block;aspect-ratio:3/2;object-fit:cover;cursor:pointer}
+.fotolar figure{margin:0}.fotolar figcaption{font-size:.72rem;color:var(--soluk);margin-top:.15rem}
+#buyukFoto{width:100%;border-radius:.8rem;display:block}
+#fotoModal,#albumModal{z-index:56}
+@media print{html{zoom:1!important}}
+</style>
+</head>
+<body>
+<div id="uygulama">
+  <div id="sahneKap">
+    <canvas id="sahne"></canvas>
+    <div class="ust">
+      <button class="hap" id="gorevHap" title="Görev haritası">🛰️ <span id="gorevAd">Görev 1</span> <span id="yildizlar"></span></button>
+      <div class="ikonlar">
+        <button class="ikon" id="kameraBtn" title="Kamera">🎥</button>
+        <button class="ikon" id="sesBtn" title="Ses">🔊</button>
+        <button class="ikon" id="ayarBtn" title="Ayarlar">⚙️</button>
+      </div>
+    </div>
+    <div class="gorevKart" id="gorevKart"><b id="gorevBaslik">Görev</b> <span id="gorevMetin"></span></div>
+    <div class="sayac">
+      <span class="hap gizli" id="fotoSayac">📸 0/1</span>
+      <span class="hap" id="ornekSayac">💎 0/1</span>
+      <span class="hap" id="blokSayac">🧩 0 blok</span>
+    </div>
+  </div>
+  <div id="dok">
+    <div id="program"></div>
+    <div class="palet" id="palet">
+      <button class="komut k-ileri" data-k="ileri">⬆️<small>İleri</small></button>
+      <button class="komut k-don" data-k="sol">↰<small>Sola Dön</small></button>
+      <button class="komut k-don" data-k="sag">↱<small>Sağa Dön</small></button>
+      <button class="komut k-topla" data-k="topla">🦾<small>Topla</small></button>
+      <button class="komut k-foto" data-k="foto">📸<small>Fotoğraf</small></button>
+      <button class="komut k-dongu" data-k="dongu" id="donguBtn">🔁<small>Tekrarla</small></button>
+      <button class="komut k-kapat gizli" data-k="kapat" id="kapatBtn">✔<small>Döngü Bitti</small></button>
+    </div>
+    <div class="eylem">
+      <button id="calistir">▶ Çalıştır</button>
+      <button id="geriBtn" title="Son bloğu sil">⌫</button>
+      <button id="temizleBtn" title="Hepsini sil">🗑</button>
+      <button id="hizBtn" title="Hız">1×</button>
+    </div>
+  </div>
+</div>
+
+<div id="yukleniyor"><div><div class="gz">🚙</div><p>Mars'a iniş yapılıyor…</p><p id="yukMesaj" style="font-weight:400;font-size:.85rem;color:#c9a894"></p></div></div>
+<div id="tost"></div>
+<div id="flas"></div>
+
+<!-- Albüm -->
+<div class="modal" id="albumModal"><div class="kutu">
+  <h2>🖼️ Mars Albümüm</h2>
+  <p style="margin-top:-.3rem">Gezginin direk kamerasıyla çektiğin fotoğraflar. Büyütmek için dokun.</p>
+  <div class="fotolar" id="albumListe"></div>
+  <div class="satir"><button class="btn" data-kapat>Kapat</button></div>
+</div></div>
+<div class="modal" id="fotoModal"><div class="kutu">
+  <img id="buyukFoto" alt="Mars fotoğrafı">
+  <div class="satir"><button class="btn" id="fotoIndir">⬇️ İndir</button><button class="btn" data-kapat>Kapat</button></div>
+</div></div>
+
+<!-- Giriş -->
+<div class="modal" id="girisModal"><div class="kutu">
+  <div class="karsilamaUst">👨‍🚀</div>
+  <h2 style="text-align:center">Gezgin Pilotu Girişi</h2>
+  <p style="text-align:center;margin-top:-.2rem">Göreve başlamak için adını ve sınıfını yaz.</p>
+  <label class="et" for="adGir">Ad Soyad</label>
+  <input class="alan" id="adGir" maxlength="40" placeholder="Örn: Ayşe Yılmaz" autocomplete="off">
+  <label class="et">Sınıf</label>
+  <div style="display:flex;gap:.5rem">
+    <select class="alan" id="seviyeGir" style="flex:2"><option value="">Seviye seç</option><option>Anasınıfı</option><option>1. Sınıf</option><option>2. Sınıf</option><option>3. Sınıf</option><option>4. Sınıf</option><option>5. Sınıf</option><option>6. Sınıf</option><option>7. Sınıf</option><option>8. Sınıf</option></select>
+    <select class="alan" id="subeGir" style="flex:1"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="">Şube yok</option></select>
+  </div>
+  <button class="btn ana" id="girisTamam" style="width:100%;font-size:1.1rem">Göreve Başla 🚀</button>
+</div></div>
+
+<!-- Karşılama -->
+<div class="modal" id="karsilamaModal"><div class="kutu">
+  <div class="karsilamaUst">🔴🚙</div>
+  <h2 style="text-align:center" id="kBaslik"></h2>
+  <p style="text-align:center" id="kOzet"></p>
+  <ul class="adimlar" id="kAdimlar"></ul>
+  <button class="btn ana" style="width:100%" data-kapat>Hadi Başlayalım!</button>
+</div></div>
+
+<!-- Döngü sayısı -->
+<div class="modal" id="donguModal"><div class="kutu">
+  <h2>🔁 Kaç kez tekrarlansın?</h2>
+  <p>Sonra döngünün içine girecek komutlara dokun ve <b>✔ Döngü Bitti</b> de.</p>
+  <div class="sayiSec" id="sayiSec"></div>
+  <div class="satir"><button class="btn" data-kapat>Vazgeç</button></div>
+</div></div>
+
+<!-- Sonuç -->
+<div class="modal" id="sonucModal"><div class="kutu" id="sonucKutu"></div></div>
+
+<!-- Görev haritası -->
+<div class="modal" id="haritaModal"><div class="kutu">
+  <h2>🗺️ Görev Haritası</h2>
+  <p style="margin-top:-.3rem">Bir görevi bitirince sıradaki açılır.</p>
+  <div class="harita" id="haritaListe"></div>
+  <div class="satir"><button class="btn" id="albumAc2">🖼️ Mars Albümüm</button><button class="btn" data-kapat>Kapat</button></div>
+</div></div>
+
+<!-- Ayarlar -->
+<div class="modal" id="ayarModal"><div class="kutu">
+  <h2>⚙️ Ayarlar</h2>
+  <div class="arac"><span>👨‍🚀 <b id="oyuncuYazi"></b></span><button class="btn" id="oyuncuDegis">Oyuncu Değiştir</button></div>
+  <div class="bolum"><h3>🧰 Araçlar</h3>
+    <div class="arac"><span>📲 QR ile Paylaş</span><button class="btn" id="qrAc">Aç</button></div>
+    <div class="arac"><span>🖼️ Mars Albümüm</span><button class="btn" id="albumAc">Aç</button></div>
+    <div class="arac"><span>🎨 Grafik Kalitesi</span><button class="btn" id="kaliteBtn"></button></div>
+    <div class="arac"><span>📺 Ekran Modu</span><button class="btn" id="ekranBtn"></button></div>
+    <div class="arac"><span>🔊 Ses</span><button class="btn" id="sesBtn2"></button></div>
+    <div class="arac"><span>❓ Nasıl Oynanır?</span><button class="btn" id="yardimAc">Göster</button></div>
+  </div>
+  <div class="bolum"><h3>👨‍🏫 Öğretmen</h3>
+    <div class="arac"><span>Girişleri ve ilerlemeyi gör</span><button class="btn ana" id="ogretmenAc">Öğretmen Paneli</button></div>
+  </div>
+  <div class="satir"><button class="btn" data-kapat>Kapat</button></div>
+</div></div>
+
+<!-- Öğretmen paneli -->
+<div class="modal" id="ogretmenModal"><div class="kutu" style="width:min(44rem,100%)">
+  <h2>👨‍🏫 Öğretmen Paneli</h2>
+  <div id="ogSifreAlan">
+    <p>Panel şifresini yaz (ilk şifre: <b>1234</b>).</p>
+    <input class="alan" id="ogSifre" type="password" inputmode="numeric" placeholder="Şifre">
+    <div class="satir"><button class="btn" data-kapat>Kapat</button><button class="btn ana" id="ogGir">Giriş</button></div>
+  </div>
+  <div id="ogIcerik" class="gizli">
+    <div id="ogBulutDurum"></div>
+    <input class="alan" id="ogAra" placeholder="🔍 Ad veya sınıf ara">
+    <div style="overflow:auto"><table class="liste" id="ogTablo"></table></div>
+    <div class="satir"><button class="btn" id="ogYenile">🔄 Yenile</button><button class="btn" id="ogKopyala">📋 Listeyi Kopyala</button></div>
+    <div class="bolum"><h3>🕒 Son Hareketler</h3><div id="ogHareket" style="font-size:.85rem;line-height:1.6;color:#ead6c8"></div></div>
+    <div class="bolum"><h3>☁️ Tüm cihazları tek panelde gör (bulut)</h3>
+      <p style="font-size:.85rem">Firebase projenin <b>apiKey</b> ve <b>projectId</b> bilgisini yaz. Girişler <b>oyun_girisleri</b> koleksiyonuna yazılır; telefon, tablet ve tahtadaki tüm girişler burada birleşir.</p>
+      <label class="et">apiKey</label><input class="alan" id="ogApi" autocomplete="off">
+      <label class="et">projectId</label><input class="alan" id="ogProje" autocomplete="off">
+      <div class="satir"><button class="btn ana" id="ogBulutKaydet">Kaydet ve Dene</button></div>
+    </div>
+    <div class="bolum"><h3>🔑 Şifreyi Değiştir</h3>
+      <input class="alan" id="ogYeniSifre" placeholder="Yeni şifre">
+      <div class="satir"><button class="btn" id="ogSifreKaydet">Kaydet</button></div>
+    </div>
+    <div class="satir"><button class="btn" data-kapat>Kapat</button></div>
+  </div>
+</div></div>
+
+<!-- QR -->
+<div class="modal" id="qrModal"><div class="kutu" style="text-align:center">
+  <h2>📲 QR ile Paylaş</h2>
+  <p>Öğrenciler telefonla okutup oyuna girsin.</p>
+  <div style="background:#fff;border-radius:1rem;padding:1rem;display:inline-block;margin:.4rem 0"><canvas id="qrTuval" width="260" height="260"></canvas></div>
+  <p id="qrUyari" style="font-size:.85rem;color:#fcd34d"></p>
+  <div class="satir"><button class="btn" id="qrKopya">🔗 Linki Kopyala</button><button class="btn" id="qrIndir">⬇️ PNG İndir</button></div>
+  <div class="satir"><button class="btn" data-kapat>Kapat</button></div>
+</div></div>
+
+<script type="application/json" id="gorevler">
+[
+ {"ad":"İlk Sürüş","metin":"Gezgini 3 kare ileri sür, parlayan örneğin üstüne gelince 🦾 Topla de.","yon":0,"hedef":4,
+  "harita":[".......",".......","...S...",".......",".......","...R...","......."],
+  "bilgi":"Gerçek Mars gezginleri canlı kumandayla sürülmez: Dünya'dan gönderilen sinyal Mars'a 3 ile 22 dakika arasında ulaşır. Bu yüzden mühendisler komutları önceden bir program olarak yazar — tıpkı senin yaptığın gibi!"},
+ {"ad":"Dönüş Zamanı","metin":"Örnek sağ tarafta. İleri git, doğru yerde ↱ Sağa Dön ve örneği topla.","yon":0,"hedef":8,
+  "harita":[".......",".......",".....S.",".......",".......","..R....","......."],
+  "bilgi":"Perseverance gezgininin 6 tekerleği var ve her tekerleğin kendi motoru bulunuyor. 'Rocker-bogie' denen askı sistemi sayesinde engebeli zeminde devrilmeden ilerleyebiliyor."},
+ {"ad":"Kayalara Dikkat","metin":"Önünde bir krater var! İçine düşmeden etrafından dolaş, kayaya da çarpma.","yon":0,"hedef":10,
+  "harita":[".......","...S...","...K...",".......","...C...","...R...","......."],
+  "bilgi":"Mars yüzeyinde çarpma kraterleri ve keskin kayalar vardır. Gezginler kameralarıyla çektikleri fotoğraflardan 3 boyutlu harita çıkarır ve güvenli yolu kendileri de hesaplayabilir."},
+ {"ad":"Kutuyu İt","metin":"Numune kutusunu turuncu pede it (kutuya doğru ileri git), sonra örneği topla.","yon":1,"hedef":7,
+  "harita":[".......","....S..",".......",".R.B.P.",".......",".......","......."],
+  "bilgi":"Perseverance topladığı kaya örneklerini kalem büyüklüğündeki özel tüplerde saklar. Bilim insanları bu örneklerin ileride Dünya'ya getirilip incelenmesini hedefliyor."},
+ {"ad":"Döngü Gücü","metin":"Uzun bir yol! Aynı komutu tekrar tekrar yazmak yerine 🔁 Tekrarla bloğunu dene. 3 blokla bitirebilir misin?","yon":0,"hedef":3,
+  "harita":["...S...","..K.K..",".......","..K.K..",".......","..K.K..","...R..."],
+  "bilgi":"Perseverance'ın en yüksek hızı saatte yaklaşık 152 metredir; yani bir insanın yürüyüşünden çok daha yavaştır. Mars'ta acele etmek yok, güvenlik her şeyden önemli!"},
+ {"ad":"Merdiven","metin":"Kayalar merdiven gibi dizilmiş. Tekrar eden deseni bul: İleri, Sağa Dön, İleri, Sola Dön… 6 blokla dene!","yon":0,"hedef":6,
+  "harita":[".......",".......","..K....",".K.S...","K......",".......","R......"],
+  "bilgi":"Spirit ve Opportunity gezginleri güneş paneliyle çalıştı. Mars rüzgârı bazen panellerdeki tozu süpürür ve gezginin gücü birden artardı!"},
+ {"ad":"Krater Köprüsü","metin":"Yol bir kraterle kapalı. Kutuyu kratere it, doldur ve üstünden geç! Döngüyle 3 blokta bitir.","yon":1,"hedef":3,
+  "harita":[".......",".......","KKKKKKK","R.BC.S.","KKKKKKK",".......","......."],
+  "bilgi":"Mars'ta yer çekimi Dünya'nınkinin yaklaşık %38'i kadardır (3,71 m/s²). Kutunun kratere ne kadar yavaş düştüğünü fark ettin mi? Bu oyunda fizik, gerçek Mars yer çekimiyle hesaplanıyor."},
+ {"ad":"Büyük Keşif","metin":"Son görev: Kutuyu pede it, sonra iki köşedeki örneği de topla. Döngüleri akıllıca kullan!","yon":0,"hedef":13,
+  "harita":["S.....S","...C.K.","...P...",".K.....","...B...",".......","...R..."],
+  "bilgi":"Gerçek görevlerde mühendisler her komutu önce Dünya'daki ikiz gezginde dener. Sen de algoritmanı yazdın, hatanı buldun ve düzelttin — bu tam olarak bir uzay mühendisinin işi!"},
+ {"ad":"İlk Fotoğraf","metin":"📸 bayraklı noktaya git ve 📸 Fotoğraf Çek de. Yoldaki örneği de topla; gezginin üstüne yüklenecek!","yon":0,"hedef":8,
+  "harita":[".......",".......",".....F.",".......","...S...","...R...","......."],
+  "bilgi":"Perseverance gezgininde tam 23 kamera var! Bilim insanları gezginin çektiği fotoğraflara bakarak ertesi gün nereye gidileceğine karar verir."},
+ {"ad":"Toz Fırtınası","metin":"🌪️ Fırtına çıktı, görüş azaldı! İki köşedeki örneği topla. Döngülerle 7 blokta bitirebilir misin?","yon":0,"hedef":7,"firtina":true,
+  "harita":["S.....S",".K.K.K.",".......",".K.K.K.",".......",".K.K.K.","R......"],
+  "bilgi":"Mars'taki toz fırtınaları bazen bütün gezegeni saracak kadar büyür ve haftalarca sürer. 2018'deki dev fırtına güneş panellerini kapladı ve Opportunity gezgininin görevini sona erdirdi."},
+ {"ad":"İki Kutu","metin":"İki numune kutusunu da pedlere it. Kutuyu itmek için onun arkasına geçmen gerekir!","yon":0,"hedef":12,
+  "harita":[".......",".P...P.",".......",".B...B.",".......",".R.....","......."],
+  "bilgi":"Mars'ta bir gün ('sol') 24 saat 39 dakika sürer. Gezgin ekipleri görev başında bazen Mars saatine göre yaşar; her gün işe biraz daha geç başlarlar!"},
+ {"ad":"Büyük Final","metin":"Son görev! Kutuyla krateri doldur, kayaların arasından geç, fotoğrafı çek ve örneği topla.","yon":0,"hedef":11,
+  "harita":["S....F.",".......","KKK.KKK","...C...","...B...",".......","...R..."],
+  "bilgi":"Bu görevde krater doldurdun, fotoğraf çektin, örnek topladın: tıpkı gerçek bir Mars görev ekibi gibi planladın, denedin ve düzelttin. Sen artık bir Gezgin Pilotusun! 🏅"}
+]
+</script>
+
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+ "cannon-es":"https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as CANNON from 'cannon-es';
+window.__marsYuklendi = true;
+
+/* ================== GENEL ================== */
+const OYUN_ADI = 'Mars Görevi';
+const LOCAL_SURUM = 2;
+/* Bulut (isteğe bağlı): buraya ya da Öğretmen Paneli'ne yazılabilir */
+const BULUT_VARSAYILAN = { apiKey: '', projectId: '' };
+const KARSILAMA = {
+  baslik: "Mars Görevi'ne Hoş Geldin!",
+  ozet: 'Sen bir gezgin pilotusun. Robotun Mars\'ta; ona kod yazarak görevleri tamamlayacaksın.',
+  adimlar: [
+    ['🧩', 'Aşağıdaki komut bloklarına dokunarak programını yaz.'],
+    ['▶️', '<b>Çalıştır</b>\'a bas; gezgin komutlarını sırayla uygular.'],
+    ['💎', 'Parlayan örneğin üstüne gelince <b>🦾 Topla</b> de; örnek gezginin üstündeki rafa yüklenir. 📸 bayrakta <b>Fotoğraf</b> çek!'],
+    ['⚠️', 'Kayalara çarpma, kraterlere düşme! Hata yaparsan düzelt, yeniden dene.'],
+    ['⭐', 'Az blokla bitir, 3 yıldız kazan. 🔁 Tekrarla ile programını kısalt.']
+  ]
+};
+const $ = s => document.querySelector(s);
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const GOREVLER = JSON.parse($('#gorevler').textContent);
+const N = 7, T = 2;
+const hucre = (r, c) => ({ x: (c - 3) * T, z: (r - 3) * T });
+const YON = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+const yawOf = d => -d * Math.PI / 2;
+const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+
+function tost(m, sure = 2200) {
+  const t = $('#tost'); t.innerHTML = m; t.classList.add('goster');
+  clearTimeout(tost._z); tost._z = setTimeout(() => t.classList.remove('goster'), sure);
+}
+function modalAc(id) { $('#' + id).classList.add('acik'); }
+function modalKapat(id) { $('#' + id).classList.remove('acik'); }
+document.querySelectorAll('[data-kapat]').forEach(b => b.addEventListener('click', () => b.closest('.modal').classList.remove('acik')));
+
+const cihaz = (() => {
+  const w = Math.min(screen.width, screen.height), W = Math.max(screen.width, screen.height);
+  const dokun = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const dpr = window.devicePixelRatio || 1;
+  if (dokun && W >= 1600 && dpr <= 1.25) return 'Akıllı Tahta';
+  if (dokun && w < 600) return 'Telefon';
+  if (dokun) return 'Tablet';
+  return 'Bilgisayar';
+})();
+
+/* ================== EKRAN MODU ================== */
+const EKRAN = ['Otomatik', 'Tablet', 'Akıllı Tahta', 'Büyük Tahta'];
+let ekranModu = LS.get('mars_ekran', 'Otomatik');
+function ekranUygula() {
+  let o = 1;
+  if (ekranModu === 'Akıllı Tahta') o = 1.35; else if (ekranModu === 'Büyük Tahta') o = 1.6;
+  else if (ekranModu === 'Otomatik') o = cihaz === 'Akıllı Tahta' ? (Math.max(screen.width, screen.height) >= 3000 ? 1.6 : 1.35) : 1;
+  document.documentElement.style.setProperty('--ui', o);
+  $('#ekranBtn').textContent = ekranModu;
+  setTimeout(boyutla, 50);
+}
+window.ZIRVE_ekranReset = () => document.documentElement.style.setProperty('--ui', 1);
+window.ZIRVE_ekranGeri = ekranUygula;
+
+/* ================== SES (sentez, insan sesi yok) ================== */
+const Ses = {
+  ac: null, acik: LS.get('mars_ses', true),
+  baslat() {
+    if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
+    try {
+      const A = window.AudioContext || window.webkitAudioContext; this.ac = new A();
+      this.ana = this.ac.createGain(); this.ana.gain.value = this.acik ? .8 : 0; this.ana.connect(this.ac.destination);
+      const len = this.ac.sampleRate * 2, buf = this.ac.createBuffer(1, len, this.ac.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.gurultu = buf;
+      // rüzgar
+      const n = this.ac.createBufferSource(); n.buffer = buf; n.loop = true;
+      const f = this.ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 420; f.Q.value = .7;
+      const g = this.ac.createGain(); g.gain.value = .05; this.rG = g; this.rF = f;
+      const lfo = this.ac.createOscillator(); lfo.frequency.value = .09; const lg = this.ac.createGain(); lg.gain.value = 220;
+      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      n.connect(f); f.connect(g); g.connect(this.ana); n.start();
+      // motor
+      this.mG = this.ac.createGain(); this.mG.gain.value = 0;
+      const mf = this.ac.createBiquadFilter(); mf.type = 'lowpass'; mf.frequency.value = 520;
+      const o1 = this.ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 52;
+      const o2 = this.ac.createOscillator(); o2.type = 'square'; o2.frequency.value = 104;
+      const o3 = this.ac.createOscillator(); o3.type = 'sine'; o3.frequency.value = 940; const g3 = this.ac.createGain(); g3.gain.value = .12;
+      o1.connect(mf); o2.connect(mf); o3.connect(g3); g3.connect(mf); mf.connect(this.mG); this.mG.connect(this.ana);
+      o1.start(); o2.start(); o3.start(); this.o1 = o1;
+    } catch (e) { this.ac = null; }
+  },
+  ayarla(a) { this.acik = a; LS.set('mars_ses', a); if (this.ana) this.ana.gain.value = a ? .8 : 0; },
+  motor(x) { if (!this.ac) return; const t = this.ac.currentTime; this.mG.gain.setTargetAtTime(x * .09, t, .08); this.o1.frequency.setTargetAtTime(48 + x * 14, t, .2); },
+  ton(fr, sure, tip = 'sine', vol = .15, gecikme = 0, bitis) {
+    if (!this.ac) return; const t = this.ac.currentTime + gecikme;
+    const o = this.ac.createOscillator(), g = this.ac.createGain(); o.type = tip; o.frequency.setValueAtTime(fr, t);
+    if (bitis) o.frequency.exponentialRampToValueAtTime(bitis, t + sure);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .015); g.gain.exponentialRampToValueAtTime(.0001, t + sure);
+    o.connect(g); g.connect(this.ana); o.start(t); o.stop(t + sure + .05);
+  },
+  gurul(sure, frek, vol, tip = 'lowpass') {
+    if (!this.ac) return; const t = this.ac.currentTime;
+    const s = this.ac.createBufferSource(); s.buffer = this.gurultu;
+    const f = this.ac.createBiquadFilter(); f.type = tip; f.frequency.value = frek;
+    const g = this.ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + sure);
+    s.connect(f); f.connect(g); g.connect(this.ana); s.start(t); s.stop(t + sure + .05);
+  },
+  tik() { this.ton(1250, .06, 'square', .05); },
+  ruzgar(f) { if (!this.ac) return; const t = this.ac.currentTime; this.rG.gain.setTargetAtTime(f ? .2 : .05, t, .6); this.rF.frequency.setTargetAtTime(f ? 650 : 420, t, .6); },
+  deklansor() { this.gurul(.07, 2500, .5, 'highpass'); this.ton(1900, .04, 'square', .05); this.gurul(.06, 2500, .35, 'highpass'); },
+  servo() { this.ton(520, .45, 'triangle', .05, 0, 780); },
+  topla() { this.ton(880, .14, 'sine', .16); this.ton(1320, .22, 'sine', .14, .12); this.ton(1760, .3, 'sine', .08, .24); },
+  carpma() { this.gurul(.45, 200, .9); this.ton(90, .4, 'sine', .35, 0, 40); },
+  surtunme(s) { this.gurul(s, 900, .12, 'bandpass'); },
+  dusme() { this.gurul(1.1, 160, .7); this.ton(70, .9, 'sine', .3, .1, 30); },
+  basari() { [523, 659, 784, 1047].forEach((f, i) => this.ton(f, .5, 'triangle', .14, i * .13)); this.ton(1568, .9, 'sine', .07, .55); },
+  hata() { this.ton(330, .22, 'square', .07); this.ton(220, .35, 'square', .07, .2); }
+};
+window.addEventListener('pointerdown', () => Ses.baslat());
+
+/* ================== GÜRÜLTÜ ================== */
+function hash(x, y) { let h = Math.imul(x, 374761393) + Math.imul(y, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vn(x, y, P) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const m = P ? (a => ((a % P) + P) % P) : (a => a);
+  const a = hash(m(xi), m(yi)), b = hash(m(xi + 1), m(yi)), c = hash(m(xi), m(yi + 1)), d = hash(m(xi + 1), m(yi + 1));
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y, o = 5, P = 0) { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * vn(x * f, y * f, P ? P * f : 0); f *= 2; a *= .5; } return s; }
+
+/* ================== KALİTE ================== */
+let kalite = LS.get('mars_kalite', 'Otomatik');
+const etkinKalite = () => kalite !== 'Otomatik' ? kalite : (cihaz === 'Telefon' || cihaz === 'Akıllı Tahta' ? 'Orta' : 'Yüksek');
+
+/* ================== RENDERER / SAHNE ================== */
+const canvas = $('#sahne');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const SIS = new THREE.Color(0xc48a64);
+scene.fog = new THREE.FogExp2(SIS, 0.0105);
+const camera = new THREE.PerspectiveCamera(45, 1, .1, 900);
+
+/* Gökyüzü: Mars'ın soluk somon rengi gündüz göğü */
+const GUNES_YON = new THREE.Vector3(.55, .62, .38).normalize();
+const gokMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { gunes: { value: GUNES_YON }, firtina: { value: 0 } },
+  vertexShader: 'varying vec3 vY; void main(){ vY = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: `uniform vec3 gunes; uniform float firtina; varying vec3 vY;
+    void main(){
+      float h = clamp(vY.y, 0.0, 1.0);
+      vec3 ufuk = vec3(0.80,0.57,0.42); vec3 orta = vec3(0.70,0.47,0.35); vec3 tepe = vec3(0.42,0.28,0.24);
+      vec3 renk = mix(ufuk, orta, smoothstep(0.0,0.18,h)); renk = mix(renk, tepe, smoothstep(0.18,0.9,h));
+      float g = max(dot(normalize(vY), gunes), 0.0);
+      renk += vec3(0.75,0.82,0.95) * pow(g, 900.0) * 2.5;   /* Mars'ta güneşin etrafı mavimsi görünür */
+      renk += vec3(0.55,0.62,0.75) * pow(g, 40.0) * 0.35;
+      renk += vec3(0.95,0.75,0.55) * pow(g, 6.0) * 0.12;
+      if (vY.y < 0.0) renk = ufuk * 0.92;
+      renk = mix(renk, vec3(0.62,0.40,0.28), firtina * 0.75);
+      gl_FragColor = vec4(renk, 1.0);
+    }`
+});
+const gok = new THREE.Mesh(new THREE.SphereGeometry(450, 48, 24), gokMat);
+scene.add(gok);
+{ // ortam yansıması (PBR malzemeler için)
+  const pm = new THREE.PMREMGenerator(renderer);
+  const gs = new THREE.Scene(); gs.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), gokMat));
+  const zemin = new THREE.Mesh(new THREE.PlaneGeometry(40, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x6a3a22 }));
+  zemin.position.y = -.5; gs.add(zemin);
+  scene.environment = pm.fromScene(gs, .02).texture;
+  scene.environmentIntensity = .55;
+}
+const gunes = new THREE.DirectionalLight(0xffe0c2, 2.7);
+gunes.position.copy(GUNES_YON).multiplyScalar(30);
+gunes.castShadow = true;
+const sc = gunes.shadow.camera; sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14; sc.near = 1; sc.far = 80;
+gunes.shadow.bias = -.0004; gunes.shadow.normalBias = .03;
+scene.add(gunes, gunes.target);
+scene.add(new THREE.HemisphereLight(0xf2c6a0, 0x5a2e1a, .55));
+
+/* ================== DOKULAR ================== */
+function tuval(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h || w; return c; }
+function kumDokulari(S) {
+  const H = new Float32Array(S * S), P = 16;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let h = .5 + (fbm(x / S * P, y / S * P, 4, P) - .5) * .7;
+    h += (fbm(x / S * 64, y / S * 64, 2, 64) - .5) * .18;
+    H[y * S + x] = h;
+  }
+  const cR = tuval(S), cx = cR.getContext('2d'), im = cx.createImageData(S, S);
+  const cN = tuval(S), nx = cN.getContext('2d'), nm = nx.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x, h = H[i];
+    const t = Math.min(1, Math.max(0, (h - .25) * 1.6));
+    const tane = (hash(x * 7, y * 13) - .5) * 22;
+    let r = 120 + t * 78 + tane, g = 58 + t * 48 + tane * .6, b = 34 + t * 30 + tane * .4;
+    if (hash(x, y * 3) > .9965) { r *= .55; g *= .55; b *= .6; } // çakıl
+    im.data[i * 4] = r; im.data[i * 4 + 1] = g; im.data[i * 4 + 2] = b; im.data[i * 4 + 3] = 255;
+    const l = H[y * S + (x + S - 1) % S], rr = H[y * S + (x + 1) % S], u = H[((y + S - 1) % S) * S + x], d = H[((y + 1) % S) * S + x];
+    let ax = (l - rr) * 9, ay = (u - d) * 9, az = 1; const L = Math.hypot(ax, ay, az); ax /= L; ay /= L; az /= L;
+    nm.data[i * 4] = (ax * .5 + .5) * 255; nm.data[i * 4 + 1] = (ay * .5 + .5) * 255; nm.data[i * 4 + 2] = (az * .5 + .5) * 255; nm.data[i * 4 + 3] = 255;
+  }
+  cx.putImageData(im, 0, 0); nx.putImageData(nm, 0, 0);
+  const renk = new THREE.CanvasTexture(cR); renk.colorSpace = THREE.SRGBColorSpace;
+  const norm = new THREE.CanvasTexture(cN);
+  [renk, norm].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; });
+  return { renk, norm };
+}
+const KUM = kumDokulari(etkinKalite() === 'Yüksek' ? 512 : 256);
+function panelDoku() {
+  const c = tuval(256), x = c.getContext('2d');
+  x.fillStyle = '#0d1a3a'; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+    const gr = x.createLinearGradient(i * 32, j * 32, i * 32 + 32, j * 32 + 32);
+    gr.addColorStop(0, '#1d3c86'); gr.addColorStop(1, '#0f2457');
+    x.fillStyle = gr; x.fillRect(i * 32 + 2, j * 32 + 2, 28, 28);
+  }
+  x.strokeStyle = 'rgba(200,210,230,.35)'; x.lineWidth = 1;
+  for (let i = 0; i <= 8; i++) { x.beginPath(); x.moveTo(i * 32, 0); x.lineTo(i * 32, 256); x.stroke(); x.beginPath(); x.moveTo(0, i * 32); x.lineTo(256, i * 32); x.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function tekerDoku() {
+  const c = tuval(256, 64), x = c.getContext('2d');
+  x.fillStyle = '#9aa0a8'; x.fillRect(0, 0, 256, 64);
+  for (let i = 0; i < 24; i++) { x.fillStyle = i % 2 ? '#6b7078' : '#c4c8cf'; x.save(); x.translate(i * 10.7, 0); x.transform(1, 0, .35, 1, 0, 0); x.fillRect(0, 0, 4, 64); x.restore(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
+}
+function kutuDoku() {
+  const c = tuval(256), x = c.getContext('2d');
+  x.fillStyle = '#ece8e0'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = '#f07a24'; x.fillRect(0, 0, 256, 34); x.fillRect(0, 222, 256, 34);
+  for (let i = -2; i < 10; i++) { x.fillStyle = '#2b2b2b'; x.beginPath(); x.moveTo(i * 32, 34); x.lineTo(i * 32 + 16, 34); x.lineTo(i * 32 + 6, 0); x.lineTo(i * 32 - 10, 0); x.fill(); }
+  x.strokeStyle = '#a9a39a'; x.lineWidth = 6; x.strokeRect(14, 48, 228, 160);
+  x.fillStyle = '#3a3a3a'; x.font = 'bold 40px system-ui,sans-serif'; x.textAlign = 'center'; x.fillText('NUMUNE', 128, 142);
+  x.font = 'bold 20px system-ui,sans-serif'; x.fillStyle = '#f07a24'; x.fillText('MARS · 01', 128, 178);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function bayrakDoku() {
+  const c = tuval(128, 88), x = c.getContext('2d');
+  x.fillStyle = '#ff3d9a'; x.fillRect(0, 0, 128, 88); x.fillStyle = '#fff'; x.fillRect(0, 0, 128, 10); x.fillRect(0, 78, 128, 10);
+  x.font = '48px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('📸', 64, 46);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function yuvarlakIsik() {
+  const c = tuval(64), x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.4, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+const ISIK_DOKU = yuvarlakIsik();
+
+/* ================== ARAZİ ================== */
+const kumMat = new THREE.MeshStandardMaterial({ map: KUM.renk, normalMap: KUM.norm, normalScale: new THREE.Vector2(1.1, 1.1), roughness: .96, metalness: 0, vertexColors: true });
+function uzakArazi() {
+  const g = new THREE.PlaneGeometry(320, 320, 220, 220); g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position, renk = [], uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), d = Math.max(Math.abs(x), Math.abs(z));
+    const k = THREE.MathUtils.smoothstep(d, 10.5, 24);
+    let h = (fbm(x * .022 + 10, z * .022 + 5, 5) - .42) * 10 + (fbm(x * .1, z * .1, 3) - .5) * 1.4;
+    h *= (1 + Math.max(0, d - 40) / 35);
+    p.setY(i, -.08 * (1 - k) + h * k);
+    const v = fbm(x * .05 + 3, z * .05 + 9, 3);
+    const c = .72 + v * .5; renk.push(c, c * .97, c * .95);
+    uv.setXY(i, uv.getX(i) * 64, uv.getY(i) * 64);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(renk, 3));
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, kumMat); m.receiveShadow = true; return m;
+}
+scene.add(uzakArazi());
+
+let kraterler = []; // {r,c,x,z,dolu}
+function oyunYuk(x, z) {
+  let h = 0;
+  for (const k of kraterler) {
+    const d = Math.hypot(x - k.x, z - k.z), R = 1.08;
+    if (d < R) h += -1.25 * (1 - (d / R) ** 2);
+    else if (d < R * 1.45) h += .16 * Math.sin((d - R) / (R * .45) * Math.PI);
+  }
+  const kenar = Math.max(Math.abs(x), Math.abs(z));
+  h += (fbm(x * .7 + 50, z * .7 + 50, 2) - .5) * .05 * THREE.MathUtils.smoothstep(kenar, 7.2, 9.5);
+  return h;
+}
+let oyunZemin = null, kaplama = null, kaplamaTuval = tuval(1024), kaplamaDoku = new THREE.CanvasTexture(kaplamaTuval);
+kaplamaDoku.colorSpace = THREE.SRGBColorSpace; kaplamaDoku.anisotropy = 8;
+const kaplamaMat = new THREE.MeshBasicMaterial({ map: kaplamaDoku, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, fog: true });
+function oyunZeminKur() {
+  if (oyunZemin) { scene.remove(oyunZemin, kaplama); oyunZemin.geometry.dispose(); }
+  const g = new THREE.PlaneGeometry(21, 21, 168, 168); g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position, renk = [];
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), h = oyunYuk(x, z); p.setY(i, h);
+    const c = h < -.15 ? .74 + h * .22 : .93 + (fbm(x * .18 + 4, z * .18 + 2, 3) - .5) * .3; renk.push(c, c * .97, c * .96);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(renk, 3));
+  const uv2 = g.attributes.uv.clone(); g.setAttribute('uvKap', uv2);
+  g.computeVertexNormals();
+  const gk = g.clone();
+  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 4.2, uv.getY(i) * 4.2);
+  oyunZemin = new THREE.Mesh(g, kumMat); oyunZemin.receiveShadow = true;
+  kaplama = new THREE.Mesh(gk, kaplamaMat); kaplama.renderOrder = 2;
+  scene.add(oyunZemin, kaplama);
+}
+const m2px = v => (v + 10.5) / 21 * 1024;
+function kaplamaCiz() {
+  const x = kaplamaTuval.getContext('2d'); x.clearRect(0, 0, 1024, 1024);
+  x.strokeStyle = 'rgba(255,236,214,.16)'; x.lineWidth = 2;
+  for (let i = 0; i <= N; i++) {
+    const v = m2px(-7 + i * T);
+    x.beginPath(); x.moveTo(v, m2px(-7)); x.lineTo(v, m2px(7)); x.stroke();
+    x.beginPath(); x.moveTo(m2px(-7), v); x.lineTo(m2px(7), v); x.stroke();
+  }
+  x.strokeStyle = 'rgba(255,190,140,.45)'; x.lineWidth = 4; x.setLineDash([18, 12]);
+  x.strokeRect(m2px(-7), m2px(-7), m2px(7) - m2px(-7), m2px(7) - m2px(-7)); x.setLineDash([]);
+  x.fillStyle = 'rgba(255,236,214,.22)';
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const h = hucre(r, c); x.beginPath(); x.arc(m2px(h.x), m2px(h.z), 3, 0, 7); x.fill(); }
+  kaplamaDoku.needsUpdate = true;
+}
+let izSon = null, izGuncel = 0;
+function izBirak(x, z, yaw) {
+  const sx = Math.cos(yaw) * .72, sz = -Math.sin(yaw) * .72; // sağ vektör
+  const noktalar = [[x + sx, z + sz], [x - sx, z - sz]];
+  const c = kaplamaTuval.getContext('2d');
+  if (izSon) {
+    c.strokeStyle = 'rgba(64,26,12,.16)'; c.lineWidth = 11; c.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      c.beginPath(); c.moveTo(m2px(izSon[i][0]), m2px(izSon[i][1])); c.lineTo(m2px(noktalar[i][0]), m2px(noktalar[i][1])); c.stroke();
+    }
+    c.strokeStyle = 'rgba(40,14,6,.10)'; c.lineWidth = 3; c.setLineDash([3, 5]);
+    for (let i = 0; i < 2; i++) { c.beginPath(); c.moveTo(m2px(izSon[i][0]), m2px(izSon[i][1])); c.lineTo(m2px(noktalar[i][0]), m2px(noktalar[i][1])); c.stroke(); }
+    c.setLineDash([]);
+  }
+  izSon = noktalar;
+  if (performance.now() - izGuncel > 90) { kaplamaDoku.needsUpdate = true; izGuncel = performance.now(); }
+}
+
+/* ================== KAYA / DEKOR ================== */
+function kayaGeo(r, tohum, det = 2) {
+  const g = new THREE.IcosahedronGeometry(r, det), p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i); const n = v.clone().normalize();
+    const s = 1 + (fbm(n.x * 2.2 + tohum, n.y * 2.2 + n.z * 1.7 + tohum * 2, 4) - .5) * .7;
+    v.copy(n).multiplyScalar(r * s); if (v.y < -r * .25) v.y = -r * .25 + (v.y + r * .25) * .2;
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals(); return g;
+}
+const kayaMat = new THREE.MeshStandardMaterial({ color: 0x8a5038, roughness: .93, metalness: .02, map: KUM.renk, normalMap: KUM.norm });
+{ // uzak dekor kayalar
+  const geo = kayaGeo(1, 3.3, 1), adet = 170, im = new THREE.InstancedMesh(geo, kayaMat, adet), m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), e = new THREE.Euler();
+  let i = 0, t = 0;
+  while (i < adet && t < 3000) {
+    t++; const a = hash(t, 11) * Math.PI * 2, r = 11.5 + Math.pow(hash(t, 17), 1.6) * 70;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.max(Math.abs(x), Math.abs(z)) < 11) continue;
+    const sk = .15 + Math.pow(hash(t, 23), 3) * 2.3;
+    e.set(hash(t, 5) * 3, hash(t, 6) * 6, hash(t, 7) * 3); q.setFromEuler(e); s.set(sk, sk * (.5 + hash(t, 9) * .5), sk);
+    const d = Math.max(Math.abs(x), Math.abs(z)), k = THREE.MathUtils.smoothstep(d, 10.5, 24);
+    let h = (fbm(x * .022 + 10, z * .022 + 5, 5) - .42) * 10 + (fbm(x * .1, z * .1, 3) - .5) * 1.4; h *= (1 + Math.max(0, d - 40) / 35);
+    m.compose(new THREE.Vector3(x, -.08 * (1 - k) + h * k + sk * .1, z), q, s); im.setMatrixAt(i++, m);
+  }
+  im.count = i; im.castShadow = true; im.receiveShadow = true; scene.add(im);
+}
+{ // iniş modülü (dekor)
+  const g = new THREE.Group(), altin = new THREE.MeshStandardMaterial({ color: 0xd8a93a, metalness: 1, roughness: .3 }), gri = new THREE.MeshStandardMaterial({ color: 0xcfcac2, metalness: .5, roughness: .45 });
+  const gov = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, .55, 6), altin); gov.position.y = 1.3; g.add(gov);
+  const ust = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, .35, 6), gri); ust.position.y = 1.72; g.add(ust);
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + .4, ay = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 1.9), gri);
+    ay.position.set(Math.cos(a) * 1.6, .7, Math.sin(a) * 1.6); ay.rotation.set(Math.sin(a) * .45, 0, -Math.cos(a) * .45); g.add(ay);
+    const ayak = new THREE.Mesh(new THREE.CylinderGeometry(.28, .32, .08, 12), gri); ayak.position.set(Math.cos(a) * 2.0, .04, Math.sin(a) * 2.0); g.add(ayak);
+  }
+  const tabak = new THREE.Mesh(new THREE.SphereGeometry(.7, 24, 12, 0, Math.PI * 2, 0, .9), gri); tabak.position.set(.4, 2.5, 0); tabak.rotation.set(.6, 0, .4); g.add(tabak);
+  const direk = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .7), gri); direk.position.set(.4, 2.1, 0); g.add(direk);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  g.position.set(-12.5, 0, -10); g.rotation.y = .5; scene.add(g);
+}
+{ // alan köşe kazıkları
+  const kz = new THREE.MeshStandardMaterial({ color: 0xdedad2, roughness: .5 }), uc = new THREE.MeshStandardMaterial({ color: 0xff7a1a, emissive: 0xff5a00, emissiveIntensity: .6 });
+  for (const [x, z] of [[-7.4, -7.4], [7.4, -7.4], [-7.4, 7.4], [7.4, 7.4]]) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(.05, .06, 1.1), kz); p.position.set(x, .55, z); p.castShadow = true; scene.add(p);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 8), uc); b.position.set(x, 1.12, z); scene.add(b);
+  }
+}
+
+/* ================== FİZİK (Mars yer çekimi 3,71) ================== */
+const dunya = new CANNON.World({ gravity: new CANNON.Vec3(0, -3.71, 0) });
+dunya.broadphase = new CANNON.SAPBroadphase(dunya);
+dunya.allowSleep = true;
+dunya.defaultContactMaterial.friction = .5;
+dunya.defaultContactMaterial.restitution = .08;
+let zeminGovde = null;
+function fizikZeminKur() {
+  if (zeminGovde) dunya.removeBody(zeminGovde);
+  const es = .25, n = Math.round(21 / es) + 1, veri = [];
+  for (let i = 0; i < n; i++) { const sat = []; for (let j = 0; j < n; j++) sat.push(oyunYuk(-10.5 + i * es, 10.5 - j * es)); veri.push(sat); }
+  const hf = new CANNON.Heightfield(veri, { elementSize: es });
+  zeminGovde = new CANNON.Body({ mass: 0 }); zeminGovde.addShape(hf);
+  zeminGovde.position.set(-10.5, 0, 10.5); zeminGovde.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  dunya.addBody(zeminGovde);
+}
+const cakillar = [];
+const cakilGeo = kayaGeo(.09, 7, 0);
+function cakilSac(x, z, adet = 7) {
+  for (let i = 0; i < adet; i++) {
+    const m = new THREE.Mesh(cakilGeo, kayaMat); m.castShadow = true; scene.add(m);
+    const b = new CANNON.Body({ mass: .2, shape: new CANNON.Sphere(.09), linearDamping: .2, angularDamping: .3 });
+    const a = Math.random() * Math.PI * 2;
+    b.position.set(x + Math.cos(a) * .5, .9 + Math.random() * .4, z + Math.sin(a) * .5);
+    b.velocity.set(Math.cos(a) * (1 + Math.random() * 1.5), 1.5 + Math.random() * 1.5, Math.sin(a) * (1 + Math.random() * 1.5));
+    dunya.addBody(b); cakillar.push({ m, b, omur: 7 });
+  }
+}
+
+/* ================== TOZ ================== */
+const tozAdet = 450, tozGeo = new THREE.BufferGeometry(), tozPos = new Float32Array(tozAdet * 3);
+for (let i = 0; i < tozAdet; i++) { tozPos[i * 3] = (Math.random() - .5) * 60; tozPos[i * 3 + 1] = Math.random() * 6; tozPos[i * 3 + 2] = (Math.random() - .5) * 60; }
+tozGeo.setAttribute('position', new THREE.BufferAttribute(tozPos, 3));
+const tozlar = new THREE.Points(tozGeo, new THREE.PointsMaterial({ color: 0xe8b48c, size: .07, map: ISIK_DOKU, transparent: true, opacity: .55, depthWrite: false }));
+scene.add(tozlar);
+let ruzgarHiz = .9, firtinaVar = false;
+function firtinaUygula(f) {
+  firtinaVar = f; scene.fog.density = f ? .034 : .0105; gokMat.uniforms.firtina.value = f ? 1 : 0;
+  ruzgarHiz = f ? 6 : .9; tozlar.material.size = f ? .12 : .07; tozlar.material.opacity = f ? .85 : .55;
+  gunes.intensity = f ? 1.6 : 2.7; Ses.ruzgar(f);
+}
+const bulutlar = [];
+for (let i = 0; i < 60; i++) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ISIK_DOKU, color: 0xc98f66, transparent: true, opacity: 0, depthWrite: false }));
+  s.visible = false; scene.add(s); bulutlar.push({ s, omur: 0, max: 1, v: new THREE.Vector3() });
+}
+let bulutSira = 0;
+function tozPuf(x, y, z, buyuk = 1, hiz = .4) {
+  const b = bulutlar[bulutSira++ % bulutlar.length];
+  b.s.position.set(x, y, z); b.s.visible = true; b.omur = 0; b.max = 1 + Math.random() * .6 * buyuk; b.buyuk = buyuk;
+  b.v.set((Math.random() - .5) * hiz, .25 + Math.random() * .3, (Math.random() - .5) * hiz);
+}
+
+/* ================== GEZGİN ================== */
+function gezginYap() {
+  const g = new THREE.Group(); g.rotation.order = 'YXZ';
+  const beyaz = new THREE.MeshStandardMaterial({ color: 0xebe7de, metalness: .25, roughness: .42 });
+  const altin = new THREE.MeshStandardMaterial({ color: 0xd8a93a, metalness: 1, roughness: .3 });
+  const koyu = new THREE.MeshStandardMaterial({ color: 0x2b2b30, metalness: .6, roughness: .42 });
+  const alu = new THREE.MeshStandardMaterial({ color: 0xbcc0c6, metalness: .9, roughness: .33 });
+  const cam = new THREE.MeshStandardMaterial({ color: 0x0a0a12, metalness: .2, roughness: .05 });
+  const panel = new THREE.MeshStandardMaterial({ map: panelDoku(), metalness: .55, roughness: .2 });
+  const M = (geo, mat, x, y, z, ust) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); (ust || g).add(m); return m; };
+  const govde = new THREE.Group(); govde.position.y = .66; g.add(govde);
+  M(new THREE.BoxGeometry(1.0, .34, 1.36), beyaz, 0, 0, 0, govde);
+  M(new THREE.BoxGeometry(.02, .24, 1.1), altin, .51, 0, 0, govde); M(new THREE.BoxGeometry(.02, .24, 1.1), altin, -.51, 0, 0, govde);
+  M(new THREE.BoxGeometry(.9, .1, .08), koyu, 0, -.08, -.7, govde);
+  M(new THREE.BoxGeometry(1.28, .04, 1.52), panel, 0, .2, .02, govde);
+  M(new THREE.CylinderGeometry(.045, .05, .85, 12), alu, .3, .62, -.5, govde);
+  const kafa = new THREE.Group(); kafa.position.set(.3, 1.08, -.5); govde.add(kafa);
+  M(new THREE.BoxGeometry(.36, .17, .22), beyaz, 0, 0, 0, kafa);
+  for (const sx of [-.09, .09]) { const l = M(new THREE.CylinderGeometry(.045, .045, .06, 16), cam, sx, 0, -.12, kafa); l.rotation.x = Math.PI / 2; }
+  const lz = M(new THREE.SphereGeometry(.025, 10, 8), new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0xff2a2a, emissiveIntensity: 2 }), 0, .05, -.12, kafa);
+  const tabakG = new THREE.LatheGeometry([0, .06, .12, .18, .24, .28].map((r, i) => new THREE.Vector2(r, r * r * 1.4)), 24);
+  const tabak = M(tabakG, alu, -.3, .5, .42, govde); tabak.rotation.set(-.6, 0, .3);
+  M(new THREE.CylinderGeometry(.03, .03, .3), alu, -.3, .32, .42, govde);
+  M(new THREE.CylinderGeometry(.012, .012, .7), koyu, .42, .55, .58, govde);
+  const raf = new THREE.Group(); raf.position.set(-.15, .23, -.15); govde.add(raf);
+  M(new THREE.BoxGeometry(.66, .03, .22), alu, 0, 0, 0, raf);
+  for (let i = 0; i < 5; i++) M(new THREE.CylinderGeometry(.045, .045, .03, 14), koyu, -.24 + i * .12, .025, 0, raf);
+  const led = M(new THREE.SphereGeometry(.035, 10, 8), new THREE.MeshStandardMaterial({ color: 0x002200, emissive: 0x33ff66, emissiveIntensity: 2.2 }), -.36, .22, -.62, govde);
+  // kol
+  const kol = new THREE.Group(); kol.position.set(-.26, -.06, -.7); kol.rotation.x = 1.25; govde.add(kol);
+  M(new THREE.BoxGeometry(.07, .07, .5), alu, 0, 0, -.25, kol);
+  const kol2 = new THREE.Group(); kol2.position.set(0, 0, -.5); kol2.rotation.x = -1.6; kol.add(kol2);
+  M(new THREE.BoxGeometry(.06, .06, .35), alu, 0, 0, -.17, kol2);
+  M(new THREE.CylinderGeometry(.07, .05, .1, 12), koyu, 0, 0, -.38, kol2).rotation.x = Math.PI / 2;
+  // askı ve tekerler
+  const tekerler = [], tDoku = tekerDoku(); tDoku.repeat.set(1, 1);
+  const tekerMat = new THREE.MeshStandardMaterial({ map: tDoku, metalness: .8, roughness: .45 });
+  for (const s of [-1, 1]) {
+    const ana = M(new THREE.BoxGeometry(.06, .06, 1.25), koyu, s * .62, .42, 0); ana.rotation.x = .04;
+    for (const z of [-.56, 0, .56]) {
+      const bac = M(new THREE.BoxGeometry(.05, .2, .05), koyu, s * .66, .32, z);
+      const tg = new THREE.Group(); tg.position.set(s * .74, .23, z); g.add(tg);
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(.23, .23, .2, 26, 1), [tekerMat, alu, alu]); t.rotation.z = Math.PI / 2; tg.add(t);
+      const gob = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .22, 12), koyu); gob.rotation.z = Math.PI / 2; tg.add(gob);
+      tekerler.push({ tg, s, temel: .23 });
+    }
+  }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return { g, govde, kafa, kol, kol2, led, tabak, tekerler, lz, raf };
+}
+const gez = gezginYap();
+scene.add(gez.g);
+function tekerCevir(sol, sag) { for (const t of gez.tekerler) t.tg.rotation.x -= (t.s < 0 ? sol : sag) / .23; }
+
+/* ================== SEVİYE ================== */
+const seviyeGrup = new THREE.Group(); scene.add(seviyeGrup);
+let S = null, gorevNo = Math.min(LS.get('mars_sonGorev', 0), GOREVLER.length - 1);
+const kristalMat = new THREE.MeshStandardMaterial({ color: 0x9ff8ff, emissive: 0x18c8e8, emissiveIntensity: 1.8, metalness: .1, roughness: .12, transparent: true, opacity: .92 });
+const kutuMat = new THREE.MeshStandardMaterial({ map: kutuDoku(), metalness: .35, roughness: .45 });
+function seviyeKur(no) {
+  gorevNo = no; LS.set('mars_sonGorev', no);
+  const G = GOREVLER[no];
+  while (seviyeGrup.children.length) seviyeGrup.remove(seviyeGrup.children[0]);
+  if (S) S.kutular.forEach(k => dunya.removeBody(k.b));
+  const yeni = { r: 0, c: 0, d: G.yon, kayalar: [], ornekler: [], kutular: [], pedler: [], noktalar: [], yukler: [], cekilen: [], toplanan: 0 };
+  gez.raf.children.slice(6).forEach(c => gez.raf.remove(c));
+  firtinaUygula(!!G.firtina);
+  const kr = [];
+  G.harita.forEach((sat, r) => [...sat].forEach((ch, c) => {
+    const h = hucre(r, c);
+    if (ch === 'R') { yeni.r = r; yeni.c = c; yeni.bas = { r, c }; }
+    if (ch === 'C') kr.push({ r, c, x: h.x, z: h.z, dolu: false });
+  }));
+  const kraterAyni = JSON.stringify(kr.map(k => [k.r, k.c])) === JSON.stringify(kraterler.map(k => [k.r, k.c]));
+  kraterler = kr;
+  if (!kraterAyni || !oyunZemin) { oyunZeminKur(); fizikZeminKur(); }
+  kaplamaCiz(); izSon = null;
+  G.harita.forEach((sat, r) => [...sat].forEach((ch, c) => {
+    const h = hucre(r, c);
+    if (ch === 'K') {
+      const m = new THREE.Mesh(kayaGeo(.8, r * 7 + c * 3 + no, 2), kayaMat);
+      m.position.set(h.x + (hash(r, c) - .5) * .2, .12, h.z + (hash(c, r) - .5) * .2); m.rotation.y = hash(r * 3, c) * 6; m.scale.y = .8 + hash(r, c * 5) * .35;
+      m.castShadow = true; m.receiveShadow = true; seviyeGrup.add(m); yeni.kayalar.push({ r, c, m });
+    }
+    if (ch === 'S') {
+      const grup = new THREE.Group(); grup.position.set(h.x, 0, h.z);
+      const taban = new THREE.Mesh(kayaGeo(.2, r + c, 1), kayaMat); taban.position.y = .06; taban.castShadow = true; grup.add(taban);
+      const kr2 = new THREE.Mesh(new THREE.OctahedronGeometry(.17, 0), kristalMat); kr2.scale.y = 1.7; kr2.position.y = .36; kr2.castShadow = true; grup.add(kr2);
+      const parilti = new THREE.Sprite(new THREE.SpriteMaterial({ map: ISIK_DOKU, color: 0x5ef0ff, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+      parilti.scale.set(1.1, 1.1, 1); parilti.position.y = .36; grup.add(parilti);
+      if (etkinKalite() !== 'Düşük') { const l = new THREE.PointLight(0x40e0ff, 2.2, 3.2, 2); l.position.y = .5; grup.add(l); }
+      seviyeGrup.add(grup); yeni.ornekler.push({ r, c, grup, kr: kr2, parilti, alindi: false });
+    }
+    if (ch === 'P') {
+      const grup = new THREE.Group(); grup.position.set(h.x, 0, h.z);
+      grup.add(new THREE.Mesh(new THREE.CylinderGeometry(.86, .9, .06, 40), new THREE.MeshStandardMaterial({ color: 0x3a3a40, metalness: .7, roughness: .4 })));
+      const halkaMat = new THREE.MeshStandardMaterial({ color: 0x331a00, emissive: 0xff8a1a, emissiveIntensity: 1.6 });
+      const halka = new THREE.Mesh(new THREE.TorusGeometry(.72, .045, 10, 48), halkaMat); halka.rotation.x = Math.PI / 2; halka.position.y = .05; grup.add(halka);
+      grup.children[0].receiveShadow = true; grup.position.y = .02;
+      seviyeGrup.add(grup); yeni.pedler.push({ r, c, halkaMat });
+    }
+    if (ch === 'F') {
+      const grup = new THREE.Group(); grup.position.set(h.x, 0, h.z);
+      const halkaMat = new THREE.MeshStandardMaterial({ color: 0x330018, emissive: 0xff3d9a, emissiveIntensity: 1.5 });
+      const halka = new THREE.Mesh(new THREE.TorusGeometry(.78, .035, 8, 48), halkaMat); halka.rotation.x = Math.PI / 2; halka.position.y = .04; grup.add(halka);
+      const dir = new THREE.Mesh(new THREE.CylinderGeometry(.03, .035, 1.5), new THREE.MeshStandardMaterial({ color: 0xdedad2, roughness: .5 })); dir.position.set(.55, .75, -.55); dir.castShadow = true; grup.add(dir);
+      const bayrak = new THREE.Mesh(new THREE.PlaneGeometry(.55, .38), new THREE.MeshStandardMaterial({ map: bayrakDoku(), side: THREE.DoubleSide, roughness: .7 }));
+      bayrak.position.set(.83, 1.3, -.55); bayrak.castShadow = true; grup.add(bayrak);
+      seviyeGrup.add(grup); yeni.noktalar.push({ r, c, halkaMat, bayrak, cekildi: false });
+    }
+    if (ch === 'B') {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), kutuMat); m.castShadow = true; m.receiveShadow = true; seviyeGrup.add(m);
+      const b = new CANNON.Body({ mass: 4, shape: new CANNON.Box(new CANNON.Vec3(.6, .6, .6)), linearDamping: .05, angularDamping: .1 });
+      b.position.set(h.x, .62, h.z); dunya.addBody(b);
+      yeni.kutular.push({ r, c, m, b, dusmus: false });
+    }
+  }));
+  S = yeni;
+  gez.g.position.set(hucre(S.r, S.c).x, 0, hucre(S.r, S.c).z); gez.g.rotation.set(0, yawOf(S.d), 0);
+  gez.kol.rotation.x = 1.25; gez.g.visible = true;
+  S.kirli = false;
+  arayuzGorev();
+}
+const icinde = (r, c) => r >= 0 && c >= 0 && r < N && c < N;
+const tip = (r, c) => GOREVLER[gorevNo].harita[r][c];
+const kraterAt = (r, c) => kraterler.find(k => k.r === r && k.c === c);
+const kutuAt = (r, c) => S.kutular.find(k => !k.dusmus && k.r === r && k.c === c);
+
+/* ================== ANİMASYON ================== */
+let hiz = LS.get('mars_hiz', 1);
+const tweenler = [];
+const anim = (sure, fn) => new Promise(res => tweenler.push({ t: 0, sure, fn, res }));
+const bekle = s => anim(s, () => {});
+let sarsinti = 0;
+const SURE = { ileri: .95, don: .6 };
+
+async function ileri() {
+  const [dr, dc] = YON[S.d], nr = S.r + dr, nc = S.c + dc;
+  if (!icinde(nr, nc)) return carp('sinir');
+  if (tip(nr, nc) === 'K') return carp('kaya', nr, nc);
+  const kr = kraterAt(nr, nc); if (kr && !kr.dolu) return kratereDus(kr);
+  const kutu = kutuAt(nr, nc);
+  if (kutu) {
+    const mr = nr + dr, mc = nc + dc;
+    if (!icinde(mr, mc) || tip(mr, mc) === 'K' || kutuAt(mr, mc)) return carp('kutu');
+    const k2 = kraterAt(mr, mc);
+    await surus(nr, nc, kutu, k2 && !k2.dolu ? k2 : null, mr, mc); return true;
+  }
+  await surus(nr, nc); return true;
+}
+async function surus(nr, nc, kutu, krater, mr, mc) {
+  const bas = hucre(S.r, S.c), son = hucre(nr, nc), fx = son.x - bas.x, fz = son.z - bas.z;
+  const L = Math.hypot(fx, fz), ux = fx / L, uz = fz / L;
+  Ses.motor(1); if (kutu) { Ses.surtunme(SURE.ileri / hiz); kutu.b.type = CANNON.Body.KINEMATIC; kutu.b.velocity.set(0, 0, 0); kutu.b.angularVelocity.set(0, 0, 0); kutu.b.quaternion.set(0, 0, 0, 1); kutu.b.wakeUp(); }
+  const kb = kutu ? hucre(kutu.r, kutu.c) : null;
+  let onceki = 0, tozZ = 0;
+  await anim(SURE.ileri, k => {
+    const e = ease(k), yol = e * T;
+    gez.g.position.x = bas.x + ux * yol; gez.g.position.z = bas.z + uz * yol;
+    const fark = yol - onceki; onceki = yol; tekerCevir(fark, fark);
+    gez.govde.position.y = .66 + Math.sin(k * 40) * .008 * Math.sin(k * Math.PI);
+    gez.govde.rotation.x = -Math.sin(k * Math.PI * 2) * .025;
+    izBirak(gez.g.position.x, gez.g.position.z, gez.g.rotation.y);
+    if (kutu) {
+      const itme = Math.max(0, yol - .7) * (T / 1.3);
+      kutu.b.position.set(kb.x + ux * itme, .62, kb.z + uz * itme);
+    }
+    tozZ += fark; if (tozZ > .35) { tozZ = 0; const yy = gez.g.rotation.y, bx = Math.sin(yy) * .6, bz = Math.cos(yy) * .6; tozPuf(gez.g.position.x + bx + Math.cos(yy) * .74, .15, gez.g.position.z + bz - Math.sin(yy) * .74, .6); tozPuf(gez.g.position.x + bx - Math.cos(yy) * .74, .15, gez.g.position.z + bz + Math.sin(yy) * .74, .6); }
+  });
+  Ses.motor(0);
+  S.r = nr; S.c = nc; gez.govde.rotation.x = 0;
+  if (kutu) {
+    kutu.b.type = CANNON.Body.DYNAMIC; kutu.b.mass = 4; kutu.b.updateMassProperties();
+    if (krater) {
+      kutu.b.velocity.set(ux * 1.3, 0, uz * 1.3); kutu.b.wakeUp();
+      setTimeout(() => { Ses.dusme(); for (let i = 0; i < 8; i++) tozPuf(krater.x + (Math.random() - .5) * 1.2, .1, krater.z + (Math.random() - .5) * 1.2, 1.6, 1.2); }, 650 / hiz);
+      await bekle(2.0);
+      kutu.dusmus = true; krater.dolu = true; tost('🎯 Krater doldu! Artık üstünden geçebilirsin.');
+    } else {
+      const h = hucre(mr, mc); kutu.b.position.set(h.x, .62, h.z); kutu.b.velocity.set(ux * .25, 0, uz * .25); kutu.b.wakeUp();
+      kutu.r = mr; kutu.c = mc;
+      if (S.pedler.find(p => p.r === mr && p.c === mc)) { Ses.topla(); tost('✅ Kutu pedde!'); }
+    }
+    pedGuncelle();
+  }
+  return true;
+}
+async function don(yonDegisim) {
+  const a = gez.g.rotation.y, d2 = (S.d + yonDegisim + 4) % 4, b = a - yonDegisim * Math.PI / 2;
+  Ses.servo(); Ses.motor(.5); let onceki = 0;
+  await anim(SURE.don, k => {
+    const e = ease(k); gez.g.rotation.y = a + (b - a) * e;
+    const f = (e - onceki) * .9; onceki = e; tekerCevir(yonDegisim > 0 ? f : -f, yonDegisim > 0 ? -f : f);
+  });
+  Ses.motor(0); S.d = d2; gez.g.rotation.y = yawOf(d2);
+  return true;
+}
+async function carp(tur, r, c) {
+  const [dr, dc] = YON[S.d], bas = hucre(S.r, S.c), m = tur === 'sinir' ? .55 : .5;
+  Ses.motor(1);
+  await anim(.35, k => { const e = ease(k) * m; gez.g.position.x = bas.x + dc * e; gez.g.position.z = bas.z + dr * e; tekerCevir(.03, .03); });
+  Ses.motor(0); Ses.carpma(); sarsinti = .35;
+  if (tur === 'kaya') { const h = hucre(r, c); cakilSac(h.x, h.z); }
+  for (let i = 0; i < 4; i++) tozPuf(bas.x + dc * 1.2, .3, bas.z + dr * 1.2, 1, .8);
+  await anim(.45, k => { const e = (1 - ease(k)) * m; gez.g.position.x = bas.x + dc * e; gez.g.position.z = bas.z + dr * e; tekerCevir(-.02, -.02); });
+  const mesaj = { sinir: '🚧 Görev alanının dışına çıkamazsın!', kaya: '💥 Gezgin kayaya çarptı!', kutu: '📦 Kutu ilerleyemiyor; önü kapalı!' }[tur];
+  return { hata: mesaj };
+}
+async function kratereDus(kr) {
+  const bas = hucre(S.r, S.c); Ses.motor(1);
+  await anim(1.3, k => {
+    const e = ease(k), x = bas.x + (kr.x - bas.x) * e * .82, z = bas.z + (kr.z - bas.z) * e * .82;
+    gez.g.position.set(x, Math.min(0, oyunYuk(x, z) + .1), z);
+    gez.g.rotation.x = -Math.min(.42, Math.max(0, (e - .3)) * .9); tekerCevir(.03, .03);
+    if (Math.random() < .3) tozPuf(x, .1, z, 1, .6);
+  });
+  Ses.motor(0); Ses.dusme(); sarsinti = .5;
+  for (let i = 0; i < 8; i++) tozPuf(kr.x + (Math.random() - .5), 0, kr.z + (Math.random() - .5), 1.8, 1.2);
+  return { hata: '🕳️ Gezgin kratere düştü! Krateri dolaşmayı dene.' };
+}
+async function topla() {
+  const o = S.ornekler.find(o => o.r === S.r && o.c === S.c && !o.alindi);
+  Ses.servo();
+  await anim(.5, k => { const e = ease(k); gez.kol.rotation.x = 1.25 - e * 1.75; gez.kol2.rotation.x = -1.6 + e * .9; });
+  if (o) {
+    o.alindi = true; S.toplanan++; Ses.topla();
+    o.grup.children.filter(c => c.isPointLight).forEach(l => l.visible = false);
+    const yuva = new THREE.Vector3(-.24 + Math.min(S.yukler.length, 4) * .12, .26, 0);
+    const bas = new THREE.Vector3(); o.kr.getWorldPosition(bas);
+    await anim(1.0, k => {
+      const e = ease(k), hedef = gez.raf.localToWorld(yuva.clone()), p = bas.clone().lerp(hedef, e);
+      p.y += Math.sin(k * Math.PI) * 1.0;
+      o.kr.position.copy(o.grup.worldToLocal(p)); o.kr.rotation.y += .25;
+      const sk = 1 - .15 * e; o.kr.scale.set(sk, sk * 1.7, sk);
+      o.parilti.position.copy(o.kr.position); o.parilti.scale.setScalar(1.1 - .6 * e);
+    });
+    gez.raf.attach(o.kr); o.kr.position.copy(yuva);
+    gez.raf.attach(o.parilti); o.parilti.position.copy(yuva); o.parilti.scale.set(.9, .9, 1);
+    S.yukler.push(o); tost('💎 Örnek gezginin rafına yüklendi!');
+    sayacGuncelle();
+  } else tost('🤔 Burada örnek yok');
+  Ses.servo();
+  await anim(.5, k => { const e = ease(k); gez.kol.rotation.x = -.5 + e * 1.75; gez.kol2.rotation.x = -.7 - e * .9; });
+  return true;
+}
+const direkKamera = new THREE.PerspectiveCamera(58, 1.5, .1, 700);
+function fotoAl() {
+  const p = new THREE.Vector3(); gez.kafa.getWorldPosition(p);
+  const y = gez.g.rotation.y, fx = -Math.sin(y), fz = -Math.cos(y);
+  direkKamera.position.set(p.x + fx * .25, p.y + .05, p.z + fz * .25);
+  direkKamera.lookAt(p.x + fx * 8, .2, p.z + fz * 8); direkKamera.updateProjectionMatrix();
+  const eskiPR = renderer.getPixelRatio(), w = sahneKap.clientWidth, h = sahneKap.clientHeight;
+  renderer.setPixelRatio(1); renderer.setSize(720, 480, false);
+  renderer.render(scene, direkKamera);
+  const kaynak = renderer.domElement, c = tuval(720, 480), x = c.getContext('2d');
+  x.drawImage(kaynak, 0, 0, 720, 480);
+  x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(0, 440, 720, 40);
+  x.fillStyle = '#fff'; x.font = 'bold 18px system-ui,sans-serif';
+  const oy = oyuncu() || { ad: '' };
+  x.fillText(`MARS · Görev ${gorevNo + 1} · Sol ${100 + gorevNo * 7}`, 14, 466);
+  x.textAlign = 'right'; x.fillText('📸 ' + oy.ad, 706, 466);
+  x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 2;
+  [[20, 20, 1, 1], [700, 20, -1, 1], [20, 420, 1, -1], [700, 420, -1, -1]].forEach(([a, b, sx, sy]) => { x.beginPath(); x.moveTo(a, b + 26 * sy); x.lineTo(a, b); x.lineTo(a + 26 * sx, b); x.stroke(); });
+  renderer.setPixelRatio(eskiPR); renderer.setSize(w, h, false);
+  return c.toDataURL('image/jpeg', .8);
+}
+function albumEkle(img) {
+  const a = LS.get('mars_album', []); a.unshift({ img, tarih: new Date().toISOString(), gorev: gorevNo + 1 });
+  while (a.length > 12) a.pop();
+  try { localStorage.setItem('mars_album', JSON.stringify(a)); } catch (e) { a.pop(); try { localStorage.setItem('mars_album', JSON.stringify(a)); } catch (e2) {} }
+}
+async function fotoCek() {
+  Ses.servo();
+  await anim(.4, k => { gez.kafa.rotation.x = -.18 * ease(k); });
+  Ses.deklansor();
+  const img = fotoAl();
+  const fl = $('#flas'); fl.classList.add('ac'); setTimeout(() => fl.classList.remove('ac'), 60);
+  S.cekilen.push(img); albumEkle(img);
+  const nok = S.noktalar.find(n => n.r === S.r && n.c === S.c && !n.cekildi);
+  if (nok) { nok.cekildi = true; nok.halkaMat.emissive.setHex(0x2bff6a); tost('📸 Harika kare! Fotoğraf albüme kaydedildi.'); }
+  else tost('📸 Fotoğraf çekildi ama burası 📸 noktası değil.');
+  sayacGuncelle();
+  await anim(.4, k => { gez.kafa.rotation.x = -.18 * (1 - ease(k)); });
+  return true;
+}
+function pedGuncelle() {
+  for (const p of S.pedler) {
+    const dolu = !!S.kutular.find(k => !k.dusmus && k.r === p.r && k.c === p.c);
+    p.halkaMat.emissive.setHex(dolu ? 0x2bff6a : 0xff8a1a);
+  }
+}
+
+/* ================== PROGRAM ================== */
+let program = [], acikDongu = null, idSay = 0, calisiyor = false, durdurIstek = false, kilitli = false;
+const ikonu = { ileri: '⬆️', sol: '↰', sag: '↱', topla: '🦾', foto: '📸' };
+const blokSay = p => p.reduce((s, b) => s + 1 + (b.t === 'dongu' ? blokSay(b.ic) : 0), 0);
+function programCiz() {
+  const el = $('#program');
+  if (!program.length) { el.innerHTML = '<span class="bos">👇 Komutlara dokunarak programını yaz</span>'; }
+  else el.innerHTML = program.map(b => b.t === 'dongu'
+    ? `<div class="dongu${b === acikDongu ? ' acik' : ''}" data-id="${b.id}"><span class="bas" data-bas="${b.id}">🔁×${b.n}</span>${b.ic.map(c => `<div class="blok b-${c.t}" data-id="${c.id}">${ikonu[c.t]}</div>`).join('') || '<span style="color:#fbbf24;font-size:.8rem;padding:0 .3rem">içine ekle…</span>'}</div>`
+    : `<div class="blok b-${b.t}" data-id="${b.id}">${ikonu[b.t]}</div>`).join('');
+  el.scrollLeft = el.scrollWidth;
+  $('#kapatBtn').classList.toggle('gizli', !acikDongu);
+  $('#donguBtn').classList.toggle('gizli', !!acikDongu);
+  $('#blokSayac').textContent = '🧩 ' + blokSay(program) + ' blok';
+  LS.set('mars_program_' + gorevNo, program);
+}
+function programDegisti() { if (S && S.kirli && !calisiyor) { seviyeKur(gorevNo); kameraOto = 'genel'; } }
+function ekle(t) {
+  if (calisiyor) return;
+  if (blokSay(program) >= 40) return tost('En fazla 40 blok kullanabilirsin');
+  if (t === 'dongu') { if (acikDongu) return tost('Önce açık döngüyü bitir'); return modalAc('donguModal'); }
+  if (t === 'kapat') { if (!acikDongu) return; if (!acikDongu.ic.length) return tost('Döngünün içine en az bir komut koy'); acikDongu = null; Ses.tik(); programCiz(); return; }
+  const b = { id: ++idSay, t }; (acikDongu ? acikDongu.ic : program).push(b); Ses.tik(); programDegisti(); programCiz();
+}
+const sayiSec = $('#sayiSec');
+sayiSec.innerHTML = [2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-n="${n}">${n}</button>`).join('');
+sayiSec.addEventListener('click', e => {
+  const n = +e.target.dataset.n; if (!n) return;
+  const d = { id: ++idSay, t: 'dongu', n, ic: [] }; program.push(d); acikDongu = d; modalKapat('donguModal'); Ses.tik(); programDegisti(); programCiz();
+  tost('Şimdi döngünün içine girecek komutlara dokun');
+});
+$('#palet').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) ekle(b.dataset.k); });
+$('#geriBtn').onclick = () => {
+  if (calisiyor) return;
+  if (acikDongu) { if (acikDongu.ic.length) acikDongu.ic.pop(); else { program.pop(); acikDongu = null; } }
+  else { const s = program[program.length - 1]; if (!s) return; if (s.t === 'dongu' && s.ic.length) { acikDongu = s; s.ic.pop(); } else program.pop(); }
+  Ses.tik(); programDegisti(); programCiz();
+};
+$('#temizleBtn').onclick = () => { if (calisiyor) return; program = []; acikDongu = null; programDegisti(); programCiz(); };
+$('#hizBtn').onclick = () => { hiz = hiz === 1 ? 2 : hiz === 2 ? .5 : 1; LS.set('mars_hiz', hiz); $('#hizBtn').textContent = (hiz === .5 ? '½' : hiz) + '×'; };
+function vurgula(id, sinif = 'aktif') { document.querySelectorAll('#program .' + sinif).forEach(e => e.classList.remove(sinif)); if (id) { const e = document.querySelector(`#program [data-id="${id}"]`); if (e) { e.classList.add(sinif); e.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } } }
+
+async function calistir() {
+  if (kilitli) return;
+  if (calisiyor) { durdurIstek = true; return; }
+  if (acikDongu) { if (!acikDongu.ic.length) program.pop(); acikDongu = null; programCiz(); }
+  if (!program.length) return tost('👇 Önce komut bloklarını ekle');
+  Ses.baslat();
+  seviyeKur(gorevNo); S.kirli = true; calisiyor = true; durdurIstek = false; kameraOto = 'takip';
+  $('#calistir').textContent = '⏹ Durdur'; $('#calistir').classList.add('dur');
+  let sonuc = true, sonId = null;
+  dis: for (const b of program) {
+    const tekrar = b.t === 'dongu' ? b.n : 1, liste = b.t === 'dongu' ? b.ic : [b];
+    for (let i = 0; i < tekrar; i++) {
+      if (b.t === 'dongu') { const bs = document.querySelector(`[data-bas="${b.id}"]`); if (bs) bs.textContent = `🔁 ${i + 1}/${b.n}`; document.querySelector(`.dongu[data-id="${b.id}"]`)?.classList.add('aktif'); }
+      for (const c of liste) {
+        if (durdurIstek) { sonuc = { hata: '⏹ Program durduruldu.' }; break dis; }
+        sonId = c.id; vurgula(c.id);
+        let r;
+        if (c.t === 'ileri') r = await ileri();
+        else if (c.t === 'sol') r = await don(-1);
+        else if (c.t === 'sag') r = await don(1);
+        else if (c.t === 'topla') r = await topla();
+        else if (c.t === 'foto') r = await fotoCek();
+        if (r !== true) { sonuc = r; break dis; }
+        await bekle(.08);
+      }
+    }
+    if (b.t === 'dongu') { const bs = document.querySelector(`[data-bas="${b.id}"]`); if (bs) bs.textContent = `🔁×${b.n}`; document.querySelector(`.dongu[data-id="${b.id}"]`)?.classList.remove('aktif'); }
+  }
+  vurgula(null);
+  calisiyor = false; $('#calistir').textContent = '▶ Çalıştır'; $('#calistir').classList.remove('dur');
+  if (sonuc !== true) { vurgula(sonId, 'hata'); Ses.hata(); return sonucGoster(false, sonuc.hata); }
+  const eksikO = S.ornekler.filter(o => !o.alindi).length, eksikP = S.pedler.filter(p => !kutuAt(p.r, p.c)).length, eksikF = S.noktalar.filter(n => !n.cekildi).length;
+  if (!eksikO && !eksikP && !eksikF) { Ses.basari(); kutlama(); kameraOto = 'zafer'; kilitli = true; setTimeout(() => { kilitli = false; sonucGoster(true); }, 2600); return; }
+  Ses.hata();
+  sonucGoster(false, 'Program bitti ama görev tamamlanmadı: ' + [eksikO ? `${eksikO} örnek kaldı 💎` : '', eksikP ? 'kutu pedde değil 📦' : '', eksikF ? 'fotoğraf çekilmedi 📸' : ''].filter(Boolean).join(', ') + '.');
+}
+$('#calistir').onclick = calistir;
+
+function kutlama() {
+  const y0 = gez.g.rotation.y;
+  anim(1.6, k => { gez.g.rotation.y = y0 + Math.sin(k * Math.PI * 4) * .18 * (1 - k); gez.kafa.rotation.y = k * Math.PI * 2; gez.tabak.rotation.z = .3 + Math.sin(k * 12) * .3; });
+  for (let i = 0; i < 14; i++) setTimeout(() => tozPuf(gez.g.position.x + (Math.random() - .5) * 2, .2 + Math.random(), gez.g.position.z + (Math.random() - .5) * 2, 1.2, 1.5), i * 40);
+  let t = 0; const iv = setInterval(() => { gez.lz.material.emissive.setHex(t++ % 2 ? 0xff2a2a : 0x33ff66); if (t > 10) { clearInterval(iv); gez.lz.material.emissive.setHex(0xff2a2a); } }, 160);
+}
+
+/* ================== İLERLEME ================== */
+const oyuncu = () => LS.get('mars_oyuncu', null);
+const ilerKey = () => 'mars_ilerleme_' + ((oyuncu() || {}).ad || 'misafir');
+const ilerleme = () => LS.get(ilerKey(), {});
+function yildizHtml(n) { return [1, 2, 3].map(i => `<span class="yildiz${i <= n ? ' dolu' : ''}">★</span>`).join(''); }
+function sonucGoster(basari, mesaj) {
+  const G = GOREVLER[gorevNo], k = $('#sonucKutu');
+  if (!basari) {
+    k.innerHTML = `<h2>🔧 Hata Ayıklama Zamanı</h2><p style="font-size:1.05rem">${mesaj}</p>
+      <p style="color:#c9a894;font-size:.9rem">Kırmızı yanan blok, hatanın olduğu yer. Programını düzelt ve tekrar dene — gerçek mühendisler de böyle çalışır!</p>
+      <div class="satir"><button class="btn ana" data-kapat>Düzelt</button></div>`;
+    k.querySelector('[data-kapat]').onclick = () => { modalKapat('sonucModal'); };
+    return modalAc('sonucModal');
+  }
+  const bl = blokSay(program), y = bl <= G.hedef ? 3 : bl <= G.hedef + 3 ? 2 : 1;
+  const il = ilerleme(), onceki = il[gorevNo] || 0; il[gorevNo] = Math.max(onceki, y); LS.set(ilerKey(), il);
+  kayitGonder('gorev', { gorev: gorevNo + 1, yildiz: y, blok: bl });
+  arayuzGorev();
+  const son = gorevNo === GOREVLER.length - 1;
+  const oy = oyuncu() || { ad: 'Gezgin Pilotu' };
+  k.innerHTML = `<h2 style="text-align:center">🎉 Görev Tamamlandı!</h2>
+    <div class="buyukYildiz">${yildizHtml(y)}</div>
+    <p style="text-align:center">${bl} blok kullandın · 3 yıldız hedefi: <b>${G.hedef}</b> blok${y < 3 ? '<br><span style="color:#fcd34d">Daha kısa bir program bulabilir misin? 🔁 Tekrarla işine yarayabilir.</span>' : ''}</p>
+    ${S.cekilen.length ? `<div class="bolum" style="margin-top:.7rem"><h3>📸 Gezginin çektiği fotoğraf</h3><div class="fotolar">${S.cekilen.map(f => `<img src="${f}" data-buyut>`).join('')}</div></div>` : ''}
+    <div class="bilgi">🛰️ <b>Biliyor muydun?</b><br>${G.bilgi}</div>
+    ${son ? `<div class="sertifika" style="margin-top:.8rem">🏅 <b>Mars Gezgin Pilotu Sertifikası</b><div class="ad">${esc(oy.ad)}</div><span style="font-size:.85rem;color:#c9a894">Tüm Mars görevlerini başarıyla tamamladı.</span></div>` : ''}
+    <div class="satir"><button class="btn" id="tekrarOyna">↺ Tekrar</button>${son ? '' : '<button class="btn yesil" id="sonraki">Sonraki Görev ▶</button>'}</div>`;
+  k.querySelectorAll('[data-buyut]').forEach(im => im.onclick = () => fotoGoster(im.src));
+  $('#tekrarOyna').onclick = () => { modalKapat('sonucModal'); seviyeKur(gorevNo); kameraOto = 'genel'; };
+  if (!son) $('#sonraki').onclick = () => { modalKapat('sonucModal'); gorevAc(gorevNo + 1); };
+  modalAc('sonucModal');
+}
+function gorevAc(no) {
+  seviyeKur(no); program = LS.get('mars_program_' + no, []); acikDongu = null;
+  idSay = 0; const yenile = p => p.forEach(b => { b.id = ++idSay; if (b.ic) yenile(b.ic); }); yenile(program);
+  programCiz(); kameraOto = 'genel';
+  if (GOREVLER[no].firtina) setTimeout(() => tost('🌪️ Toz fırtınası! Görüş azaldı, dikkatli sür.', 3200), 400);
+}
+function arayuzGorev() {
+  const G = GOREVLER[gorevNo], il = ilerleme();
+  $('#gorevAd').textContent = `Görev ${gorevNo + 1}/${GOREVLER.length}`;
+  $('#yildizlar').innerHTML = yildizHtml(il[gorevNo] || 0);
+  $('#gorevBaslik').textContent = G.ad + ':'; $('#gorevMetin').textContent = ' ' + G.metin;
+  sayacGuncelle();
+}
+function sayacGuncelle() {
+  if (!S) return;
+  $('#ornekSayac').textContent = `💎 ${S.toplanan}/${S.ornekler.length}`;
+  $('#ornekSayac').classList.toggle('gizli', !S.ornekler.length);
+  $('#fotoSayac').textContent = `📸 ${S.noktalar.filter(n => n.cekildi).length}/${S.noktalar.length}`;
+  $('#fotoSayac').classList.toggle('gizli', !S.noktalar.length);
+}
+$('#gorevKart').onclick = () => $('#gorevKart').classList.toggle('kucuk');
+$('#gorevHap').onclick = () => {
+  const il = ilerleme();
+  $('#haritaListe').innerHTML = GOREVLER.map((g, i) => {
+    const acik = i === 0 || il[i - 1] > 0 || il[i] > 0;
+    return `<button class="hk${acik ? '' : ' kilit'}${i === gorevNo ? ' simdi' : ''}" data-i="${i}" ${acik ? '' : 'disabled'}><b>${acik ? '' : '🔒 '}${i + 1}. ${g.ad}</b><span>${yildizHtml(il[i] || 0)}</span></button>`;
+  }).join('');
+  modalAc('haritaModal');
+};
+$('#haritaListe').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b || b.disabled) return; modalKapat('haritaModal'); gorevAc(+b.dataset.i); });
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ================== KAMERA ================== */
+const KAMERA = ['Otomatik', 'Takip', 'Genel', 'Serbest'];
+let kameraModu = LS.get('mars_kamera', 'Otomatik'), kameraOto = 'genel';
+const kontrol = new OrbitControls(camera, canvas); kontrol.enableDamping = true; kontrol.maxPolarAngle = 1.42; kontrol.minDistance = 4; kontrol.maxDistance = 45; kontrol.enabled = false;
+const bakis = new THREE.Vector3(0, 0, 0);
+$('#kameraBtn').onclick = () => {
+  kameraModu = KAMERA[(KAMERA.indexOf(kameraModu) + 1) % KAMERA.length]; LS.set('mars_kamera', kameraModu);
+  kontrol.enabled = kameraModu === 'Serbest'; if (kontrol.enabled) kontrol.target.copy(bakis);
+  tost('🎥 Kamera: ' + kameraModu + (kameraModu === 'Serbest' ? ' (parmağınla çevir)' : ''));
+};
+function genelKonum() {
+  const a = camera.aspect, tanV = Math.tan(THREE.MathUtils.degToRad(22.5));
+  const d = Math.max(7.6 / tanV, 8.4 / (tanV * a)), aci = THREE.MathUtils.degToRad(49);
+  return { p: new THREE.Vector3(0, d * Math.sin(aci), d * Math.cos(aci) + 1.2), h: new THREE.Vector3(0, 0, -.2) };
+}
+function kameraGuncelle(dt) {
+  if (kameraModu === 'Serbest') { kontrol.update(); return; }
+  const mod = kameraModu === 'Otomatik' ? kameraOto : kameraModu.toLowerCase();
+  let hp, hh;
+  if (mod === 'zafer') {
+    const a = zaman * .6, gp = gez.g.position;
+    hp = new THREE.Vector3(gp.x + Math.cos(a) * 4.6, 2.4, gp.z + Math.sin(a) * 4.6); hh = new THREE.Vector3(gp.x, .6, gp.z);
+  } else if (mod === 'takip') {
+    const y = gez.g.rotation.y, fx = -Math.sin(y), fz = -Math.cos(y), gp = gez.g.position;
+    hp = new THREE.Vector3(gp.x - fx * 6.2 + 1.2, 4.6, gp.z - fz * 6.2 + 1.2); hh = new THREE.Vector3(gp.x + fx * 1.8, .4, gp.z + fz * 1.8);
+  } else { const g = genelKonum(); hp = g.p; hh = g.h; }
+  const k = 1 - Math.exp(-dt * 2.6);
+  camera.position.lerp(hp, k); bakis.lerp(hh, k);
+  camera.lookAt(bakis);
+  if (sarsinti > 0) { camera.position.x += (Math.random() - .5) * sarsinti * .5; camera.position.y += (Math.random() - .5) * sarsinti * .4; }
+}
+
+/* ================== KALİTE UYGULA / BOYUT ================== */
+const sahneKap = $('#sahneKap');
+function kaliteUygula() {
+  const q = etkinKalite();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q === 'Yüksek' ? 2 : q === 'Orta' ? 1.5 : 1));
+  renderer.shadowMap.enabled = q !== 'Düşük'; gunes.castShadow = q !== 'Düşük';
+  const ms = q === 'Yüksek' ? 2048 : 1024;
+  if (gunes.shadow.mapSize.x !== ms) { gunes.shadow.mapSize.set(ms, ms); if (gunes.shadow.map) { gunes.shadow.map.dispose(); gunes.shadow.map = null; } }
+  tozlar.visible = q !== 'Düşük' || firtinaVar;
+  scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
+  $('#kaliteBtn').textContent = kalite + (kalite === 'Otomatik' ? ` (${q})` : '');
+  boyutla();
+}
+function boyutla() {
+  const w = sahneKap.clientWidth, h = sahneKap.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(boyutla).observe(sahneKap);
+
+/* ================== DÖNGÜ ================== */
+const saat = new THREE.Clock(); let zaman = 0;
+function kare() {
+  requestAnimationFrame(kare);
+  const dt = Math.min(saat.getDelta(), .05); zaman += dt;
+  for (let i = tweenler.length - 1; i >= 0; i--) {
+    const tw = tweenler[i]; tw.t += dt * hiz; const k = Math.min(tw.t / tw.sure, 1); tw.fn(k);
+    if (k >= 1) { tweenler.splice(i, 1); tw.res(); }
+  }
+  dunya.step(1 / 60, dt * hiz, 5);
+  if (S) {
+    for (const k of S.kutular) { k.m.position.copy(k.b.position); k.m.quaternion.copy(k.b.quaternion); }
+    for (const o of S.ornekler) if (!o.alindi) { o.kr.rotation.y += dt * .8; o.kr.position.y = .36 + Math.sin(zaman * 2 + o.c) * .04; o.parilti.material.opacity = .4 + Math.sin(zaman * 3 + o.r) * .15; }
+  }
+  for (let i = cakillar.length - 1; i >= 0; i--) {
+    const c = cakillar[i]; c.omur -= dt; c.m.position.copy(c.b.position); c.m.quaternion.copy(c.b.quaternion);
+    if (c.omur <= 0) { scene.remove(c.m); dunya.removeBody(c.b); cakillar.splice(i, 1); }
+  }
+  if (tozlar.visible) {
+    const p = tozGeo.attributes.position.array;
+    for (let i = 0; i < tozAdet; i++) { p[i * 3] += dt * .9; p[i * 3 + 1] += Math.sin(zaman + i) * dt * .05; if (p[i * 3] > 30) p[i * 3] = -30; }
+    if (ruzgarHiz > 1) for (let i = 0; i < tozAdet; i++) p[i * 3] += dt * (ruzgarHiz - .9);
+    tozGeo.attributes.position.needsUpdate = true;
+  }
+  for (const b of bulutlar) if (b.s.visible) {
+    b.omur += dt * hiz; const k = b.omur / b.max;
+    if (k >= 1) { b.s.visible = false; continue; }
+    b.s.position.addScaledVector(b.v, dt * hiz); const sk = (.35 + k * 1.3) * (b.buyuk || 1); b.s.scale.set(sk, sk, 1);
+    b.s.material.opacity = .45 * (1 - k) * Math.min(1, k * 6);
+  }
+  if (firtinaVar && Math.random() < dt * 9) tozPuf(gez.g.position.x - 6 + Math.random() * 12, .3 + Math.random() * 1.5, gez.g.position.z - 6 + Math.random() * 12, 2.2, 3);
+  if (S) for (const o of S.yukler) { o.kr.rotation.y += dt * .7; o.parilti.material.opacity = .35 + Math.sin(zaman * 3 + o.c) * .12; }
+  gez.led.material.emissiveIntensity = 1.4 + Math.sin(zaman * 4) * .9;
+  gez.tabak.rotation.y = Math.sin(zaman * .4) * .4;
+  if (!kilitli) gez.kafa.rotation.y = calisiyor ? 0 : Math.sin(zaman * .5) * .5;
+  if (sarsinti > 0) sarsinti = Math.max(0, sarsinti - dt);
+  kameraGuncelle(dt);
+  gunes.position.set(bakis.x + GUNES_YON.x * 30, GUNES_YON.y * 30, bakis.z + GUNES_YON.z * 30); gunes.target.position.copy(bakis);
+  gok.position.copy(camera.position);
+  renderer.render(scene, camera);
+}
+
+/* ================== KAYIT (giriş + öğretmen paneli) ================== */
+const bulut = () => { const b = LS.get('mars_bulut', {}); return { apiKey: b.apiKey || BULUT_VARSAYILAN.apiKey, projectId: b.projectId || BULUT_VARSAYILAN.projectId }; };
+const bulutVar = () => { const b = bulut(); return !!(b.apiKey && b.projectId); };
+function kayitGonder(olay, ek = {}) {
+  const oy = oyuncu(); if (!oy) return;
+  const k = { oyun: OYUN_ADI, ad: oy.ad, sinif: oy.sinif, cihaz, olay, tarih: new Date().toISOString(), gorev: ek.gorev || 0, yildiz: ek.yildiz || 0, blok: ek.blok || 0 };
+  const yerel = LS.get('mars_kayitlar', []); yerel.push(k); while (yerel.length > 800) yerel.shift(); LS.set('mars_kayitlar', yerel);
+  if (bulutVar()) {
+    const b = bulut();
+    fetch(`https://firestore.googleapis.com/v1/projects/${encodeURIComponent(b.projectId)}/databases/(default)/documents/oyun_girisleri?key=${encodeURIComponent(b.apiKey)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { oyun: { stringValue: k.oyun }, ad: { stringValue: k.ad }, sinif: { stringValue: k.sinif }, cihaz: { stringValue: k.cihaz }, olay: { stringValue: k.olay }, tarih: { timestampValue: k.tarih }, gorev: { integerValue: String(k.gorev) }, yildiz: { integerValue: String(k.yildiz) }, blok: { integerValue: String(k.blok) } } })
+    }).catch(() => {});
+  }
+}
+async function kayitlariGetir() {
+  if (!bulutVar()) return { liste: LS.get('mars_kayitlar', []), bulut: false };
+  const b = bulut();
+  try {
+    const r = await fetch(`https://firestore.googleapis.com/v1/projects/${encodeURIComponent(b.projectId)}/databases/(default)/documents:runQuery?key=${encodeURIComponent(b.apiKey)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'oyun_girisleri' }], where: { fieldFilter: { field: { fieldPath: 'oyun' }, op: 'EQUAL', value: { stringValue: OYUN_ADI } } }, limit: 2000 } })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const liste = j.filter(x => x.document).map(x => { const f = x.document.fields, v = a => a ? (a.stringValue ?? a.integerValue ?? a.timestampValue ?? '') : ''; return { ad: v(f.ad), sinif: v(f.sinif), cihaz: v(f.cihaz), olay: v(f.olay), tarih: v(f.tarih), gorev: +v(f.gorev) || 0, yildiz: +v(f.yildiz) || 0 }; });
+    return { liste, bulut: true };
+  } catch (e) { return { liste: LS.get('mars_kayitlar', []), bulut: false, hata: e.message }; }
+}
+const tarihYaz = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+let ogVeri = [];
+async function ogretmenYukle() {
+  $('#ogTablo').innerHTML = '<tr><td>Yükleniyor…</td></tr>';
+  const { liste, bulut: b, hata } = await kayitlariGetir();
+  $('#ogBulutDurum').innerHTML = b ? '<div class="durumBant ok">☁️ Bulut bağlı — tüm cihazlardaki girişler görünüyor</div>'
+    : `<div class="durumBant yerel">📱 Yalnızca bu cihazdaki girişler görünüyor${hata ? ' (bulut hatası: ' + esc(hata) + ' — Firestore kurallarında oyun_girisleri koleksiyonuna izin olmalı)' : ''}. Tüm cihazlar için aşağıdan bulut bilgisini gir.</div>`;
+  const ogr = {};
+  for (const k of liste) {
+    const key = (k.ad + '|' + k.sinif).toLocaleLowerCase('tr');
+    const o = ogr[key] || (ogr[key] = { ad: k.ad, sinif: k.sinif, giris: 0, son: '', cihaz: '', yildiz: {}, enGorev: 0 });
+    if (k.olay === 'giris') o.giris++;
+    if (!o.son || k.tarih > o.son) { o.son = k.tarih; o.cihaz = k.cihaz; }
+    if (k.olay === 'gorev') { o.yildiz[k.gorev] = Math.max(o.yildiz[k.gorev] || 0, k.yildiz); o.enGorev = Math.max(o.enGorev, k.gorev); }
+  }
+  ogVeri = Object.values(ogr).sort((a, b) => (b.son > a.son ? 1 : -1));
+  ogTabloCiz();
+  $('#ogHareket').innerHTML = liste.slice().sort((a, b) => (b.tarih > a.tarih ? 1 : -1)).slice(0, 30).map(k =>
+    `• <b>${esc(k.ad)}</b> (${esc(k.sinif)}) — ${k.olay === 'giris' ? 'oyuna girdi' : `Görev ${k.gorev} ✔ ${'★'.repeat(k.yildiz)}`} · ${esc(k.cihaz)} · ${tarihYaz(k.tarih)}`).join('<br>') || 'Henüz hareket yok.';
+}
+function ogTabloCiz() {
+  const q = $('#ogAra').value.trim().toLocaleLowerCase('tr');
+  const l = ogVeri.filter(o => !q || (o.ad + ' ' + o.sinif).toLocaleLowerCase('tr').includes(q));
+  $('#ogTablo').innerHTML = `<tr><th>Ad Soyad</th><th>Sınıf</th><th>Görev</th><th>⭐</th><th>Giriş</th><th>Son</th><th>Cihaz</th></tr>` +
+    (l.map(o => `<tr><td><b>${esc(o.ad)}</b></td><td>${esc(o.sinif)}</td><td>${o.enGorev}/${GOREVLER.length}</td><td>${Object.values(o.yildiz).reduce((a, b) => a + b, 0)}</td><td>${o.giris}</td><td>${tarihYaz(o.son)}</td><td>${esc(o.cihaz)}</td></tr>`).join('') || '<tr><td colspan="7">Kayıt yok.</td></tr>');
+}
+$('#ogAra').oninput = ogTabloCiz;
+$('#ogYenile').onclick = ogretmenYukle;
+$('#ogKopyala').onclick = () => {
+  const t = 'Ad Soyad\tSınıf\tGörev\tYıldız\tGiriş\tSon Giriş\tCihaz\n' + ogVeri.map(o => [o.ad, o.sinif, o.enGorev + '/' + GOREVLER.length, Object.values(o.yildiz).reduce((a, b) => a + b, 0), o.giris, tarihYaz(o.son), o.cihaz].join('\t')).join('\n');
+  navigator.clipboard?.writeText(t).then(() => tost('📋 Liste kopyalandı (Excel\'e yapıştırabilirsin)'), () => tost('Kopyalanamadı'));
+};
+$('#ogretmenAc').onclick = () => { modalKapat('ayarModal'); $('#ogSifreAlan').classList.remove('gizli'); $('#ogIcerik').classList.add('gizli'); $('#ogSifre').value = ''; modalAc('ogretmenModal'); };
+$('#ogGir').onclick = () => {
+  if ($('#ogSifre').value !== LS.get('mars_og_sifre', '1234')) return tost('❌ Şifre yanlış');
+  $('#ogSifreAlan').classList.add('gizli'); $('#ogIcerik').classList.remove('gizli');
+  const b = bulut(); $('#ogApi').value = b.apiKey; $('#ogProje').value = b.projectId; ogretmenYukle();
+};
+$('#ogSifre').addEventListener('keydown', e => { if (e.key === 'Enter') $('#ogGir').click(); });
+$('#ogBulutKaydet').onclick = () => { LS.set('mars_bulut', { apiKey: $('#ogApi').value.trim(), projectId: $('#ogProje').value.trim() }); tost('☁️ Kaydedildi, deneniyor…'); ogretmenYukle(); };
+$('#ogSifreKaydet').onclick = () => { const s = $('#ogYeniSifre').value.trim(); if (s.length < 4) return tost('Şifre en az 4 karakter olmalı'); LS.set('mars_og_sifre', s); $('#ogYeniSifre').value = ''; tost('🔑 Şifre değişti'); };
+
+/* ================== GİRİŞ / KARŞILAMA ================== */
+function girisGoster() {
+  const oy = oyuncu();
+  if (oy) { $('#adGir').value = oy.ad; const [sv, sb] = oy.sinif.split(' / '); $('#seviyeGir').value = sv || ''; $('#subeGir').value = sb || ''; }
+  modalAc('girisModal'); setTimeout(() => { if (!oy) $('#adGir').focus(); }, 300);
+}
+$('#girisTamam').onclick = () => {
+  const ad = $('#adGir').value.trim().replace(/\s+/g, ' '), sv = $('#seviyeGir').value, sb = $('#subeGir').value;
+  if (ad.split(' ').length < 2 || ad.length < 4) return tost('✍️ Adını ve soyadını yaz');
+  if (!sv) return tost('🏫 Sınıfını seç');
+  LS.set('mars_oyuncu', { ad, sinif: sb ? `${sv} / ${sb}` : sv });
+  modalKapat('girisModal'); kayitGonder('giris'); arayuzGorev(); Ses.baslat();
+  $('#oyuncuYazi').textContent = ad;
+  tost(`🚀 Hoş geldin ${esc(ad.split(' ')[0])}! Görev seni bekliyor.`);
+  if (!LS.get('zirve_karsilama_goruldu', false)) karsilamaGoster();
+};
+$('#adGir').addEventListener('keydown', e => { if (e.key === 'Enter') $('#seviyeGir').focus(); });
+function karsilamaGoster() {
+  $('#kBaslik').textContent = KARSILAMA.baslik; $('#kOzet').textContent = KARSILAMA.ozet;
+  $('#kAdimlar').innerHTML = KARSILAMA.adimlar.map(([i, t]) => `<li><i>${i}</i><span>${t}</span></li>`).join('');
+  LS.set('zirve_karsilama_goruldu', true); modalAc('karsilamaModal');
+}
+
+/* ================== AYARLAR / ARAÇLAR ================== */
+$('#ayarBtn').onclick = () => { $('#oyuncuYazi').textContent = (oyuncu() || {}).ad || '—'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; modalAc('ayarModal'); };
+$('#oyuncuDegis').onclick = () => { modalKapat('ayarModal'); girisGoster(); };
+$('#yardimAc').onclick = () => { modalKapat('ayarModal'); karsilamaGoster(); };
+const sesSimge = () => { $('#sesBtn').textContent = Ses.acik ? '🔊' : '🔇'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; };
+$('#sesBtn').onclick = $('#sesBtn2').onclick = () => { Ses.baslat(); Ses.ayarla(!Ses.acik); sesSimge(); };
+$('#kaliteBtn').onclick = () => { const L = ['Otomatik', 'Yüksek', 'Orta', 'Düşük']; kalite = L[(L.indexOf(kalite) + 1) % L.length]; LS.set('mars_kalite', kalite); kaliteUygula(); };
+$('#ekranBtn').onclick = () => { ekranModu = EKRAN[(EKRAN.indexOf(ekranModu) + 1) % EKRAN.length]; LS.set('mars_ekran', ekranModu); ekranUygula(); };
+window.ZIRVE_paylasAc = async () => {
+  modalAc('qrModal');
+  const url = location.href; $('#qrUyari').textContent = location.protocol === 'file:' ? '⚠️ Dosya bilgisayardan açılmış; QR sadece sitede yayınlanınca diğer cihazlarda çalışır.' : '';
+  try {
+    if (!window.qrcode) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+    const q = window.qrcode(0, 'M'); q.addData(url); q.make();
+    const n = q.getModuleCount(), cv = $('#qrTuval'), x = cv.getContext('2d'), sz = cv.width / n;
+    x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = '#111';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) x.fillRect(Math.floor(c * sz), Math.floor(r * sz), Math.ceil(sz), Math.ceil(sz));
+  } catch (e) { $('#qrUyari').textContent = 'QR oluşturulamadı (internet bağlantısını kontrol et).'; }
+};
+$('#qrAc').onclick = () => { modalKapat('ayarModal'); window.ZIRVE_paylasAc(); };
+$('#qrKopya').onclick = () => navigator.clipboard?.writeText(location.href).then(() => tost('🔗 Link kopyalandı'));
+$('#qrIndir').onclick = () => { const a = document.createElement('a'); a.download = 'Mars_Gorevi_QR.png'; a.href = $('#qrTuval').toDataURL('image/png'); a.click(); };
+function fotoGoster(src) { $('#buyukFoto').src = src; modalAc('fotoModal'); }
+$('#fotoIndir').onclick = () => { const a = document.createElement('a'); a.download = 'Mars_Fotografi.jpg'; a.href = $('#buyukFoto').src; a.click(); };
+function albumGoster() {
+  const a = LS.get('mars_album', []);
+  $('#albumListe').innerHTML = a.length ? a.map(f => `<figure><img src="${f.img}" data-buyut><figcaption>Görev ${f.gorev} · ${tarihYaz(f.tarih)}</figcaption></figure>`).join('') : '<p>Henüz fotoğraf yok. Bir göreve 📸 Fotoğraf bloğu ekle!</p>';
+  $('#albumListe').querySelectorAll('[data-buyut]').forEach(im => im.onclick = () => fotoGoster(im.src));
+  modalAc('albumModal');
+}
+$('#albumAc').onclick = () => { modalKapat('ayarModal'); albumGoster(); };
+$('#albumAc2').onclick = () => { modalKapat('haritaModal'); albumGoster(); };
+window.ZIRVE_kontroller = [];
+window.ZIRVE_kontrolleriGeriGetir = () => {};
+
+/* ================== BAŞLAT ================== */
+ekranUygula(); kaliteUygula(); sesSimge();
+$('#hizBtn').textContent = (hiz === .5 ? '½' : hiz) + '×';
+const il0 = ilerleme(); if (gorevNo > 0 && !(il0[gorevNo - 1] > 0) && !(il0[gorevNo] > 0)) gorevNo = 0;
+gorevAc(gorevNo);
+{ const g = genelKonum(); camera.position.copy(g.p).add(new THREE.Vector3(6, 6, 8)); bakis.copy(g.h); }
+kare();
+setTimeout(() => { const y = $('#yukleniyor'); y.style.opacity = 0; setTimeout(() => y.remove(), 650); girisGoster(); }, 500);
+window.MARS = { calistir, ekle, gorevAc, seviyeKur, get S() { return S; } };
+</script>
+<script>
+setTimeout(function () {
+  if (!window.__marsYuklendi) {
+    var m = document.getElementById('yukMesaj');
+    if (m) m.textContent = '3D motor yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile.';
+  }
+}, 9000);
+</script>
+</body>
+</html>
