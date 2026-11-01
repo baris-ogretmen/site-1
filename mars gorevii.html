@@ -98,6 +98,15 @@ table.liste td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,200,160,.07)
 .fotolar figure{margin:0}.fotolar figcaption{font-size:.72rem;color:var(--soluk);margin-top:.15rem}
 #buyukFoto{width:100%;border-radius:.8rem;display:block}
 #fotoModal,#albumModal{z-index:56}
+/* 📏 Çocuk Boyu: tüm dokunulacak yerler ekranın alt kısmında */
+body.cocukBoyu .ust{top:auto;bottom:3.4rem;align-items:flex-end}
+body.cocukBoyu .gorevKart{top:auto;bottom:6.6rem}
+body.cocukBoyu .modal{place-items:end center;padding-bottom:calc(.8rem + env(safe-area-inset-bottom))}
+body.cocukBoyu .kutu{max-height:62vh}
+body.cocukBoyu #tost{top:auto;bottom:calc(env(safe-area-inset-bottom) + 13rem)}
+body.cocukBoyu #dok{justify-content:flex-end}
+#cocukRozet{display:none;position:absolute;left:.6rem;bottom:.6rem;z-index:4;font-size:.75rem;opacity:.75}
+body.cocukBoyu #cocukRozet{display:inline-flex}
 @media print{html{zoom:1!important}}
 </style>
 </head>
@@ -114,6 +123,7 @@ table.liste td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,200,160,.07)
       </div>
     </div>
     <div class="gorevKart" id="gorevKart"><b id="gorevBaslik">Görev</b> <span id="gorevMetin"></span></div>
+    <span class="hap" id="cocukRozet">📏 Çocuk Boyu</span>
     <div class="sayac">
       <span class="hap gizli" id="fotoSayac">📸 0/1</span>
       <span class="hap" id="ornekSayac">💎 0/1</span>
@@ -207,6 +217,7 @@ table.liste td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,200,160,.07)
     <div class="arac"><span>📲 QR ile Paylaş</span><button class="btn" id="qrAc">Aç</button></div>
     <div class="arac"><span>🖼️ Mars Albümüm</span><button class="btn" id="albumAc">Aç</button></div>
     <div class="arac"><span>🎨 Grafik Kalitesi</span><button class="btn" id="kaliteBtn"></button></div>
+    <div class="arac"><span>📏 Çocuk Boyu <small style="color:var(--soluk)">(düğmeler aşağıda)</small></span><button class="btn" id="cocukBtn"></button></div>
     <div class="arac"><span>📺 Ekran Modu</span><button class="btn" id="ekranBtn"></button></div>
     <div class="arac"><span>🔊 Ses</span><button class="btn" id="sesBtn2"></button></div>
     <div class="arac"><span>❓ Nasıl Oynanır?</span><button class="btn" id="yardimAc">Göster</button></div>
@@ -312,7 +323,7 @@ window.__marsYuklendi = true;
 
 /* ================== GENEL ================== */
 const OYUN_ADI = 'Mars Görevi';
-const LOCAL_SURUM = 2;
+const LOCAL_SURUM = 3;
 /* Bulut (isteğe bağlı): buraya ya da Öğretmen Paneli'ne yazılabilir */
 const BULUT_VARSAYILAN = { apiKey: '', projectId: '' };
 const KARSILAMA = {
@@ -369,6 +380,15 @@ function ekranUygula() {
 }
 window.ZIRVE_ekranReset = () => document.documentElement.style.setProperty('--ui', 1);
 window.ZIRVE_ekranGeri = ekranUygula;
+
+/* ================== 📏 ÇOCUK BOYU (ZİRVE) ================== */
+let cocukBoyu = LS.get('zirve_cocuk_boyu', null);
+if (cocukBoyu === null) cocukBoyu = cihaz === 'Akıllı Tahta';
+function cocukBoyuUygula() {
+  document.body.classList.toggle('cocukBoyu', !!cocukBoyu);
+  const b = $('#cocukBtn'); if (b) b.textContent = cocukBoyu ? 'Açık' : 'Kapalı';
+}
+window.ZIRVE_cocukBoyu = v => { cocukBoyu = v === undefined ? !cocukBoyu : !!v; LS.set('zirve_cocuk_boyu', cocukBoyu); cocukBoyuUygula(); };
 
 /* ================== SES (sentez, insan sesi yok) ================== */
 const Ses = {
@@ -1386,6 +1406,7 @@ $('#yardimAc').onclick = () => { modalKapat('ayarModal'); karsilamaGoster(); };
 const sesSimge = () => { $('#sesBtn').textContent = Ses.acik ? '🔊' : '🔇'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; };
 $('#sesBtn').onclick = $('#sesBtn2').onclick = () => { Ses.baslat(); Ses.ayarla(!Ses.acik); sesSimge(); };
 $('#kaliteBtn').onclick = () => { const L = ['Otomatik', 'Yüksek', 'Orta', 'Düşük']; kalite = L[(L.indexOf(kalite) + 1) % L.length]; LS.set('mars_kalite', kalite); kaliteUygula(); };
+$('#cocukBtn').onclick = () => { window.ZIRVE_cocukBoyu(); tost(cocukBoyu ? '📏 Çocuk Boyu açık: düğmeler aşağıda' : '📏 Çocuk Boyu kapalı'); };
 $('#ekranBtn').onclick = () => { ekranModu = EKRAN[(EKRAN.indexOf(ekranModu) + 1) % EKRAN.length]; LS.set('mars_ekran', ekranModu); ekranUygula(); };
 window.ZIRVE_paylasAc = async () => {
   modalAc('qrModal');
@@ -1415,7 +1436,7 @@ window.ZIRVE_kontroller = [];
 window.ZIRVE_kontrolleriGeriGetir = () => {};
 
 /* ================== BAŞLAT ================== */
-ekranUygula(); kaliteUygula(); sesSimge();
+ekranUygula(); kaliteUygula(); sesSimge(); cocukBoyuUygula();
 $('#hizBtn').textContent = (hiz === .5 ? '½' : hiz) + '×';
 const il0 = ilerleme(); if (gorevNo > 0 && !(il0[gorevNo - 1] > 0) && !(il0[gorevNo] > 0)) gorevNo = 0;
 gorevAc(gorevNo);
