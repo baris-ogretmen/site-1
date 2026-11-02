@@ -98,6 +98,19 @@ table.liste td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,200,160,.07)
 .fotolar figure{margin:0}.fotolar figcaption{font-size:.72rem;color:var(--soluk);margin-top:.15rem}
 #buyukFoto{width:100%;border-radius:.8rem;display:block}
 #fotoModal,#albumModal{z-index:56}
+#gorevHap{white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden}
+@media (max-width:430px){.ikonlar{gap:.3rem}.ikon{width:2.3rem;height:2.3rem;font-size:1rem}#gorevHap{padding:.4rem .65rem;font-size:.82rem}}
+/* 🏠 Site içi gezinme */
+#siteKatman{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;background:#140c09}
+#siteKatman.acik{display:flex}
+#siteKatman .bar{flex:none;display:flex;align-items:center;gap:.5rem;padding:calc(env(safe-area-inset-top) + .5rem) .6rem .5rem;background:#21150f;border-bottom:1px solid var(--kenar)}
+#siteKatman .bar b{flex:1;font-size:.95rem;color:#ffb27a}
+#siteKatman iframe{flex:1;width:100%;border:0;background:#fff}
+body.cocukBoyu #siteKatman{flex-direction:column-reverse}
+body.cocukBoyu #siteKatman .bar{border-bottom:0;border-top:1px solid var(--kenar);padding:.5rem .6rem calc(env(safe-area-inset-bottom) + .5rem)}
+.gezBtn{display:flex;align-items:center;gap:.7rem;width:100%;text-align:left;padding:.85rem 1rem;margin-top:.5rem;font-size:1.02rem}
+.gezBtn i{font-style:normal;font-size:1.5rem}
+.gezBtn small{display:block;font-weight:400;color:var(--soluk);font-size:.8rem}
 /* 📏 Çocuk Boyu: tüm dokunulacak yerler ekranın alt kısmında */
 body.cocukBoyu .ust{top:auto;bottom:3.4rem;align-items:flex-end}
 body.cocukBoyu .gorevKart{top:auto;bottom:6.6rem}
@@ -117,6 +130,7 @@ body.cocukBoyu #cocukRozet{display:inline-flex}
     <div class="ust">
       <button class="hap" id="gorevHap" title="Görev haritası">🛰️ <span id="gorevAd">Görev 1</span> <span id="yildizlar"></span></button>
       <div class="ikonlar">
+        <button class="ikon" id="evBtn" title="Site menüsü">🏠</button>
         <button class="ikon" id="kameraBtn" title="Kamera">🎥</button>
         <button class="ikon" id="sesBtn" title="Ses">🔊</button>
         <button class="ikon" id="ayarBtn" title="Ayarlar">⚙️</button>
@@ -153,6 +167,20 @@ body.cocukBoyu #cocukRozet{display:inline-flex}
 <div id="yukleniyor"><div><div class="gz">🚙</div><p>Mars'a iniş yapılıyor…</p><p id="yukMesaj" style="font-weight:400;font-size:.85rem;color:#c9a894"></p></div></div>
 <div id="tost"></div>
 <div id="flas"></div>
+
+<!-- Site içi gezinme -->
+<div class="modal" id="gezModal"><div class="kutu">
+  <h2>🏠 Nereye gitmek istersin?</h2>
+  <button class="btn gezBtn" id="gezSiteIci"><i>🧭</i><span>Sitedeki diğer çalışmalar<small>Oyun arkada açık kalır, istediğin an geri dönersin</small></span></button>
+  <button class="btn gezBtn" id="gezHarita"><i>🗺️</i><span>Görev Haritası<small>Bu oyundaki başka bir göreve geç</small></span></button>
+  <button class="btn gezBtn" id="gezAlbum"><i>🖼️</i><span>Mars Albümüm<small>Çektiğin fotoğraflar</small></span></button>
+  <button class="btn ana gezBtn" id="gezDon"><i>↩️</i><span>Siteye Dön<small>Oyundan çık, Barış Öğretmen sitesine geri dön</small></span></button>
+  <div class="satir"><button class="btn" data-kapat>Vazgeç</button></div>
+</div></div>
+<div id="siteKatman">
+  <div class="bar"><button class="btn yesil" id="siteKapat">◀ Oyuna Dön</button><b>Barış Öğretmen</b><button class="btn" id="siteYeniSekme" title="Yeni sekmede aç">↗</button></div>
+  <iframe id="siteCerceve" title="Barış Öğretmen sitesi" loading="lazy"></iframe>
+</div>
 
 <!-- Albüm -->
 <div class="modal" id="albumModal"><div class="kutu">
@@ -220,6 +248,7 @@ body.cocukBoyu #cocukRozet{display:inline-flex}
     <div class="arac"><span>📏 Çocuk Boyu <small style="color:var(--soluk)">(düğmeler aşağıda)</small></span><button class="btn" id="cocukBtn"></button></div>
     <div class="arac"><span>📺 Ekran Modu</span><button class="btn" id="ekranBtn"></button></div>
     <div class="arac"><span>🔊 Ses</span><button class="btn" id="sesBtn2"></button></div>
+    <div class="arac"><span>🎵 Müzik</span><button class="btn" id="muzikBtn"></button></div>
     <div class="arac"><span>❓ Nasıl Oynanır?</span><button class="btn" id="yardimAc">Göster</button></div>
   </div>
   <div class="bolum"><h3>👨‍🏫 Öğretmen</h3>
@@ -323,7 +352,8 @@ window.__marsYuklendi = true;
 
 /* ================== GENEL ================== */
 const OYUN_ADI = 'Mars Görevi';
-const LOCAL_SURUM = 3;
+const SITE_URL = 'https://baris-ogretmen.github.io/site-1/';
+const LOCAL_SURUM = 4;
 /* Bulut (isteğe bağlı): buraya ya da Öğretmen Paneli'ne yazılabilir */
 const BULUT_VARSAYILAN = { apiKey: '', projectId: '' };
 const KARSILAMA = {
@@ -392,7 +422,7 @@ window.ZIRVE_cocukBoyu = v => { cocukBoyu = v === undefined ? !cocukBoyu : !!v; 
 
 /* ================== SES (sentez, insan sesi yok) ================== */
 const Ses = {
-  ac: null, acik: LS.get('mars_ses', true),
+  ac: null, acik: LS.get('mars_ses', true), muzikAcik: LS.get('mars_muzik', true), muzikDur: false,
   baslat() {
     if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
     try {
@@ -401,25 +431,56 @@ const Ses = {
       const len = this.ac.sampleRate * 2, buf = this.ac.createBuffer(1, len, this.ac.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.gurultu = buf;
-      // rüzgar
+      // yumuşak, havadar rüzgâr (sadece fırtınada duyulur)
       const n = this.ac.createBufferSource(); n.buffer = buf; n.loop = true;
-      const f = this.ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 420; f.Q.value = .7;
-      const g = this.ac.createGain(); g.gain.value = .05; this.rG = g; this.rF = f;
-      const lfo = this.ac.createOscillator(); lfo.frequency.value = .09; const lg = this.ac.createGain(); lg.gain.value = 220;
-      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      const f = this.ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = .5;
+      const g = this.ac.createGain(); g.gain.value = 0; this.rG = g; this.rF = f;
       n.connect(f); f.connect(g); g.connect(this.ana); n.start();
-      // motor
+      // oyuncak robot motoru: tatlı bir vızıltı
       this.mG = this.ac.createGain(); this.mG.gain.value = 0;
-      const mf = this.ac.createBiquadFilter(); mf.type = 'lowpass'; mf.frequency.value = 520;
-      const o1 = this.ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 52;
-      const o2 = this.ac.createOscillator(); o2.type = 'square'; o2.frequency.value = 104;
-      const o3 = this.ac.createOscillator(); o3.type = 'sine'; o3.frequency.value = 940; const g3 = this.ac.createGain(); g3.gain.value = .12;
-      o1.connect(mf); o2.connect(mf); o3.connect(g3); g3.connect(mf); mf.connect(this.mG); this.mG.connect(this.ana);
-      o1.start(); o2.start(); o3.start(); this.o1 = o1;
+      const mf = this.ac.createBiquadFilter(); mf.type = 'lowpass'; mf.frequency.value = 1100;
+      const o1 = this.ac.createOscillator(); o1.type = 'triangle'; o1.frequency.value = 150;
+      const o2 = this.ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = 300;
+      const g2 = this.ac.createGain(); g2.gain.value = .35;
+      const lfo = this.ac.createOscillator(); lfo.frequency.value = 9; const lg = this.ac.createGain(); lg.gain.value = 6;
+      lfo.connect(lg); lg.connect(o1.frequency); lfo.start();
+      o1.connect(mf); o2.connect(g2); g2.connect(mf); mf.connect(this.mG); this.mG.connect(this.ana);
+      o1.start(); o2.start(); this.o1 = o1;
+      // müzik
+      this.mzG = this.ac.createGain(); this.mzG.gain.value = this.muzikAcik ? 1 : 0; this.mzG.connect(this.ana);
+      this.muzikBaslat();
     } catch (e) { this.ac = null; }
   },
   ayarla(a) { this.acik = a; LS.set('mars_ses', a); if (this.ana) this.ana.gain.value = a ? .8 : 0; },
-  motor(x) { if (!this.ac) return; const t = this.ac.currentTime; this.mG.gain.setTargetAtTime(x * .09, t, .08); this.o1.frequency.setTargetAtTime(48 + x * 14, t, .2); },
+  muzikAyarla(a) { this.muzikAcik = a; LS.set('mars_muzik', a); this.muzikSeviye(); },
+  muzikDuraklat(d) { this.muzikDur = d; this.muzikSeviye(); },
+  muzikSeviye() { if (this.mzG) this.mzG.gain.setTargetAtTime(this.muzikAcik && !this.muzikDur ? 1 : 0, this.ac.currentTime, .3); },
+  /* Neşeli keşif müziği: Do majör, I–V–vi–IV, yumuşak pad + ışıltılı arpej (insan sesi yok) */
+  muzikBaslat() {
+    const ac = this.ac, bpm = 96, vurus = 60 / bpm;
+    const akorlar = [[60, 64, 67], [55, 59, 62], [57, 60, 64], [53, 57, 60]];
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+    let sonraki = ac.currentTime + .3, adim = 0;
+    const not = (m, t, sure, tip, vol, atak) => {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = tip; o.frequency.value = hz(m);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + atak); g.gain.exponentialRampToValueAtTime(.0001, t + sure);
+      o.connect(g); g.connect(this.mzG); o.start(t); o.stop(t + sure + .05);
+    };
+    const planla = () => {
+      if (!this.ac) return;
+      while (sonraki < ac.currentTime + .6) {
+        const olcu = Math.floor(adim / 8) % 4, ak = akorlar[olcu], ic = adim % 8;
+        if (ic === 0) { ak.forEach(m => not(m, sonraki, vurus * 4.2, 'sine', .022, .6)); not(ak[0] - 12, sonraki, vurus * 4, 'triangle', .03, .05); }
+        const desen = [0, 1, 2, 1, 0, 2, 1, 2], m = ak[desen[ic]] + 12 + (ic === 6 ? 12 : 0);
+        if (ic !== 3 && ic !== 7) not(m, sonraki, vurus * .9, 'triangle', .018, .01);
+        if (ic === 5 && Math.random() < .5) not(ak[2] + 24, sonraki + vurus * .25, vurus * 1.2, 'sine', .01, .01);
+        sonraki += vurus / 2; adim++;
+      }
+      setTimeout(planla, 200);
+    };
+    planla();
+  },
+  motor(x) { if (!this.ac) return; const t = this.ac.currentTime; this.mG.gain.setTargetAtTime(x * .05, t, .08); this.o1.frequency.setTargetAtTime(150 + x * 40, t, .2); },
   ton(fr, sure, tip = 'sine', vol = .15, gecikme = 0, bitis) {
     if (!this.ac) return; const t = this.ac.currentTime + gecikme;
     const o = this.ac.createOscillator(), g = this.ac.createGain(); o.type = tip; o.frequency.setValueAtTime(fr, t);
@@ -434,16 +495,16 @@ const Ses = {
     const g = this.ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + sure);
     s.connect(f); f.connect(g); g.connect(this.ana); s.start(t); s.stop(t + sure + .05);
   },
-  tik() { this.ton(1250, .06, 'square', .05); },
-  ruzgar(f) { if (!this.ac) return; const t = this.ac.currentTime; this.rG.gain.setTargetAtTime(f ? .2 : .05, t, .6); this.rF.frequency.setTargetAtTime(f ? 650 : 420, t, .6); },
-  deklansor() { this.gurul(.07, 2500, .5, 'highpass'); this.ton(1900, .04, 'square', .05); this.gurul(.06, 2500, .35, 'highpass'); },
-  servo() { this.ton(520, .45, 'triangle', .05, 0, 780); },
-  topla() { this.ton(880, .14, 'sine', .16); this.ton(1320, .22, 'sine', .14, .12); this.ton(1760, .3, 'sine', .08, .24); },
-  carpma() { this.gurul(.45, 200, .9); this.ton(90, .4, 'sine', .35, 0, 40); },
-  surtunme(s) { this.gurul(s, 900, .12, 'bandpass'); },
-  dusme() { this.gurul(1.1, 160, .7); this.ton(70, .9, 'sine', .3, .1, 30); },
-  basari() { [523, 659, 784, 1047].forEach((f, i) => this.ton(f, .5, 'triangle', .14, i * .13)); this.ton(1568, .9, 'sine', .07, .55); },
-  hata() { this.ton(330, .22, 'square', .07); this.ton(220, .35, 'square', .07, .2); }
+  tik() { this.ton(1500, .05, 'sine', .07); },
+  ruzgar(f) { if (!this.ac) return; const t = this.ac.currentTime; this.rG.gain.setTargetAtTime(f ? .05 : 0, t, .8); },
+  deklansor() { this.ton(2200, .04, 'sine', .08); this.gurul(.05, 4000, .18, 'highpass'); this.ton(1600, .08, 'sine', .06, .06); },
+  servo() { this.ton(700, .18, 'sine', .05, 0, 1000); this.ton(1000, .12, 'sine', .04, .14, 1300); },   // "bi-biip"
+  topla() { [1047, 1319, 1568, 2093].forEach((f, i) => this.ton(f, .25, 'sine', .1, i * .07)); },       // ışıltılı
+  carpma() { this.ton(420, .25, 'sine', .22, 0, 180); this.ton(260, .2, 'triangle', .1, .08, 200); },   // çizgi film "bonk"
+  surtunme(s) { this.gurul(Math.min(s, .8), 2200, .05, 'bandpass'); },
+  dusme() { this.ton(1100, .9, 'sine', .14, 0, 260); this.ton(520, .15, 'triangle', .12, .9); },        // kayan düdük + "pıt"
+  basari() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.ton(f, .45, 'triangle', .13, i * .11)); this.ton(1568, .8, 'sine', .07, .6); },
+  hata() { this.ton(660, .18, 'sine', .1); this.ton(520, .3, 'sine', .1, .17); }                        // yumuşak "hı-hı"
 };
 window.addEventListener('pointerdown', () => Ses.baslat());
 
@@ -1403,7 +1464,8 @@ function karsilamaGoster() {
 $('#ayarBtn').onclick = () => { $('#oyuncuYazi').textContent = (oyuncu() || {}).ad || '—'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; modalAc('ayarModal'); };
 $('#oyuncuDegis').onclick = () => { modalKapat('ayarModal'); girisGoster(); };
 $('#yardimAc').onclick = () => { modalKapat('ayarModal'); karsilamaGoster(); };
-const sesSimge = () => { $('#sesBtn').textContent = Ses.acik ? '🔊' : '🔇'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; };
+const sesSimge = () => { $('#sesBtn').textContent = Ses.acik ? '🔊' : '🔇'; $('#sesBtn2').textContent = Ses.acik ? 'Açık' : 'Kapalı'; $('#muzikBtn').textContent = Ses.muzikAcik ? 'Açık' : 'Kapalı'; };
+$('#muzikBtn').onclick = () => { Ses.baslat(); Ses.muzikAyarla(!Ses.muzikAcik); sesSimge(); };
 $('#sesBtn').onclick = $('#sesBtn2').onclick = () => { Ses.baslat(); Ses.ayarla(!Ses.acik); sesSimge(); };
 $('#kaliteBtn').onclick = () => { const L = ['Otomatik', 'Yüksek', 'Orta', 'Düşük']; kalite = L[(L.indexOf(kalite) + 1) % L.length]; LS.set('mars_kalite', kalite); kaliteUygula(); };
 $('#cocukBtn').onclick = () => { window.ZIRVE_cocukBoyu(); tost(cocukBoyu ? '📏 Çocuk Boyu açık: düğmeler aşağıda' : '📏 Çocuk Boyu kapalı'); };
@@ -1432,6 +1494,40 @@ function albumGoster() {
 }
 $('#albumAc').onclick = () => { modalKapat('ayarModal'); albumGoster(); };
 $('#albumAc2').onclick = () => { modalKapat('haritaModal'); albumGoster(); };
+/* ================== 🏠 SİTE İÇİ GEZİNME (ZİRVE) ================== */
+const cerceveIcinde = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+window.ZIRVE_siteyeDon = () => {
+  if (cerceveIcinde) { // site, oyunu kendi içinde (çerçevede) açtıysa: siteye "kapat" de, olmazsa ana sayfayı aç
+    let cevap = false; const dinle = e => { if (e.data && e.data.tip === 'zirve-tamam') cevap = true; };
+    window.addEventListener('message', dinle);
+    try { window.parent.postMessage({ tip: 'zirve-kapat', kaynak: OYUN_ADI }, '*'); } catch (e) {}
+    setTimeout(() => { window.removeEventListener('message', dinle); if (!cevap) { try { window.top.location.href = SITE_URL; } catch (e) { location.href = SITE_URL; } } }, 450);
+    return;
+  }
+  if (window.opener && !window.opener.closed) { // site oyunu yeni sekmede açtıysa: siteye geç, bu sekmeyi kapat
+    try { window.opener.focus(); } catch (e) {}
+    window.close();
+    setTimeout(() => { location.href = SITE_URL; }, 300); // kapanamazsa aynı sekmede siteye git
+    return;
+  }
+  let siteden = false; try { siteden = document.referrer && new URL(document.referrer).origin === new URL(SITE_URL).origin; } catch (e) {}
+  if (siteden && history.length > 1) { history.back(); return; }
+  if (siteden && history.length === 1) { // siteden yeni sekmede açıldı: bu sekmeyi kapat, site sekmesi zaten açık
+    window.close(); setTimeout(() => { location.href = SITE_URL; }, 300); return;
+  }
+  location.href = SITE_URL;
+};
+window.ZIRVE_siteMenusu = () => {
+  const c = $('#siteCerceve'); if (!c.src) c.src = SITE_URL;
+  $('#siteKatman').classList.add('acik'); Ses.muzikDuraklat(true);
+};
+$('#evBtn').onclick = () => modalAc('gezModal');
+$('#gezSiteIci').onclick = () => { modalKapat('gezModal'); window.ZIRVE_siteMenusu(); };
+$('#gezHarita').onclick = () => { modalKapat('gezModal'); $('#gorevHap').click(); };
+$('#gezAlbum').onclick = () => { modalKapat('gezModal'); albumGoster(); };
+$('#gezDon').onclick = () => window.ZIRVE_siteyeDon();
+$('#siteKapat').onclick = () => { $('#siteKatman').classList.remove('acik'); Ses.muzikDuraklat(false); };
+$('#siteYeniSekme').onclick = () => { try { window.open($('#siteCerceve').contentWindow.location.href, '_blank'); } catch (e) { window.open(SITE_URL, '_blank'); } };
 window.ZIRVE_kontroller = [];
 window.ZIRVE_kontrolleriGeriGetir = () => {};
 
