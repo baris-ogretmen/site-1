@@ -214,6 +214,25 @@ body.cocuk-boyu .perde{align-items:flex-end;padding-bottom:1.2rem}
 body.cocuk-boyu .pencere{max-height:64vh}
 body.cocuk-boyu .atTahta{align-items:flex-end;height:60vh;max-height:60vh;align-self:flex-end}
 body.cocuk-boyu .atGovde{align-items:flex-end}
+.cb-only{display:none!important}
+body.cocuk-boyu .cb-only{display:inline-block!important}
+body.cocuk-boyu #oyun .hud .geriBtn,body.cocuk-boyu .gorev .dinle{display:none}
+body.cocuk-boyu #seviye .bolumAlan{order:1;flex:0 1 auto;max-height:56vh}
+body.cocuk-boyu #seviye .bantAcik{order:2}
+body.cocuk-boyu #seviye .bantlar{order:3}
+body.cocuk-boyu #seviye .ust,body.cocuk-boyu #atolye .ust{order:4}
+body.cocuk-boyu #atolye .atGovde{order:1}
+body.cocuk-boyu .atPanel{max-height:62vh;align-self:flex-end}
+body.cocuk-boyu #yanCevir{justify-content:flex-end;padding-bottom:3rem}
+/* ÇOK ALÇAK: dokunulan her şey ekranın alt yarısında */
+body.cocuk-alcak .tahtaKutu{height:44vh;max-height:44vh}
+body.cocuk-alcak .pencere{max-height:50vh}
+body.cocuk-alcak .atTahta{height:46vh;max-height:46vh}
+body.cocuk-alcak .atPanel{max-height:50vh}
+body.cocuk-alcak #seviye .bolumAlan{max-height:40vh}
+body.cocuk-alcak .menuBas{margin-bottom:auto;margin-top:2rem}
+body.cocuk-alcak .zg-kart{max-height:52vh}
+.cbSec{display:flex;gap:.5rem;flex-wrap:wrap;margin:.4rem 0}
 
 /* Kısa ekran (telefon yatay) */
 @media (max-height:520px){
@@ -266,7 +285,7 @@ body.cocuk-boyu .atGovde{align-items:flex-end}
     <button onclick="ZGIRIS.panelAc()">👩‍🏫 Öğretmen Paneli</button>
     <button onclick="siteyeDon()">🏠 Siteye Dön</button>
   </div>
-  <button id="surumRozet" onclick="surumDetay()">v1.0 ✓</button>
+  <button id="surumRozet" onclick="surumDetay()">v1.1 ✓</button>
 </section>
 
 <!-- ===================== SEVİYE ===================== -->
@@ -296,6 +315,8 @@ body.cocuk-boyu .atGovde{align-items:flex-end}
     <div class="serit hedef" id="seritAna"><div class="etk" onclick="hedefSec('ana')">📜 Kodum</div><div class="kodlar" id="kodAna"></div></div>
     <div class="serit gizli" id="seritFn"><div class="etk" onclick="hedefSec('fn')">⭐ Fonksiyon</div><div class="kodlar" id="kodFn"></div></div>
     <div class="calisAlt">
+      <button class="cb-only" onclick="acP('molaPerde')">☰ Mola</button>
+      <button class="cb-only" onclick="gorevOku()">🔊 Dinle</button>
       <button onclick="sil()" title="Backspace">⌫ Sil</button>
       <button onclick="temizle()">🗑️ Temizle</button>
       <button id="dKapatBtn" class="dkapat gizli" onclick="donguKapat()">✔ Tekrarı Bitir</button>
@@ -566,8 +587,8 @@ body.cocuk-boyu .atGovde{align-items:flex-end}
 /* =====================================================================
    ROBİ KOD TAHTASI — oyun motoru
    ===================================================================== */
-const APP={surum:'1.0',tarih:'2026-11-02',satir:1391,kb:178,onceki:{surum:'—',satir:0,kb:0},
-  yenilikler:['İlk sürüm: 5 yaş grubu, 42 bölüm','Kolay yön (3–5 yaş) ve gerçek robot (dön+ilerle) modları','Kavram görevleri (büyük-küçük, az-çok, dolu-boş, uzun-kısa, yüksek-alçak)','Tekrar (döngü), Fonksiyon, Hata Ayıkla, Şekil Çiz görevleri','Tale Bot Pro\'ya tuş tuş aktarma + kod kartı','Senaryo Atölyesi, Sürpriz Harita, QR paylaşım']};
+const APP={surum:'1.1',tarih:'2026-11-05',satir:1420,kb:180,onceki:{surum:'1.0',satir:1391,kb:178},
+  yenilikler:['🧒 Çocuk boyu 3 kademe: Kapalı / Açık / Çok alçak (?cocuk=2 adres ayarı)','Çocuk boyunda Mola, Dinle, yaş bantları ve atölye düğmeleri alta indi','İlk sürüm: 5 yaş grubu, 42 bölüm','Kolay yön (3–5 yaş) ve gerçek robot (dön+ilerle) modları','Kavram görevleri (büyük-küçük, az-çok, dolu-boş, uzun-kısa, yüksek-alçak)','Tekrar (döngü), Fonksiyon, Hata Ayıkla, Şekil Çiz görevleri','Tale Bot Pro\'ya tuş tuş aktarma + kod kartı','Senaryo Atölyesi, Sürpriz Harita, QR paylaşım']};
 const SITE_URL=window.ZIRVE_SITE_URL||'https://baris-ogretmen.github.io/site-1/';
 const ls={al:(k,v)=>{try{const x=localStorage.getItem(k);return x==null?v:JSON.parse(x)}catch(e){return v}},yaz:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=id=>document.getElementById(id);
@@ -1283,13 +1304,16 @@ function sinifAc(){const s=localStorage.getItem('zirve_oyun_sinif')||'';const op
 function ayarAc(){
   const a=S.ayar;const ch=(k,t)=>`<label class="anahtar" style="margin:.35rem 0"><input type="checkbox" ${a[k]?'checked':''} onchange="S.ayar.${k}=this.checked?1:0;ls.yaz('robikod_ayar',S.ayar)"> ${t}</label>`;
   bilgi(`<h3>⚙️ Ayarlar</h3>
+  <p style="margin:.2rem 0">🧒 <b>Çocuk boyu</b> — boyu yetişmeyen öğrenciler için dokunulan her şeyi alta indirir:</p>
+  <div class="cbSec">${CB_AD.map((t,i)=>`<button class="btn ${cbSeviye()===i?'birincil':''}" onclick="cbAyarla(${i});ayarAc()">${['⬜','🧒','⬇️'][i]} ${t}</button>`).join('')}</div>
+  <p style="font-size:.82rem;color:var(--soluk);margin-top:0">Akıllı tahtada kendiliğinden açılır. Bir tahtaya özel: adresin sonuna <b>?cocuk=2</b> ekleyip yer imine kaydet.</p>
   <div class="satir">Robi'nin hızı: ${['🐢 Yavaş','🚶 Normal','🐇 Hızlı'].map((t,i)=>`<button class="btn ${a.hiz===i?'birincil':''}" onclick="S.ayar.hiz=${i};ls.yaz('robikod_ayar',S.ayar);ayarAc()">${t}</button>`).join('')}</div>
   ${ch('ses','🔔 Ses efektleri')}${ch('konus','🗣️ Robi konuşsun (sesli yönerge)')}${ch('kalem','✏️ Robi kalemiyle iz bıraksın')}
   <p style="margin-top:.8rem">🤖 <b>Tale Bot Pro aktarımı</b> — robotunda bu komutların tuşu varsa işaretle:</p>
   ${ch('tusMuzik','🎵 Müzik tuşu var')}${ch('tusIsik','💡 Işık tuşu var')}
   <p style="font-size:.85rem;color:var(--soluk)">İşaretli değilse bu adımlar aktarımda "sınıfla birlikte yap" olarak gösterilir.</p>
   <div class="btnSira"><button class="btn" onclick="if(confirm('Tüm yıldızlar sıfırlansın mı?')){localStorage.removeItem('robikod_ilerleme');location.reload()}">♻️ İlerlemeyi sıfırla</button><button class="btn" onclick="surumKontrol(true)">🔄 Güncellemeleri denetle</button></div>`)}
-const MODULLER=['hazirla','duzle','sim','bfs','haritaCiz','robotKoy','calistir','ipucu','aktarAc','robotSira','atolyeAc','qrAc','siteyeDon'];
+const MODULLER=['cbAyarla','hazirla','duzle','sim','bfs','haritaCiz','robotKoy','calistir','ipucu','aktarAc','robotSira','atolyeAc','qrAc','siteyeDon'];
 function modulKontrol(){return MODULLER.map(m=>[m,typeof window[m]==='function'])}
 function surumDetay(){const mk=modulKontrol();const ok=mk.filter(m=>m[1]).length;const d=dogrula();
   bilgi(`<h3>📦 Sürüm v${APP.surum}</h3><p>Önceki: ${APP.onceki.surum} · ${APP.onceki.satir} satır · ${APP.onceki.kb} KB<br>Şimdi: <b>${APP.satir} satır · ${APP.kb} KB</b> (+${APP.satir-APP.onceki.satir} satır)</p><p>🆕 ${APP.yenilikler.join('<br>🆕 ')}</p><p>🧪 Modüller: <b>${ok}/${mk.length}</b> sağlam ${mk.filter(m=>!m[1]).map(m=>'❌'+m[0]).join(' ')}<br>🗺️ Bölüm testi: <b>${d.ok}/${d.toplam}</b> bölüm çözülebilir ${d.hatalar.length?'<br>⚠️ '+d.hatalar.join('<br>⚠️ '):''}</p>`)}
@@ -1329,10 +1353,15 @@ window.ZIRVE_siteyeDon=siteyeDon;
 
 /* ---------- 🧒 çocuk boyu + tahta ölçeği ---------- */
 function tahtaMi(){const d=('ontouchstart' in window)||navigator.maxTouchPoints>0;const dpr=devicePixelRatio||1,mx=Math.max(screen.width,screen.height);return /[?&]tahta=1/.test(location.search)||(d&&mx>=1700&&dpr<=1.3)||(d&&mx*dpr>=3000&&!/iPhone|iPad|Mobile/.test(navigator.userAgent))||(/Windows/.test(navigator.userAgent)&&d&&mx*dpr>=3000)}
-function cocukBoyu(){const v=localStorage.getItem('zirve_cocuk_boyu');return v==null?tahtaMi():v==='1'}
-function cocukBoyuUygula(){document.body.classList.toggle('cocuk-boyu',cocukBoyu());cbButon()}
-function cbButon(){const t='🧒 Çocuk boyu: '+(cocukBoyu()?'Açık':'Kapalı');if($('cbBtn'))$('cbBtn').textContent=t;if($('cbBtn2'))$('cbBtn2').textContent=t}
-function cocukBoyuDegis(){localStorage.setItem('zirve_cocuk_boyu',cocukBoyu()?'0':'1');cocukBoyuUygula();toast(cocukBoyu()?'🧒 Çocuk boyu açık: dokunulanlar altta':'Çocuk boyu kapalı')}
+/* 0 = Kapalı · 1 = Açık (dokunulanlar altta) · 2 = Çok alçak (dokunulanlar alt yarıda) */
+const CB_AD=['Kapalı','Açık','Çok alçak'];
+function cbSeviye(){const u=location.search.match(/[?&]cocuk=([012])/);if(u)return +u[1];const v=localStorage.getItem('zirve_cocuk_boyu');if(v==null)return tahtaMi()?1:0;return Math.max(0,Math.min(2,+v||0))}
+function cocukBoyu(){return cbSeviye()>0}
+function cocukBoyuUygula(){const s=cbSeviye();document.body.classList.toggle('cocuk-boyu',s>0);document.body.classList.toggle('cocuk-alcak',s===2);cbButon()}
+function cbButon(){const t='🧒 Çocuk boyu: '+CB_AD[cbSeviye()];if($('cbBtn'))$('cbBtn').textContent=t;if($('cbBtn2'))$('cbBtn2').textContent=t}
+function cbAyarla(s){try{localStorage.setItem('zirve_cocuk_boyu',String(s))}catch(e){}if(/[?&]cocuk=/.test(location.search))history.replaceState(null,'',location.pathname+location.search.replace(/([?&])cocuk=[012]&?/,'$1').replace(/[?&]$/,'')+location.hash);cocukBoyuUygula();
+  toast(['Çocuk boyu kapalı','🧒 Çocuk boyu açık: dokunulan her şey altta','🧒 Çok alçak: dokunulan her şey ekranın alt yarısında'][s]);if($('oyun').classList.contains('acik')&&S.lv)setTimeout(()=>haritaCiz($('tahta'),S.lv),50)}
+function cocukBoyuDegis(){cbAyarla((cbSeviye()+1)%3)}
 function olcekUygula(){let o=1;if(tahtaMi()){o=Math.max(innerWidth,innerHeight)>=2600?1.6:1.35}document.documentElement.style.setProperty('--olc',o)}
 
 /* ---------- yan çevir ---------- */
