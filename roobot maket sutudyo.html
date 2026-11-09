@@ -228,7 +228,7 @@ body.cocuk-boyu #eGiris .hero{min-height:38vh}
   <h2 class="logo" style="font-size:32px;margin:8px 0" id="bekleBaslik">Öğretmenin görevi başlatmasını bekle</h2>
   <p style="color:#bfe3ea;font-weight:700" id="bekleAlt"></p>
   <div id="modelSecim" class="rolSec" style="margin-top:14px"></div>
-  <div class="altSatir"><button class="btn cam kucuk" onclick="BEYIN.menu()">🧠 Beklerken Beyin Odak</button><button class="btn cam kucuk" onclick="ZIRVE.siteyeDon()">🏠 Siteye Dön</button></div>
+  <div class="altSatir"><button class="btn cam kucuk" onclick="BEYIN.menu()">🧠 Beyin Odak</button><button class="btn cam kucuk" onclick="ZIRVE.siteyeDon()">🏠 Siteye Dön</button></div>
 </section>
 
 <!-- ATÖLYE (ÖĞRENCİ) -->
@@ -272,6 +272,7 @@ body.cocuk-boyu #eGiris .hero{min-height:38vh}
     <button class="btn cam kucuk" onclick="OGT.mesajYaz()">📢 Mesaj</button>
     <button class="btn cam kucuk" onclick="OGT.ornekSinif()">🎬 Örnek Sınıf</button>
     <button class="btn cam kucuk" onclick="OGT.raporKopyala()">📋 Rapor</button>
+    <button class="btn cam kucuk" onclick="OGT.baglantiTest()">🛰️ Bağlantı Testi</button>
     <button class="btn cam kucuk" onclick="APP.bilimAc()">🔬</button>
   </div>
   <div class="ozet" id="oOzet"></div>
@@ -801,7 +802,7 @@ const SES=(()=>{let ac=null,hum=null;const NOTA={Do:262,Re:294,Mi:330,Fa:349,Sol
   }})();
 
 /* ================= AĞ: Firestore REST + yerel yansı (aynı cihazda sekmeler arası) ================= */
-const NET=(()=>{
+const NET=(()=>{const NETX={sonOk:0,sonHata:''};
   const PROJE='shaped-totem-481514-c5';const KOK='https://firestore.googleapis.com/v1/projects/'+PROJE+'/databases/(default)/documents/';
   let bc=null;try{bc=new BroadcastChannel('robo_maket')}catch(e){}
   const dinleyici=[];if(bc)bc.onmessage=e=>dinleyici.forEach(f=>f(e.data));
@@ -810,23 +811,25 @@ const NET=(()=>{
   const fetch=(u,o)=>{const ac=new AbortController();const t=setTimeout(()=>ac.abort(),6000);return window.fetch(u,Object.assign({},o||{},{signal:ac.signal})).finally(()=>clearTimeout(t))};
   function durumYaz(d){durum=d;document.querySelectorAll('#aNet,#oNet').forEach(e=>{e.textContent=d==='ok'?'● çevrimiçi':d==='yerel'?'● yerel':'● bağlanıyor';e.style.color=d==='ok'?'#69f0ae':d==='yerel'?'#ffd54f':'#90a4ae'})}
   async function fsPatch(yol,obj){const body={fields:{veri:{stringValue:JSON.stringify(obj)},son:{integerValue:String(Date.now())}}};
-    const r=await fetch(KOK+yol,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(r.status);return true}
-  async function fsGet(yol){const r=await fetch(KOK+yol+'?_='+Date.now(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();return docCoz(j)}
+    const r=await fetch(KOK+yol,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){NETX.sonHata='Yazma hatası '+r.status;throw new Error(r.status)}NETX.sonOk=Date.now();return true}
+  async function fsGet(yol){const r=await fetch(KOK+yol,{cache:'no-store'});if(r.ok)NETX.sonOk=Date.now();else NETX.sonHata='Okuma hatası '+r.status;if(r.status===404)return null;if(!r.ok)throw new Error(r.status);const j=await r.json();return docCoz(j)}
   function docCoz(j){try{return JSON.parse(j.fields.veri.stringValue)}catch(e){return null}}
-  async function fsListe(yol){const r=await fetch(KOK+yol+'?pageSize=300&_='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(r.status);const j=await r.json();
+  async function fsListe(yol){const r=await fetch(KOK+yol+'?pageSize=300',{cache:'no-store'});if(!r.ok){NETX.sonHata='Liste hatası '+r.status;throw new Error(r.status)}NETX.sonOk=Date.now();const j=await r.json();
     return (j.documents||[]).map(d=>{const v=docCoz(d);if(v)v._id=d.name.split('/').pop();return v}).filter(Boolean)}
-  return {
+  return Object.assign(NETX,{
     durum:()=>durum,dinle(f){dinleyici.push(f)},
     yaz(yol,obj,hemen){obj=Object.assign({},obj,{_t:Date.now()});LS.s(yerelKey(yol),obj);try{bc&&bc.postMessage({yol,obj})}catch(e){}
       bekleyen[yol]=obj;clearTimeout(zamanlayici[yol]);zamanlayici[yol]=setTimeout(async()=>{const o=bekleyen[yol];if(!o)return;delete bekleyen[yol];
-        try{await fsPatch(yol,o);durumYaz('ok')}catch(e){durumYaz('yerel')}},hemen?10:700)},
+        try{await fsPatch(yol,o);durumYaz('ok')}catch(e){durumYaz('yerel');if(!(e&&/^\d+$/.test(e.message)))NETX.sonHata='İnternet/Firebase’e ulaşılamadı';
+          setTimeout(()=>{if(!bekleyen[yol])NET.yaz(yol,o,true)},4000)}},hemen?10:700)},
+    async test(){const yol='robo_maket_test/t'+Math.floor(Math.random()*1e9);const t0=Date.now();try{await fsPatch(yol,{deneme:1});const o=await fsGet(yol);return o&&o.deneme===1?{ok:true,ms:Date.now()-t0}:{ok:false,mesaj:'Yazıldı ama okunamadı'}}catch(e){return {ok:false,mesaj:NETX.sonHata||String(e.message||e)}}},
     async oku(yol){let uzak=null;try{uzak=await fsGet(yol);durumYaz('ok')}catch(e){durumYaz('yerel')}const yerel=LS.g(yerelKey(yol),null);
       if(uzak&&yerel)return (yerel._t||0)>(uzak._t||0)?yerel:uzak;return uzak||yerel},
     async liste(kol){const harita={};
       try{(await fsListe(kol)).forEach(v=>harita[v._id]=v);durumYaz('ok')}catch(e){durumYaz('yerel')}
       for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(yerelKey(kol)+'/')){const id=k.slice(yerelKey(kol).length+1);if(id.includes('/'))continue;const v=LS.g(k,null);if(v&&(!harita[id]||(v._t||0)>(harita[id]._t||0))){v._id=id;harita[id]=v}}}
       return Object.values(harita)}
-  };
+  });
 })();
 
 /* ================= ZGIRIS — ZİRVE zorunlu öğrenci girişi + öğretmen paneli (oyun_girisleri) ================= */
@@ -879,7 +882,7 @@ const NET=(()=>{
 })();
 
 /* ================= ZİRVE: ayarlar, karşılama, QR, ekran modu, çocuk boyu, siteye dön, sürüm ================= */
-const APP_SURUM={surum:'1.0',tarih:'08.11.2026',satir:1454,kb:248,onceki:{surum:'—',satir:0,kb:0},yenilikler:['İlk sürüm: 4 robot maketi, canlı tablet duvarı, 5 beyin odak modülü']};
+const APP_SURUM={surum:'1.1',tarih:'09.11.2026',satir:1471,kb:252,onceki:{surum:'1.0',satir:1454,kb:252},yenilikler:['Tabletler görevi bekleyip takılmıyor: öğrenci maketi kendisi seçebiliyor','Öğretmen: “🙋 Öğrenci seçsin” + 🛰️ Bağlantı Testi + tablet başına “görev ulaştı mı” göstergesi','Firebase okuma düzeltmesi + yazma hatasında otomatik yeniden deneme','İlk sürüm: 4 robot maketi, canlı tablet duvarı, 5 beyin odak modülü']};
 const ZIRVE=(()=>{
   const SITE=window.ZIRVE_SITE_URL||'https://baris-ogretmen.github.io/site-1/';
   function siteyeDon(){try{window.APP&&APP.kaydet&&APP.kaydet()}catch(e){}
@@ -955,35 +958,47 @@ const APP={
   async koduGonder(){const k=APP._kod||'';if(k.length!==4){toast('4 rakamlı kodu yaz');return}
     $('#kodGir').disabled=true;const o=await NET.oku('robo_maket_oturum/'+k);$('#kodGir').disabled=false;
     if(!o){toast('🔍 Bu kodla açık bir sınıf bulunamadı. Tahtadaki kodu kontrol et.',3500);SES.hata();return}
-    APP.kod=k;APP.oturum=o;LS.s('rm_son_kod',{kod:k,t:Date.now()});SES.basari();APP.oturumIsle(o,true);APP.dinlemeBaslat();APP.durumGonder(true)},
+    APP.kod=k;APP.oturum=o;APP.sonOkuma=Date.now();APP.is=null;LS.s('rm_son_kod',{kod:k,t:Date.now()});SES.basari();APP.oturumIsle(o,true);APP.dinlemeBaslat();APP.durumGonder(true)},
   async tekBasla(){APP.rol='tek';APP.ogr=await ZGIRIS.baslat({oyun:'Robo Maket Stüdyosu',renk:'#00acc1'});APP.modelSecGoster()},
-  modelSecGoster(){const kad=APP.ogr?sinifKad(APP.ogr.sinif):LS.g('zirve_oyun_sinif','34');
+  modelSecGoster(){if(APP.rol==='ogrenci'&&APP.kod){APP.is=null;APP.durumGonder(true);APP.bekleGoster();return}const kad=APP.ogr?sinifKad(APP.ogr.sinif):LS.g('zirve_oyun_sinif','34');
     $('#bekleBaslik').textContent='Hangi robotu kuralım?';$('#bekleAlt').textContent=KADEME_AD[kad]+' seviyesi · Ayarlar’dan değiştirilebilir';
     $('#modelSecim').innerHTML=MODEL_SIRA.map(id=>{const m=MODELLER[id];return '<button class="rol" onclick="APP.atolyeBasla(\''+id+'\',\''+kad+'\',\'rehberli\')"><span class="ik">'+m.ikon+'</span><span><b>'+m.ad+'</b><small>'+m.kisa+' · '+modelAdimlar(m,kad).length+' adım</small></span></button>'}).join('')+
       '<button class="rol" onclick="APP.atolyeBasla(\'serbest\',\''+kad+'\',\'serbest\')"><span class="ik">🛠️</span><span><b>Serbest Atölye</b><small>Hayalindeki maketi kur</small></span></button>';
     APP.ekran('eBekle')},
 
   /* ---------- sınıf oturumu ---------- */
-  dinlemeBaslat(){clearInterval(APP._dinle);APP._dinle=setInterval(async()=>{const o=await NET.oku('robo_maket_oturum/'+APP.kod);if(o)APP.oturumIsle(o)},2500);
+  async yokla(){try{const o=await NET.oku('robo_maket_oturum/'+APP.kod);if(o){APP.sonOkuma=Date.now();APP.oturumIsle(o)}}catch(e){NET.sonHata=String(e&&e.message||e)}APP.baglantiYaz()},
+  baglantiYaz(){const e=$('#bekleNet');if(!e)return;const s=APP.sonOkuma?Math.round((Date.now()-APP.sonOkuma)/1000):null;
+    e.innerHTML=s!=null&&s<12?'📡 Öğretmenle bağlantı: <b style="color:#69f0ae">✓ canlı</b> ('+s+' sn önce kontrol edildi)':'📡 <b style="color:#ffd54f">Bağlantı aranıyor…</b> '+esc(NET.sonHata||'')+' <button class="btn cam kucuk" onclick="APP.yokla()">🔄 Yenile</button>'},
+  dinlemeBaslat(){clearInterval(APP._dinle);APP._dinle=setInterval(APP.yokla,2500);
     NET.dinle(m=>{if(m.yol==='robo_maket_oturum/'+APP.kod)APP.oturumIsle(m.obj)});
     clearInterval(APP._nabiz);APP._nabiz=setInterval(()=>APP.durumGonder(),10000)},
-  oturumIsle(o,ilk){const eski=APP.oturum||{};APP.oturum=o;const id=ogrId(APP.ogr);
+  oturumIsle(o,ilk){try{APP._oturumIsle(o,ilk)}catch(e){console.error(e);NET.sonHata='Görev işlenemedi: '+(e&&e.message)}},
+  _oturumIsle(o,ilk){const eski=APP.oturum||{};APP.oturum=o;const id=ogrId(APP.ogr);
     $('#mDondur').classList.toggle('gizli',!o.dondur);
     if(o.mesaj&&o.mesaj.ts!==APP._mesajTs){APP._mesajTs=o.mesaj.ts;if(!ilk){toast('📢 '+esc(o.mesaj.metin),6000);SES.nota('Sol');SES.konus(o.mesaj.metin)}}
     const oz=o.ozel&&o.ozel[id];if(oz&&oz.ts!==APP._ozelTs){APP._ozelTs=oz.ts;if(!ilk||Date.now()-oz.ts<60000){toast((oz.tip==='yildiz'?'⭐ ':'💡 ')+esc(oz.metin),7000);SES.basari();if(oz.tip==='yildiz'&&APP.is){APP.is.bonus=(APP.is.bonus||0)+1;APP.ustBar()}if(oz.tip==='yardimTamam'&&APP.is){APP.is.yardim=false;APP.dockCiz();APP.durumGonder(true)}}}
     if(o.beyin&&o.beyin.ts!==APP._beyinTs){APP._beyinTs=o.beyin.ts;if(!ilk||Date.now()-o.beyin.ts<120000){BEYIN.ac(o.beyin.mod,APP.kad(),skor=>{APP.beyinSkor={mod:o.beyin.mod,skor};APP.durumGonder(true)})}}
+    if(o.gorev&&o.gorev.ts!==APP.gorevTs&&o.gorev.model==='secim'){APP.gorevTs=o.gorev.ts;APP.durumGonder(true);if(!APP.is){APP.bekleGoster()}else if(!ilk)toast('🙋 Öğretmen: istediğin maketi seçebilirsin (☰ Menü → Başka model)',5000);return}
     if(o.gorev&&o.gorev.ts!==APP.gorevTs){APP.gorevTs=o.gorev.ts;const kad=o.gorev.kad==='oto'?sinifKad(APP.ogr.sinif):o.gorev.kad;
       const kayit=LS.g('rm_is',null);
       if(kayit&&kayit.gorevTs===o.gorev.ts&&kayit.modelId===o.gorev.model){APP.is=kayit;APP.atolyeAc()}else APP.atolyeBasla(o.gorev.model,kad,o.gorev.mod,o.gorev.ts);
       if(!ilk)toast('🚀 Yeni görev: '+(MODELLER[o.gorev.model]?MODELLER[o.gorev.model].ad:'Serbest Atölye'),4000);return}
-    if(!o.gorev&&(ilk||!APP.is)){$('#bekleBaslik').textContent='Öğretmenin görevi başlatmasını bekle';$('#bekleAlt').textContent='Sınıf '+APP.kod+' · bağlandın ✓ Tabletin tahtada görünüyor.';$('#modelSecim').innerHTML='';APP.ekran('eBekle')}
+    if(!APP.is&&(ilk||$('#eBekle').classList.contains('gizli')))APP.bekleGoster();
   },
+  bekleGoster(){const kad=sinifKad(APP.ogr&&APP.ogr.sinif);const g=APP.oturum&&APP.oturum.gorev;
+    $('#bekleBaslik').textContent=g&&g.model==='secim'?'🙋 İstediğin maketi seç!':'Bir maket seç ve kurmaya başla';
+    $('#bekleAlt').innerHTML='Sınıf '+esc(APP.kod)+' · bağlandın ✓ Tabletin tahtada görünüyor. Öğretmen görev gönderirse otomatik açılır.<br><span id="bekleNet"></span>';
+    APP.modelKartlari(kad);APP.ekran('eBekle');APP.baglantiYaz()},
+  modelKartlari(kad){$('#modelSecim').innerHTML=MODEL_SIRA.map(id=>{const m=MODELLER[id];return '<button class="rol" onclick="APP.kendinSec(\''+id+'\',\''+kad+'\')"><span class="ik">'+m.ikon+'</span><span><b>'+m.ad+'</b><small>'+m.kisa+' · '+modelAdimlar(m,kad).length+' adım</small></span></button>'}).join('')+
+      '<button class="rol" onclick="APP.kendinSec(\'serbest\',\''+kad+'\')"><span class="ik">🛠️</span><span><b>Serbest Atölye</b><small>Hayalindeki maketi kur</small></span></button>'},
+  kendinSec(id,kad){APP.atolyeBasla(id,kad,id==='serbest'?'serbest':'rehberli',APP.gorevTs||0)},
   kad(){return APP.is?APP.is.kad:(APP.ogr?sinifKad(APP.ogr.sinif):'34')},
   durumGonder(hemen){if(APP.rol!=='ogrenci'||!APP.kod||!APP.ogr)return;const I=APP.is||{};
     NET.yaz('robo_maket_oturum/'+APP.kod+'/tabletler/'+ogrId(APP.ogr),{ad:APP.ogr.ad,soyad:APP.ogr.soyad,sinif:APP.ogr.sinif,sube:APP.ogr.sube,cihaz:ZGIRIS.cihaz().tur,
       model:I.modelId||null,kad:I.kad,mod:I.mod,faz:I.faz||'bekle',adim:I.adimIdx||0,toplam:APP.adimlar().length,yerlesen:I.yerlesen||[],kablo:I.kablo||{},prog:I.prog||[],
       hata:I.hata||0,ipucu:I.ipucu||0,calistirma:I.calistirma||0,yildiz:I.yildiz||0,bonus:I.bonus||0,gorevOk:!!I.gorevOk,yardim:!!I.yardim,sonuc:I.sonuc||'',
-      ekran:BEYIN.acik?'beyin:'+BEYIN.acik:(I.modelId?'atolye':'bekle'),beyin:APP.beyinSkor||null,son:Date.now()},hemen)},
+      ekran:BEYIN.acik?'beyin:'+BEYIN.acik:(I.modelId?'atolye':'bekle'),beyin:APP.beyinSkor||null,gorevTs:APP.gorevTs||0,okuma:APP.sonOkuma||0,son:Date.now()},hemen)},
 
   /* ---------- atölye ---------- */
   adimlar(){const I=APP.is;if(!I||!MODELLER[I.modelId])return [];return modelAdimlar(MODELLER[I.modelId],I.kad)},
@@ -1084,7 +1099,7 @@ const APP={
   zum(k){APP.cam.zoom*=k},
   yardim(){APP.is.yardim=!APP.is.yardim;APP.dockCiz();APP.durumGonder(true);toast(APP.is.yardim?'✋ Öğretmenin tahtada senin elini kaldırdığını görüyor':'El indirildi')},
   menu(){const I=APP.is;const k=modal('<h2>☰ Menü</h2><div style="display:grid;gap:8px">'+
-      (APP.rol!=='ogrenci'||(APP.oturum&&APP.oturum.gorev&&APP.oturum.gorev.serbestGecis)||I.faz==='bitti'?'<button class="secenek" data-a="model">🌍 Başka model seç</button>':'')+
+      '<button class="secenek" data-a="model">🌍 Başka maket seç</button>'+
       '<button class="secenek" data-a="beyin">🧠 Beyin Odak Atölyesi</button>'+(I.modelId!=='serbest'&&I.mod!=='uzman'?'<button class="secenek" data-a="uzman">🎓 Uzman modu (gölgeler gizli)</button>':'')+
       '<button class="secenek" data-a="bastan">🔁 Bu maketi baştan kur</button><button class="secenek" data-a="ayar">⚙️ Ayarlar</button><button class="secenek" data-a="site">🏠 Siteye Dön</button></div>');
     k.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{k._kapat();const a=b.dataset.a;
@@ -1155,7 +1170,7 @@ const APP={
   bittiGoster(){const I=APP.is;let y=3;if(I.ipucu>2||I.hata>8)y--;if(I.calistirma>6||!I.aciklamaOk)y--;y=Math.max(1,y);I.yildiz=Math.max(I.yildiz||0,y);APP.ustBar();APP.kaydet();APP.durumGonder(true);
     const dk=Math.max(1,Math.round((Date.now()-(I.basla||Date.now()))/60000));
     const k=modal('<div style="text-align:center"><div style="font-size:64px">'+'⭐'.repeat(I.yildiz)+'</div><h2>'+APP.model.ikon+' '+esc(APP.model.ad)+' tamam!</h2><p style="font-weight:700;color:#456">'+dk+' dk · '+I.calistirma+' deneme · '+I.ipucu+' ipucu · '+I.hata+' düzeltme</p><p style="font-weight:700;color:#2e7d32">Mühendisler de böyle çalışır: kur → dene → düzelt → açıkla.</p></div><div style="display:grid;gap:8px">'+
-      (I.mod!=='uzman'?'<button class="secenek" data-a="uzman">🎓 Uzman modunda (gölgesiz) tekrar kur</button>':'')+'<button class="secenek" data-a="beyin">🧠 Beyin Odak Atölyesi</button><button class="secenek" data-a="serbest">🛠️ Serbest atölyede kendi maketini yap</button>'+(APP.rol!=='ogrenci'?'<button class="secenek" data-a="model">🌍 Başka model</button>':'')+'<button class="secenek" data-a="kal">👀 Maketimi incelemeye devam</button></div>');
+      (I.mod!=='uzman'?'<button class="secenek" data-a="uzman">🎓 Uzman modunda (gölgesiz) tekrar kur</button>':'')+'<button class="secenek" data-a="beyin">🧠 Beyin Odak Atölyesi</button><button class="secenek" data-a="serbest">🛠️ Serbest atölyede kendi maketini yap</button>'+'<button class="secenek" data-a="model">🌍 Başka maket</button>'+'<button class="secenek" data-a="kal">👀 Maketimi incelemeye devam</button></div>');
     k.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{k._kapat();const a=b.dataset.a;if(a==='uzman')APP.atolyeBasla(I.modelId,I.kad,'uzman',I.gorevTs);if(a==='beyin')BEYIN.menu();if(a==='serbest')APP.atolyeBasla('serbest',I.kad,'serbest',I.gorevTs);if(a==='model')APP.modelSecGoster()})},
 
   /* ---------- çizim döngüsü ---------- */
@@ -1211,7 +1226,7 @@ const APP={
 })();
 
 /* ================= ÖĞRETMEN · CANLI SINIF DUVARI ================= */
-const OGT={kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'rehberli',secKad:'oto',kartlar:{},
+const OGT={TABAN:[{t:'b24',c:'gri',x:0,y:0,z:0},{t:'b24',c:'gri',x:8,y:2,z:10}],kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'rehberli',secKad:'oto',kartlar:{},
   async ogretmenGiris(){
     if(sessionStorage.getItem('rm_ogt_ok')!=='1'){const ok=await new Promise(coz=>{const k=modal('<h2>🧑‍🏫 Öğretmen girişi</h2><p style="font-weight:700;color:#567">Öğretmen şifresini yaz.</p><input id="ogtPin" type="password" inputmode="numeric" style="width:100%;font-size:30px;padding:12px;border-radius:14px;border:2px solid #cfd8dc;text-align:center;letter-spacing:8px"><div style="display:flex;gap:8px;margin-top:10px"><button class="btn ye" style="flex:1" id="ogtOk">Giriş ✓</button></div>',{kapaninca:()=>coz(false)});
       const f=()=>{if(k.querySelector('#ogtPin').value==='2026'){sessionStorage.setItem('rm_ogt_ok','1');k.remove();coz(true)}else{toast('Şifre yanlış');SES.hata()}};k.querySelector('#ogtOk').onclick=f;k.querySelector('#ogtPin').onkeydown=e=>{if(e.key==='Enter')f()};setTimeout(()=>k.querySelector('#ogtPin').focus(),50)});if(!ok)return}
@@ -1232,12 +1247,13 @@ const OGT={kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'re
   async miniQr(){try{await ZIRVE.qrCiz($('#oQrMini'),OGT.linki())}catch(e){$('#oQrMini').style.display='none'}},
   qrGoster(){ZIRVE.paylasAc(OGT.linki(),'Sınıf kodu '+OGT.kod+' — tabletle okut')},
   kontrolCiz(){
-    $('#oModel').innerHTML=MODEL_SIRA.concat(['serbest']).map(id=>{const m=MODELLER[id];return '<button class="'+(OGT.secModel===id?'on':'')+'" onclick="OGT.secModel=\''+id+'\';OGT.kontrolCiz()">'+(m?m.ikon+' '+m.ad:'🛠️ Serbest')+'</button>'}).join('');
+    $('#oModel').innerHTML=['secim'].concat(MODEL_SIRA,['serbest']).map(id=>{const m=MODELLER[id];return '<button class="'+(OGT.secModel===id?'on':'')+'" onclick="OGT.secModel=\''+id+'\';OGT.kontrolCiz()">'+(m?m.ikon+' '+m.ad:id==='secim'?'🙋 Öğrenci seçsin':'🛠️ Serbest')+'</button>'}).join('');
     $('#oMod').innerHTML=[['rehberli','🧭 Rehberli'],['uzman','🎓 Uzman']].map(([k,a])=>'<button class="'+(OGT.secMod===k?'on':'')+'" onclick="OGT.secMod=\''+k+'\';OGT.kontrolCiz()">'+a+'</button>').join('');
     $('#oKad').innerHTML=[['oto','🎓 Sınıfına göre']].concat(KADEMELER.map(k=>[k,KADEME_AD[k]])).map(([k,a])=>'<button class="'+(OGT.secKad===k?'on':'')+'" onclick="OGT.secKad=\''+k+'\';OGT.kontrolCiz()">'+a+'</button>').join('');
     $('#oDondurBtn').textContent=OGT.oturum&&OGT.oturum.dondur?'▶ Tabletleri Aç':'👀 Gözler Tahtaya'},
   gorevBaslat(){OGT.oturum.gorev={model:OGT.secModel,mod:OGT.secModel==='serbest'?'serbest':OGT.secMod,kad:OGT.secKad,ts:Date.now()};OGT.oturum.dondur=false;OGT.yaz();OGT.kontrolCiz();
-    SES.basari();toast('🚀 Görev tüm tabletlere gönderildi: '+(MODELLER[OGT.secModel]?MODELLER[OGT.secModel].ad:'Serbest Atölye'));if(OGT.demo)OGT.demo.forEach(d=>OGT.demoSifirla(d))},
+    SES.basari();toast('🚀 Tabletlere gönderildi: '+(MODELLER[OGT.secModel]?MODELLER[OGT.secModel].ad:OGT.secModel==='secim'?'Öğrenciler kendi seçsin':'Serbest Atölye'));if(OGT.demo)OGT.demo.forEach(d=>OGT.demoSifirla(d))},
+  async baglantiTest(){toast('🛰️ Bağlantı test ediliyor…');const r=await NET.test();modal('<h2>🛰️ Bağlantı testi</h2>'+(r.ok?'<p style="font-size:20px;color:#2e7d32">✅ Firebase’e yazma + okuma çalışıyor ('+r.ms+' ms). Tabletler görevi 2–3 sn içinde alır.</p>':'<p style="font-size:20px;color:#c62828">❌ '+esc(r.mesaj)+'</p><p style="font-weight:700">İnternet bağlantısını ve okul ağının firestore.googleapis.com adresine izin verdiğini kontrol et.</p>'))},
   dondur(){OGT.oturum.dondur=!OGT.oturum.dondur;OGT.yaz();OGT.kontrolCiz();toast(OGT.oturum.dondur?'👀 Tüm tabletler durdu — gözler tahtada':'▶ Tabletler açıldı')},
   mesajYaz(){const k=modal('<h2>📢 Tüm tabletlere mesaj</h2><input id="msj" style="width:100%;font-size:20px;padding:12px;border-radius:12px;border:2px solid #cfd8dc" placeholder="Örn: 5 dakika kaldı!"><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">'+['5 dakika kaldı! ⏳','Harika gidiyorsunuz! 🌟','Kablolara dikkat: harfleri kontrol et 🔌','Bitiren arkadaşına yardım etsin 🤝','Toparlanma zamanı 🧹'].map(m=>'<button class="btn cam kucuk" style="color:#123;background:#eceff1" data-m="'+esc(m)+'">'+esc(m)+'</button>').join('')+'</div><button class="btn ye" id="msjG" style="width:100%">Gönder</button>');
     k.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>k.querySelector('#msj').value=b.dataset.m);
@@ -1264,11 +1280,12 @@ const OGT={kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'re
       k.querySelector('.fazRozet').textContent=(x.ekran||'').startsWith('beyin')?'🧠 '+((BEYIN.MOD.find(b=>'beyin:'+b.k===x.ekran)||{}).ad||'Beyin'):fzAd;
       let el=k.querySelector('.elKalk');if(x.yardim&&!el){el=document.createElement('div');el.className='elKalk';el.textContent='✋';k.appendChild(el)}if(!x.yardim&&el)el.remove();
       const yuz=x.toplam?Math.round((x.faz==='yap'?x.adim/x.toplam*60:x.faz==='bagla'?65:x.faz==='kod'||x.faz==='test'?80:x.gorevOk?100:0)):0;
-      k.querySelector('.alt').innerHTML='<div class="cubuk"><i style="width:'+yuz+'%"></i></div><div style="display:flex;justify-content:space-between;gap:6px"><span>'+(m?m.ikon+' Adım '+Math.min(x.adim+1,x.toplam)+'/'+x.toplam:'🛠️ '+((x.yerlesen||[]).length)+' parça')+'</span><span>'+(x.yildiz?'⭐'.repeat(x.yildiz):'')+(x.bonus?'+'+x.bonus:'')+'</span></div><div style="color:#9fc3cb">'+(x.calistirma?'▶ '+x.calistirma+' deneme · ':'')+'💡'+(x.ipucu||0)+' · 🔧'+(x.hata||0)+(x.beyin?' · 🧠 '+x.beyin.skor:'')+(ac?'':' · çevrimdışı')+'</div>';
-      const h=JSON.stringify([x.model,(x.yerlesen||[]).length,x.kablo,x.faz]);if(k._h!==h){k._h=h;OGT.kucukResim(k.querySelector('canvas'),x)}});
+      const G=OGT.oturum&&OGT.oturum.gorev;const ulasmadi=!x.demo&&G&&G.model!=='secim'&&x.gorevTs!==G.ts&&ac;const okumaEski=!x.demo&&x.okuma&&now-x.okuma>20000&&ac;
+      k.querySelector('.alt').innerHTML='<div class="cubuk"><i style="width:'+yuz+'%"></i></div><div style="display:flex;justify-content:space-between;gap:6px"><span>'+(m?m.ikon+' Adım '+Math.min(x.adim+1,x.toplam)+'/'+x.toplam:x.model==='serbest'?'🛠️ Serbest · '+((x.yerlesen||[]).length)+' parça':'⏳ Maket seçiyor')+'</span><span>'+(x.yildiz?'⭐'.repeat(x.yildiz):'')+(x.bonus?'+'+x.bonus:'')+'</span></div><div style="color:#9fc3cb">'+(x.calistirma?'▶ '+x.calistirma+' deneme · ':'')+'💡'+(x.ipucu||0)+' · 🔧'+(x.hata||0)+(x.beyin?' · 🧠 '+x.beyin.skor:'')+(ac?'':' · çevrimdışı')+'</div>'+(ulasmadi?'<div style="color:#ffd54f">⚠️ Görev henüz ulaşmadı</div>':'')+(okumaEski?'<div style="color:#ffab91">📡 Tablet '+Math.round((now-x.okuma)/1000)+' sn’dir okuyamıyor</div>':'');
+      const h=JSON.stringify([x.model,(x.yerlesen||[]).length,x.kablo,x.faz,x.adim]);if(k._h!==h){k._h=h;OGT.kucukResim(k.querySelector('canvas'),x)}});
     Object.keys(OGT.kartlar).forEach(id=>{if(!gor.has(id)){OGT.kartlar[id].remove();delete OGT.kartlar[id]}})},
   kucukResim(cv,x){const m=MODELLER[x.model]||null;const S=simKur(m,(x.yerlesen||[]).map(p=>Object.assign({},p)),x.kad||'34');
-    const cam=E3.kamera({yaw:-.55,pitch:.6});const hepsi=m?m.adimlar.flatMap(a=>a.parcalar):((x.yerlesen||[]).length?x.yerlesen:[{t:'b24',c:'gri',x:0,y:0,z:0},{t:'b24',c:'gri',x:10,y:2,z:10}]);
+    const cam=E3.kamera({yaw:-.55,pitch:.6});const hepsi=m?m.adimlar.flatMap(a=>a.parcalar):((x.yerlesen||[]).length?x.yerlesen.concat(OGT.TABAN):OGT.TABAN);
     E3.sigdir(cam,hepsi,cv.width,cv.height,.78);
     const sah=S.sahne();if(m&&x.faz==='yap'){const ad=modelAdimlar(m,x.kad||'34');const yer=x.yerlesen||[];ad.flatMap(a=>a.parcalar).forEach(T=>{if(!yer.some(p=>p.t===T.t&&p.x===T.x&&p.z===T.z&&p.y===T.y))sah.parcalar.push({p:T,soluk:true,hayalet:false})})}
     E3.ciz(cv,sah,cam,{koyu:true,son:(g,c)=>{if(x.kablo)APP.kabloCiz(g,c,x.yerlesen||[],x.kablo)}})},
@@ -1278,7 +1295,7 @@ const OGT={kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'re
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ye kucuk" id="cRun">▶ Programını tahtada çalıştır</button><button class="btn kucuk" id="cIp">💡 İpucu gönder</button><button class="btn sa kucuk" id="cYz">⭐ Tebrik gönder</button><button class="btn kr kucuk" id="cYd">✋ Yardım tamam</button><button class="btn tu kucuk" id="cTam">📺 Tam ekran göster</button></div>',{stil:'width:min(1200px,100%)',kapaninca:()=>{OGT.canli=null}});
     const cv=k.querySelector('#cvCanli');const cam=E3.kamera({yaw:-.55,pitch:.6});
     OGT.canli={id,k,cv,cam,sim:simKur(m||null,(x.yerlesen||[]).slice(),x.kad||'34'),x};
-    E3.sigdir(cam,m?m.adimlar.flatMap(a=>a.parcalar):(x.yerlesen.length?x.yerlesen:[{t:'b24',c:'gri',x:0,y:0,z:0}]),cv.width,cv.height,.7);
+    E3.sigdir(cam,m?m.adimlar.flatMap(a=>a.parcalar):(x.yerlesen||[]).concat(OGT.TABAN),cv.width,cv.height,.7);
     let son=null;cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);son=[e.clientX,e.clientY]};cv.onpointermove=e=>{if(!son)return;cam.yaw+=(e.clientX-son[0])*.008;cam.pitch=Math.max(.2,Math.min(1.45,cam.pitch+(e.clientY-son[1])*.005));son=[e.clientX,e.clientY]};cv.onpointerup=()=>son=null;
     cv.onwheel=e=>{e.preventDefault();cam.zoom*=e.deltaY<0?1.1:.9};
     k.querySelector('#cRun').onclick=async()=>{const C=OGT.canli;if(!C)return;const P=(C.x.prog||[]);if(!P.length){toast('Öğrencinin henüz programı yok');return}C.calis=true;
@@ -1291,7 +1308,7 @@ const OGT={kod:null,oturum:null,veri:{},demo:null,secModel:'aycicegi',secMod:'re
       const sah=C.sim.sahne();if(m&&C.x.faz==='yap'&&C.x.mod!=='uzman'){const ad=modelAdimlar(m,C.x.kad||'34');const T=ad[C.x.adim];if(T)T.parcalar.forEach(p=>{if(!C.sim.parcalar.some(q=>q.t===p.t&&q.x===p.x&&q.z===p.z&&q.y===p.y))sah.parcalar.push({p,hayalet:true})})}
       E3.ciz(cv,sah,cam,{son:(g,c)=>{C.sim.overlay(g,c);APP.kabloCiz(g,c,C.sim.parcalar,C.x.kablo)}})};dng()},
   canliGuncelle(){const C=OGT.canli;if(!C)return;const x=OGT.veri[C.id];if(!x)return;C.x=x;if(!C.calis)C.sim.parcalar=(x.yerlesen||[]).slice();const m=MODELLER[x.model];
-    C.k.querySelector('#canliBilgi').innerHTML=(m?m.ikon+' <b>'+esc(m.ad)+'</b> · '+(x.mod==='uzman'?'🎓 Uzman':'🧭 Rehberli')+'<br>Adım '+Math.min(x.adim+1,x.toplam)+'/'+x.toplam:'🛠️ Serbest atölye · '+(x.yerlesen||[]).length+' parça')+'<br>Aşama: '+esc(x.faz)+(x.gorevOk?' ✅ görev tamam':'')+'<br>▶ '+(x.calistirma||0)+' deneme · 💡 '+(x.ipucu||0)+' ipucu · 🔧 '+(x.hata||0)+' düzeltme'+(x.sonuc?'<br><i>Son sonuç: '+esc(x.sonuc)+'</i>':'')+(x.yardim?'<br><b style="color:#c62828">✋ Yardım istiyor</b>':'')+(m&&x.faz!=='yap'?'<br>🎯 '+esc(gorevAl(m,x.kad).metin):'');
+    C.k.querySelector('#canliBilgi').innerHTML=(m?m.ikon+' <b>'+esc(m.ad)+'</b> · '+(x.mod==='uzman'?'🎓 Uzman':'🧭 Rehberli')+'<br>Adım '+Math.min(x.adim+1,x.toplam)+'/'+x.toplam:x.model==='serbest'?'🛠️ Serbest atölye · '+(x.yerlesen||[]).length+' parça':'⏳ Henüz maket seçmedi')+'<br>Aşama: '+esc(x.faz)+(x.gorevOk?' ✅ görev tamam':'')+'<br>▶ '+(x.calistirma||0)+' deneme · 💡 '+(x.ipucu||0)+' ipucu · 🔧 '+(x.hata||0)+' düzeltme'+(x.sonuc?'<br><i>Son sonuç: '+esc(x.sonuc)+'</i>':'')+(x.yardim?'<br><b style="color:#c62828">✋ Yardım istiyor</b>':'')+(m&&x.faz!=='yap'?'<br>🎯 '+esc(gorevAl(m,x.kad).metin):'')+'<br><small style="color:#678">📡 Son okuma: '+(x.okuma?Math.round((Date.now()-x.okuma)/1000)+' sn önce':'—')+(OGT.oturum.gorev&&x.gorevTs===OGT.oturum.gorev.ts?' · görev alındı ✓':'')+'</small>';
     OGT.progCiz()},
   progCiz(){const C=OGT.canli;if(!C)return;const P=C.x.prog||[];const m=MODELLER[C.x.model];C.k.querySelector('#canliProg').innerHTML=P.length?P.map((b,i)=>'<div style="background:'+BLOK[b.k].renk+(C.aktif===i?';outline:3px solid #ffd54f':'')+'">'+esc(blokMetin(b,m))+'</div>').join(''):'<i style="color:#678">Henüz blok yok</i>'},
   /* ---- örnek sınıf (cihazsız deneme) ---- */
