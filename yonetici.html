@@ -2136,4 +2136,53 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 })();
 
 </script>
+<script>
+/* ============================================================
+   🎯 KONU EŞLEŞMESİ (13.11.2026) — çalışma eklerken/düzenlerken: “bu çalışma planımdaki hangi konuya uyuyor?”
+   • Ders Planı’nın bu cihazda paylaştığı konu listesini okur (yalnız okuma; planı da siteyi de değiştirmez)
+   • Başlık, açıklama, kazanım ve etiketlere göre en uygun konuları gösterir
+   • “Etiketlere ekle” ve “Kategorileri işaretle” yalnız formdaki kutuları doldurur; kaydetmek yine sana kalır
+   • Etiket ve kategoriler doğru olunca Ders Programım’daki “🌐 Sitemden” önerisi bu çalışmayı doğru derste bulur
+   Yalnız EKLEME: panelin mevcut hiçbir fonksiyonuna dokunmaz.
+   ============================================================ */
+(function(){ try{
+  var KAT_DERS={'Robotik':'robokod','Kodlama':'robokod','Yapay Zeka':'yz','Akıl Zeka':'akil','Satranç':'satranc'}, DERS_KAT={robokod:['Robotik','Kodlama'],yz:['Yapay Zeka'],akil:['Akıl Zeka'],satranc:['Satranç']};
+  var DERS_KELIME={robokod:['robot','kodlama','kod','algoritma'],yz:['yapay zeka','yapay'],akil:['zeka','akil','dikkat','hafiza','mantik'],satranc:['satranc','tas']};
+  var DUR='ve ile icin bir bu su ne nasil nedir neler gibi daha cok olan olarak tanisalim giris ders dersi konu calisma etkinlik oyun oyunu oyunlari ogreniyoruz ogrenelim hadi kesfediyoruz oynuyoruz uretiyoruz kesfet uygula uret paylas nerede'.split(' ');
+  var son='', kutu=null, enIyi=[];
+  function duz(s){ return String(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').replace(/â/g,'a').replace(/î/g,'i').replace(/û/g,'u'); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function el(id){ return document.getElementById(id); }
+  function mufredat(){ try{ var m=JSON.parse(localStorage.getItem('dk_mufredat_ozet')||'null'); return (m&&Array.isArray(m.siniflar)&&m.siniflar.length)?m:null; }catch(e){ return null; } }
+  function seciliKat(){ return [].slice.call(document.querySelectorAll('#editor-categories input:checked')).map(function(x){ return x.value; }); }
+  function sinifKat(s){ return s.g==='Ana'?'Anaokulu':s.g+'. Sınıf'; }
+  function kelimeler(k){ return duz(k).split(/[^a-z0-9]+/).filter(function(w){ return w.length>=4&&DUR.indexOf(w)<0; }); }
+  function esles(metin,kats){ var M=mufredat(); if(!M) return null; var T=duz(metin), dersF=[], duzF=[];
+    kats.forEach(function(c){ if(KAT_DERS[c]&&dersF.indexOf(KAT_DERS[c])<0) dersF.push(KAT_DERS[c]); if(/^(Anaokulu|[1-8]\. Sınıf)$/.test(c)) duzF.push(c); });
+    var grup={}; M.siniflar.forEach(function(s){ if(duzF.length&&duzF.indexOf(sinifKat(s))<0) return; (s.dersler||[]).forEach(function(d){ if(dersF.length&&dersF.indexOf(d.tid)<0) return;
+        var dersP=0; (DERS_KELIME[d.tid]||[]).forEach(function(w){ if(T.indexOf(w)>=0) dersP=2; }); if(dersF.indexOf(d.tid)>=0) dersP+=2;
+        (d.konular||[]).forEach(function(k){ var ws=kelimeler(String(k).split(' · ')[0]), hit=0; ws.forEach(function(w){ if(T.indexOf(w.slice(0,Math.max(4,w.length-3)))>=0) hit++; }); if(!hit) return;
+          var unite=String(k).split(' · ')[0], key=d.tid+'|'+unite, g=grup[key]||(grup[key]={tid:d.tid,ad:d.ad,ik:d.ik,unite:unite,p:0,siniflar:[]}); g.p=Math.max(g.p,hit*3+dersP); if(g.siniflar.indexOf(sinifKat(s))<0) g.siniflar.push(sinifKat(s)); }); }); });
+    return Object.keys(grup).map(function(k){ return grup[k]; }).filter(function(g){ return g.p>=5; }).sort(function(a,b){ return b.p-a.p||a.unite.localeCompare(b.unite,'tr'); }).slice(0,6); }
+  function ciz(){ if(!kutu) return; var baslik=(el('edit-title')||{}).value||'', metin=[baslik,(el('edit-description')||{}).value,(el('edit-outcome')||{}).value,(el('edit-tags')||{}).value].join(' '), kats=seciliKat();
+    var h='<h3 style="margin:0 0 4px">🎯 Planımdaki uygun konular</h3><p class="small" style="margin:0 0 10px">Bu çalışma ders planındaki hangi konuya uyuyor? Etiket ve kategori doğru olursa Ders Programım onu doğru derste önerir.</p>';
+    if(!mufredat()){ kutu.innerHTML=h+'<p class="small">Konu listesi bu cihazda yok. <b>Ders Planı</b>’nı (v4.23 ve üstü) bu cihazda bir kez açıp bu sayfaya dön.</p>'; return; }
+    if(baslik.trim().length<3){ kutu.innerHTML=h+'<p class="small">Başlığı yazınca uygun konular burada görünür.</p>'; return; }
+    enIyi=esles(metin,kats)||[];
+    if(!enIyi.length){ kutu.innerHTML=h+'<p class="small">Planındaki konularla güçlü bir eşleşme bulamadım. Açıklamaya ya da etiketlere konunun adını (ör. “piyon”, “döngü”) yazarsan tekrar bakarım.</p>'; return; }
+    kutu.innerHTML=h+enIyi.map(function(g,i){ return '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid #e2e8f0"><div style="flex:1;min-width:0"><b>'+esc(g.ik)+' '+esc(g.ad)+' · '+esc(g.unite)+'</b><div class="small">'+esc(g.siniflar.join(', '))+'</div></div>'+(i===0?'<span class="small" style="font-weight:800;color:#0d9488;white-space:nowrap">en uygun</span>':'')+'</div>'; }).join('')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" data-km="etiket" style="flex:1;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:700">➕ Etiketlere ekle</button><button type="button" data-km="kat" style="flex:1;padding:10px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:700">☑️ Kategorileri işaretle</button></div><p class="small" style="margin:8px 0 0">İkisi de yalnız en uygun konuyu (ilk satır) kullanır ve formu doldurur; kaydetmeden hiçbir şey değişmez.</p>'; }
+  function etiketEkle(){ var g=enIyi[0], t=el('edit-tags'); if(!g||!t) return; var var_=t.value.split(',').map(function(x){ return x.trim(); }).filter(Boolean), dz=var_.map(duz);
+    [g.unite.toLocaleLowerCase('tr'),g.ad.toLocaleLowerCase('tr')].concat(kelimeler(g.unite)).forEach(function(w){ if(w&&dz.indexOf(duz(w))<0){ var yeni=var_.concat([w]).join(', '); if(yeni.length<=400){ var_.push(w); dz.push(duz(w)); } } });
+    t.value=var_.join(', '); t.dispatchEvent(new Event('input',{bubbles:true})); son=''; }
+  function katIsaretle(){ var g=enIyi[0]; if(!g) return; var ist=(DERS_KAT[g.tid]||[]).concat(g.siniflar);
+    [].slice.call(document.querySelectorAll('#editor-categories input')).forEach(function(n){ if(ist.indexOf(n.value)>=0&&!n.checked){ n.checked=true; n.dispatchEvent(new Event('change',{bubbles:true})); } }); son=''; }
+  function kur(){ if(kutu&&document.body.contains(kutu)) return true; var t=el('edit-tags'), f=el('editor-form'); if(!t||!f) return false; var d=t.closest('details')||t.parentNode;
+    kutu=document.createElement('div'); kutu.className='panel card'; kutu.id='km-eslesme'; kutu.style.marginTop='16px'; d.parentNode.insertBefore(kutu,d.nextSibling);
+    kutu.addEventListener('click',function(e){ var b=e.target.closest('[data-km]'); if(!b) return; e.preventDefault(); if(b.dataset.km==='etiket') etiketEkle(); else katIsaretle(); yokla(); }); return true; }
+  function yokla(){ try{ if(!kur()) return; var imza=[(el('edit-title')||{}).value,(el('edit-description')||{}).value,(el('edit-outcome')||{}).value,(el('edit-tags')||{}).value,seciliKat().join('|'),mufredat()?1:0].join('§'); if(imza===son) return; son=imza; ciz(); }catch(e){} }
+  window.KM_ESLESME={esles:esles,yokla:yokla};
+  setInterval(yokla,1200); document.addEventListener('input',function(e){ if(e.target&&e.target.closest&&e.target.closest('#editor-form')) setTimeout(yokla,250); });
+}catch(e){} })();
+</script>
 </body></html>
