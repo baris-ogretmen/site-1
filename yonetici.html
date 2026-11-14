@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="11.0">
+<meta name="surum" content="11.1">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='11.0';
+const PANEL_SURUM='11.1';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1123,7 +1123,7 @@ async function sonYuklenenler(zorla){if(!zorla&&SY.liste.length&&Date.now()-SY.t
   const c=local.get('sonYuklenen',null);if(!zorla&&c&&Date.now()-c.t<30000){SY.liste=c.L;SY.t=c.t;return SY.liste}
   SY.yuk=(async()=>{try{const cm=await sGh('/commits?per_page=12');const gor=new Map();
       for(const k of cm){let d;try{d=await sGh('/commits/'+k.sha)}catch(e){break}const t=Date.parse(k.commit?.committer?.date||k.commit?.author?.date||'')||0;
-        for(const f of d.files||[]){if(f.status==='removed'||/^(index|yonetici|404)\.html$/i.test(f.filename)||!ICERIK.test(f.filename)||/(^|\/)\.github\//.test(f.filename))continue;if(!gor.has(f.filename))gor.set(f.filename,{f:f.filename,t,yeni:f.status==='added'})}}
+        for(const f of d.files||[]){if(f.status==='removed'||/^(index|yonetici|404)\.html$/i.test(f.filename)||/^(sayfa|eski|gorseller)\//.test(f.filename)||/^google[a-z0-9]+\.html$/i.test(f.filename)||!ICERIK.test(f.filename)||/(^|\/)\.github\//.test(f.filename))continue;if(!gor.has(f.filename))gor.set(f.filename,{f:f.filename,t,yeni:f.status==='added'})}}
       SY.liste=[...gor.values()].sort((a,b)=>b.t-a.t);SY.t=Date.now();local.set('sonYuklenen',{t:SY.t,L:SY.liste})}catch(e){SY.hata=String(e.message||e);if(c)SY.liste=c.L}
     SY.yuk=null;return SY.liste})();
   return SY.yuk}
@@ -1429,7 +1429,7 @@ function bmBasla(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='und
   setInterval(bmCiz,60000)}
 bmBasla();
 /* ---------- Özet ekranı: sürüm uyarısı + “Bu sürümde neler var” ---------- */
-const SITE_GEREKEN='11.0';
+const SITE_GEREKEN='11.1';
 function surumBandi(){const yer=document.querySelector('#view-dashboard');if(!yer)return;let b=document.getElementById('sv-bant');const sv=v=>String(v||'').split('.').map(Number);const kucuk=(a,b)=>{a=sv(a);b=sv(b);for(let k=0;k<Math.max(a.length,b.length);k++){if((a[k]||0)!==(b[k]||0))return (a[k]||0)<(b[k]||0)}return false};const eski=BM.siteSurum&&kucuk(BM.siteSurum,SITE_GEREKEN);
   if(!eski){if(b)b.remove();return}if(!b){yer.insertAdjacentHTML('afterbegin','<div id="sv-bant" class="sv-bant"></div>');b=document.getElementById('sv-bant')}
   b.innerHTML=`<b>⚠️ Sitedeki index.html ${esc(BM.siteSurum)} sürümünde; bu panel en az ${esc(SITE_GEREKEN)} istiyor.</b><span>Yeni özelliklerin sitede görünmesi için <b>index.html</b> dosyasını GitHub’a yükle (Add file → Upload files → aynı adla → Commit). Yükledikten 1-3 dakika sonra bu uyarı kendiliğinden kalkar.</span>`}
@@ -1818,18 +1818,40 @@ function uret(){const L=(typeof records!=='undefined'?records:[]).filter(yayinda
 async function yukle(D,mesaj,ilerle){const g=G();if(!g)throw new Error('GitHub yardımcıları yüklenemedi.');if(!g.tok())throw new Error('GitHub bağlantısı kurulu değil.');const r=g.repo();const info=await g.gh('');const br=r.branch||info.default_branch||'main';const ref=await g.gh(`/git/ref/heads/${encodeURIComponent(br)}`);const bas=await g.gh(`/git/commits/${ref.object.sha}`);
   const agacE=await g.gh(`/git/trees/${bas.tree.sha}?recursive=1`);const eski=new Set((agacE.tree||[]).filter(t=>t.type==='blob'&&/^sayfa\/.+\.html$/.test(t.path)).map(t=>t.path));const agac=[];const ent=Object.entries(D);let n=0;
   const kuyruk=[...ent];async function isci(){while(kuyruk.length){const [p,icerik]=kuyruk.shift();const b=await g.gh('/git/blobs',{method:'POST',body:JSON.stringify({content:g.kodla(icerik),encoding:'base64'})});agac.push({path:p,mode:'100644',type:'blob',sha:b.sha});ilerle&&ilerle(++n,ent.length)}}
-  await Promise.all(Array.from({length:4},isci));eski.forEach(p=>{if(!(p in D))agac.push({path:p,mode:'100644',type:'blob',sha:null})});
+  await Promise.all(Array.from({length:4},isci));if('sitemap.xml' in D)eski.forEach(p=>{if(!(p in D))agac.push({path:p,mode:'100644',type:'blob',sha:null})});
   const t=await g.gh('/git/trees',{method:'POST',body:JSON.stringify({base_tree:bas.tree.sha,tree:agac})});const c=await g.gh('/git/commits',{method:'POST',body:JSON.stringify({message:mesaj,tree:t.sha,parents:[bas.sha]})});await g.gh(`/git/refs/heads/${encodeURIComponent(br)}`,{method:'PATCH',body:JSON.stringify({sha:c.sha})});return agac.length}
 /* ---------- 🔎 ekran ---------- */
 function googleAc(){const son=local.get('googleSon',null);const L=(typeof records!=='undefined'?records:[]).filter(yayinda);const yeni=son?L.filter(i=>ms(i.guncellendi||i.tarih)>son.t).length:L.length;
   openModal('🔎 Google’da görünürlük',`<p class="small" style="margin-top:0">Google şu an sitende büyük ölçüde yalnızca ana sayfayı görebiliyor; oyunların ayrı sayfası yok. Bu düğme her oyun, kitap ve yazı için <b>Google’ın okuyabileceği ayrı bir sayfa</b>, kademe sayfaları ve <b>site haritası</b> üretip tek seferde sitene yükler. Sayfalardaki <b>Oyna</b> düğmesi ziyaretçiyi doğrudan senin sitende o içeriğe götürür.</p>
   <div class="kl-durum">${son?`Son güncelleme: <b>${new Date(son.t).toLocaleString('tr-TR')}</b> · ${son.n} içerik sayfası${yeni?` · <b style="color:#dc2626">${yeni} yeni/değişen içerik var</b>`:' · ✅ güncel'}`:'Henüz oluşturulmadı.'}</div>
   <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn primary" id="gg-uret">📄 Sayfaları oluştur ve yükle (${L.length} içerik)</button>${G()&&G().tok()?'':'<button type="button" class="btn" data-action="gh-setup">🔑 GitHub bağlantısını kur</button>'}</div><p class="small" id="gg-durum"></p>
-  <details class="gg-adim"><summary><b>Google Search Console’a ekleme (bir kez, 5 dakika)</b></summary><ol class="small"><li><a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a> aç, <b>Mülk ekle › URL ön eki</b> seç, şunu yaz: <code>${H(SITE)}</code></li><li>Doğrulama yöntemlerinden <b>HTML dosyası</b>nı seç; dosyanın adını (google….html) aşağı yapıştır ve <b>Doğrulama dosyasını yükle</b>’ye bas. 1–2 dakika sonra Search Console’da <b>Doğrula</b> de.</li><li>Sol menüden <b>Site haritaları</b>’na <code>sitemap.xml</code> yaz ve gönder.</li></ol><div class="row" style="gap:8px;flex-wrap:wrap"><input id="gg-dosya" placeholder="google1234abcd.html" style="flex:1;min-width:200px"><button type="button" class="btn" id="gg-dogrula">Doğrulama dosyasını yükle</button></div></details>
-  <p class="small muted" style="margin:10px 0 0">Yeni içerik ekledikçe bu düğmeye bir kez daha bas; gizlediğin içeriklerin sayfaları kendiliğinden kaldırılır. Google’ın yeni sayfaları listelemesi genellikle birkaç gün ile birkaç hafta sürer; sıralama garanti edilemez ama ayrı sayfalar bulunma şansını belirgin biçimde artırır.</p>`)}
+  <div id="gg-saglik"></div>
+  <details class="gg-adim" open><summary><b>Google Search Console’a ekleme (bir kez, 5 dakika)</b></summary><ol class="small"><li><a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a> aç › <b>Mülk ekle</b> › sağdaki <b>URL ön eki</b> kutusuna şunu yaz: <code>${H(SITE)}</code><br><span style="color:#b45309">⚠️ Soldaki “Alan adı” seçeneğini seçme: github.io adresinde DNS kaydı eklenemediği için orada doğrulama hiç tamamlanmaz.</span></li><li>Doğrulama yöntemlerinden <b>HTML dosyası</b>’nı seç. Dosyayı indirmene gerek yok: dosyanın adını (google….html) kopyalayıp aşağıya yapıştır ve <b>Doğrulama dosyasını yükle</b>’ye bas. 1–2 dakika sonra Search Console’da <b>Doğrula</b>’ya bas.<br><small>“HTML etiketi” yöntemini seçtiysen etiketin tamamını da yapıştırabilirsin.</small></li><li>Sol menüden <b>Site haritaları</b> › <code>sitemap.xml</code> yaz › <b>Gönder</b>.</li><li>Üstteki arama kutusuna ana sayfa adresini yaz › <b>Dizine eklenmesini iste</b>.</li></ol><div class="row" style="gap:8px;flex-wrap:wrap"><input id="gg-dosya" placeholder="google1234abcd.html ya da &lt;meta name=&quot;google-site-verification&quot; …&gt;" style="flex:1;min-width:200px"><button type="button" class="btn" id="gg-dogrula">Doğrulama dosyasını yükle</button></div></details>
+  <p class="small muted" style="margin:10px 0 0">Yeni içerik ekledikçe bu düğmeye bir kez daha bas; gizlediğin içeriklerin sayfaları kendiliğinden kaldırılır. Google’ın yeni sayfaları listelemesi genellikle birkaç gün ile birkaç hafta sürer; sıralama garanti edilemez ama ayrı sayfalar bulunma şansını belirgin biçimde artırır.</p>`);setTimeout(ggSaglik,50)}
+/* v11.1 · Google sağlık kontrolü + doğrulama (dosya adı, dosya içeriği ya da HTML etiketi) */
+const coz=b64=>new TextDecoder().decode(Uint8Array.from(atob(String(b64||'').replace(/\n/g,'')),c=>c.charCodeAt(0)));
+async function metaEkle(kod){const g=G();if(!g||!g.tok())throw new Error('GitHub bağlantısı kurulu değil.');const c=await g.gh('/contents/index.html');let h=coz(c.content);const tag=`<meta name="google-site-verification" content="${H(kod)}">`;
+  if(/<meta name="google-site-verification"[^>]*>/i.test(h))h=h.replace(/<meta name="google-site-verification"[^>]*>/i,tag);else if(/<meta charset[^>]*>/i.test(h))h=h.replace(/(<meta charset[^>]*>)/i,`$1\n${tag}`);else h=h.replace(/<head>/i,`<head>\n${tag}`);
+  await yukle({'index.html':h},'🔎 Search Console doğrulama etiketi (index.html)');local.set('googleMeta',kod)}
+async function ggSaglik(){const d=$k('#gg-saglik');if(!d)return;d.innerHTML='<span class="small muted">🔎 Durum kontrol ediliyor…</span>';const R=[];const sat=(ok,t,ek)=>R.push(`<li class="${ok===true?'ok':ok===false?'yok':'uyari'}"><b>${ok===true?'✅':ok===false?'❌':'⚠️'} ${t}</b>${ek?`<small>${ek}</small>`:''}</li>`);
+  let agac=[];try{const g=G();const r=g.repo();const info=await g.gh('');const br=r.branch||info.default_branch||'main';const ref=await g.gh(`/git/ref/heads/${encodeURIComponent(br)}`);const bas=await g.gh(`/git/commits/${ref.object.sha}`);agac=((await g.gh(`/git/trees/${bas.tree.sha}?recursive=1`)).tree||[]).filter(t=>t.type==='blob').map(t=>t.path)}catch(e){}
+  let idx='';try{idx=await (await fetch(abs('index.html')+'?g='+Date.now(),{cache:'no-store'})).text()}catch{}
+  const dosya=agac.filter(p=>/^google[a-z0-9]+\.html$/i.test(p)),meta=(idx.match(/<meta name="google-site-verification" content="([^"]+)"/i)||[])[1],eskiMeta=local.get('googleMeta','');
+  if(dosya.length)sat(true,'Search Console doğrulama dosyası sitede',H(dosya.join(', '))+' · Search Console’da “Doğrula”ya basabilirsin.');
+  else if(meta)sat(true,'Search Console doğrulama etiketi index.html içinde');
+  else if(eskiMeta)sat(false,'Doğrulama etiketi index.html’den silinmiş',`index.html’i yeniden yükleyince etiket gitti. <button type="button" class="btn-mini" id="gg-meta-yeniden">Etiketi geri ekle</button>`);
+  else sat(false,'Site henüz Search Console’da doğrulanmadı','Aşağıdaki “Search Console’a ekleme” adımlarını izle; dosya adını yapıştırman yeterli.');
+  const sayfa=agac.filter(p=>/^sayfa\/.+\.html$/.test(p)).length;sat(sayfa>0?true:false,sayfa?`${sayfa} içerik sayfası yayında`:'İçerik sayfaları yok',sayfa?'':'“Sayfaları oluştur ve yükle”ye bas.');
+  try{const s=await (await fetch(abs('sitemap.xml')+'?g='+Date.now(),{cache:'no-store'})).text();const n=(s.match(/<url>/g)||[]).length;sat(n>0,n?`Site haritası çalışıyor (${n} adres)`:'Site haritası okunamadı',n?`Search Console › Site haritaları’na sadece <code>sitemap.xml</code> yazıp gönder.`:'')}catch{sat(false,'Site haritası açılamadı')}
+  const fazla=agac.filter(p=>/^sitemap \(\d+\)\.xml$|^sitemap-?\d*\.xml$/i.test(p)&&p!=='sitemap.xml');if(fazla.length)sat(null,'Fazladan site haritası dosyası var: '+H(fazla.join(', ')),'Zararı yok; Search Console’a yalnızca sitemap.xml’i gönder.');
+  d.innerHTML=`<ul class="gg-saglik">${R.join('')}</ul>`}
+document.addEventListener('click',e=>{const b=e.target.closest('#gg-meta-yeniden');if(!b)return;e.preventDefault();busy(b,async()=>{try{await metaEkle(local.get('googleMeta',''));toast('✅ Doğrulama etiketi index.html’e geri eklendi.');setTimeout(ggSaglik,1500)}catch(err){toast(errText?errText(err):String(err),true)}})},true);
+document.head.insertAdjacentHTML('beforeend','<style>.gg-saglik{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px}.gg-saglik li{padding:8px 10px;border-radius:10px;background:#f1f5f9;display:grid;gap:2px}.gg-saglik li.ok{background:#ecfdf5}.gg-saglik li.yok{background:#fef2f2}.gg-saglik li.uyari{background:#fffbeb}.gg-saglik small{color:#475569}.gg-adim ol li{margin:4px 0}.dark-mode .gg-saglik li{background:#1e293b}</style>');
 document.addEventListener('click',e=>{if(e.target.closest('[data-gg-ac]')){e.preventDefault();googleAc();return}
   const b=e.target.closest('#gg-uret');if(b){e.preventDefault();const d=$k('#gg-durum');busy(b,async()=>{try{const {dosyalar,sayi}=uret();const n=await yukle(dosyalar,'🔎 Google paketi: '+sayi+' içerik sayfası + site haritası (panelden)',(i,t)=>{if(d)d.textContent=`Yükleniyor… ${i}/${t}`});local.set('googleSon',{t:Date.now(),n:sayi});toast(`🔎 ${sayi} içerik sayfası ve site haritası yüklendi. 1–2 dakika içinde yayında.`);if(d)d.innerHTML=`✅ Yüklendi. Site haritası: <a href="${H(abs('sitemap.xml'))}" target="_blank" rel="noopener">${H(abs('sitemap.xml'))}</a> · Tüm içerikler: <a href="${H(abs('sayfa/index.html'))}" target="_blank" rel="noopener">aç ↗</a>`}catch(err){if(d)d.innerHTML=`<span style="color:#dc2626">⚠️ ${H(err.message||err)}</span>`;toast(errText?errText(err):String(err),true)}})}
-  const v=e.target.closest('#gg-dogrula');if(v){e.preventDefault();const ad=(($k('#gg-dosya')||{}).value||'').trim().replace(/^.*\//,'');if(!/^google[a-z0-9]+\.html$/i.test(ad)){toast('Dosya adı google ile başlayıp .html ile bitmeli (örn. google1234abcd.html).',true);return}busy(v,async()=>{try{await yukle({[ad]:'google-site-verification: '+ad},'🔎 Search Console doğrulama dosyası');toast('✅ Doğrulama dosyası yüklendi. 1–2 dakika sonra Search Console’da “Doğrula”ya bas.')}catch(err){toast(errText?errText(err):String(err),true)}})}},true);
+  const v=e.target.closest('#gg-dogrula');if(v){e.preventDefault();const ham=(($k('#gg-dosya')||{}).value||'').trim();const ad=(ham.match(/google[a-z0-9]+\.html/i)||[])[0]||'';const meta=(ham.match(/google-site-verification["']?\s+content=["']([^"']+)["']/i)||ham.match(/content=["']([^"']+)["'][^>]*google-site-verification/i)||[])[1]||'';
+    if(!ad&&!meta){toast('Search Console’daki dosya adını (google….html) ya da HTML etiketini yapıştır.',true);return}
+    busy(v,async()=>{try{if(ad){await yukle({[ad]:'google-site-verification: '+ad},'🔎 Search Console doğrulama dosyası');toast('✅ Doğrulama dosyası yüklendi. 1–2 dakika sonra Search Console’da “Doğrula”ya bas.')}else{await metaEkle(meta);toast('✅ Doğrulama etiketi index.html’e eklendi. 1–2 dakika sonra Search Console’da “Doğrula”ya bas.')}setTimeout(ggSaglik,1500)}catch(err){toast(errText?errText(err):String(err),true)}})}},true);
 /* ---------- 🏆 canlı yarışma izni (telefonla katılım için) ---------- */
 const KURAL=`match /canli_yarisma/{oda} {
   allow read: if true;
@@ -1999,10 +2021,59 @@ const YENI_RENK=[['pembe','Pembe'],['altin','Altın'],['lacivert','Lacivert'],['
 const YENI_SEKIL=[['shape-heart','Kalp'],['shape-badge','Rozet'],['shape-pill','Hap (yatay)']];
 const ANIM=[['','Hareketsiz'],['anim-pulse','Nabız (büyü-küçül)'],['anim-bounce','Zıplama'],['anim-shake','Sallanma (dikkat çeker)'],['anim-glow','Parlama'],['anim-ring','Dönen ışık halkası']];
 const IKON=['','🎮','🎬','📚','✍️','📄','📢','🎉','🏆','📝','🌙','❤️','⭐','🔥','🎁','🧩','🤖','♟️','🪐'];
+const HZ=(g,ad,t,i,s,r,a,ek)=>Object.assign({g,ad,t,i,s,r,a},ek||{});
 const HAZIR=[
- ['Yeni Oyun','YENİ OYUN','🎮','shape-leaf','kirmizi','anim-pulse'],['Yeni Video','YENİ VİDEO','🎬','shape-msg','mor','anim-bounce'],['Yeni Kitap','YENİ KİTAP','📚','shape-blob','turuncu','anim-pulse'],
- ['Duyuru','DUYURU','📢','shape-msg','mavi','anim-shake'],['Kutlama','TEBRİKLER','🎉','shape-star','gokkusagi','anim-glow'],['Yarışma','YARIŞMA','🏆','shape-badge','altin','anim-ring'],
- ['Ödev','ÖDEV','📝','shape-square','yesil','anim-pulse'],['Özel Gün','ÖZEL GÜN','🌙','shape-circle','lacivert','anim-glow'],['Velilere','VELİLERE','❤️','shape-heart','pembe','anim-pulse']];
+ HZ('yeni','Son Eklenen','EN YENİ','🆕','shape-badge','gokkusagi','anim-ring',{col:'*',alt:''}),
+ HZ('yeni','En Yeni Video','EN YENİ','🎬','shape-msg','mor','anim-bounce',{col:'videolar',alt:'VİDEO'}),
+ HZ('yeni','En Yeni Oyun','EN YENİ','🎮','shape-leaf','kirmizi','anim-pulse',{col:'projeler',alt:'OYUN'}),
+ HZ('yeni','En Yeni Kitap','EN YENİ','📚','shape-blob','turuncu','anim-pulse',{col:'kitaplar',alt:'KİTAP'}),
+ HZ('yeni','En Yeni Yazı','EN YENİ','✍️','shape-msg','pembe','anim-pulse',{col:'yazilar',alt:'YAZI'}),
+ HZ('yeni','En Yeni PDF','EN YENİ','📄','shape-square','turkuaz','anim-pulse',{col:'kaynaklar',alt:'ÇALIŞMA KÂĞIDI'}),
+ HZ('yeni','Yeni Oyun','YENİ OYUN','🎮','shape-leaf','kirmizi','anim-pulse'),
+ HZ('yeni','Yeni Video','YENİ VİDEO','🎬','shape-msg','mor','anim-bounce'),
+ HZ('yeni','Yeni Kitap','YENİ KİTAP','📚','shape-blob','turuncu','anim-pulse'),
+ HZ('sinif','Duyuru','DUYURU','📢','shape-msg','mavi','anim-shake'),
+ HZ('sinif','Ödev','ÖDEV','📝','shape-square','yesil','anim-pulse'),
+ HZ('sinif','Yarışma','YARIŞMA','🏆','shape-badge','altin','anim-ring'),
+ HZ('sinif','Canlı Yarışma','CANLI','🔴','shape-pill','kirmizi','anim-ring',{alt:'YARIŞMA'}),
+ HZ('sinif','Sınav','SINAV','✏️','shape-square','lacivert','anim-shake',{alt:'HAFTASI'}),
+ HZ('sinif','Hatırlatma','UNUTMA','⏰','shape-circle','turuncu','anim-shake'),
+ HZ('sinif','Etkinlik','ETKİNLİK','🎪','shape-star','turkuaz','anim-bounce'),
+ HZ('sinif','Kayıt Açık','KAYIT','✅','shape-pill','yesil','anim-glow',{alt:'AÇIK'}),
+ HZ('sinif','Yakında','YAKINDA','⏳','shape-hex','siyah','anim-glow'),
+ HZ('sinif','Sürpriz','SÜRPRİZ','🎁','shape-star','gokkusagi','anim-bounce'),
+ HZ('sinif','Kutlama','TEBRİKLER','🎉','shape-star','gokkusagi','anim-glow'),
+ HZ('sinif','Velilere','VELİLERE','❤️','shape-heart','pembe','anim-pulse'),
+ HZ('sinif','İyi Tatiller','İYİ','🏖️','shape-blob','turkuaz','anim-bounce',{alt:'TATİLLER'}),
+ HZ('gun','29 Ekim','29 EKİM','🇹🇷','shape-circle','kirmizi','anim-glow',{alt:'CUMHURİYET BAYRAMI',gun:'10-29'}),
+ HZ('gun','10 Kasım','10 KASIM','🖤','shape-circle','siyah','',{alt:'SAYGIYLA ANIYORUZ',gun:'11-10'}),
+ HZ('gun','Öğretmenler Günü','24 KASIM','💐','shape-heart','pembe','anim-glow',{alt:'ÖĞRETMENLER GÜNÜ',gun:'11-24'}),
+ HZ('gun','Yarıyıl Karnesi','KARNE','📜','shape-badge','altin','anim-ring',{alt:'GÜNÜ'}),
+ HZ('gun','23 Nisan','23 NİSAN','🎈','shape-star','kirmizi','anim-bounce',{alt:'ÇOCUK BAYRAMI',gun:'04-23'}),
+ HZ('gun','Anneler Günü','ANNELER','💐','shape-heart','pembe','anim-pulse',{alt:'GÜNÜ'}),
+ HZ('gun','19 Mayıs','19 MAYIS','🏃','shape-circle','kirmizi','anim-glow',{alt:'GENÇLİK VE SPOR',gun:'05-19'}),
+ HZ('gun','Babalar Günü','BABALAR','👔','shape-heart','lacivert','anim-pulse',{alt:'GÜNÜ'}),
+ HZ('gun','Bayram','BAYRAMINIZ','🌙','shape-circle','lacivert','anim-glow',{alt:'KUTLU OLSUN'}),
+ HZ('gun','Ramazan','HAYIRLI','🌙','shape-circle','lacivert','anim-glow',{alt:'RAMAZANLAR'}),
+ HZ('gun','Yaz Tatili','İYİ','☀️','shape-blob','altin','anim-bounce',{alt:'YAZ TATİLLERİ'}),
+ HZ('gun','Özel Gün','ÖZEL GÜN','🌙','shape-circle','lacivert','anim-glow')];
+const HGRUP=[['yeni','⭐ İçerik'],['sinif','📢 Duyuru & sınıf'],['gun','📅 Özel günler']];
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function gunTarih(md){const n=new Date();n.setHours(0,0,0,0);let d=new Date(n.getFullYear()+'-'+md+'T00:00:00');if(d<n)d=new Date((n.getFullYear()+1)+'-'+md+'T00:00:00');return d}
+const kalanGun=md=>Math.round((gunTarih(md)-new Date(new Date().setHours(0,0,0,0)))/864e5);
+const tarihYaz=d=>d.toLocaleDateString('tr-TR',{day:'numeric',month:'long'});
+let hGrup='yeni';
+function hazirCiz(){const H2=HAZIR.map((h,n)=>({h,n})).filter(x=>x.h.g===hGrup);if(hGrup==='gun')H2.sort((a,b)=>(a.h.gun?kalanGun(a.h.gun):999)-(b.h.gun?kalanGun(b.h.gun):999));
+  const say=k=>{if(!k.col)return '';const L=kayitlar().filter(i=>k.col==='*'||i.col===k.col);return L[0]?`<i>${H(L[0].baslik).slice(0,26)}</i>`:'<i>henüz yok</i>'};
+  return `<div class="ab-sekme">${HGRUP.map(([k,a])=>`<button type="button" data-ab-g="${k}" class="${k===hGrup?'on':''}">${a}</button>`).join('')}</div>`+
+   (hGrup==='yeni'?'<p class="small muted" style="margin:6px 0 0">“En Yeni” görünümleri o türdeki <b>son eklediğin çalışmayı</b> butona bağlar.</p>':hGrup==='gun'?'<p class="small muted" style="margin:6px 0 0">Tarihi belli günlerde buton o günün akşamına kadar görünür, sonra kendiliğinden gizlenir.</p>':'')+
+   `<div class="ab-hazir">${H2.map(({h,n})=>{const kg=h.gun?kalanGun(h.gun):null;return `<button type="button" data-ab-h="${n}" style="--c:${RENK[h.r]}"><span>${h.i}</span><b>${H(h.ad)}</b>${h.col?say(h):kg!==null?`<i>${kg===0?'bugün':kg+' gün sonra'}</i>`:''}</button>`}).join('')}</div>`}
+function gunOnerileri(){const O=[];HAZIR.filter(h=>h.gun).forEach(h=>{const k=kalanGun(h.gun);const n=HAZIR.indexOf(h);if(k<=14&&!(($k('#special-text')||{}).value===h.t))O.push({t:`📅 ${h.ad} ${k===0?'bugün':k+' gün sonra'} (${tarihYaz(gunTarih(h.gun))}) → butonu hazırla`,f:()=>{const b=document.querySelector(`[data-ab-h="${n}"]`);hazirUygula(n)}})});return O}
+function hazirUygula(n){const h=HAZIR[n];$k('#special-text').value=h.t;$k('#ab-ikon').value=h.i;$k('#special-shape').value=h.s;renkSec(h.r);$k('#ab-anim').value=h.a;$k('#ab-alt').value=h.alt||'';$k('#ab-alan').checked=false;
+  let msg=`🎨 “${h.ad}” görünümü uygulandı.`;
+  if(h.col){const i=kayitlar().filter(x=>h.col==='*'||x.col===h.col)[0];if(i){icerigeBagla(i,false);if(h.col==='*'){const y=TUR[i.col]||['🆕','YENİ'];$k('#ab-ikon').value=y[0];$k('#ab-alt').value=String(y[1]).replace(/^YENİ\s*/,'')}const o=$k('#ab-oto');if(o&&o.checked){o.checked=false}msg=`${$k('#ab-ikon').value} “${i.baslik}” butona kondu.`}else msg=`${h.ad}: bu türde henüz içerik yok; sadece görünüm uygulandı.`}
+  if(h.gun){const g=gunTarih(h.gun);$k('#ab-bitis').value=iso(g);$k('#ab-basla').value='';msg+=` ${tarihYaz(g)} akşamına kadar görünür.`}else if($k('#ab-bitis').value&&new Date($k('#ab-bitis').value+'T23:59:59')<new Date())$k('#ab-bitis').value='';
+  degisti();toast(msg+' Kaydetmeyi unutma.')}
 let kirli=false,kur=false,son={};
 const kayitlar=()=>(typeof records!=='undefined'?records:[]).filter(i=>i&&!i.arsivlendi&&i.yayinDurumu!=='taslak'&&!i.silindi).sort((a,b)=>ms(b.tarih||b.guncellendi)-ms(a.tarih||a.guncellendi));
 const linkOf=i=>{try{return publicLink(i)||''}catch{return ''}};
@@ -2035,7 +2106,7 @@ function oneriler(){const L=kayitlar(),O=[];const link=($k('#special-link')||{})
   if(!$k('#ab-ikon').value&&!oto&&!AC())O.push({t:'✨ Metnin üstüne küçük bir ikon ekle → 🎮',f:()=>{$k('#ab-ikon').value=b?(TUR[b.col]||['⭐'])[0]:'⭐';degisti()}});
   return O}
 let OL=[];
-function oneriCiz(){const d=$k('#ab-oneri');if(!d)return;OL=oneriler();d.hidden=!OL.length;d.innerHTML=OL.length?`<span>💡 Öneriler:</span>${OL.map((o,n)=>o.f?`<button type="button" class="btn-mini" data-ab-s="${n}">${H(o.t)}</button>`:`<em class="ab-bilgi">${H(o.t)}</em>`).join('')}`:''}
+function oneriCiz(){const d=$k('#ab-oneri');if(!d)return;OL=[...gunOnerileri(),...oneriler()];d.hidden=!OL.length;d.innerHTML=OL.length?`<span>💡 Öneriler:</span>${OL.map((o,n)=>o.f?`<button type="button" class="btn-mini" data-ab-s="${n}">${H(o.t)}</button>`:`<em class="ab-bilgi">${H(o.t)}</em>`).join('')}`:''}
 /* ---------- önizleme ---------- */
 function onizle(){const b=$k('#preview-button');if(!b)return;const sel=$k('#ab-anim');const an=sel?sel.value:'';b.className=($k('#special-shape').value||'shape-circle')+(an?' '+an:'')+' ab-'+(($k('[data-ab-boy].on')||{}).dataset?.abBoy||'m');let ik=$k('#ab-ikon').value.trim(),t=$k('#special-text').value||'YENİ',alt=($k('#ab-alt')||{}).value||'';let c=$k('#special-color').value;
   const gi=gosterilen();if(AC()&&gi){const a=alanBul(gi),y=TURA[gi.col]||['⭐','YENİ'];ik=a?a.ik:y[0];alt=a?a.ad:y[1];if(a)c=alanGrad(a);t=$k('#special-text').value||'EN YENİ';$k('#ab-ikon').value=ik;$k('#ab-alt').value=alt;if(a)renkSec(c)}else if(($k('#ab-oto')||{}).checked&&gi&&!AC()){t=TUR[gi.col]?TUR[gi.col][1]:t;ik=ik||(TUR[gi.col]||[''])[0]}
@@ -2056,7 +2127,7 @@ function kurulum(){const f=$k('#special-form');if(!f||kur)return;kur=true;
    <label class="check-row small"><input type="checkbox" id="ab-oto"><span>🤖 <b>Otomatik mod:</b> buton her zaman en son eklediğim çalışmayı göstersin (her yeni içerikte kendiliğinden değişir)</span></label>
    <div class="field" style="margin:8px 0 4px"><label for="ab-otoalan">Otomatik modda hangi bölümün en yenisi?</label><select id="ab-otoalan"><option value="">Tüm bölümler (en son ne eklediysem)</option>${ALAN.map(a=>`<option value="${a.k}">${a.ik} Sadece ${a.uzun}</option>`).join('')}</select></div>
    <p id="ab-simdi" class="small" style="margin:6px 0 0"></p></details>
-  <details class="ab-kutu" open><summary>🎨 Hazır görünümler <small>tek dokunuşla</small></summary><div class="ab-hazir">${HAZIR.map((h,n)=>`<button type="button" data-ab-h="${n}" style="--c:${RENK[h[4]]}"><span>${h[2]}</span><b>${h[0]}</b></button>`).join('')}</div></details>`);
+  <details class="ab-kutu" open><summary>🎨 Hazır görünümler <small>${HAZIR.length} seçenek · tek dokunuşla</small></summary><div id="ab-hazir-kutu">${hazirCiz()}</div></details>`);
   $k('#special-message').closest('.field').insertAdjacentHTML('afterend',`<details class="ab-kutu" open><summary>✨ Daha fazla ayar</summary>
    <div class="field"><label for="ab-alt">Alt yazı (metnin altında, küçük)</label><input id="ab-alt" maxlength="22" placeholder="ör. ROBOTİK & KODLAMA"></div>
    <div class="field"><label>İkon (metnin üstünde)</label><div class="ab-ikonlar">${IKON.map(i=>`<button type="button" data-ab-i="${i}">${i||'Yok'}</button>`).join('')}</div><input id="ab-ikon" maxlength="4" placeholder="ya da kendin yaz: 🎈" style="margin-top:6px"></div>
@@ -2072,7 +2143,8 @@ function sayilar(){ALAN.forEach(a=>{const el=$k(`[data-ab-say="${a.k}"]`);if(el)
 function koyu(h){const n=parseInt(h.slice(1),16);const r=Math.round(((n>>16)&255)*.7),g=Math.round(((n>>8)&255)*.7),b=Math.round((n&255)*.7);return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
 document.addEventListener('click',e=>{const t=e.target;let b;
   if((b=t.closest('[data-ab-s]'))){e.preventDefault();const o=OL[+b.dataset.abS];if(o&&o.f){o.f();toast('💡 Uygulandı. Yayınlamak için “Düğmeyi kaydet”e bas.')}return}
-  if((b=t.closest('[data-ab-h]'))){e.preventDefault();const h=HAZIR[+b.dataset.abH];$k('#special-text').value=h[1];$k('#ab-ikon').value=h[2];$k('#special-shape').value=h[3];renkSec(h[4]);$k('#ab-anim').value=h[5];$k('#ab-alt').value='';$k('#ab-alan').checked=false;degisti();toast(`🎨 “${h[0]}” görünümü uygulandı. Kaydetmeyi unutma.`);return}
+  if((b=t.closest('[data-ab-g]'))){e.preventDefault();hGrup=b.dataset.abG;const k=$k('#ab-hazir-kutu');if(k)k.innerHTML=hazirCiz();return}
+  if((b=t.closest('[data-ab-h]'))){e.preventDefault();hazirUygula(+b.dataset.abH);return}
   if((b=t.closest('[data-ab-a]'))){e.preventDefault();const a=ALAN.find(x=>x.k===b.dataset.abA);const i=alanKayit(a.k)[0];if(($k('#ab-oto')||{}).checked)$k('#ab-otoalan').value=a.k;alanUygula(a,i);toast(i?`${a.ik} “${i.baslik}” butona kondu. Kaydetmeyi unutma.`:`${a.ik} ${a.uzun} görünümü uygulandı (bu bölümde henüz çalışma yok).`);return}
   if((b=t.closest('[data-ab-i]'))){e.preventDefault();$k('#ab-ikon').value=b.dataset.abI;degisti();return}
   if((b=t.closest('[data-ab-boy]'))){e.preventDefault();document.querySelectorAll('[data-ab-boy]').forEach(x=>x.classList.toggle('on',x===b));degisti();return}});
@@ -2122,7 +2194,7 @@ const SON={L:[],at:0,yuk:null,hata:''};
 /* son 12 yüklemenin (commit) içindeki .html/.pdf dosyaları — en yeni en üstte */
 async function sonYuklenenler(zorla){if(!zorla&&SON.at&&Date.now()-SON.at<45000)return SON.L;if(SON.yuk)return SON.yuk;
   SON.yuk=(async()=>{try{const g=G();if(!g)throw new Error('GitHub bağlantısı yok');const cs=await g.gh('/commits?per_page=12');const ds=await Promise.all(cs.map(c=>g.gh('/commits/'+c.sha).catch(()=>null)));
-    const m=new Map();ds.forEach(d=>{if(!d)return;const t=Date.parse(d.commit?.committer?.date||d.commit?.author?.date||'')||0;(d.files||[]).forEach(f=>{if(f.status==='removed')return;const p=f.filename;if(!/\.(html?|pdf)$/i.test(p)||/^(index|yonetici|404)\.html$/i.test(p)||/^(eski|sayfa)\//.test(p)||/^google[a-z0-9]+\.html$/i.test(p))return;if(!m.has(p)||m.get(p).t<t)m.set(p,{p,t,yeni:f.status==='added'})})});
+    const m=new Map();ds.forEach(d=>{if(!d)return;const t=Date.parse(d.commit?.committer?.date||d.commit?.author?.date||'')||0;(d.files||[]).forEach(f=>{if(f.status==='removed')return;const p=f.filename;if(!/\.(html?|pdf|mp4|webm|mov|m4v|mp3)$/i.test(p)||/^(index|yonetici|404)\.html$/i.test(p)||/^(eski|sayfa)\//.test(p)||/^google[a-z0-9]+\.html$/i.test(p))return;if(!m.has(p)||m.get(p).t<t)m.set(p,{p,t,yeni:f.status==='added'})})});
     SON.L=[...m.values()].sort((a,b)=>b.t-a.t);SON.at=Date.now();SON.hata=''}catch(e){SON.hata=String(e.message||e)}finally{SON.yuk=null}return SON.L})();return SON.yuk}
 /* düzenleyici açılınca mevcut “🆕 Son yüklediğin dosyalar” kutusu hemen tazelensin (önbellek beklenmesin) */
 const tazele=()=>{const y=document.getElementById('sy-yenile');if(y)y.click()};
@@ -2216,4 +2288,6 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 })();
 
 </script>
+<style>.ab-sekme{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.ab-sekme button{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:7px 12px;font:800 .8rem system-ui;cursor:pointer;color:#334155}.ab-sekme button.on{background:#1e293b;color:#fff;border-color:#1e293b}
+.ab-hazir button i{font-style:normal;font-weight:700;font-size:.64rem;opacity:.9;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dark-mode .ab-sekme button{background:#0f172a;color:#e2e8f0;border-color:#334155}.dark-mode .ab-sekme button.on{background:#e2e8f0;color:#0f172a}</style>
 </body></html>
