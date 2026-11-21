@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="11.2">
+<meta name="surum" content="11.3">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -699,9 +699,9 @@ $('#x-kapak').addEventListener('input',kapakPreview);
 const prevRead=readEditor;readEditor=function(){const x=prevRead();if(x.col!=='yazilar'){const k=normalizeLink($('#x-kapak').value).value;x.kapak=safeURL(k)?k:''}return x};
 const prevFill3=fillEditor;fillEditor=function(x,meta){prevFill3(x,meta);$('#x-kapak').value=x.kapak||'';kapakPreview()};
 const prevFresh=freshEditor;freshEditor=function(){prevFresh();$('#x-kapak').value='';kapakPreview()};
-async function kapakUpload(){const [f]=await pickFiles('image/*');if(!f)return;const c=await compressImage(f,1000,.82);const title=$('#edit-title').value.trim()||'kapak';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak'+(c.name.match(/\.[a-z0-9]+$/)||['.jpg'])[0];PREV.set(path,URL.createObjectURL(c));$('#x-kapak').value=path;kapakPreview();try{await ghCommit([{path,blob:c}],'Kapak görseli: '+title);toast('✅ Kapak yüklendi.')}catch(e){toast(errText(e),true)}}
+async function kapakUpload(){const [f]=await pickFiles('image/*');if(!f)return;const c=await compressImage(f,1000,.82);const title=$('#edit-title').value.trim()||'kapak';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak-'+Date.now().toString(36).slice(-5)+(c.name.match(/\.[a-z0-9]+$/)||['.jpg'])[0];PREV.set(path,URL.createObjectURL(c));$('#x-kapak').value=path;kapakPreview();try{await ghCommit([{path,blob:c}],'Kapak görseli: '+title);toast('✅ Kapak yüklendi.')}catch(e){toast(errText(e),true)}}
 /* Oyunun kendi sayfasından ekran görüntüsü: aynı sitedeki oyun gizli pencerede açılır, ilk ekranı kapak olur */
-async function kapakShot(btn){const u=safeURL(normalizeLink($('#edit-link').value).value);if(!u)return toast('Önce oyunun bağlantısını yaz.',true);if(new URL(u).origin!==location.origin)return toast('Otomatik kapak yalnızca kendi sitendeki oyunlarda çalışır; görsel seçerek yükleyebilirsin.',true);await busy(btn,async()=>{const fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-2000px;top:0;width:1200px;height:900px;border:0';fr.src=u;document.body.append(fr);await new Promise(r=>{fr.onload=r;setTimeout(r,8000)});await new Promise(r=>setTimeout(r,2500));let blob=null;try{const doc=fr.contentDocument;if(!window.html2canvas)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=ok;s.onerror=()=>no(new Error('Ekran görüntüsü aracı yüklenemedi.'));document.head.append(s)});const cv=await html2canvas(doc.body,{width:1200,height:900,windowWidth:1200,windowHeight:900,scale:.8,useCORS:true,logging:false});blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.82))}finally{fr.remove()}if(!blob)throw new Error('Kapak oluşturulamadı; görsel seçerek yükle.');const title=$('#edit-title').value.trim()||'oyun';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak.jpg';PREV.set(path,URL.createObjectURL(blob));$('#x-kapak').value=path;kapakPreview();await ghCommit([{path,blob}],'Otomatik kapak: '+title);toast('📸 Kapak oyunun ilk ekranından oluşturuldu.')})}
+async function kapakShot(btn){const u=safeURL(normalizeLink($('#edit-link').value).value);if(!u)return toast('Önce oyunun bağlantısını yaz.',true);if(new URL(u).origin!==location.origin)return toast('Otomatik kapak yalnızca kendi sitendeki oyunlarda çalışır; görsel seçerek yükleyebilirsin.',true);await busy(btn,async()=>{const fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-2000px;top:0;width:1200px;height:900px;border:0';fr.src=u;document.body.append(fr);await new Promise(r=>{fr.onload=r;setTimeout(r,8000)});await new Promise(r=>setTimeout(r,2500));let blob=null;try{const doc=fr.contentDocument;if(!window.html2canvas)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=ok;s.onerror=()=>no(new Error('Ekran görüntüsü aracı yüklenemedi.'));document.head.append(s)});const cv=await html2canvas(doc.body,{width:1200,height:900,windowWidth:1200,windowHeight:900,scale:.8,useCORS:true,logging:false});blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.82))}finally{fr.remove()}if(!blob)throw new Error('Kapak oluşturulamadı; görsel seçerek yükle.');const title=$('#edit-title').value.trim()||'oyun';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak-'+Date.now().toString(36).slice(-5)+'.jpg';PREV.set(path,URL.createObjectURL(blob));$('#x-kapak').value=path;kapakPreview();await ghCommit([{path,blob}],'Otomatik kapak: '+title);toast('📸 Kapak oyunun ilk ekranından oluşturuldu.')})}
 $('.quick-dashboard')?.insertAdjacentHTML('afterbegin','<button class="btn small primary" data-x="new-game">🎮 Oyun ekle</button>');
 $('#view-editor .page-heading .btn')?.insertAdjacentHTML('beforebegin','<button type="button" class="btn small" data-x="new-game">🎮 Yeni oyun</button> ');
 document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b||!currentUser)return;const a=b.dataset.x;
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='11.2';
+const PANEL_SURUM='11.3';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -753,7 +753,7 @@ $('[data-x="kapak-shot"]')?.insertAdjacentHTML('afterend','<button type="button"
 function setKapakData(d){kapakData=d||'';const inp=$('#x-kapak');if(kapakData){inp.value='📷 Görsel eklendi ('+Math.round(kapakData.length*.75/1024)+' KB)';inp.readOnly=true}else{if(inp.readOnly)inp.value='';inp.readOnly=false}kapakPreview()}
 kapakPreview=function(){const v=$('#x-kapak').value.trim(),src=kapakData||PREV.get(v)||safeURL(v),im=$('#x-kapak-img');im.hidden=!src;if(src)im.src=src};
 const blobToData=b=>new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.onerror=no;fr.readAsDataURL(b)});
-kapakUpload=async function(){const [f]=await pickFiles('image/*');if(!f)return;try{if(ghTok()){const c=await compressImage(f,1000,.82);const title=$('#edit-title').value.trim()||'kapak';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak'+(c.name.match(/\.[a-z0-9]+$/)||['.jpg'])[0];PREV.set(path,URL.createObjectURL(c));setKapakData('');$('#x-kapak').value=path;kapakPreview();await ghCommit([{path,blob:c}],'Kapak görseli: '+title);toast('✅ Kapak yüklendi.')}else{let c=await compressImage(f,640,.72),d=await blobToData(c);if(d.length>180000){c=await compressImage(f,480,.6);d=await blobToData(c)}if(!/^data:image\/(webp|jpeg|png)/.test(d))throw new Error('Bu görsel biçimi desteklenmiyor; JPG veya PNG seç.');setKapakData(d);toast('📷 Kapak eklendi. Yayınla’ya basınca kaydedilir.')}}catch(e){toast(errText(e),true)}};
+kapakUpload=async function(){const [f]=await pickFiles('image/*');if(!f)return;try{if(ghTok()){const c=await compressImage(f,1000,.82);const title=$('#edit-title').value.trim()||'kapak';const path='gorseller/'+cleanName(title).replace(/\.[a-z0-9]+$/,'')+'-kapak-'+Date.now().toString(36).slice(-5)+(c.name.match(/\.[a-z0-9]+$/)||['.jpg'])[0];PREV.set(path,URL.createObjectURL(c));setKapakData('');$('#x-kapak').value=path;kapakPreview();await ghCommit([{path,blob:c}],'Kapak görseli: '+title);toast('✅ Kapak yüklendi.')}else{let c=await compressImage(f,640,.72),d=await blobToData(c);if(d.length>180000){c=await compressImage(f,480,.6);d=await blobToData(c)}if(!/^data:image\/(webp|jpeg|png)/.test(d))throw new Error('Bu görsel biçimi desteklenmiyor; JPG veya PNG seç.');setKapakData(d);toast('📷 Kapak eklendi. Yayınla’ya basınca kaydedilir.')}}catch(e){toast(errText(e),true)}};
 const prevRead2=readEditor;readEditor=function(){const x=prevRead2();if(x.col!=='yazilar'&&kapakData)x.kapak=kapakData;return x};
 const prevFill4=fillEditor;fillEditor=function(x,meta){prevFill4(x,meta);setKapakData(isData(x.kapak)?x.kapak:'')};
 const prevFresh2=freshEditor;freshEditor=function(){prevFresh2();setKapakData('')};
@@ -1429,7 +1429,7 @@ function bmBasla(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='und
   setInterval(bmCiz,60000)}
 bmBasla();
 /* ---------- Özet ekranı: sürüm uyarısı + “Bu sürümde neler var” ---------- */
-const SITE_GEREKEN='11.2';
+const SITE_GEREKEN='11.3';
 function surumBandi(){const yer=document.querySelector('#view-dashboard');if(!yer)return;let b=document.getElementById('sv-bant');const sv=v=>String(v||'').split('.').map(Number);const kucuk=(a,b)=>{a=sv(a);b=sv(b);for(let k=0;k<Math.max(a.length,b.length);k++){if((a[k]||0)!==(b[k]||0))return (a[k]||0)<(b[k]||0)}return false};const eski=BM.siteSurum&&kucuk(BM.siteSurum,SITE_GEREKEN);
   if(!eski){if(b)b.remove();return}if(!b){yer.insertAdjacentHTML('afterbegin','<div id="sv-bant" class="sv-bant"></div>');b=document.getElementById('sv-bant')}
   b.innerHTML=`<b>⚠️ Sitedeki index.html ${esc(BM.siteSurum)} sürümünde; bu panel en az ${esc(SITE_GEREKEN)} istiyor.</b><span>Yeni özelliklerin sitede görünmesi için <b>index.html</b> dosyasını GitHub’a yükle (Add file → Upload files → aynı adla → Commit). Yükledikten 1-3 dakika sonra bu uyarı kendiliğinden kalkar.</span>`}
@@ -2317,7 +2317,7 @@ let AG=null,AGt=0;
 async function agacGetir(){if(AG&&Date.now()-AGt<60000)return AG;try{const g=window.boGH;const r=g.repo();const info=await g.gh('');const br=r.branch||info.default_branch||'main';const ref=await g.gh(`/git/ref/heads/${encodeURIComponent(br)}`);const c=await g.gh(`/git/commits/${ref.object.sha}`);AG=new Set(((await g.gh(`/git/trees/${c.tree.sha}?recursive=1`)).tree||[]).filter(t=>t.type==='blob').map(t=>t.path));AGt=Date.now();return AG}catch{return AG}}
 /* depodaki kapak görseli: dosya adıyla eşleşen gorseller/…-kapak.jpg */
 async function kapakBul(p,baslik){try{const t=await agacGetir();if(!t)return '';const K=[fold(p.split('/').pop().replace(/\.html?$/i,'')),fold(baslik)].filter(x=>x.length>=4);if(!K.length)return '';let en='',puan=0;
-  t.forEach(f=>{if(!/\.(png|jpe?g|webp)$/i.test(f))return;const a=fold(f.split('/').pop().replace(/\.[a-z]+$/i,'').replace(/[-_ ]?kapak$/i,''));let s=0;if(K.includes(a))s=3;else if(K.some(kok=>a.startsWith(kok)||kok.startsWith(a)&&a.length>=5))s=2;if(s&&/kapak/i.test(f))s+=1;if(/^gorseller\//.test(f))s+=.5;if(s>puan){puan=s;en=f}});return puan>=3?en:''}catch{return ''}}
+  t.forEach(f=>{if(!/\.(png|jpe?g|webp)$/i.test(f))return;const a=fold(f.split('/').pop().replace(/\.[a-z]+$/i,'').replace(/[-_ ]?kapak([-_][a-z0-9]{3,6})?$/i,''));let s=0;if(K.includes(a))s=3;else if(K.some(kok=>a.startsWith(kok)||kok.startsWith(a)&&a.length>=5))s=2;if(s&&/kapak/i.test(f))s+=1;if(/^gorseller\//.test(f))s+=.5;if(s>puan){puan=s;en=f}});return puan>=3?en:''}catch{return ''}}
 const OTO={};/* alan id → otomatik yazdığımız değer (kullanıcı değiştirmediyse yenisiyle değiştirilebilir) */
 function yaz(id,v){const el=$k('#'+id);if(!el||!v)return false;const simdi=el.value.trim();if(simdi&&simdi!==OTO[id])return false;if(simdi===v)return false;el.value=v;OTO[id]=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return true}
 function kutu(){const l=$k('#edit-link');if(!l)return null;let k=$k('#oto-dosya');if(!k){(l.closest('.field')||l.parentElement).insertAdjacentHTML('beforeend','<div id="oto-dosya" class="oto-dosya" hidden></div>');k=$k('#oto-dosya')}return k}
@@ -2355,6 +2355,69 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 .od-uyari{flex:1 0 100%;margin-top:4px;padding:7px 9px;border-radius:9px;background:#fef3c7;color:#78350f;border:1px solid #f59e0b}
 .dark-mode .oto-dosya{background:#052e16;color:#bbf7d0;border-color:#166534}
 </style>`);
+})();
+
+</script>
+<script>
+/* ===================== v11.3 · 🔴 Acil Buton sade düzen + 🖼️ kapak çakışması koruması ===================== */
+(function(){
+'use strict';
+const $k=s=>document.querySelector(s);
+const H=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const kayitlar=()=>(typeof records!=='undefined'&&Array.isArray(records))?records:[];
+const dosya=u=>{try{return decodeURIComponent(String(u||'').split('#')[0].split('?')[0].split('/').pop())}catch{return ''}};
+/* ---------- Acil Buton: sade düzen (hiçbir ayar silinmedi, yalnızca yerleri değişti) ---------- */
+function sadelestir(){const f=$k('#special-form');if(!f||f.dataset.sade||!f.querySelector('.ab-akilli'))return;f.dataset.sade='1';
+  const fld=id=>{const e=$k('#'+id);return e?(e.closest('.field')||e.closest('label')||e):null};
+  const on=$k('#special-preview');if(on&&!$k('#ab-ozet'))on.insertAdjacentHTML('afterend','<div id="ab-ozet" class="ab-ozet"></div>');
+  const temel=document.createElement('div');temel.className='ab-temel';
+  ['special-active','special-text','special-link','special-message'].forEach(id=>{const e=fld(id);if(e)temel.append(e)});
+  const sat=f.querySelector(':scope > .row');if(sat){const test=sat.querySelector('[data-action="test-special"]'),lf=fld('special-link');if(test&&lf){test.classList.add('ab-dene');lf.append(test)}sat.hidden=true}
+  const gor=document.createElement('details');gor.className='ab-kutu ab-gorunum';gor.innerHTML='<summary>🎨 Görünüm <small>şekil, renk ve hazır şablonlar</small></summary>';
+  const ic=document.createElement('div');ic.className='two-col';['special-shape','special-color'].forEach(id=>{const e=fld(id);if(e)ic.append(e)});gor.append(ic);
+  const kutular=[...f.querySelectorAll(':scope > details.ab-kutu')];
+  const hz=kutular.find(d=>/Hazır görünümler/.test((d.querySelector('summary')||{}).textContent||''));if(hz){const k=hz.querySelector('#ab-hazir-kutu');if(k){k.insertAdjacentHTML('beforebegin','<p class="ab-ara"><b>Hazır şablonlar</b> · tek dokunuşla</p>');gor.append(k.previousElementSibling||'',k)}hz.remove()}
+  const ak=f.querySelector('.ab-akilli');if(ak)ak.open=false;
+  const daha=kutular.find(d=>/Daha fazla ayar/.test((d.querySelector('summary')||{}).textContent||''));if(daha)daha.open=false;
+  const pl=fld('special-pulse');if(pl)pl.hidden=true;
+  const oneri=$k('#ab-oneri')||$k('#ab-ozet');oneri.after(temel);temel.after(gor);if(ak)gor.after(ak);if(daha)(ak||gor).after(daha);
+  f.querySelectorAll(':scope > .two-col').forEach(d=>{if(!d.querySelector('input,select,textarea'))d.remove()});
+  ozet()}
+/* ---------- “Sitede şu an” özeti ---------- */
+function ozet(){const d=$k('#ab-ozet');if(!d)return;const ac=($k('#special-active')||{}).checked,oto=($k('#ab-oto')||{}).checked;
+  if(!ac){d.innerHTML='🙈 Buton şu an sitede <b>gizli</b>. Göstermek için “Ana sayfada göster”i işaretle.';return}
+  const ik=($k('#ab-ikon')||{}).value||'',t=($k('#special-text')||{}).value||'YENİ',l=($k('#special-link')||{}).value||'',dv=($k('#ab-davranis')||{}).value;
+  const f=dosya(l),i=f?kayitlar().find(x=>dosya(x.link)===f):null;
+  const hedef=oto?'<b>en son eklediğin çalışma</b> (otomatik)':i?`“<b>${H(i.baslik||'')}</b>”`:l?`<b>${H(f||l)}</b>`:'<span style="color:#b91c1c">hiçbir yer (bağlantı boş)</span>';
+  d.innerHTML=`👁 Sitede: <b>${H(ik)} ${H(t)}</b> → dokununca ${hedef} ${dv==='git'?'doğrudan açılır':'tanıtım penceresiyle açılır'}.`}
+/* ---------- Kapak çakışması: aynı kapak dosyası başka içerikte de kullanılıyorsa uyar ---------- */
+function kapakDenetle(){const k=$k('#x-kapak');if(!k)return;let n=$k('#kapak-cakisma');const yol=k.value.trim();
+  const ti=(($k('#edit-title')||{}).value||'').trim(),li=dosya(($k('#edit-link')||{}).value);
+  const diger=yol&&!/^(data:|https?:)/.test(yol)?kayitlar().filter(x=>x.kapak===yol&&!((x.baslik||'').trim()===ti||(li&&dosya(x.link)===li))):[];
+  if(!diger.length){if(n)n.hidden=true;return}
+  if(!n){(k.closest('.field')||k.parentElement).insertAdjacentHTML('beforeend','<div id="kapak-cakisma" class="od-uyari"></div>');n=$k('#kapak-cakisma')}
+  n.hidden=false;n.innerHTML=`⚠️ Bu kapak görseli <b>“${H(diger[0].baslik||'')}”</b>${diger.length>1?` ve ${diger.length-1} içerikte daha`:''} de kullanılıyor; dosya sonradan üzerine yazılmış olabilir. Sitede yanlış resim görünüyorsa: <button type="button" class="btn-mini" id="kapak-kaldir">Bu içerikten kaldır</button> sonra “Kapak görseli seç” ile yenisini yükle.`}
+document.addEventListener('click',e=>{if(e.target.closest('#kapak-kaldir')){e.preventDefault();const k=$k('#x-kapak');const kb=[...(k.closest('.field')||document).querySelectorAll('button')].find(b=>b.textContent.trim()==='Kaldır');if(kb)kb.click();else{k.value='';k.dispatchEvent(new Event('input',{bubbles:true}))}try{toast('Kapak bu içerikten kaldırıldı. Kaydetmeyi unutma.')}catch{}setTimeout(kapakDenetle,100)}});
+setInterval(()=>{sadelestir();if($k('#ab-ozet')&&$k('#ab-ozet').offsetParent)ozet();const k=$k('#x-kapak');if(k&&k.offsetParent)kapakDenetle()},700);
+document.head.insertAdjacentHTML('beforeend',`<style>
+.ab-ozet{margin:10px 0 4px;padding:10px 12px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#1e1b4b;font-size:.9rem;line-height:1.45}
+.ab-temel{display:grid;gap:4px;margin:6px 0 10px}.ab-temel .field{margin:0}
+.ab-dene{margin-top:6px}
+#ab-oneri{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+#ab-oneri>span{font-weight:800}
+#ab-oneri [data-ab-s]{width:100%;text-align:left;font-size:.84rem;line-height:1.35;padding:8px 10px;white-space:normal}
+#ab-oneri [data-ab-s]:nth-of-type(n+4){display:none}
+#ab-oneri.hepsi [data-ab-s]{display:block}
+.ab-oneri-daha{align-self:flex-start;border:0;background:none;color:#92400e;font-weight:800;cursor:pointer;padding:2px 4px}
+.ab-ara{margin:12px 0 4px;font-size:.85rem}
+#special-form input[type=date]{width:100%;max-width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none}
+#special-form #ab-renk2{height:44px;max-width:100%}
+.ab-gorunum summary small,.ab-akilli summary small{font-weight:600;color:#64748b}
+.dark-mode .ab-ozet{background:#1e1b4b;color:#e0e7ff;border-color:#3730a3}
+</style>`);
+/* önerilerden fazlasını gizle: “+ N öneri daha” */
+setInterval(()=>{const o=$k('#ab-oneri');if(!o)return;const n=o.querySelectorAll('[data-ab-s]').length;let b=o.querySelector('.ab-oneri-daha');if(n>3&&!o.classList.contains('hepsi')){if(!b){o.insertAdjacentHTML('beforeend','<button type="button" class="ab-oneri-daha"></button>');b=o.querySelector('.ab-oneri-daha')}b.textContent=`+ ${n-3} öneri daha`}else if(b)b.remove()},600);
+document.addEventListener('click',e=>{const b=e.target.closest('.ab-oneri-daha');if(b){e.preventDefault();$k('#ab-oneri').classList.add('hepsi');b.remove()}});
 })();
 
 </script>

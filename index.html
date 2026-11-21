@@ -286,7 +286,7 @@ header.ucb-sahne{position:relative;isolation:isolate;overflow:hidden}
 .nehir-soz.gor{opacity:.95;transform:none}
 @media(prefers-reduced-motion:reduce){.nehir-soz{transition:none}}
 </style>
-<meta name="surum" content="11.2">
+<meta name="surum" content="11.3">
 <script>(function(){try{var q=(location.search.match(/[?&]tema=([a-z]+)/)||[])[1],t=q||localStorage.getItem("bi_tema");var h=document.documentElement;if(/^(sinematik|pastel|dogal|sade|robotik|okyanus|gunbatimi|kraft|defter|uzay|orman|lavanta|sakura|limon|neon|gecealtin)$/.test(t)){h.classList.add("tema-m","tema-"+t);if(/^(robotik|uzay|neon|gecealtin)$/.test(t)&&!h.classList.contains("dark-mode")){h.classList.add("dark-mode");h.dataset.temaDark="1"}}var st=(location.search.match(/[?&]stil=([a-z]+)/)||[])[1]||localStorage.getItem("bi_stil");if(/^(keskin|cam|kabarcik)$/.test(st))h.classList.add("stil-"+st);}catch(e){}})()</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;1,500&family=Space+Grotesk:wght@600;700&display=swap"></head><body>
 <a class="sr-only skip-link" href="#kesfet">İçeriklere geç</a>
@@ -371,7 +371,7 @@ header.ucb-sahne{position:relative;isolation:isolate;overflow:hidden}
 <div class="modal-overlay" id="search-modal" role="dialog" aria-modal="true" aria-label="Sitede arama"><div class="search-container"><button onclick="closeSearchModal()" class="search-close" aria-label="Aramayı kapat">×</button><label for="master-search" class="sr-only">Sitede ara</label><input id="master-search" class="search-box" type="search" placeholder="Oyun, PDF, Video, Yazı ara..." oninput="performSearch()"><div class="search-results" id="search-results-area"></div></div></div>
 <div id="game-overlay" hidden role="dialog" aria-modal="true" aria-label="İçerik penceresi"><div class="game-controls"><button onclick="oyunKapat()">← MERKEZE DÖN</button><a id="game-external" target="_blank" rel="noopener noreferrer">Ayrı sekmede aç ↗</a></div><iframe id="game-frame" title="Eğitim içeriği" allow="fullscreen; autoplay; gamepad" allowfullscreen></iframe></div>
 <button id="zirve-ekran-pill" data-act="access" style="display:flex"><span>📺 Görünüm</span></button><button id="install-pill" data-act="install" hidden><i class="fas fa-download"></i> Uygulama olarak yükle</button>
-<footer>&copy; <span id="year">2026</span> <span data-edit="alt.imza">Barış İlkan - Dijital Eğitim Üssü</span> <span style="opacity:.55;font-size:.75em">· v11.2</span><div class="footer-tools"><button data-act="privacy">Veri kullanımı</button><button data-act="install">Ana ekrana ekle</button></div></footer>
+<footer>&copy; <span id="year">2026</span> <span data-edit="alt.imza">Barış İlkan - Dijital Eğitim Üssü</span> <span style="opacity:.55;font-size:.75em">· v11.3</span><div class="footer-tools"><button data-act="privacy">Veri kullanımı</button><button data-act="install">Ana ekrana ekle</button></div></footer>
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-box" id="modal-box"><div class="modal-head"><h2 id="modal-title"></h2><button class="icon-btn" id="modal-close" aria-label="Kapat">✕</button></div><div class="modal-body" id="modal-body"></div></div></div><div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <script>
 'use strict';
@@ -553,7 +553,8 @@ function playVideo(i){const v=videoSource(i.link);if(!v)return false;recordOpen(
 const prevOpen=openItem;openItem=async function(key){const i=getItem(key);if(isVideo(i)){closeSearchModal();if(playVideo(i))return}return prevOpen(key)};
 
 /* --- Kartlarda video kapağı ve "Yeni" rozeti --- */
-function thumbOf(i){try{const k=window.kapakSrc&&window.kapakSrc(i);if(k)return k}catch{}const v=videoSource(i.link);return v&&v.thumb?v.thumb:''}
+function kapakOrtak(i){try{return !!(i&&i.kapak&&allItems.some(x=>x!==i&&x.kapak===i.kapak))}catch{return false}}window.kapakOrtak=kapakOrtak;
+function thumbOf(i){try{const k=window.kapakSrc&&window.kapakSrc(i);if(k&&!(i.col==='videolar'&&kapakOrtak(i)))return k}catch{}const v=videoSource(i.link);return v&&v.thumb?v.thumb:''}
 const prevCard=card;card=function(i){let h=prevCard(i);if(isVideo(i)){const t=thumbOf(i);h=h.replace(/<div class="rc-icon">[\s\S]*?<\/div>/,`<button class="rc-thumb" data-act="open" data-key="${esc(itemKey(i))}" aria-label="${esc(i.baslik)} videosunu oynat">${t?`<img src="${esc(t)}" alt="" loading="lazy" decoding="async">`:''}<span aria-hidden="true">▶</span></button>`)}if(isNew(i))h=h.replace('<h4>','<h4><span class="yeni-rozet">Yeni</span> ');return h};
 
 /* --- Video galerisi --- */
@@ -2748,11 +2749,11 @@ try{const _r=renderOriginalCollections;renderOriginalCollections=function(){cons
 document.addEventListener('click',e=>{const g=e.target.closest('[data-ab-alan]');if(g){e.preventDefault();e.stopPropagation();try{closeModal()}catch{}setTimeout(()=>{try{showArea(g.dataset.abAlan)}catch{}},60);return}
   const b=e.target.closest('#special-circle');if(!b)return;const s=(typeof settings!=='undefined'&&settings.ozel_duyuru)||{};const k=b.dataset.key,i=k?getItem(k):null;
   if(b.dataset.davranis==='git'){e.preventDefault();e.stopPropagation();if(i)openItem(k);else{const u=safeURL(s.link);if(u)location.href=u}return}
-  if(!i)return;e.preventDefault();e.stopPropagation();const t=TUR[i.col]||['⭐','YENİ','Aç'];const img=(window.kapakSrc&&window.kapakSrc(i))||'';
+  if(!i)return;e.preventDefault();e.stopPropagation();const t=TUR[i.col]||['⭐','YENİ','Aç'];const VD=/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(i.link||'');let img=(window.kapakSrc&&window.kapakSrc(i))||'';if(img&&VD&&window.kapakOrtak&&window.kapakOrtak(i))img='';const vsrc=VD?safeURL(i.link):'';
   const a=alanBul(i),sayfa=alanSayfa(a,i);
   const digerleri=a?yeniler(x=>x!==i&&alanBul(x)===a).slice(0,3):[];
   const baslik=durum.a&&durum.i===i?`${durum.a.ik} ${s.daireMetni||'EN YENİ'} · ${durum.a.uzun||durum.a.ad}`:((s.ikon?s.ikon+' ':'')+(s.otomatik?t[1]:(s.daireMetni||'Yeni')));
-  openModal(baslik,`<div class="ab-pen">${a?`<span class="ab-pen-alan" style="background:${alanGrad(a)}">${a.ik} ${esc(a.uzun)}</span>`:''}${img?`<img src="${esc(img)}" alt="" class="ab-pen-img">`:`<div class="ab-pen-img ab-pen-yok">${t[0]}</div>`}<h2>${esc(i.baslik||'')}</h2><p>${esc(s.otomatik?(i.aciklama||''):(s.mesaj&&s.mesaj!==i.baslik?s.mesaj:(i.aciklama||'')))}</p><button class="btn primary ab-pen-ac" data-act="open" data-key="${esc(k)}">${t[2]} →</button>
+  openModal(baslik,`<div class="ab-pen">${a?`<span class="ab-pen-alan" style="background:${alanGrad(a)}">${a.ik} ${esc(a.uzun)}</span>`:''}${vsrc&&!img?`<video class="ab-pen-img" src="${esc(vsrc)}#t=0.6" muted playsinline preload="metadata"></video>`:img?`<img src="${esc(img)}" alt="" class="ab-pen-img">`:`<div class="ab-pen-img ab-pen-yok">${t[0]}</div>`}<h2>${esc(i.baslik||'')}</h2><p>${esc(s.otomatik?(i.aciklama||''):(s.mesaj&&s.mesaj!==i.baslik?s.mesaj:(i.aciklama||'')))}</p><button class="btn primary ab-pen-ac" data-act="open" data-key="${esc(k)}">${t[2]} →</button>
    ${digerleri.length?`<div class="ab-pen-diger"><b>${a.ik} ${esc(a.uzun)} bölümünde yeni</b>${digerleri.map(x=>`<button type="button" data-act="open" data-key="${esc(itemKey(x))}"><span>${(TUR[x.col]||['⭐'])[0]}</span>${esc(x.baslik||'')}</button>`).join('')}</div>`:''}
    ${sayfa?`<button type="button" class="btn ab-pen-tum" data-ab-alan="${esc(sayfa)}">${a.ik} ${esc(a.uzun)} bölümünün tamamı →</button>`:''}</div>`)},true);
 setTimeout(acil,1500);setTimeout(acil,4000);
