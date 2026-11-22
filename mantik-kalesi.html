@@ -253,8 +253,10 @@
                 return;
             }
 
+            // Kurallara göre kontrol: kayıtlı tek çözüm değil, satır/sütun kuralına uyan HER çözüm doğrudur
+            const hatalar = kuralHatalari(boardState);
             boardState.forEach((val, i) => {
-                if (val !== solution[i]) {
+                if (hatalar.has(i)) {
                     cells[i].classList.add('wrong');
                     errors++;
                 } else {
@@ -274,6 +276,23 @@
                     setTimeout(() => cells.forEach(c => c.classList.remove('wrong', 'correct')), 2000);
                 }, 200);
             }
+        }
+
+        // Oyunun kuralı: her satırda ve her sütunda her sembolden yalnızca 1 tane.
+        // Aynı satırda ya da sütunda tekrar eden sembollerin hücre numaralarını döndürür (boşsa çözüm geçerli).
+        function kuralHatalari(tahta) {
+            const n = 4, hatali = new Set();
+            for (let i = 0; i < n * n; i++) {
+                const v = tahta[i];
+                if (!v) continue;
+                const r = Math.floor(i / n), c = i % n;
+                for (let k = 0; k < n; k++) {
+                    const ayniSatir = r * n + k, ayniSutun = k * n + c;
+                    if (ayniSatir !== i && tahta[ayniSatir] === v) { hatali.add(i); hatali.add(ayniSatir); }
+                    if (ayniSutun !== i && tahta[ayniSutun] === v) { hatali.add(i); hatali.add(ayniSutun); }
+                }
+            }
+            return hatali;
         }
 
         function resetBoard() {

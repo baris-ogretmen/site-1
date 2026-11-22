@@ -30,8 +30,11 @@ Bu notu okuyan Claude: Barış Öğretmen'in eğitim sitesi ve yönetici paneli 
   - site alt bilgisindeki `· vX</span>`
   - panelde `const PANEL_SURUM='X'` ve `SITE_GEREKEN='X'`
 
-  **Dikkat:** bir yerde `parseFloat` ile karşılaştırma var. Bu yüzden 10.10 gibi sürümler kullanma (11.0, 11.1… şeklinde ilerle). Site ve panel her zaman aynı sürümde yüklensin.
-- **Son durum (22 Kasım 2026): v11.4.**
+  **Sürüm artık TAM SAYI (Barış'ın isteği, 22 Kasım 2026):** 12, 13, 14… Ondalık (11.8 gibi) kullanma; teslim satırında da "v12 (önceki v11)" yaz. Site ve panel her zaman aynı sürümde yüklensin.
+- **Son durum (22 Kasım 2026): v12.**
+- 22 Kasım eklemeleri: KVKK aydınlatma metni; 🧭 **Öğrenme Yolları** (index.html sonunda `YOL_VARSAYILAN`: rob/sat/akl/yz, 9 basamak = okul öncesi…8. sınıf, `?yol=rob`); **Robi'yi Eğit** (`robiyi-egit.html`, YZ yolunun 9 basamağı, `?kademe=0..8`); ⚡ **hafif mod** (`html.bo-hafif`, telefon/tablet/tahtada otomatik, `localStorage bo_hiz`); kaydırma/izleyici işleri requestAnimationFrame ile birleştirildi.
+- Boş basamaklar: Satranç 8–9 ("Oyun Sonu Laboratuvarı", "Maçını İncele"), Akıl-Zekâ 9 ("Kural Dedektifi").
+- Barış'a söylenecek riskler kuralı: bulunan her sorunu "Barış, şu sıkıntılı" diye bildir. Firebase kurallarına DOKUNMA (Barış istemedi).
 
 ## 3. Çalışma yöntemi (yama)
 - Dosyalar elle baştan yazılmaz. Canlı dosya okunur, küçük ve **tam bir kez eşleşen** metin değişiklikleri yapılır. Yeni özellikler `</body>`'den hemen önce ayrı `<script>` / `<style>` bloğu olarak eklenir.
