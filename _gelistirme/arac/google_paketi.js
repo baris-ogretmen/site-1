@@ -38,8 +38,18 @@ for (const [p, icerik] of Object.entries(dosyalar)) {
   fs.mkdirSync(path.dirname(p) || '.', { recursive: true });
   fs.writeFileSync(p, icerik); degisen++;
 }
-// Panelle aynı: artık karşılığı olmayan eski üretilmiş sayfalar kaldırılır (yalnız sayfa/ klasörü)
+// Karşılığı kalmayan eski sayfa SİLİNMEZ (Google'daki bağlantı kırılmasın): aynı içeriğin yeni sayfasına,
+// içerik arşivlendiyse "Tüm içerikler"e yönlendiren küçük bir sayfaya dönüşür (noindex).
 let kalkan = [];
-for (const f of fs.readdirSync('sayfa')) if (f.endsWith('.html') && !yeniSayfalar.has(f)) { fs.unlinkSync(path.join('sayfa', f)); kalkan.push(f); }
+const idBul = h => (h.match(/icerik=([a-z]+)%3A([A-Za-z0-9_-]+)/) || [])[2];
+const idSayfa = {};
+for (const f of yeniSayfalar) { try { const i = idBul(fs.readFileSync(path.join('sayfa', f), 'utf8')); if (i) idSayfa[i] = f; } catch (e) {} }
+for (const f of fs.readdirSync('sayfa')) if (f.endsWith('.html') && !yeniSayfalar.has(f)) {
+  const yol = path.join('sayfa', f), eski = fs.readFileSync(yol, 'utf8');
+  const i = idBul(eski) || (eski.match(/data-icerik="([^"]+)"/) || [])[1];
+  const hedef = (i && idSayfa[i]) || 'index.html';
+  const yeni = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><link rel="canonical" href="${SITE}sayfa/${hedef}"><meta http-equiv="refresh" content="0;url=${hedef}"><title>Barış Öğretmen</title></head><body data-yonlendirme="1" data-icerik="${i || ''}"><p><a href="${hedef}">Bu içerik taşındı — devam et</a></p></body></html>`;
+  if (eski !== yeni) { fs.writeFileSync(yol, yeni); kalkan.push(f); }
+}
 fs.writeFileSync('veri/google-paketi.json', JSON.stringify({ zaman: new Date().toISOString(), icerik: sayi, dosya: Object.keys(dosyalar).length, degisen, kalkan }, null, 1));
 console.log('Google paketi:', sayi, 'içerik,', degisen, 'dosya değişti,', kalkan.length, 'eski sayfa kalktı');

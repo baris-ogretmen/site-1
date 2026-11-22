@@ -21,6 +21,7 @@ h2{font-size:1.05rem;margin:24px 0 10px}
 .alt{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px}
 .alt a{border:1.5px solid var(--cizgi);background:var(--kart);border-radius:999px;padding:9px 14px;font-weight:800;text-decoration:none;color:inherit}
 .bos{text-align:center;padding:30px 10px;color:var(--soluk)}
+@media (max-width:480px){.ana{flex-wrap:wrap}.ana .bas{margin-left:0;width:100%;text-align:center}}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1220;--kart:#111a2e;--yazi:#e2e8f0;--soluk:#94a3b8;--cizgi:#1e293b}}
 </style></head><body>
 <header><span class="set" id="set">Barış Öğretmen</span><h1 id="bas">Dijital içerik</h1><p id="alt">Bu sayfanın oyunu ve ilgili çalışmalar</p></header>
@@ -31,21 +32,22 @@ h2{font-size:1.05rem;margin:24px 0 10px}
    Böylece yeni bir çalışma eklendiğinde kitabı yeniden basmadan eski QR'lar onu da gösterir. */
 const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const kod=(location.search.slice(1).split('&')[0].split('=').pop()||'').toLowerCase().replace(/[^a-z0-9-]/g,'');
-const url=l=>/^https?:/.test(l)?l:l.split('/').map(encodeURIComponent).join('/');
+const url=l=>/^(https?:|data:)/.test(l)?l:l.split('/').map(encodeURIComponent).join('/');
 const yerel=l=>{try{return decodeURIComponent(new URL(l,location.href).pathname.replace(/^.*?\/site-1\//,'').replace(/^\//,''))}catch(e){return l}};
 const gun=new Date().toISOString().slice(0,10);
 Promise.all([fetch('veri/qr.json?g='+gun,{cache:'no-cache'}).then(r=>r.json()),fetch('veri/icerik-yedek.json?g='+gun,{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([Q,Y])=>{
  const k=Q.kodlar[kod];const m=document.getElementById('m');
- if(!k){m.innerHTML=`<div class="bos">Bu kare kod bulunamadı.<br><br><a href="setler.html" style="font-weight:800">📚 Barış Öğretmen'in setlerine git</a></div>`;return}
+ if(!k){document.getElementById('alt').textContent='Bu kod henüz tanımlı değil';m.innerHTML=`<div class="bos">Bu kare kod bulunamadı.<br><br><a href="setler.html" style="font-weight:800">📚 Barış Öğretmen'in setlerine git</a></div>`;return}
  const S=Q.setler[k.set]||{};if(S.renk)document.documentElement.style.setProperty('--r',S.renk);
  document.getElementById('set').textContent=S.ad||'Barış Öğretmen';document.getElementById('bas').textContent=k.baslik;document.title=(S.ad?S.ad+' · ':'')+k.baslik;
  const hepsi=[];['projeler','videolar'].forEach(c=>Object.entries(Y[c]||{}).forEach(([id,x])=>{if(id[0]!=='_'&&x&&!x.arsivlendi&&!x.silindi&&x.yayinDurumu!=='taslak'&&x.link)hepsi.push({...x,col:c})}));
  const kayit=l=>{const y=yerel(l);return hepsi.find(x=>yerel(x.link)===y)};
- const resim=x=>x&&x.kapak&&!/^https?:/.test(x.kapak)?`<img loading="lazy" src="${E(url(x.kapak))}" alt="">`:x&&x.kapak?`<img loading="lazy" src="${E(x.kapak)}" alt="">`:'<div class="ph">🎮</div>';
+ const resim=x=>x&&x.kapak&&!/^(https?:|data:)/.test(x.kapak)?`<img loading="lazy" src="${E(url(x.kapak))}" alt="">`:x&&x.kapak?`<img loading="lazy" src="${E(x.kapak)}" alt="">`:'<div class="ph">🎮</div>';
  let h='';const goster=new Set();
  (k.ana||[]).forEach((a,i)=>{const r=kayit(a.link);goster.add(yerel(a.link));h+=`<a class="ana" href="${E(url(a.link))}">${resim(r)}<div><b>${E(r?.baslik||a.ad)}</b><small>${i===0?'Bu sayfanın dijital içeriği':'Ayrıca'}</small></div><span class="bas">▶ Aç</span></a>`+(i<(k.ana.length-1)?'<div style="height:10px"></div>':'')});
  if(k.oto){const kon=(k.oto.konu||'').toLocaleLowerCase('tr'),kad=new Set(k.oto.kademe||[]);
-  const ilgili=hepsi.filter(x=>{const c=[...(x.kategoriler||[]),x.kategori||''];return c.some(v=>String(v).toLocaleLowerCase('tr')===kon)&&(!kad.size||c.some(v=>kad.has(v)))&&!goster.has(yerel(x.link))&&yerel(x.link)!==S.sayfa})
+  const sec=kd=>hepsi.filter(x=>{const c=[...(x.kategoriler||[]),x.kategori||''];return c.some(v=>String(v).toLocaleLowerCase('tr')===kon)&&(!kd||c.some(v=>kad.has(v)))&&!goster.has(yerel(x.link))&&yerel(x.link)!==S.sayfa});
+  let ilgili=sec(kad.size>0);if(!ilgili.length)ilgili=sec(false);ilgili=ilgili
    .sort((a,b)=>String(b.tarih||'').localeCompare(String(a.tarih||''))).slice(0,9);
   if(ilgili.length)h+=`<h2>✨ İlgili diğer çalışmalar <small style="font-weight:600;color:var(--soluk)">(yeniler kendiliğinden eklenir)</small></h2><div class="liste">`+ilgili.map(x=>`<a href="${E(url(x.link))}">${resim(x)}<span>${E(x.baslik)}</span></a>`).join('')+'</div>'}
  h+=`<div class="alt">${S.sayfa?`<a href="${E(S.sayfa)}">📚 ${E(S.ad)}</a>`:''}<a href="setler.html">Bütün setler</a><a href="index.html">🏠 Barış Öğretmen</a></div>`;
