@@ -242,7 +242,7 @@ DIJ = [('parmak', 'Kitap 1, 2', 'Parmaklarla 1–10 gösterme; sayı–miktar e�
        ('kum', 'Kitap 2, 3', 'Doğru sayıya / sonuca topu yuvarlama'),
        ('kup', 'Kitap 4', 'Yol bulma, sıra ve örüntü (mantık)')]
 satirlar = ''.join(f'''<div style="display:flex;gap:14px;align-items:center;border:3px solid {ACIK};border-radius:18px;padding:10px 14px;margin:9px 0;background:#fff">
-{qr_svg(SITE + OY[a][1].replace(" ", "%20"), 92)}<div style="flex:1"><div style="font-size:19px;font-weight:900;color:{KOYU}">{OY[a][0]}</div>
+{qr_svg(qr_kodu("reh", OY[a][1], OY[a][0]), 92)}<div style="flex:1"><div style="font-size:19px;font-weight:900;color:{KOYU}">{OY[a][0]}</div>
 <div style="font-size:14.5px;margin-top:2px">{t}</div></div><span class="rozet" style="background:{RENK}">{kit}</span></div>''' for a, kit, t in DIJ)
 k.sayfa(satirlar + bilgi('<b>Kâğıt önce, ekran sonra.</b> Dijital oyunlar, kitapta çalışılan konuyu pekiştirmek içindir; somut ve kâğıt çalışmasının yerini tutmaz. '
                          'Ekran süresini kısa tutun (5–10 dk) ve mümkünse çocukla birlikte oynayın. QR’ı telefon kamerasıyla okutun ya da ' + ADRES + ' adresine girin.'),

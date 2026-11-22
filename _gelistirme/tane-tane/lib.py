@@ -7,7 +7,20 @@ import html, math, random, os, asyncio
 from reportlab.graphics.barcode import qrencoder as _q
 
 SITE = 'https://baris-ogretmen.github.io/site-1/'
-SET_SAYFA = SITE + 'tane-tane-matematik.html'
+# --- Güncellenebilir QR: basılı QR doğrudan oyuna değil, q.html kapısına gider (veri/qr.json'dan yönetilir) ---
+QR_KAPI = SITE + 'q.html?'
+OYUN_KISA = {'sihirlii parmaklar.html': 'parmak', 'matakis.html': 'matakis', 'minik kasiflerr.html': 'minik', 'kumm tuneliii.html': 'kum', 'kup yoluu.html': 'kup'}
+KITAP_NO = {'k1': '1', 'k2': '2', 'k3': '3', 'k4': '4', 'kes': '5', 'reh': '0'}
+import json as _json, os as _os
+QR_KAYIT = '/home/claude/mat/qr_kodlari.json'
+def qr_kodu(kitap_kod, dosya, baslik):
+    kod = f"tt{KITAP_NO[kitap_kod]}-{OYUN_KISA.get(dosya, _os.path.splitext(dosya)[0].replace(' ', '')[:10])}"
+    try: d = _json.load(open(QR_KAYIT, encoding='utf-8'))
+    except Exception: d = {}
+    d[kod] = {'kitap': kitap_kod, 'dosya': dosya, 'oyun': baslik}
+    _json.dump(d, open(QR_KAYIT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    return QR_KAPI + kod
+SET_SAYFA = QR_KAPI + 'tt'
 ADRES = 'baris-ogretmen.github.io/site-1'
 E = html.escape
 
@@ -203,7 +216,7 @@ class Kitap:
         h.append(govde)
         if oyun:
             ob, dosya = oyun
-            h.append(f'<div class="oyun">{qr_svg(SITE + dosya.replace(" ", "%20"), 62)}<div>Bu konunun dijital oyunu:<br><span style="color:{s.renk}">{E(ob)}</span></div></div>')
+            h.append(f'<div class="oyun">{qr_svg(qr_kodu(s.kod, dosya, ob), 62)}<div>Bu konunun dijital oyunu:<br><span style="color:{s.renk}">{E(ob)}</span></div></div>')
         s.sayfalar.append((zemin, ham, ''.join(h)))
 
     def html(s):
