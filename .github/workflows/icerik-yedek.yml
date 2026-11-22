@@ -1,0 +1,22 @@
+name: İçerik yedeği (Firestore → depo)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['veri/claude-istekleri.json', '_gelistirme/arac/**', '.github/workflows/icerik-yedek.yml']
+  schedule:
+    - cron: '17 3 * * *'
+permissions:
+  contents: write
+concurrency: { group: icerik, cancel-in-progress: false }
+jobs:
+  yedek:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 _gelistirme/arac/firestore_yedek.py
+      - run: |
+          git config user.name "Barış Öğretmen (otomatik)"
+          git config user.email "barisilkan6534@gmail.com"
+          git add veri/icerik-yedek.json
+          git diff --cached --quiet || (git commit -m "Otomatik içerik yedeği" && git pull --rebase && git push)
