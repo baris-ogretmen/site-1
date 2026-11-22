@@ -8,7 +8,8 @@ IZINLI = {"projeler", "videolar", "kitaplar", "yazilar", "kaynaklar", "site_ayar
 SIMDI = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 def kodla(v):
-    if isinstance(v, dict) and v.get("__zaman__") == "simdi": return {"timestampValue": SIMDI}
+    if isinstance(v, dict) and "__zaman__" in v:  # "simdi" ya da ISO zaman (ör. 2026-11-22T14:30:03Z)
+        return {"timestampValue": SIMDI if v["__zaman__"] == "simdi" else v["__zaman__"]}
     if v is None: return {"nullValue": None}
     if isinstance(v, bool): return {"booleanValue": v}
     if isinstance(v, int): return {"integerValue": str(v)}
