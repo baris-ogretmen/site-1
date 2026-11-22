@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Adım Adım Okuma–Yazma Seti — PDF ve kapak görseli üreticisi (Barış Öğretmen)
+Hece Hece Okuma–Yazma Seti — PDF ve kapak görseli üreticisi (Barış Öğretmen)
 
 Kullanım:
   python3 uret.py              # mevcut icerik_*.json dosyalarıyla üret
@@ -31,8 +31,9 @@ KOK = os.path.dirname(os.path.abspath(__file__))
 CIKTI = os.path.join(KOK, 'cikti')
 ONIZ = os.path.join(CIKTI, 'onizleme')
 EMOJI_DIR = os.path.join(KOK, '_emoji')
-FONT_R = os.path.join(KOK, 'fonts', 'Andika_400Regular.ttf')
-FONT_B = os.path.join(KOK, 'fonts', 'Andika_700Bold.ttf')
+# MEB dik temel harfe yakın (kuyruksuz a, d, u) okul yazısı: Didact Gothic (OFL). Kalın = dolgu + ince kontur.
+FONT_R = os.path.join(KOK, 'fonts', 'DidactGothic-Regular.ttf')
+FONT_B = FONT_R
 FONT_SYM = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 FONT_EMOJI = '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf'
 SITE = 'https://baris-ogretmen.github.io/site-1/'
@@ -58,7 +59,7 @@ addMapping('Andika', 0, 1, 'Andika'); addMapping('Andika', 1, 1, 'Andika-Bold')
 W, H = A4
 M = 40                      # kenar boşluğu
 ALT_SINIR = 54              # içerik bunun altına inmez (alt şerit)
-XH = 1040 / 2048            # Andika x-yüksekliği oranı
+XH = 468 / 1000             # Didact Gothic x-yüksekliği oranı
 
 # Renkler
 KIRMIZI = HexColor('#D62828')
@@ -297,6 +298,62 @@ def yonerge(c, y, metin):
 
 
 # ---------------------------------------------------------------- çalışma sayfaları
+class KalinCanvas(rl_canvas.Canvas):
+    """'Andika-Bold' adıyla yazılan metni aynı yazı tipinde dolgu + konturla (kalın) çizer."""
+    def _kalin(self, x, y, text):
+        t = self.beginText(x, y); t.setFont(self._fontname, self._fontsize); t.setTextRenderMode(2)
+        self.saveState(); self.setStrokeColor(self._fillColorObj); self.setLineWidth(self._fontsize * 0.045)
+        t.textOut(text); self.drawText(t); self.restoreState()
+
+    def drawString(self, x, y, text, *a, **k):
+        if self._fontname == 'Andika-Bold':
+            return self._kalin(x, y, text)
+        return super().drawString(x, y, text, *a, **k)
+
+    def drawCentredString(self, x, y, text, *a, **k):
+        if self._fontname == 'Andika-Bold':
+            return self._kalin(x - self.stringWidth(text) / 2, y, text)
+        return super().drawCentredString(x, y, text, *a, **k)
+
+    def drawRightString(self, x, y, text, *a, **k):
+        if self._fontname == 'Andika-Bold':
+            return self._kalin(x - self.stringWidth(text), y, text)
+        return super().drawRightString(x, y, text, *a, **k)
+
+
+SITE_DOSYA = 'https://baris-ogretmen.github.io/site-1/'
+CALISMALAR = {  # derse göre "Tablette çalış" QR'ı (sitedeki okuma-yazma çalışmaları)
+    'unlu': [('Harf Yolculuğu (ANETİL)', 'anetill okuma yazma.html'), ('Okuma Saati', 'anetil okuma saati.html'),
+             ('Sihirli Parmaklar Yazı Atölyesi', 'sihirli-parmaklar.html'), ('Harf Topu', 'harf topu.html'),
+             ('Konuşma Atölyesi', 'konusma-atolyesi.html')],
+    'unsuz': [('Sihirli Heceler', 'hece-birlestirme.html'), ('Okuma Yazma Treni', 'okuma-yazma-v2.html'),
+              ('Mega Dikte Seti', 'mega-dikte-seti.html'), ('Sonbahar Dikte', 'sonbahar_dikte.html'),
+              ('Akıllı Okuma Asistanı', 'akilli-okuma.html'), ('İlk Okuma Akademisi', 'okuma-sifresi.html'),
+              ('Harf Yolculuğu (ANETİL)', 'anetill okuma yazma.html'), ('Okuma Saati', 'anetil okuma saati.html')],
+    'hikaye': [('5N1K Dedektifleri', '5n1k-okuma.html'), ('Akıllı Okuma Asistanı', 'akilli-okuma.html'),
+               ('Sihirli Okuma Asistanı', 'disleksi-okuma.html')],
+}
+
+
+def calisma_sec(tur, i):
+    from urllib.parse import quote
+    ad, yol = CALISMALAR[tur][i % len(CALISMALAR[tur])]
+    return ad, SITE_DOSYA + quote(yol)
+
+
+def qr_bandi(c, y, ad, url, renk='#2A9D8F'):
+    """Alt şeridin üstünde 'Tablette çalış' kutusu: QR + çalışma adı (dokununca da açılır)."""
+    h = 66
+    yuvarlak_kutu(c, M, y, W - 2 * M, h, 14, HexColor('#F2F7FB'), HexColor('#C9DDF0'), 1)
+    yuvarlak_kutu(c, M + 8, y + 5, 56, 56, 6, white)
+    qr_ciz(c, M + 10, y + 7, 52, url)
+    c.setFillColor(HexColor(renk)); c.setFont('Andika-Bold', 13.5)
+    c.drawString(M + 76, y + 38, 'Tablette çalış: ' + ad)
+    c.setFillColor(HexColor('#4A5868')); c.setFont('Andika', 10.5)
+    c.drawString(M + 76, y + 20, 'Telefonun kamerasıyla kare kodu okut ya da buraya dokun; çalışma açılır.')
+    c.linkURL(url, (M, y, W - M, y + h), relative=0)
+
+
 class SayfaDizisi:
     def __init__(self):
         self.sayfalar = []
@@ -305,8 +362,8 @@ class SayfaDizisi:
         self.sayfalar.append(fn)
 
     def yaz(self, yol, baslik):
-        c = rl_canvas.Canvas(yol, pagesize=A4, pageCompression=1)
-        c.setTitle(baslik); c.setAuthor('Barış Öğretmen'); c.setSubject('Okuma–Yazma Serisi')
+        c = KalinCanvas(yol, pagesize=A4, pageCompression=1)
+        c.setTitle(baslik); c.setAuthor('Barış Öğretmen'); c.setSubject('Barış Öğretmen Setleri · Hece Hece Okuma–Yazma')
         c.setCreator('Barış Öğretmen · ' + SITE_KISA)
         N = len(self.sayfalar)
         for i, fn in enumerate(self.sayfalar):
@@ -458,6 +515,9 @@ def tanitim_sayfasi(dizi, ders, ipucu, kitap_adi, renk_i):
                     noktali_yaz(c, x, taban, metin, s)
                 x += tw + ara
             y = y0 - 14
+        n = ders['ders']
+        ad, url = calisma_sec('unlu' if n <= 8 else 'unsuz', n - 1 if n <= 8 else n - 9)
+        qr_bandi(c, max(ALT_SINIR + 4, min(y - 70, ALT_SINIR + 4)), ad, url)
     dizi.ekle(fn)
 
 
@@ -562,7 +622,7 @@ def kapak_sayfasi(dizi, baslik, alt_baslik, harfler, emojiler, ana_renk='#2A9D8F
             fs -= 1
         c.setFont('Andika-Bold', fs); c.drawCentredString(W / 2, H - 150, baslik)
         c.setFont('Andika-Bold', 24); c.drawCentredString(W / 2, H - 190, alt_baslik)
-        c.setFont('Andika', 14); c.drawCentredString(W / 2, H - 222, 'Barış Öğretmen · Okuma–Yazma Serisi')
+        c.setFont('Andika', 14); c.drawCentredString(W / 2, H - 222, 'Barış Öğretmen Setleri')
         # emoji şeridi
         em = [e for e in emojiler if e][:6]
         if em:
@@ -655,7 +715,7 @@ def not_sayfasi(dizi, sira, aralik, kitap_turu):
                 'Noktalı yazının üzerinden <b>önce parmakla</b>, sonra kalemle geçin. <font color="#2BA84A"><b>Yeşil nokta</b></font> başlama yeridir.',
                 '<font color="#D62828"><b>Kırmızı</b></font> harf, o derste öğrenilen yeni harftir.',
                 'Kalemi doğru tutmak ve yavaş yazmak, hızlı yazmaktan önemlidir. Çabayı övün; hataları sakince birlikte düzeltin.',
-                'Okuma hikâyeleri kitapçığı ders 4’ten itibaren her derse eşlik eder.',
+                'Okuma Hikâyeleri kitabı 11. dersten itibaren her derse bir hikâyeyle eşlik eder.',
             ]
         else:
             maddeler = []
@@ -876,6 +936,8 @@ def hikaye_bolumleri2(dizi, hk, sira, sayac):
                     renkli_yaz(c, M + 30, yy + 6, t, fs, harf)
                     yy -= fs * 0.25
                 y -= qh + 14
+            ad, url = calisma_sec('hikaye', sayac)
+            qr_bandi(c, ALT_SINIR + 4, ad, url, '#E76F51')
         dizi.ekle(kon)
 
 
@@ -892,9 +954,9 @@ def hikaye_kapak(dizi, hikayeli, emojiler):
             c.setFillColor(HexColor(col)); c.circle(x, y, r, stroke=0, fill=1)
         yuvarlak_kutu(c, M, H - 250, W - 2 * M, 170, 26, HexColor('#E76F51'))
         c.setFillColor(white)
-        c.setFont('Andika-Bold', 40); c.drawCentredString(W / 2, H - 150, 'Adım Adım')
+        c.setFont('Andika-Bold', 40); c.drawCentredString(W / 2, H - 150, 'Hece Hece')
         c.setFont('Andika-Bold', 34); c.drawCentredString(W / 2, H - 192, 'Okuma Hikâyeleri')
-        c.setFont('Andika', 14); c.drawCentredString(W / 2, H - 225, 'Barış Öğretmen · Okuma–Yazma Serisi')
+        c.setFont('Andika', 14); c.drawCentredString(W / 2, H - 225, 'Barış Öğretmen Setleri')
         em = [e for e in emojiler if e][:12]
         boy, ara = 54, 14
         for r in range(2):
@@ -1009,7 +1071,7 @@ def png_kapak(yol, baslik1, baslik2, sayfa_sayisi, onizlemeler, renk, ek_rozet=N
     fR = lambda s: ImageFont.truetype(FONT_R, s)
     x0 = 58
     # üst etiket
-    ust = 'Barış Öğretmen · Okuma–Yazma Serisi'
+    ust = 'Barış Öğretmen Setleri'
     d.rounded_rectangle((x0, 52, x0 + 48 + int(d.textlength(ust, font=fB(29))), 104), 26, fill=renk)
     d.text((x0 + 24, 57), ust, font=fB(29), fill='white')
     # başlık
@@ -1065,15 +1127,15 @@ def main():
     if eksik:
         print('UYARI: içeriği olmayan dersler:', eksik)
     sonuc = {}
-    kitaplar = [('1', sira['kitap1'], 'Adim_Adim_Okuma_Yazma_1_Kitap.pdf', '#2A9D8F'),
-                ('2', sira['kitap2'], 'Adim_Adim_Okuma_Yazma_2_Kitap.pdf', '#8E6FC9')]
+    kitaplar = [('1', sira['kitap1'], 'Hece_Hece_Okuma_Yazma_1_Kitap.pdf', '#2A9D8F'),
+                ('2', sira['kitap2'], 'Hece_Hece_Okuma_Yazma_2_Kitap.pdf', '#8E6FC9')]
     sayfa_bilgi = {}
     for no, (a, b), ad, renk in kitaplar:
         dizi = SayfaDizisi()
-        kitap_adi = 'Adım Adım Okuma–Yazma · %s. Kitap' % no
+        kitap_adi = 'Hece Hece Okuma–Yazma · %s. Kitap' % no
         harfler = harfler_sira[a - 1:b]
         emojiler = [(dersler.get(n) or {}).get('resimli_kelime', {}).get('emoji', '') for n in range(a, b + 1)]
-        kapak_sayfasi(dizi, 'Adım Adım Okuma–Yazma', '%s. Kitap · Ders %d–%d' % (no, a, b), harfler, emojiler, renk)
+        kapak_sayfasi(dizi, 'Hece Hece Okuma–Yazma', '%s. Kitap · Ders %d–%d' % (no, a, b), harfler, emojiler, renk)
         not_sayfasi(dizi, sira, (a, b), 'calisma')
         bilgi = {}
         for n in range(a, b + 1):
@@ -1082,7 +1144,7 @@ def main():
             bilgi[n] = len(dizi.sayfalar) + 1
             ders_sayfalari(dizi, dersler[n], ipuclari[n], kitap_adi)
         yol = os.path.join(CIKTI, ad)
-        N = dizi.yaz(yol, 'Adım Adım Okuma–Yazma · %s. Kitap' % no)
+        N = dizi.yaz(yol, 'Hece Hece Okuma–Yazma · %s. Kitap' % no)
         sonuc[ad] = N
         sayfa_bilgi[ad] = bilgi
     # hikâyeler
@@ -1095,16 +1157,16 @@ def main():
         if i == 0:
             hk_ilk = len(dizi.sayfalar) + 1
         hikaye_bolumleri2(dizi, d, sira, i)
-    ad_h = 'Adim_Adim_Okuma_Hikayeleri.pdf'
-    sonuc[ad_h] = dizi.yaz(os.path.join(CIKTI, ad_h), 'Adım Adım Okuma Hikâyeleri')
+    ad_h = 'Hece_Hece_Okuma_Hikayeleri.pdf'
+    sonuc[ad_h] = dizi.yaz(os.path.join(CIKTI, ad_h), 'Hece Hece Okuma Hikâyeleri')
 
     # önizlemeler (60 dpi)
     on = []
-    k1 = os.path.join(CIKTI, 'Adim_Adim_Okuma_Yazma_1_Kitap.pdf')
-    k2 = os.path.join(CIKTI, 'Adim_Adim_Okuma_Yazma_2_Kitap.pdf')
+    k1 = os.path.join(CIKTI, 'Hece_Hece_Okuma_Yazma_1_Kitap.pdf')
+    k2 = os.path.join(CIKTI, 'Hece_Hece_Okuma_Yazma_2_Kitap.pdf')
     kh = os.path.join(CIKTI, ad_h)
-    b1 = sayfa_bilgi['Adim_Adim_Okuma_Yazma_1_Kitap.pdf']
-    b2 = sayfa_bilgi['Adim_Adim_Okuma_Yazma_2_Kitap.pdf']
+    b1 = sayfa_bilgi['Hece_Hece_Okuma_Yazma_1_Kitap.pdf']
+    b2 = sayfa_bilgi['Hece_Hece_Okuma_Yazma_2_Kitap.pdf']
     tanit1 = b1.get(5) or (list(b1.values())[-1] if b1 else 3)
     tanit2 = b2.get(19) or (list(b2.values())[0] if b2 else 3)
     istek = [(k1, 1, 'k1_kapak'), (k1, 2, 'k1_not'), (k1, tanit1, 'k1_tanitim'), (k1, tanit1 + 1, 'k1_hece'),
@@ -1130,13 +1192,13 @@ def main():
     p2 = [kucuk(k2, tanit2 + 2, 'b2'), kucuk(k2, tanit2, 'b1'), kucuk(k2, 1, 'b0')]
     ph = [kucuk(kh, 4, 'c2'), kucuk(kh, 3, 'c1'), kucuk(kh, 1, 'c0')]
     ps = [kucuk(kh, 1, 's2'), kucuk(k2, 1, 's1'), kucuk(k1, 1, 's0')]
-    png_kapak(os.path.join(CIKTI, 'kapak_1_kitap.png'), 'Adım Adım', 'Okuma–Yazma · 1. Kitap',
-              sonuc['Adim_Adim_Okuma_Yazma_1_Kitap.pdf'], p1, '#2A9D8F', ('🔤', '%d harf' % len(b1)))
-    png_kapak(os.path.join(CIKTI, 'kapak_2_kitap.png'), 'Adım Adım', 'Okuma–Yazma · 2. Kitap',
-              sonuc['Adim_Adim_Okuma_Yazma_2_Kitap.pdf'], p2, '#8E6FC9', ('🔤', '%d harf' % len(b2)))
-    png_kapak(os.path.join(CIKTI, 'kapak_hikayeler.png'), 'Adım Adım', 'Okuma Hikâyeleri',
+    png_kapak(os.path.join(CIKTI, 'kapak_1_kitap.png'), 'Hece Hece', 'Okuma–Yazma · 1. Kitap',
+              sonuc['Hece_Hece_Okuma_Yazma_1_Kitap.pdf'], p1, '#2A9D8F', ('🔤', '%d harf' % len(b1)))
+    png_kapak(os.path.join(CIKTI, 'kapak_2_kitap.png'), 'Hece Hece', 'Okuma–Yazma · 2. Kitap',
+              sonuc['Hece_Hece_Okuma_Yazma_2_Kitap.pdf'], p2, '#8E6FC9', ('🔤', '%d harf' % len(b2)))
+    png_kapak(os.path.join(CIKTI, 'kapak_hikayeler.png'), 'Hece Hece', 'Okuma Hikâyeleri',
               sonuc[ad_h], ph, '#E76F51', ('🐣', '%d hikâye' % len(hikayeli)))
-    png_kapak(os.path.join(CIKTI, 'kapak_set.png'), 'Adım Adım', 'Okuma–Yazma Seti',
+    png_kapak(os.path.join(CIKTI, 'kapak_set.png'), 'Hece Hece', 'Okuma–Yazma Seti',
               sum(sonuc.values()), ps, '#3A86C8', ('📚', '3 kitap · 29 harf'))
     shutil.rmtree(tmp, ignore_errors=True)
 
