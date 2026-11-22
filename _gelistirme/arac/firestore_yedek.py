@@ -33,6 +33,15 @@ for k in KOL:
         tok = d.get("nextPageToken")
         if not tok: break
 os.makedirs("veri", exist_ok=True)
+# Okuma hatası (ör. 429 kota) olan koleksiyonda eski sağlam yedeği koru; yedeği hatayla ezme.
+try:
+    eski = json.load(open("veri/icerik-yedek.json", encoding="utf-8"))
+except Exception:
+    eski = {}
+for k in KOL:
+    if "_hata" in out[k] and isinstance(eski.get(k), dict) and "_hata" not in eski[k]:
+        print("UYARI:", k, "okunamadı, eski yedek korunuyor:", out[k]["_hata"])
+        out[k] = eski[k]
 with open("veri/icerik-yedek.json", "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=1, sort_keys=True)
 print({k: len(v) for k, v in out.items()})
