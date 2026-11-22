@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#1e3a8a"><title>Yönetici Paneli | Barış İlkan</title>
-<meta name="surum" content="11.7">
+<meta name="surum" content="11.8">
 <!-- v3 · Ayıklama Merkezi · Link Doktoru · Tanıtım Videosu · Gelişmiş İstatistik -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='88'%3E🛠️%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Fredoka:wght@400;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -92,13 +92,13 @@
 const SITE_HOME='https://baris-ogretmen.github.io/site-1/';
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fold=s=>String(s??'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
+const _foldC=new Map();const fold=s=>{s=String(s??'');let r=_foldC.get(s);if(r===undefined){r=s.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');if(_foldC.size>8000)_foldC.clear();_foldC.set(s,r)}return r};
 const local={get(k,d=null){try{return JSON.parse(localStorage.getItem('bi_'+k))??d}catch{return d}},set(k,v){try{localStorage.setItem('bi_'+k,JSON.stringify(v));return true}catch{return false}},remove(k){try{localStorage.removeItem('bi_'+k)}catch{}}};
 const base=(()=>{if(location.protocol==='file:')return SITE_HOME;try{const h=new URL(SITE_HOME);if(location.origin===h.origin&&location.pathname.startsWith(h.pathname))return SITE_HOME}catch{}return new URL('.',location.href).href})(); /* Panel alt klasörde olsa bile içerik bağlantıları sitenin köküne göre çözülür. */
 function safeURL(value){try{const s=String(value??'').trim();if(!s||/[\u0000-\u001f\u007f]/.test(s))return '';const u=new URL(s,base);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password?u.href:''}catch{return ''}}
 function millis(t){if(!t)return 0;if(typeof t.toMillis==='function')return t.toMillis();if(typeof t==='object'&&typeof t.seconds==='number')return t.seconds*1000;const n=new Date(t).getTime();return Number.isFinite(n)?n:0}
 function dayKey(){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(k=>p.find(x=>x.type===k).value).join('-')}
-const dateText=t=>millis(t)?new Intl.DateTimeFormat('tr-TR',{dateStyle:'medium'}).format(new Date(millis(t))):'—';
+const _dtfTR=new Intl.DateTimeFormat('tr-TR',{dateStyle:'medium'});const dateText=t=>millis(t)?_dtfTR.format(new Date(millis(t))):'—';
 const categories=['Anaokulu','Özel Eğitim','1. Sınıf','2. Sınıf','3. Sınıf','4. Sınıf','5. Sınıf','6. Sınıf','7. Sınıf','8. Sınıf','LGS & Koçluk','YKS','Robotik','Kodlama','Yapay Zeka','Akıl Zeka','BİLSEM','Oyunlar','Kitaplık','Satranç','Dil Konuşma','Tasarım','Öğretmen','Veli'];
 function cats(x){return [...new Set([...(Array.isArray(x.kategoriler)?x.kategoriler:[]),x.kategori].filter(v=>typeof v==='string'&&v.trim()))]}
 const types={projeler:['Oyun','game'],videolar:['Video','play'],kaynaklar:['PDF / Kaynak','file'],yazilar:['Yazı','pen'],kitaplar:['Kitap / Müzik','book']};
@@ -713,7 +713,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b
  else if(a==='new-game'){freshEditor();setCat('Oyunlar',true);$('#edit-embed').checked=true;chosenIcon='game';renderIcons();$('#edit-title').focus();toast('🎮 Oyun şablonu hazır: başlık, bağlantı ve sınıfları seç.')}
 });
 /* ---------- 14) SÜRÜM KONTROLÜ, SİSTEM DURUMU, HAFTALIK BAKIM, CANLI SİTEDE TEMA ---------- */
-const PANEL_SURUM='11.7';
+const PANEL_SURUM='11.8';
 const readSurum=t=>(String(t).match(/<meta name="surum" content="([^"]+)"/)||[])[1]||'';
 $('.sidebar-bottom')?.insertAdjacentHTML('afterbegin',`<div style="padding:6px 14px;color:#94a3b8;font-size:.72rem">Panel sürümü <b style="color:#e2e8f0">${PANEL_SURUM}</b> · <button type="button" data-x="cache-clear" style="background:none;border:0;color:#fbbf24;font:inherit;font-weight:700;cursor:pointer;padding:0">🧹 Önbelleği temizle</button></div>`);
 async function cacheClear(){try{if('caches' in window)for(const k of await caches.keys())await caches.delete(k);if(navigator.serviceWorker)for(const r of await navigator.serviceWorker.getRegistrations())await r.update().catch(()=>{})}catch{}const u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.href)}
@@ -1429,7 +1429,7 @@ function bmBasla(n=0){if(typeof db==='undefined'||!db||typeof currentUser==='und
   setInterval(bmCiz,60000)}
 bmBasla();
 /* ---------- Özet ekranı: sürüm uyarısı + “Bu sürümde neler var” ---------- */
-const SITE_GEREKEN='11.7';
+const SITE_GEREKEN='11.8';
 function surumBandi(){const yer=document.querySelector('#view-dashboard');if(!yer)return;let b=document.getElementById('sv-bant');const sv=v=>String(v||'').split('.').map(Number);const kucuk=(a,b)=>{a=sv(a);b=sv(b);for(let k=0;k<Math.max(a.length,b.length);k++){if((a[k]||0)!==(b[k]||0))return (a[k]||0)<(b[k]||0)}return false};const eski=BM.siteSurum&&kucuk(BM.siteSurum,SITE_GEREKEN);
   if(!eski){if(b)b.remove();return}if(!b){yer.insertAdjacentHTML('afterbegin','<div id="sv-bant" class="sv-bant"></div>');b=document.getElementById('sv-bant')}
   b.innerHTML=`<b>⚠️ Sitedeki index.html ${esc(BM.siteSurum)} sürümünde; bu panel en az ${esc(SITE_GEREKEN)} istiyor.</b><span>Yeni özelliklerin sitede görünmesi için <b>index.html</b> dosyasını GitHub’a yükle (Add file → Upload files → aynı adla → Commit). Yükledikten 1-3 dakika sonra bu uyarı kendiliğinden kalkar.</span>`}
@@ -1994,7 +1994,7 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 const $k=s=>document.querySelector(s);
 /* 🎓 sol menüdeki bölümler — öncelik sırasıyla (branş önce, kademe sonra) */
 const kcA=x=>{try{return [...new Set([...(Array.isArray(x.kategoriler)?x.kategoriler:[]),x.kategori].filter(v=>typeof v==='string'&&v.trim()))]}catch{return []}};
-const foldA=s=>String(s||'').toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ı/g,'i');
+const _foldAC=new Map();const foldA=s=>{s=String(s||'');let r=_foldAC.get(s);if(r===undefined){r=s.toLocaleLowerCase('tr').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ı/g,'i');if(_foldAC.size>8000)_foldAC.clear();_foldAC.set(s,r)}return r};
 const metinA=i=>foldA([i.baslik,i.link,Array.isArray(i.etiketler)?i.etiketler.join(' '):(i.etiketler||'')].join(' '));
 const AKAD=/^(\d\. ?sinif|ilkokul|ortaokul|lise|lgs.*|tyt|ayt|kpss|oabt|ags|yks)$/;
 const ALAN=[
