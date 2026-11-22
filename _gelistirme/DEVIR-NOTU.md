@@ -31,7 +31,7 @@ Bu notu okuyan Claude: Barış Öğretmen'in eğitim sitesi ve yönetici paneli 
   - panelde `const PANEL_SURUM='X'` ve `SITE_GEREKEN='X'`
 
   **Sürüm artık TAM SAYI (Barış'ın isteği, 22 Kasım 2026):** 12, 13, 14… Ondalık (11.8 gibi) kullanma; teslim satırında da "v12 (önceki v11)" yaz. Site ve panel her zaman aynı sürümde yüklensin.
-- **Son durum (22 Kasım 2026): v14.**
+- **Son durum (22 Kasım 2026): v15.**
 - v13: `kpss-merkezi.html` (8 KPSS/AGS/ÖABT çalışması gzip+base64 gömülü tek dosya; kaynak depolar: kpss-zirve, t-m-s-navlar, ags2, oabt, kpss-2026-3, kpss2026-1, baris-kpss, kpss2026-4) — sitede KPSS/ÖABT/AGS bölümleri `page:'kpss-merkezi.html'`. `ozel-ders.html` + `ozel-ders/ornek-ogrenci-1.html` (mete-dill-konusma deposundan, ad/veli/tanı bilgisi çıkarılmış; hikâye karakteri “Kemal”) ve `ornek-ogrenci-2.html` (enes-icin deposundan, ad çıkarılmış). **Öğrenci adları (gerçek) sitede ASLA geçmesin.** Ana sayfa KARTLAR'a `kp` ve `od` kartları eklendi.
 - 22 Kasım eklemeleri: KVKK aydınlatma metni; 🧭 **Öğrenme Yolları** (index.html sonunda `YOL_VARSAYILAN`: rob/sat/akl/yz, 9 basamak = okul öncesi…8. sınıf, `?yol=rob`); **Robi'yi Eğit** (`robiyi-egit.html`, YZ yolunun 9 basamağı, `?kademe=0..8`); ⚡ **hafif mod** (`html.bo-hafif`, telefon/tablet/tahtada otomatik, `localStorage bo_hiz`); kaydırma/izleyici işleri requestAnimationFrame ile birleştirildi.
 - **v14 (22 Kasım 2026):** KPSS / ÖABT / AGS menüden tıklanınca `showArea` sarmalayıcısıyla doğrudan `kpss-merkezi.html#zirve|oabt|ags` açılır (yanlış etiketli Firestore içerikleri araya girmez). Akademik Köşe ızgarasına "KPSS · AGS · ÖABT Merkezi" ve "Özel Ders Çalışmalarım" kartları eklendi.
@@ -40,6 +40,7 @@ Bu notu okuyan Claude: Barış Öğretmen'in eğitim sitesi ve yönetici paneli 
   - `_gelistirme/arac/firestore_yedek.py`: bütün içerik koleksiyonlarını `veri/icerik-yedek.json`'a yedekler.
   - Tetik: istek dosyası push'lanınca, elle (workflow_dispatch) ve her gece 03:17 UTC. Sonucu `gh api repos/baris-ogretmen/site-1/actions/runs` ile izle, sonra `git fetch` ile yedeği oku.
   - Böylece içerik düzeltmesi için Barış'ın panele girmesi gerekmez. Firebase kurallarına dokunulmadı (wildcard create/update açık).
+- **v15:** Aynı iş akışı artık (1) `_gelistirme/arac/google_paketi.js` ile Google sayfalarını (`sayfa/*.html`, `sitemap.xml`, `robots.txt`) panelin üretici kodunu `yonetici.html`'den okuyup Node'da çalıştırarak üretir — panel ile birebir aynı; (2) `_gelistirme/arac/saglik.py` ile her gün sağlık kontrolü yapar → `veri/saglik.json` (`iyi`/`uyari`/`acil`). `acil` ya da 48 saatten eski kontrol → sitede (yalnız `bo_yonetici` olan cihazda) ve panelde yanıp sönen kırmızı "🚨 SİTEDE ACİL SORUN" düğmesi; panelde Site Karnesi'nin üstünde 🟢/🟠/🔴 durum satırı. Uyarı (kırık bağlantı, eksik kapak) gelirse Claude bir sonraki oturumda düzeltir.
 - Boş basamaklar: Satranç 8–9 ("Oyun Sonu Laboratuvarı", "Maçını İncele"), Akıl-Zekâ 9 ("Kural Dedektifi").
 - Barış'a söylenecek riskler kuralı: bulunan her sorunu "Barış, şu sıkıntılı" diye bildir. Firebase kurallarına DOKUNMA (Barış istemedi).
 
