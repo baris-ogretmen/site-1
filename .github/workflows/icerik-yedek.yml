@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['veri/claude-istekleri.json', '_gelistirme/arac/**', '.github/workflows/icerik-yedek.yml', 'index.html', 'yonetici.html']
+    paths: ['veri/claude-istekleri.json', '**.html', '**.pdf', '**.mp4', '_gelistirme/arac/**', '.github/workflows/icerik-yedek.yml', 'index.html', 'yonetici.html']
   schedule:
     - cron: '17 3 * * *'
 permissions:
@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - name: Claude isteklerini uygula
         run: python3 _gelistirme/arac/firestore_uygula.py
       - name: İçerik yedeği
@@ -22,6 +23,8 @@ jobs:
         id: google
         run: |
           if ! node _gelistirme/arac/google_paketi.js 2> /tmp/ghata; then echo "GOOGLE_HATA=$(tr '\n' ' ' < /tmp/ghata | cut -c1-300)" >> $GITHUB_ENV; cat /tmp/ghata; fi
+      - name: Yüklenen dosyalar listesi
+        run: python3 _gelistirme/arac/dosya_listesi.py
       - name: Sağlık kontrolü
         run: python3 _gelistirme/arac/saglik.py
       - name: Kaydet
