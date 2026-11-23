@@ -209,13 +209,14 @@ def cizelge(n, fs=13):
     r = KITAP_RENK[n]
     bas = (f'<tr><th style="background:{r};color:#fff;width:44%">Kitap {n} · {HARITA[n-1][1]}</th><th style="background:{r};color:#fff;text-align:center">Yardımla</th>'
            f'<th style="background:{r};color:#fff;text-align:center">Bağımsız</th><th style="background:{r};color:#fff;width:22%">Tarih</th></tr>')
-    kutu = '<td style="text-align:center"><span style="display:inline-block;width:20px;height:20px;border:2.5px solid #94a3b8;border-radius:5px"></span></td>'
-    return (f'<table class="tbl" style="font-size:{fs}px;margin:8px 0">' + bas + ''.join(f'<tr><td>{d}</td>{kutu}{kutu}<td></td></tr>' for d in DERS[n]) + '</table>')
+    kb = 15 if fs <= 11 else 20; pd = 'padding:2px 8px' if fs <= 11 else ''
+    kutu = f'<td style="text-align:center;{pd}"><span style="display:inline-block;width:{kb}px;height:{kb}px;border:2.5px solid #94a3b8;border-radius:5px;vertical-align:middle"></span></td>'
+    return (f'<table class="tbl" style="font-size:{fs}px;margin:{4 if fs <= 11 else 8}px 0">' + bas + ''.join(f'<tr><td style="{pd}">{d}</td>{kutu}{kutu}<td style="{pd}"></td></tr>' for d in DERS[n]) + '</table>')
 
 
 k.sayfa('<div style="font-size:14px;color:#475569;margin:10px 2px 2px">Çocuğun adı: ........................................................ &nbsp; Başlama tarihi: ......................</div>' +
-        cizelge(1) + cizelge(2) + bilgi('“Yardımla” sütununu ipucu ile yaptığı, “Bağımsız” sütununu tek başına yaptığı gün işaretleyin (✔). İki ✔ arasındaki fark, yardımın nasıl azaldığını gösterir.'),
-        baslik='İlerleme çizelgesi · Kitap 1 ve 2', no='11', yonerge='Her dersten sonra ✔ koyun ve tarih yazın.')
+        cizelge(1, 11) + cizelge(2, 11),
+        baslik='İlerleme çizelgesi · Kitap 1 ve 2', no='11', yonerge='Her dersten sonra ✔ koyun ve tarih yazın.', alt_yonerge='“Yardımla”: ipucuyla yaptığı gün · “Bağımsız”: tek başına yaptığı gün. İki ✔ arasındaki fark, yardımın nasıl azaldığını gösterir.')
 k.sayfa(cizelge(3, 13) + cizelge(4, 13),
         baslik='İlerleme çizelgesi · Kitap 3 ve 4', no='12')
 k.sayfa(cizelge(5, 13) + bilgi('Kes-kullan materyallerini hazırladıkça ve kart oyunlarını oynadıkça işaretleyin.'),

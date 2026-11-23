@@ -48,7 +48,7 @@ def qr_svg(url, px=110, renk='#0f172a'):
             c = _q.QRCode(v, _q.QRErrorCorrectLevel.M); c.addData(url); c.make(); break
         except Exception:
             continue
-    n = c.getModuleCount(); q = 2; tot = n + 2 * q
+    n = c.getModuleCount(); q = 4; tot = n + 2 * q
     rects = ''.join(f'<rect x="{x+q}" y="{y+q}" width="1.02" height="1.02"/>' for y in range(n) for x in range(n) if c.isDark(y, x))
     return f'<svg viewBox="0 0 {tot} {tot}" width="{px}" height="{px}" shape-rendering="crispEdges"><rect width="{tot}" height="{tot}" fill="#fff"/><g fill="{renk}">{rects}</g></svg>'
 
@@ -180,6 +180,7 @@ html,body{margin:0;font-family:Inter,'Noto Color Emoji',sans-serif;font-feature-
 .ust .kit{margin-left:auto;font-size:12px;font-weight:700;opacity:.9}
 .yon{font-size:23px;font-weight:700;margin:14px 2px 6px;line-height:1.35}
 .yon small{display:block;font-size:13px;font-weight:600;color:#64748b;margin-top:2px}
+.alt>svg{margin:-6px 0;flex:none}
 .alt{position:absolute;left:14mm;right:14mm;bottom:8mm;display:flex;align-items:center;gap:10px;font-size:10.5px;color:#64748b;border-top:1.5px solid #e2e8f0;padding-top:6px}
 .alt b{color:#0f172a}.alt .sn{margin-left:auto}
 .kutu{border:3px solid #e2e8f0;border-radius:22px;padding:18px;margin:12px 0;min-height:215px;display:flex;align-items:center;gap:18px;justify-content:space-around}
@@ -190,7 +191,7 @@ html,body{margin:0;font-family:Inter,'Noto Color Emoji',sans-serif;font-feature-
 .bossat{flex:1}
 .cizgi{border-bottom:3px solid #94a3b8;height:62px;margin:6px 0}
 .rozet{display:inline-block;border-radius:999px;padding:6px 14px;font-weight:800;font-size:14px;color:#fff}
-.oyun{position:absolute;right:14mm;bottom:24mm;display:flex;align-items:center;gap:10px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:16px;padding:8px 12px;font-size:12px;font-weight:700;max-width:320px}
+.oyun{position:absolute;right:14mm;bottom:24mm;display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #e2e8f0;border-radius:16px;padding:4px 12px 4px 4px;font-size:12px;font-weight:700;max-width:320px}
 .not{font-size:12.5px;color:#475569;background:#f8fafc;border-left:5px solid #cbd5e1;border-radius:8px;padding:8px 12px;margin-top:10px}
 .buyuk{font-size:150px;font-weight:900;line-height:1}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl td,.tbl th{border:1.5px solid #cbd5e1;padding:6px 8px;text-align:left}.tbl th{background:#f1f5f9}
@@ -202,7 +203,7 @@ class Kitap:
         s.kod, s.ad, s.alt, s.etiket, s.seviye = kod, ad, alt, kitap_etiket, seviye
         s.renk, s.acik, s.koyu = TEMA[kod]
         s.sayfalar = []  # (tur, html)
-        s.qr = qr_svg(SET_SAYFA, 54)
+        s.qr = qr_svg(SET_SAYFA, 60)
 
     def sayfa(s, govde, baslik=None, no=None, yonerge=None, alt_yonerge=None, oyun=None, zemin='#fff', ham=False):
         """oyun=(baslik, dosya) → sitedeki ilgili dijital oyuna QR."""
@@ -216,7 +217,7 @@ class Kitap:
         h.append(govde)
         if oyun:
             ob, dosya = oyun
-            h.append(f'<div class="oyun">{qr_svg(qr_kodu(s.kod, dosya, ob), 62)}<div>Bu konunun dijital oyunu:<br><span style="color:{s.renk}">{E(ob)}</span></div></div>')
+            h.append(f'<div class="oyun">{qr_svg(qr_kodu(s.kod, dosya, ob), 78)}<div>Bu konunun dijital oyunu:<br><span style="color:{s.renk}">{E(ob)}</span></div></div>')
         s.sayfalar.append((zemin, ham, ''.join(h)))
 
     def html(s):

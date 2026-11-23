@@ -178,8 +178,8 @@ k.sayfa(g, baslik='Sayı doğrusu', no='★', yonerge='Boş kutulara eksik sayı
 
 bos3 = sorted(R.sample(range(0, 11), 5))
 g = f'''<div class="kutu" style="flex-direction:column;gap:4px;min-height:0">{sayi_dogrusu(0, 10, bos=bos3, w=W)}</div>
-<div class="kutu" style="flex-direction:column;gap:6px;min-height:0"><div style="font-size:20px;font-weight:700">Tavşan 4'ten başladı, 3 zıpladı. Nereye geldi? Daire içine al.</div>{sayi_dogrusu(0, 10, isaret=[4], atla=(4, 3), w=W)}{sec2(7, 6, 1, 60)}</div>
-<div class="kutu" style="flex-direction:column;gap:6px;min-height:0"><div style="font-size:20px;font-weight:700">Kurbağa 6'dan başladı, 2 zıpladı. Nereye geldi?</div>{sayi_dogrusu(0, 10, isaret=[6], atla=(6, 2), w=W)}{sec2(8, 9, 0, 60)}</div>'''
+<div class="kutu" style="flex-direction:column;gap:6px;min-height:0"><div style="font-size:20px;font-weight:700">Tavşan 4'ten başladı, 3 zıpladı. Nereye geldi? Daire içine al.</div>{sayi_dogrusu(0, 10, isaret=[4], atla=(4, 3), w=W)}{sec2(7, 6, 1, 50)}</div>
+<div class="kutu" style="flex-direction:column;gap:6px;min-height:0"><div style="font-size:20px;font-weight:700">Kurbağa 6'dan başladı, 2 zıpladı. Nereye geldi?</div>{sayi_dogrusu(0, 10, isaret=[6], atla=(6, 2), w=W)}{sec2(8, 9, 0, 50)}</div>'''
 assert 4 + 3 == 7 and 6 + 2 == 8
 k.sayfa(g, baslik='Sayı doğrusunda zıpla', no='★', yonerge='Eksikleri yaz, sonra zıplamaları say.', alt_yonerge='Her mavi yay bir zıplama. Yayları parmakla tek tek say.')
 
