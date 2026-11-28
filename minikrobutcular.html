@@ -341,6 +341,26 @@ button{font-family:inherit;cursor:pointer;border:0}
  #liveMini{width:100px;height:140px}#bcBox{width:140px;height:105px;bottom:76px}#zrFloat{bottom:76px}.zrPill{font-size:11px}.dpad{display:none}
  .zQ{font-size:20px}.zOpt{min-width:84px;min-height:84px;font-size:40px}.zShow{font-size:36px}.clsBar select,.clsBar input{font-size:14px}}
 @media (max-height:520px){.top{padding:4px 8px}.strip{min-height:56px}.tab{padding:4px 8px}}
+<style id="mr-v14-css">
+/* v14: sarı (sol) üstüne koyu yazı · sarı yazı okunur olsun */
+[style*="background:#f2b705"]{color:#3b2a00!important;text-shadow:none!important}
+[style*="color:#f2b705"]{color:#a87900!important}
+.lvBig{display:inline-block;font:800 30px/1.1 "Baloo 2",sans-serif;padding:8px 22px;border-radius:999px;margin-top:4px}
+.lvShake{margin-top:6px;background:#fff3cd;color:#7a4b00;border-radius:12px;padding:6px 10px;font-weight:800;font-size:14px}
+#calBan{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:85;background:#2b2350;color:#fff;border-radius:26px;padding:14px 30px;font:800 clamp(22px,3.2vw,48px)/1.15 "Baloo 2",sans-serif;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3);pointer-events:none;max-width:94vw}
+#calBan .cbS{display:flex;gap:10px;justify-content:center;margin-top:8px}#calBan .cbS i{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.3)}#calBan .cbS i.on{background:#f2b705}
+#backNote{position:fixed;top:14%;left:50%;transform:translateX(-50%);z-index:74;background:rgba(43,35,80,.82);color:#fff;border-radius:999px;padding:8px 20px;font:800 clamp(16px,1.8vw,26px) "Baloo 2",sans-serif;pointer-events:none}
+/* 📏 Çocuk Boyu: dokunulan her şey altta (sekmeler + öğrenci şeridi tahtanın altına iner) */
+body.cocuk-boyu #board .main{order:1}
+body.cocuk-boyu #board .strip{order:2;padding-bottom:6px}
+body.cocuk-boyu #board .top{order:3;padding-bottom:10px}
+body.cocuk-boyu #p-yon{justify-content:flex-end}
+body.cocuk-boyu #p-yon>.yonTask{order:1}body.cocuk-boyu #p-yon>.yonStage{order:2}body.cocuk-boyu #p-yon>.yonBar,body.cocuk-boyu #p-yon>#yBireBar{order:3}
+body.cocuk-boyu .modal{align-items:flex-end}
+body.cocuk-boyu .mBox{max-height:66vh}
+body.cocuk-alcak .mBox{max-height:50vh}
+body.cocuk-alcak #board .main{max-height:60vh}
+body.cocuk-boyu .gFlash{top:auto;bottom:34%}
 </style>
 </head>
 <body>
@@ -479,7 +499,7 @@ const firstName=n=>String(n||'').trim();
 /* ses */
 let AC;function beep(f=520,d=.12,type='sine',v=.18,delay=0){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
 const sfx={step(){beep(660,.08,'square',.08);beep(880,.08,'square',.08,.08)},ok(){[523,659,784,1046].forEach((f,i)=>beep(f,.18,'triangle',.2,i*.11))},no(){beep(200,.25,'sawtooth',.12);beep(150,.3,'sawtooth',.12,.15)},pop(){beep(900,.1,'sine',.15);beep(1300,.1,'sine',.12,.06)},jump(){const t=0;for(let i=0;i<6;i++)beep(400+i*120,.06,'square',.08,i*.04)}};
-let trVoice=null;function loadVoice(){try{const v=speechSynthesis.getVoices();trVoice=v.find(x=>/tr/i.test(x.lang))||null}catch(e){}}
+let trVoice=null;const KADIN_SES=/yelda|emel|filiz|seda|aylin|zeynep|elif|ay[sş]e|female|kad[ıi]n|woman|girl/i,ERKEK_SES=/tolga|ahmet|cem\b|kerem|murat|mehmet|ali\b|male|erkek|man\b/i;function loadVoice(){try{const v=speechSynthesis.getVoices().filter(x=>/^tr/i.test(x.lang));trVoice=v.find(x=>ERKEK_SES.test(x.name)&&!KADIN_SES.test(x.name))||v.find(x=>!KADIN_SES.test(x.name))||null;window.trVoiceKadinVar=!trVoice&&v.length>0}catch(e){}}
 try{speechSynthesis.onvoiceschanged=loadVoice;loadVoice()}catch(e){}
 function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';if(trVoice)u.voice=trVoice;u.rate=.95;u.pitch=1.15;speechSynthesis.speak(u)}catch(e){}}
 function confetti(n=40){const em=['⭐','🎉','🌟','🎈','💫','🍭','🎊'];for(let i=0;i<n;i++){const d=document.createElement('div');d.className='conf';d.textContent=pick(em);d.style.left=Math.random()*100+'vw';d.style.animationDuration=(1.8+Math.random()*1.8)+'s';d.style.animationDelay=(Math.random()*.5)+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),4200)}}
@@ -872,7 +892,7 @@ function drawPuppet(x,parts,tx,P,cx,hy,T,robo,name,o){
   // kollar + eller
   seg('lua');seg('rua');seg('lla');seg('rla');
   ['l','r'].forEach(sd=>{const W=S(sd+'w'),E=S(sd+'e');const d=Math.hypot(W.x-E.x,W.y-E.y)||1;x.beginPath();x.arc(W.x+(W.x-E.x)/d*T*.08,W.y+(W.y-E.y)/d*T*.08,T*.1,0,7);x.fillStyle=skin;x.fill();x.lineWidth=Math.max(1,T*.03);x.strokeStyle='rgba(43,35,80,.45)';x.stroke()});
-  if(o&&o.bands){[['r','#e63946'],['l','#3a86ff']].forEach(([sd,c])=>{const W=S(sd+'w'),E=S(sd+'e');const d=Math.hypot(W.x-E.x,W.y-E.y)||1;const bx=W.x-(W.x-E.x)/d*T*.06,by=W.y-(W.y-E.y)/d*T*.06;x.save();x.translate(bx,by);x.rotate(Math.atan2(W.y-E.y,W.x-E.x)-Math.PI/2);x.fillStyle=c;x.beginPath();rr(x,-T*.14,-T*.05,T*.28,T*.1,T*.04);x.fill();x.strokeStyle='#fff';x.lineWidth=Math.max(1,T*.02);x.stroke();x.restore()})}
+  if(o&&o.bands){const _sw=S('rs').x<S('ls').x;[['r',_sw?'#f2b705':'#1f86e0'],['l',_sw?'#1f86e0':'#f2b705']].forEach(([sd,c])=>{const W=S(sd+'w'),E=S(sd+'e');const d=Math.hypot(W.x-E.x,W.y-E.y)||1;const bx=W.x-(W.x-E.x)/d*T*.06,by=W.y-(W.y-E.y)/d*T*.06;x.save();x.translate(bx,by);x.rotate(Math.atan2(W.y-E.y,W.x-E.x)-Math.PI/2);x.fillStyle=c;x.beginPath();rr(x,-T*.14,-T*.05,T*.28,T*.1,T*.04);x.fill();x.strokeStyle='#fff';x.lineWidth=Math.max(1,T*.02);x.stroke();x.restore()})}
   // kafa
   const N=S('nose');let tilt=0;if(P.eyeL.v>.4&&P.eyeR.v>.4){const a=S('eyeL'),b=S('eyeR');tilt=Math.atan2(b.y-a.y,b.x-a.x);if(Math.abs(tilt)>Math.PI/2)tilt+=tilt>0?-Math.PI:Math.PI;tilt=clamp(tilt,-.6,.6)}
   const r=clamp((has?parts.hr:1.05)/2,.4,.62)*T;
@@ -1048,10 +1068,10 @@ function lvCalStep(P,sm,hm,T,sw){const c=lv.cal,now=performance.now();
    🧭 YÖN MACERASI: sağ, sol, ileri, geri kavramları
    ===================================================================== */
 const YDIR={
- sag:{t:'SAĞ',go:'SAĞA',c:'#e63946',e:'➡️',dx:1,dz:0,loc:'sağında',ans:'Sağında'},
- sol:{t:'SOL',go:'SOLA',c:'#3a86ff',e:'⬅️',dx:-1,dz:0,loc:'solunda',ans:'Solunda'},
- ileri:{t:'İLERİ',go:'İLERİ',c:'#16a34a',e:'⬆️',dx:0,dz:1,loc:'önünde',ans:'Önünde'},
- geri:{t:'GERİ',go:'GERİ',c:'#ff8a3d',e:'⬇️',dx:0,dz:-1,loc:'arkasında',ans:'Arkasında'}};
+ sag:{t:'SAĞ',go:'SAĞA',c:'#1f86e0',e:'➡️',dx:1,dz:0,loc:'sağında',ans:'Sağında'},
+ sol:{t:'SOL',go:'SOLA',c:'#f2b705',e:'⬅️',dx:-1,dz:0,loc:'solunda',ans:'Solunda'},
+ ileri:{t:'İLERİ',go:'İLERİ',c:'#1f7a3a',e:'⬆️',dx:0,dz:1,loc:'önünde',ans:'Önünde'},
+ geri:{t:'GERİ',go:'GERİ',c:'#e0312f',e:'⬇️',dx:0,dz:-1,loc:'arkasında',ans:'Arkasında'}};
 const YMAP={sag:'sag',sol:'sol',yukari:'ileri',asagi:'geri'};
 const YITEMS=[['🍌','muz','muzu'],['🍎','elma','elmayı'],['🍓','çilek','çileği'],['⚽','top','topu'],['⭐','yıldız','yıldızı'],['🎈','balon','balonu'],['🥕','havuç','havucu'],['🎂','pasta','pastayı'],['🧸','ayıcık','ayıcığı'],['🎁','hediye','hediyeyi'],['🍦','dondurma','dondurmayı'],['🚗','araba','arabayı']];
 const YLV=[{n:'Sağ – Sol',d:['sag','sol']},{n:'İleri – Geri',d:['ileri','geri']},{n:'Dört Yön',d:['sag','sol','ileri','geri']},{n:'İki Adım',k:2},{n:'Üç Adım',k:3}];
@@ -1080,7 +1100,7 @@ function yonBuild(){const P=$('#p-yon');if(P.dataset.built)return;P.dataset.buil
   <div class="yonStage" id="yonStage"><canvas id="yonCv"></canvas>
    <div class="yonPad" id="yonPad">
     <span></span><button style="background:${YDIR.ileri.c}" onclick="yInput('ileri')"><b>⬆️</b>İLERİ</button><span></span>
-    <button style="background:${YDIR.sol.c}" onclick="yInput('sol')"><b>⬅️</b>SOL</button><button style="background:var(--yel);color:var(--ink)" onclick="yAgain()"><b>🔊</b>Tekrar</button><button style="background:${YDIR.sag.c}" onclick="yInput('sag')"><b>➡️</b>SAĞ</button>
+    <button style="background:${YDIR.sol.c}" onclick="yInput('sol')"><b>⬅️</b>SOL</button><button style="background:#e5e7eb;color:var(--ink)" onclick="yAgain()"><b>🔊</b>Tekrar</button><button style="background:${YDIR.sag.c}" onclick="yInput('sag')"><b>➡️</b>SAĞ</button>
     <span></span><button style="background:${YDIR.geri.c}" onclick="yInput('geri')"><b>⬇️</b>GERİ</button><span></span>
    </div>
    <div class="yonAns hide" id="yonAns">${['sol','ileri','geri','sag'].map(d=>`<button style="background:${YDIR[d].c}" onclick="yAnswer('${d}')">${YDIR[d].e} ${YDIR[d].ans}</button>`).join('')}</div>
@@ -1129,8 +1149,8 @@ function yStep(d){if(Y.busy||!Y.item)return;const now=performance.now();
   if(Y.ax===Y.item.x&&Y.az===Y.item.z){yWin()}else{say(YDIR[d].t.toLocaleLowerCase('tr')+'! aferin');}}
  else{const want=Y.steps[0];yRec(want,false);Y.bumpT=now;Y.hint=want;Y.hintT=now+2600;sfx.no();
   const lr=(d==='sag'&&want==='sol')||(d==='sol'&&want==='sag');
-  const msg=lr?`Bu ${YDIR[d].t.toLocaleLowerCase('tr')}! ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz. ${want==='sag'?'Kırmızı':'Mavi'} bileklik olan taraf!`:`Bu ${YDIR[d].t.toLocaleLowerCase('tr')}! Şimdi ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz.`;
-  say(msg);sayBox((lr?(want==='sag'?'🔴 ':'🔵 '):'')+capF(msg))}}
+  const msg=lr?`Bu ${YDIR[d].t.toLocaleLowerCase('tr')}! ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz. ${want==='sag'?'Mavi':'Sarı'} bileklik olan taraf!`:`Bu ${YDIR[d].t.toLocaleLowerCase('tr')}! Şimdi ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz.`;
+  say(msg);sayBox((lr?(want==='sag'?'🔵 ':'🟡 '):'')+capF(msg))}}
 function yWin(){Y.busy=true;const it=Y.item.it,n=nm();Y.winT=performance.now();Y.grab={...Y.item,t:performance.now()};Y.item=null;
  sfx.ok();confetti(40);say(`Aferin ${n}! ${it[2]} aldın!`);const s=stu(active);if(s)giveStar(s.id);
  ySetText(`🎉 Aferin ${esc(n)}! ${it[0]} ${it[2]} aldın!`,null);Y.wins++;
@@ -1165,7 +1185,7 @@ function yBodyManual(ok){const B=Y.body;if(!B||B.done)return;if(ok)yBodyWin();el
 
 /* ---------- çizim ---------- */
 function yProj(x,z,W,H){const hor=H*.12,near=H*.985,s=1/(1+(z+.5)*.42);return {x:W/2+x*W*.16*s,y:hor+(near-hor)*s,s}}
-function yPill(x,c,t,X,Y0,fs,glow){x.font='800 '+fs+'px "Baloo 2",sans-serif';const w=x.measureText(t).width+fs*1.1,h=fs*1.45;x.save();if(glow){x.shadowColor=c;x.shadowBlur=fs*1.2}x.fillStyle=c;x.beginPath();rr(x,X-w/2,Y0-h/2,w,h,h/2);x.fill();x.restore();x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.fillText(t,X,Y0+fs*.04)}
+function yPill(x,c,t,X,Y0,fs,glow){x.font='800 '+fs+'px "Baloo 2",sans-serif';const w=x.measureText(t).width+fs*1.1,h=fs*1.45;x.save();if(glow){x.shadowColor=c;x.shadowBlur=fs*1.2}x.fillStyle=c;x.beginPath();rr(x,X-w/2,Y0-h/2,w,h,h/2);x.fill();x.restore();x.fillStyle=(typeof ydTxt==='function'?ydTxt(c):'#fff');x.textAlign='center';x.textBaseline='middle';x.fillText(t,X,Y0+fs*.04)}
 function yLoop(){if(tab!=='yon'){Y.running=false;return}try{if(Y.mode==='beden')yBodyTick();yDraw()}catch(e){console.warn(e)}requestAnimationFrame(yLoop)}
 function walkPose(ph,amp){const P=defPose();const a=Math.sin(ph)*amp;P.la.y-=Math.max(0,a)*.25;P.lk.y-=Math.max(0,a)*.12;P.ra.y-=Math.max(0,-a)*.25;P.rk.y-=Math.max(0,-a)*.12;P.lw.y+=a*.08;P.rw.y-=a*.08;return P}
 function yDraw(){const cv=$('#yonCv');if(!cv)return;const box=cv.parentNode,W=box.clientWidth,H=box.clientHeight;if(!W||!H)return;const dpr=Math.min(2,window.devicePixelRatio||1);if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}
@@ -1224,7 +1244,7 @@ async function showCert(id){const s=stu(id);if(!s)return;const W=1200,H=850;cons
  const d=document.createElement('canvas');d.width=360;d.height=450;const tx=await getTex(s);paintDollTx(d,tx,s.parts,colorOf(s));x.drawImage(d,90,230,360,450);
  x.fillStyle='#2b2350';x.font='800 78px "Baloo 2",sans-serif';x.fillText(s.name,W/2+150,280);
  x.font='600 34px "Baloo 2",sans-serif';x.fillStyle='#7a6fa8';x.fillText('robotik, kodlama ve yön çalışmalarında',W/2+150,350);x.fillText('harika bir iş çıkardı!',W/2+150,395);
- const D=s.dir||{};Object.keys(YDIR).forEach((k,i)=>{const v=pct(D[k]);const X=560+i*150,Yy=490;x.fillStyle=YDIR[k].c;x.beginPath();rr(x,X-62,Yy-48,124,96,24);x.fill();x.fillStyle='#fff';x.font='800 26px "Baloo 2",sans-serif';x.fillText(YDIR[k].t,X,Yy-18);x.font='800 32px "Baloo 2",sans-serif';x.fillText(v==null?'–':v+'%',X,Yy+18)});
+ const D=s.dir||{};Object.keys(YDIR).forEach((k,i)=>{const v=pct(D[k]);const X=560+i*150,Yy=490;x.fillStyle=YDIR[k].c;x.beginPath();rr(x,X-62,Yy-48,124,96,24);x.fill();x.fillStyle=(typeof ydTxt==='function'?ydTxt(YDIR[k].c):'#fff');x.font='800 26px "Baloo 2",sans-serif';x.fillText(YDIR[k].t,X,Yy-18);x.font='800 32px "Baloo 2",sans-serif';x.fillText(v==null?'–':v+'%',X,Yy+18)});
  x.fillStyle='#ff8a3d';x.font='800 48px "Baloo 2",sans-serif';x.fillText('⭐ '+(s.stars||0)+' yıldız',W/2+150,610);
  x.fillStyle='#7a6fa8';x.font='600 26px "Baloo 2",sans-serif';x.fillText(new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})+' · '+db.cur,W/2+150,700);
  const url=c.toDataURL('image/png');const m=document.createElement('div');m.className='modal';m.onclick=e=>{if(e.target===m)m.remove()};
@@ -1284,7 +1304,7 @@ function cycleSound(){setSound(SOUND-1)}
 const _rosterMsg5=rosterMsg;rosterMsg=function(){const m=_rosterMsg5();m.snd=SOUND;return m};
 (function(){const mic=document.getElementById('micBtn');if(mic&&!document.getElementById('soundBtn')){mic.insertAdjacentHTML('beforebegin',`<button class="iconBtn" id="soundBtn" title="Ses: açık / sadece efekt / kapalı" onclick="cycleSound()">${SND_LBL[SOUND].split(' ')[0]}</button>`)}})();
 
-/* ---------- mikrofon: "Ramin iki adım ileri git" ---------- */
+/* ---------- mikrofon: "Ayaz iki adım ileri git" ---------- */
 function voiceCmd(t){if(speechSynthesis.speaking||performance.now()-lastSpeakEnd<900)return;
   t=t.toLocaleLowerCase('tr').replace(/[.,!?']/g,' ');toast('🎤 '+t);
   const st=clsStudents().slice().sort((a,b)=>b.name.length-a.name.length).find(s=>{const n=s.name.toLocaleLowerCase('tr');return t.includes(n)||n.split(/\s+/).some(w=>w.length>2&&t.includes(w))});
@@ -1352,7 +1372,7 @@ function lvCal2(hm,T,sw){const c=lv.cal,now=performance.now(),el=now-c.t0;const 
   if(c.st==='ileri'||c.st==='sag'){if(el<2600)return;if(mag>.45)c.acc.push(f.slice());
     if(c.acc.length>=10){const m=[c.acc.reduce((s,a)=>s+a[0],0)/c.acc.length,c.acc.reduce((s,a)=>s+a[1],0)/c.acc.length];c[c.st]=m;c.acc=[];c.st=c.st==='ileri'?'back1':'back2';c.t0=now;lvSay(n+'şimdi eski yerine geri dön.')}
     else if(el>9000){c.acc=[];c.t0=now;if(++c.tries>2){lv.cal=null;lvSay('Adım görülemedi. Telefonu çocuğun tamamını görecek yere koyup tekrar deneyin.');return}lvSay(n+'biraz daha büyük bir adım at! '+(c.st==='ileri'?'İLERİ ⬆️':'SAĞA ➡️'))}return}
-  if(c.st==='back1'||c.st==='back2'){if(el<1500)return;if(mag<.4||el>5000){if(c.st==='back1'){c.st='sag';c.t0=now;lvSay(n+'şimdi bir adım SAĞA at ve dur! ➡️ (kırmızı bileklik tarafı)')}else lvCalFinish()}}}
+  if(c.st==='back1'||c.st==='back2'){if(el<1500)return;if(mag<.4||el>5000){if(c.st==='back1'){c.st='sag';c.t0=now;lvSay(n+'şimdi bir adım SAĞA at ve dur! ➡️ (mavi bileklik tarafı)')}else lvCalFinish()}}}
 function lvCalFinish(){const c=lv.cal;lv.cal=null;const s=c.sag,i=c.ileri;if(!s||!i){lvSay('Kalibrasyon tamamlanamadı, tekrar deneyin');return}
   const ang=Math.abs(Math.atan2(s[0]*i[1]-s[1]*i[0],s[0]*i[0]+s[1]*i[1]))*180/Math.PI;
   if(ang<35){lvSay('Sağ ve ileri adımları çok benzer göründü. Telefonu biraz çapraz koyup tekrar deneyin.');return}
@@ -1386,7 +1406,7 @@ const _pLiveHTML6=pLiveHTML;pLiveHTML=function(){let h=_pLiveHTML6();const cp=LS
   h=h.replace(/(Kalibrasyon kayıtlı ✅|⚠️ Henüz kalibrasyon yapılmadı)/,cp==='ozel'?'🎯 Özel kalibrasyon kullanılıyor':(CAMPOS[cp]||CAMPOS.arka).t+' modu');
   const camCard=`<div class="pCard" style="padding:12px"><h3 style="margin-bottom:6px">📍 Telefon nerede?</h3><div class="pRow"><button class="pBtn2 ${cp==='arka'?'g':''}" style="${cp==='arka'?'':'background:#e9e4ff;color:#2b2350'}" onclick="setCamPos('arka')">🔙 Arkasında</button><button class="pBtn2 ${cp==='on'?'g':''}" style="${cp==='on'?'':'background:#e9e4ff;color:#2b2350'}" onclick="setCamPos('on')">🔜 Karşısında</button></div><p class="lvTips" style="margin:6px 0 0">${cp==='ozel'?'🎯 Kalibrasyonla öğrenilen yönler kullanılıyor.':cp==='on'?'Telefon tahtanın yanında, çocuğa bakıyor.':'Çocuk tahtaya bakıyor, siz/telefon arkasındasınız (varsayılan).'} Yandan çekiyorsanız <b>🎯 Kalibrasyon</b> yapın.</p></div>`;
   h=h.replace('<div id="lvChips">',camCard+'<div id="lvChips">');
-  h+=`<div class="pCard"><h3>📌 Ders akışı</h3><p class="lvTips" style="margin:0">1. <b>📸 Öğrenci</b> sekmesinden çocuğun fotoğrafını çekip tahtaya gönderin.<br>2. Çocuk tahtaya baksın; telefonu <b>arkasında 2–3 metre geride</b> sabit tutun ya da bir yere yaslayın (elde sallanırsa yanlış adım sayabilir).<br>3. <b>▶️ Kamerayı Aç</b>'a basın; çocuk baştan ayağa görünsün.<br>4. Tahtada <b>🧭 Yön Macerası</b>'nı açın: tahta "Ramin, SAĞA git" der, çocuk adım atar, robotu da gider.<br>5. İsterseniz tahtadaki <b>🎤</b>'ya basıp kendiniz söyleyin: "Ramin iki adım ileri git".</p></div>`;
+  h+=`<div class="pCard"><h3>📌 Ders akışı</h3><p class="lvTips" style="margin:0">1. <b>📸 Öğrenci</b> sekmesinden çocuğun fotoğrafını çekip tahtaya gönderin.<br>2. Çocuk tahtaya baksın; telefonu <b>arkasında 2–3 metre geride</b> sabit tutun ya da bir yere yaslayın (elde sallanırsa yanlış adım sayabilir).<br>3. <b>▶️ Kamerayı Aç</b>'a basın; çocuk baştan ayağa görünsün.<br>4. Tahtada <b>🧭 Yön Macerası</b>'nı açın: tahta "Ayaz, SAĞA git" der, çocuk adım atar, robotu da gider.<br>5. İsterseniz tahtadaki <b>🎤</b>'ya basıp kendiniz söyleyin: "Ayaz iki adım ileri git".</p></div>`;
   return h};
 
 /* ---------- etkinlik altyapısı ---------- */
@@ -1445,7 +1465,7 @@ function genMaze(C,R){const w=[...Array(R)].map(()=>[...Array(C)].map(()=>({t:1,
     if(!nb.length){st.pop();continue}const [nx,ny,a,b]=pick(nb);w[y][x][a]=0;w[ny][nx][b]=0;w[ny][nx].v=1;st.push([nx,ny])}return w}
 NEWG.labirent=function(){const L=[[4,3],[5,3],[5,4],[6,4],[7,5],[8,5],[9,6]][Math.min(G.lv.labirent||0,6)];const [C,R]=L;const goal=pick(['🍎','⭐','🍌','🎁','🏆','🍦']);
   const A=gShell(`${gPre()}labirentte yolu bul, ${goal} ulaş!`);A.innerHTML=`<canvas id="mzCv" style="position:absolute;inset:0;width:100%;height:100%;touch-action:none"></canvas>
-  <div class="yonPad" style="right:10px;bottom:10px"><span></span><button style="background:${YDIR.ileri.c}" onclick="mazeMove('yukari')"><b>⬆️</b>YUKARI</button><span></span><button style="background:${YDIR.sol.c}" onclick="mazeMove('sol')"><b>⬅️</b>SOL</button><span></span><button style="background:${YDIR.sag.c}" onclick="mazeMove('sag')"><b>➡️</b>SAĞ</button><span></span><button style="background:${YDIR.geri.c}" onclick="mazeMove('asagi')"><b>⬇️</b>AŞAĞI</button><span></span></div>`;
+  <div class="yonPad" style="right:10px;bottom:10px"><span></span><button style="background:${YDIR.ileri.c}" onclick="mazeMove('yukari')"><b>⬆️</b>İLERİ</button><span></span><button style="background:${YDIR.sol.c}" onclick="mazeMove('sol')"><b>⬅️</b>SOL</button><span></span><button style="background:${YDIR.sag.c}" onclick="mazeMove('sag')"><b>➡️</b>SAĞ</button><span></span><button style="background:${YDIR.geri.c}" onclick="mazeMove('asagi')"><b>⬇️</b>GERİ</button><span></span></div>`;
   const img=new Image();const ph=gPhoto();if(ph)img.src=ph;
   MZ={C,R,w:genMaze(C,R),px:0,py:0,trail:[[0,0]],goal,img,bump:0,done:false};
   const cv=$('#mzCv');const draw=()=>{if(!MZ||!document.body.contains(cv))return;const W=A.clientWidth,H=A.clientHeight,dpr=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(W*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
@@ -1819,7 +1839,7 @@ async function drawReport(s,per){const [from,to,fd,td]=perRange(per);const R=agg
   let y=650;x.fillStyle='#2b2350';x.font=F(800,40);x.fillText('📊 Gelişim alanları',60,y);y+=24;
   if(!R.p&&!Object.keys(R.dir).length){x.font=F(600,32);x.fillStyle='#7a6fa8';x.fillText('Bu dönemde henüz etkinlik kaydı yok.',60,y+50);y+=90}
   else{const mx=Math.max(1,...R.areas.map(a=>a.p));R.areas.forEach(a=>{y+=58;x.font=F(700,28);x.fillStyle='#2b2350';x.fillText(a.t,60,y);x.fillStyle='#ece6ff';x.beginPath();rr(x,470,y-28,520,34,17);x.fill();if(a.p){x.fillStyle=a.rate>=80?'#22c55e':a.rate>=50?'#eab308':'#f97316';x.beginPath();rr(x,470,y-28,Math.max(34,520*a.p/mx),34,17);x.fill()}x.font=F(600,24);x.fillStyle='#7a6fa8';x.fillText(a.p?`${a.p} etkinlik · %${a.rate}`:'—',1005,y-2)})}
-  y+=70;x.fillStyle='#2b2350';x.font=F(800,36);x.fillText('🧭 Yön kavramları',60,y);y+=20;Object.keys(YDIR).forEach((k,i)=>{const r=R.dir[k];const v=r&&(r[0]+r[1])?Math.round(r[0]*100/(r[0]+r[1])):null;const X=60+i*285;x.fillStyle=YDIR[k].c;x.beginPath();rr(x,X,y,265,80,20);x.fill();x.fillStyle='#fff';x.textAlign='center';x.font=F(800,30);x.fillText(`${YDIR[k].t}  ${v==null?'–':'%'+v}`,X+132,y+52);x.textAlign='left'});y+=130;
+  y+=70;x.fillStyle='#2b2350';x.font=F(800,36);x.fillText('🧭 Yön kavramları',60,y);y+=20;Object.keys(YDIR).forEach((k,i)=>{const r=R.dir[k];const v=r&&(r[0]+r[1])?Math.round(r[0]*100/(r[0]+r[1])):null;const X=60+i*285;x.fillStyle=YDIR[k].c;x.beginPath();rr(x,X,y,265,80,20);x.fill();x.fillStyle=(typeof ydTxt==='function'?ydTxt(YDIR[k].c):'#fff');x.textAlign='center';x.font=F(800,30);x.fillText(`${YDIR[k].t}  ${v==null?'–':'%'+v}`,X+132,y+52);x.textAlign='left'});y+=130;
   const box=(title,text,col)=>{x.font=F(600,28);const lines=Math.ceil(x.measureText(text).width/1050)+1;const h=70+lines*38;x.fillStyle=col;x.beginPath();rr(x,50,y,W-100,h,24);x.fill();x.fillStyle='#2b2350';x.font=F(800,32);x.fillText(title,80,y+48);x.font=F(600,28);const ny=wrapText(x,text,80,y+92,W-160,38);y=Math.max(y+h,ny)+20};
   const nm=firstName(s.name);
   box('🌟 Güçlü yanları',R.strong?`${nm} bu dönemde en çok "${R.strong.t.replace(/^\S+\s/,'')}" alanında başarılı oldu.${R.fav?` En sevdiği etkinlik: ${R.fav.t}.`:''}`:`${nm} etkinliklere katıldıkça burada güçlü yanları görünecek.`,'#e8fbe9');
@@ -1858,7 +1878,7 @@ const _renderClass8=renderClass;renderClass=function(){_renderClass8();const bar
    v9: HER CİHAZ + TEK CİHAZ KAMERA + YÖN DÜZELTME + KARTOPU ARENASI
        + ZİRVE MODÜLLERİ (yalnızca okul öncesi)
    ===================================================================== */
-const SURUM='v13';
+const SURUM='v14';
 /* ---------- yakınlaştırma güvenli dokunma ---------- */
 function zf(){return parseFloat(document.documentElement.style.zoom)||1}
 function dragify(el,onDrop){el.addEventListener('pointerdown',e=>{if(el.dataset.lock)return;e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}const z=zf(),par=el.parentNode.getBoundingClientRect(),pw=el.parentNode.clientWidth,ph=el.parentNode.clientHeight;const ox=(e.clientX-par.left)/z-el.offsetLeft,oy=(e.clientY-par.top)/z-el.offsetTop;el.style.zIndex=60;el.classList.add('drag');
@@ -2272,7 +2292,7 @@ body.simple #yRot,body.simple #yBireBar button[onclick^="bireFlip"],body.simple 
    3) Öğrenci ayarları: ad düzeltme, yaş, kolay mod, sakin mod · ad listesiyle toplu öğrenci
    4) Veli raporu: PNG + PDF, telefona gönderip WhatsApp'tan paylaşma
    ===================================================================== */
-const SURUM11='v13';
+const SURUM11='v14';
 const LS11={get:(k,d)=>LS.get(k,d),set:(k,v)=>LS.set(k,v)};
 
 /* ---------------- öğrenci profili ---------------- */
@@ -2301,7 +2321,7 @@ function genAvatar(name,i){const c=document.createElement('canvas');c.width=c.he
 async function addNameList(text){const names=String(text||'').split(/[\n,;]+/).map(s=>s.trim().replace(/^\d+[\).\-\s]+/,'').slice(0,30)).filter(Boolean);let n=0;
   for(const nm of names){if(db.students.some(x=>x.cls===db.cur&&x.name.toLocaleLowerCase('tr')===nm.toLocaleLowerCase('tr')))continue;const photo=genAvatar(nm,db.students.length);const thumb=await makeThumb(photo);db.students.push({id:'s'+Date.now().toString(36)+rnd(9999),name:nm,cls:db.cur,photo,thumb,stars:0,parts:null,gen:true});onStage.add(db.students[db.students.length-1].id);n++}
   if(n){save();layoutStage();renderAll()}return n}
-function nameListModal(){const m=document.createElement('div');m.className='modal';m.onclick=e=>{if(e.target===m)m.remove()};m.innerHTML=`<div class="mBox"><h2>📋 Sınıf Listesi Ekle</h2><p style="margin:0 0 8px">Öğrenci adlarını alt alta yazın ya da yapıştırın. Hepsi <b>${esc(db.cur)}</b> sınıfına robot resmiyle eklenir; fotoğrafı sonra telefondan aynı adla gönderince otomatik değişir.</p><textarea class="pIn" id="nlT" rows="9" placeholder="Ayaz Yılmaz&#10;Elif Kaya&#10;Mete Demir"></textarea><div style="display:flex;gap:10px;justify-content:center"><button class="btnP" style="background:#16a34a" id="nlOk">➕ Ekle</button><button class="btnP" style="background:#94a3b8" onclick="this.closest('.modal').remove()">Kapat</button></div></div>`;document.body.appendChild(m);
+function nameListModal(){const m=document.createElement('div');m.className='modal';m.onclick=e=>{if(e.target===m)m.remove()};m.innerHTML=`<div class="mBox"><h2>📋 Sınıf Listesi Ekle</h2><p style="margin:0 0 8px">Öğrenci adlarını alt alta yazın ya da yapıştırın. Hepsi <b>${esc(db.cur)}</b> sınıfına robot resmiyle eklenir; fotoğrafı sonra telefondan aynı adla gönderince otomatik değişir.</p><textarea class="pIn" id="nlT" rows="9" placeholder="Ayaz Yılmaz&#10;Elif Kaya&#10;Can Demir"></textarea><div style="display:flex;gap:10px;justify-content:center"><button class="btnP" style="background:#16a34a" id="nlOk">➕ Ekle</button><button class="btnP" style="background:#94a3b8" onclick="this.closest('.modal').remove()">Kapat</button></div></div>`;document.body.appendChild(m);
   $('#nlOk').onclick=async()=>{const n=await addNameList($('#nlT').value);m.remove();toast(n?`✅ ${n} öğrenci eklendi`:'Yeni ad bulunamadı')}}
 const _renderClass11=renderClass;renderClass=function(){_renderClass11();
   $('#stGrid').querySelectorAll('.stC').forEach(c=>{const b=c.querySelector('[onclick^="renameSt"]');if(b){b.textContent='✏️ Ad / Ayar';b.classList.add('ssBtn')}});
@@ -2359,7 +2379,7 @@ function bireMoved(a,b){sfx.step();if(!Y.item||Y.busy)return;const T=Y.item,d=p=
 function bireWant(from){const T=Y.item;for(const c of Y.B.cmd){const D=YDIR[c];if((D.dx&&Math.sign(T.x-from.x)===D.dx)||(D.dz&&Math.sign(T.z-from.z)===D.dz))return c}return Y.B.cmd[0]}
 function bireWrong(a,b){const now=performance.now(),dx=b.x-a.x,dz=b.z-a.z;const moved=dx>0?'sag':dx<0?'sol':dz>0?'ileri':'geri';const want=bireWant(a);
   if(!Y.B.wrong){Y.B.wrong=true;yRec(want,false)}Y.bumpT=now;Y.hint=want;Y.hintT=now+3500;sfx.no();if(now-Y.B.msgT<2500)return;Y.B.msgT=now;
-  const lr=(moved==='sag'&&want==='sol')||(moved==='sol'&&want==='sag');const t=lr?`Bu ${YDIR[moved].t.toLocaleLowerCase('tr')}! ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz. ${want==='sag'?'Kırmızı':'Mavi'} bileklik olan taraf!`:`Bu ${YDIR[moved].t.toLocaleLowerCase('tr')}! Şimdi ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz.`;say(t);sayBox((lr?(want==='sag'?'🔴 ':'🔵 '):'🤔 ')+capF(t))}
+  const lr=(moved==='sag'&&want==='sol')||(moved==='sol'&&want==='sag');const t=lr?`Bu ${YDIR[moved].t.toLocaleLowerCase('tr')}! ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz. ${want==='sag'?'Mavi':'Sarı'} bileklik olan taraf!`:`Bu ${YDIR[moved].t.toLocaleLowerCase('tr')}! Şimdi ${YDIR[want].go.toLocaleLowerCase('tr')} gitmeliyiz.`;say(t);sayBox((lr?(want==='sag'?'🔵 ':'🟡 '):'🤔 ')+capF(t))}
 function bireWin(){Y.busy=true;const it=Y.item.it,n=nm();if(!Y.B.wrong)Y.B.cmd.forEach(d=>yRec(d,true));else yRec(Y.B.cmd[Y.B.cmd.length-1],true);
   Y.winT=performance.now();Y.grab={...Y.item,t:performance.now()};Y.item=null;Y.hint=null;sfx.ok();confetti(40);const go=Y.B.cmd.map(d=>YDIR[d].go.toLocaleLowerCase('tr')).join(', sonra ');say(`Aferin ${n}! ${capF(go)} gittin, ${it[2]} aldın!`);const s=stu(active);if(s)giveStar(s.id);
   ySetText(`🎉 Aferin ${esc(n)}! ${it[0]} ${it[2]} aldın!`,null);
@@ -2379,7 +2399,7 @@ const _yonMsg11=yonMsg;yonMsg=function(d){const a=d.a;if(a==='mode'&&d.v==='bire
   return _yonMsg11(d)};
 /* telefon: Canlı ekranında yön komutu, Yön sekmesinde birebir */
 function pBireCard(){const b=d=>`<button style="background:${YDIR[d].c};color:#fff" onclick="send({t:'yon',a:'cmd',d:'${d}'})"><b>${YDIR[d].e}</b>${YDIR[d].t}</button>`;
-  return `<div class="pCard pBire"><h3>🎯 Birebir Yön · komut ver</h3><div class="pDpad"><span></span>${b('ileri')}<span></span>${b('sol')}<button style="background:var(--yel)" onclick="send({t:'yon',a:'again'})"><b>🔊</b>Tekrar</button>${b('sag')}<span></span>${b('geri')}<span></span></div>
+  return `<div class="pCard pBire"><h3>🎯 Birebir Yön · komut ver</h3><div class="pDpad"><span></span>${b('ileri')}<span></span>${b('sol')}<button style="background:#e5e7eb;color:#1f2937" onclick="send({t:'yon',a:'again'})"><b>🔊</b>Tekrar</button>${b('sag')}<span></span>${b('geri')}<span></span></div>
    <div class="pRow"><button class="pBtn2 g" onclick="send({t:'yon',a:'center'})">📍 Ortala</button><button class="pBtn2 y" onclick="send({t:'yon',a:'auto'})">🎲 Otomatik</button></div>
    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${BLV.map((l,i)=>`<button class="mini" style="padding:6px 10px;font-size:14px" onclick="send({t:'yon',a:'blvl',v:${i}})">${i+1}. ${l.n}</button>`).join('')}</div>
    <p class="lvTips">Telefonu çocuğun <b>arkasından</b> tutun, çocuk tahtaya baksın. Yön tuşuna basınca tahta komutu söyler; çocuk yürüyünce robot <b>birebir</b> aynı yöne gider.</p></div>`}
@@ -2516,9 +2536,9 @@ setInterval(()=>{if(typeof pConn!=='undefined'&&pConn&&!pConn._v11){pConn._v11=t
    tahtadaki matın üstündeki robot aynısını yapar, gittiği yola iz bırakır.
    ===================================================================== */
 /* robotun üst yüzü (çocuğun gördüğü gibi; ⬆️ robotun önü) */
-const RBK=[{k:'dans',i:-1,j:1,e:'💃',c:'#a855f7',t:'Dans'},{k:'ileri',i:0,j:1,e:'⬆️',c:'#15803d',t:'İleri'},{k:'ses',i:1,j:1,e:'🎤',c:'#38bdf8',t:'Söyle'},
-  {k:'sol',i:-1,j:0,e:'⬅️',c:'#eab308',t:'Sol'},{k:'calis',i:0,j:0,e:'▶️',c:'#f97316',t:'Çalıştır'},{k:'sag',i:1,j:0,e:'➡️',c:'#2563eb',t:'Sağ'},
-  {k:'tekrar',i:-1,j:-1,e:'🔁',c:'#22c55e',t:'Tekrar'},{k:'geri',i:0,j:-1,e:'⬇️',c:'#dc2626',t:'Geri'},{k:'sil',i:1,j:-1,e:'✖️',c:'#ef4444',t:'Sil'}];
+const RBK=[{k:'dans',i:-1,j:1,e:'💃',c:'#a855f7',t:'Dans'},{k:'ileri',i:0,j:1,e:'⬆️',c:'#1f7a3a',t:'İleri'},{k:'ses',i:1,j:1,e:'🎤',c:'#38bdf8',t:'Söyle'},
+  {k:'sol',i:-1,j:0,e:'⬅️',c:'#f2b705',t:'Sol'},{k:'calis',i:0,j:0,e:'▶️',c:'#f47b20',t:'Çalıştır'},{k:'sag',i:1,j:0,e:'➡️',c:'#1f86e0',t:'Sağ'},
+  {k:'tekrar',i:-1,j:-1,e:'🔁',c:'#22c55e',t:'Tekrar'},{k:'geri',i:0,j:-1,e:'⬇️',c:'#e0312f',t:'Geri'},{k:'sil',i:1,j:-1,e:'✖️',c:'#ef4444',t:'Sil'}];
 const RBX={k:'bekle',e:'⏸️',c:'#64748b',t:'Bekle'};
 const RBKM=Object.fromEntries([...RBK,RBX].map(b=>[b.k,b]));
 const RBCMD=['ileri','geri','sol','sag','dans','ses','tekrar','bekle'];
@@ -2987,7 +3007,7 @@ function rbDesign(id){const old=id&&RB.custom.find(m=>m.id===id);const D=old?JSO
   const draw=()=>{const W=Math.min(560,window.innerWidth*.48),H=Math.min(window.innerHeight*.6,560);cv.width=W;cv.height=H;const x=cv.getContext('2d');x.fillStyle='#f5f3ff';x.fillRect(0,0,W,H);G=rbDrawMat(x,D,W,H,{});const p={X:G.ox+D.start[0]*G.cs+G.cs*.2,Y:G.oy+D.start[1]*G.cs+G.cs*.22};x.font=`${G.cs*.3}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText('🚩',p.X,p.Y)};
   const sel=(attr,v)=>{m.querySelectorAll('.dzPal button,.dzTools button').forEach(b=>b.classList.remove('on'));const b=m.querySelector(`[${attr}="${v}"]`);if(b)b.classList.add('on')};
   window.dzStk=i=>{tool={t:'stk',v:RB_STK[i]};sel('data-s',i)};window.dzObs=i=>{tool={t:'ob',v:RB_OBS[i]};sel('data-o',i)};
-  window.dzTool=t=>{if(t==='harf'){const v=(prompt('Hangi harf? (ör. A)')||'').trim().slice(0,1).toLocaleUpperCase('tr');if(!v)return;tool={t:'harf',v}}else if(t==='rakam'){const v=+prompt('Hangi rakam? (1-10)');if(!(v>=1&&v<=10))return;tool={t:'rakam',v}}else if(t==='yazi'){const w=(prompt('Karede ne yazsın? (ör. Mete\'nin evi)')||'').trim();if(!w)return;const e=(prompt('Bir emoji eklemek ister misiniz? (boş bırakabilirsiniz)')||'').trim().slice(0,4);tool={t:'stk',v:[e||'📍',w]}}else tool={t};sel('data-t',t)};
+  window.dzTool=t=>{if(t==='harf'){const v=(prompt('Hangi harf? (ör. A)')||'').trim().slice(0,1).toLocaleUpperCase('tr');if(!v)return;tool={t:'harf',v}}else if(t==='rakam'){const v=+prompt('Hangi rakam? (1-10)');if(!(v>=1&&v<=10))return;tool={t:'rakam',v}}else if(t==='yazi'){const w=(prompt('Karede ne yazsın? (ör. Can\'ın evi)')||'').trim();if(!w)return;const e=(prompt('Bir emoji eklemek ister misiniz? (boş bırakabilirsiniz)')||'').trim().slice(0,4);tool={t:'stk',v:[e||'📍',w]}}else tool={t};sel('data-t',t)};
   window.dzTh=k=>{D.th=k;m.querySelectorAll('.dzTh button').forEach(b=>b.classList.toggle('on',b.dataset.th===k));draw()};
   window.dzN=(k,d)=>{const old2={c:D.cols,r:D.rows};D[k]=clamp(D[k]+d,2,10);const nc=[];for(let y=0;y<D.rows;y++)for(let x2=0;x2<D.cols;x2++)nc.push(x2<old2.c&&y<old2.r?D.cells[y*old2.c+x2]||null:null);D.cells=nc;D.start=[Math.min(D.start[0],D.cols-1),Math.min(D.start[1],D.rows-1),0];m.querySelector('#dzC').textContent=D.cols;m.querySelector('#dzR').textContent=D.rows;draw()};
   window.dzClear=()=>{D.cells=[];draw()};
@@ -3080,6 +3100,179 @@ function ywTick(A,B){const W2=YW,now=performance.now(),m=Math.hypot(A,B),el=now-
 const _pLiveHTMLYW=pLiveHTML;pLiveHTML=function(){const h=_pLiveHTMLYW();const card=`<div class="pCard ywCard"><h3>🧭 Yön Sihirbazı</h3><p class="lvTips" style="margin:0 0 6px">Telefon çocuğun <b>arkasında</b>, çocuk <b>tahtaya bakıyor</b>. Kamerayı açıp bir kez yapın: çocuk 1 adım <b>sağa</b>, 1 adım <b>ileri</b> atar; sağ-sol ve ileri-geri kesinleşir. Tahtadaki robot çocuğun yüzüne bakar; çocuk sağa gidince robot da <b>ekranın sağına</b> gider.</p><div id="ywMsg" class="ywMsg">${YW?'Sihirbaz çalışıyor…':''}</div><button class="pBtn2 g" style="width:100%" onclick="ywStart()">🧭 Yönleri Otomatik Ayarla</button></div>`;
   return h.replace('<div id="lvChips">',card+'<div id="lvChips">')};
 
+</script>
+<script id="mr-v14-yon">
+/* =====================================================================
+   v14: SAĞLAM YÖN TAKİBİ + TALE-BOT RENKLERİ + ÇOCUK BOYU
+   1) 🎯 Kalibrasyon: çocuk ortada durunca (kıpırdamadığı anda) merkez alınır →
+      1 adım SAĞA (mavi bileklik tarafı) → sağ-sol işareti OTOMATİK öğrenilir ve telefonda saklanır
+   2) Elde tutulan telefon: arka plan kayması (kamera dönmesi) ölçülür ve adımdan düşülür
+   3) Tahtada: ölü bölge + yumuşatma + "merkeze dönüş hata sayılmaz"
+   4) Tek anahtar: "↔️ Sağ-sol ters mi? Çevir" (Birebir, Git ve Al, Kodla, Sahne hepsinde aynı)
+   ===================================================================== */
+const SURUM14='v14';
+/* ZİRVE · yalnız ERKEK ses: erkek Türkçe ses varsa o seçilir; kadın adlı sesler (Yelda, Filiz, Emel, Seda…) asla seçilmez; erkek ses yoksa ses kalınlaştırılır */
+function zErkekSes(){try{var v=speechSynthesis.getVoices().filter(function(x){return /^tr/i.test(x.lang)});var K=/yelda|emel|filiz|seda|aylin|zeynep|elif|ay[sş]e|female|kad[ıi]n|woman|girl/i,E=/tolga|ahmet|cem\b|kerem|murat|mehmet|male|erkek/i;return v.filter(function(x){return E.test(x.name)&&!K.test(x.name)})[0]||v.filter(function(x){return !K.test(x.name)})[0]||null}catch(e){return null}}
+function zSesAyarla(u){var v=zErkekSes();var erkek=v&&/tolga|ahmet|cem\b|kerem|murat|mehmet|male|erkek/i.test(v.name)&&!/female/i.test(v.name);if(v)u.voice=v;u.pitch=erkek?1:.82;return u}
+say=function(t){if(SOUND<2)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='tr-TR';u.rate=stEasy(stu(active))?.8:.95;zSesAyarla(u);u.onend=()=>{lastSpeakEnd=performance.now()};speechSynthesis.speak(u)}catch(e){}};
+
+
+/* ---------- ortak: renk yazısı (sarı üstüne koyu yazı) ---------- */
+function ydTxt(c){return String(c).toLowerCase()==='#f2b705'?'#3b2a00':'#fff'}
+
+/* =================== TELEFON: kamera kayması (pan) =================== */
+const PAN={W:96,H:72,cv:null,x:null,prev:null,pm:null,acc:0,spd:0,lastT:0};
+/* bir sütun profili: her sütunun parlaklık ortalamasının türevi (pozlama değişimine dayanıklı) */
+function panProfileFrom(gray,W,H){const col=new Float32Array(W);for(let x=0;x<W;x++){let s=0;for(let y=0;y<H;y++)s+=gray[y*W+x];col[x]=s/H}
+  const d=new Float32Array(W);for(let x=0;x<W-1;x++)d[x]=col[x+1]-col[x];d[W-1]=0;let m=0;for(let x=0;x<W;x++)m+=Math.abs(d[x]);m=m/W||1;for(let x=0;x<W;x++)d[x]/=m;return d}
+/* a: önceki profil, b: şimdiki; b[x+s] ≈ a[x] olan s'yi bulur. Güvenilmezse ok:false */
+function panShift(a,am,b,bm,R){R=R||6;const E=[];let best=0,bestE=Infinity;
+  for(let s=-R;s<=R;s++){let e=0,n=0;for(let x=0;x<a.length;x++){const y=x+s;if(y<0||y>=b.length||!am[x]||!bm[y])continue;e+=Math.abs(a[x]-b[y]);n++}
+    const v=n>=a.length*.25?e/n:Infinity;E.push(v);if(v<bestE){bestE=v;best=s}}
+  if(!isFinite(bestE))return {s:0,ok:false};const val=E.filter(isFinite);const mean=val.reduce((p,c)=>p+c,0)/val.length;
+  if(Math.abs(best)===R||bestE>mean*.75)return {s:0,ok:false};
+  const i=best+R,l=E[i-1],r=E[i+1];let sub=0;if(isFinite(l)&&isFinite(r)){const den=l-2*bestE+r;if(den>1e-9)sub=.5*(l-r)/den}
+  const s=best+clamp(sub,-.5,.5);return {s:Math.abs(s)<.3?0:s,ok:true}}
+function panTick(v,P,vw){const W=PAN.W,H=PAN.H;if(!PAN.cv){PAN.cv=document.createElement('canvas');PAN.cv.width=W;PAN.cv.height=H;PAN.x=PAN.cv.getContext('2d',{willReadFrequently:true})}
+  PAN.x.drawImage(v,0,0,W,H);const d=PAN.x.getImageData(0,0,W,H).data;const g=new Float32Array(W*H);for(let i=0;i<W*H;i++)g[i]=d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11;
+  const prof=panProfileFrom(g,W,H);let x0=Infinity,x1=-Infinity;KN.forEach(k=>{if(P[k].v>.3){x0=Math.min(x0,P[k].x);x1=Math.max(x1,P[k].x)}});
+  const mask=new Uint8Array(W).fill(1);if(x1>x0){const pad=(x1-x0)*.35+vw*.04;const a=Math.max(0,Math.floor((x0-pad)/vw*W)),b=Math.min(W-1,Math.ceil((x1+pad)/vw*W));for(let i=a;i<=b;i++)mask[i]=0}
+  if(PAN.prev){const r=panShift(PAN.prev,PAN.pm,prof,mask,6);if(r.ok&&r.s){PAN.acc+=r.s*vw/W}PAN.spd+=(Math.abs(r.ok?r.s:0)-PAN.spd)*.2}
+  PAN.prev=prof;PAN.pm=mask}
+
+/* =================== TELEFON: takip döngüsü (v14) =================== */
+lv.baseId=lv.baseId||0;
+function lvSetBase(b){lv.base=b;lv.sT=b.T;lv.sx=b.x;lv.baseId++}
+lvLoop=function(){if(!lv.run)return;requestAnimationFrame(lvLoop);const v=lv.video;if(!v||v.readyState<2||!v.videoWidth)return;if(v.currentTime===lv.lastTs)return;lv.lastTs=v.currentTime;
+  let r;try{r=lv.lm.detectForVideo(v,performance.now())}catch(e){return}
+  const vw=v.videoWidth,vh=v.videoHeight,cv=lv.cv;if(cv.width!==vw||cv.height!==vh){cv.width=vw;cv.height=vh}const x=cv.getContext('2d');x.clearRect(0,0,vw,vh);
+  const lm=r&&r.landmarks&&r.landmarks[0];if(!lm){if(++lv.miss>20)lvSetMsg('👀 Çocuk görünmüyor');PAN.prev=null;return}lv.miss=0;
+  const P={};KN.forEach(k=>{const p=lm[KP[k]];P[k]={x:p.x*vw,y:p.y*vh,v:p.visibility==null?1:p.visibility}});
+  const sh=['ls','rs'].filter(k=>P[k].v>.3),hp=['lh','rh'].filter(k=>P[k].v>.25);
+  if(!sh.length||!hp.length){lvDrawSk(x,P,'#ff5c93',vw);lvSetMsg('🙋 Çocuğun tamamı görünmeli, biraz geri çekilin');PAN.prev=null;return}
+  const avg=ks=>({x:ks.reduce((s,k)=>s+P[k].x,0)/ks.length,y:ks.reduce((s,k)=>s+P[k].y,0)/ks.length});
+  const sm=avg(sh),hm=avg(hp),T=dist(sm,hm),sw=sh.length===2?dist(P.ls,P.rs):T*.6;if(T<8)return;
+  lvDrawSk(x,P,'#2ec4b6',vw);
+  try{panTick(v,P,vw)}catch(e){}
+  const hx=hm.x-PAN.acc;/* kamera kaymasından arındırılmış kalça konumu */
+  lv.sT=lv.sT?lv.sT+(T-lv.sT)*.3:T;lv.sx=lv.sx?lv.sx+(hx-lv.sx)*.4:hx;
+  const now=performance.now();lv.lastPoseT=now;
+  if(!lv.base){lv.baseAcc.push({x:hx,y:hm.y,T,sw});if(lv.baseAcc.length>=15){lvSetBase(avgBase(lv.baseAcc));if(!lv.cal&&!YW)lvSetMsg(LS.get('mr_dirok',null)?'✅ Takip ediliyor, tahtaya bakın!':'✅ Takip ediliyor. Yönler için 🎯 Kalibrasyon yapın')}return}
+  if(lv.cal)lvCal2(hm,T,sw);
+  lvAutoId(v,P,sm,hm,T);
+  const [A,B]=lvSolve(lvFeat());
+  if(YW){try{ywTick(A,B,{x:hx,y:hm.y,T,sw})}catch(e){console.warn(e)}}
+  const f=lv.flip?-1:1,out=[];KN.forEach(k=>{out.push(r3((P[k].x-hm.x)/T*f),r3((P[k].y-hm.y)/T),r2(P[k].v))});
+  const oy=(lv.base.y-hm.y)/lv.base.T;
+  if(now-lv.lastSend>55){lv.lastSend=now;sendQ({t:'pose',p:out,ox:r3(A),oy:r3(oy),st:[r3(A),r3(B)],cal:(lv.cal||YW)?1:0,bid:lv.baseId})}
+  if(!lv.cal&&now-(lv.dbgT||0)>250){lv.dbgT=now;lvBigFb(A,B)}};
+/* telefonda büyük geri bildirim */
+function lvDirOf(A,B){if(Math.abs(A)<.4&&Math.abs(B)<.4)return null;return Math.abs(A)>=Math.abs(B)?(A>0?'sag':'sol'):(B>0?'ileri':'geri')}
+function lvBigFb(A,B){const e=document.getElementById('lvDbg');if(!e)return;const d=lvDirOf(A,B);const shake=PAN.spd>1.1;
+  const lab=d?`<span class="lvBig" style="background:${YDIR[d].c};color:${ydTxt(YDIR[d].c)}">${YDIR[d].e} ${YDIR[d].t}</span>`:'<span class="lvBig" style="background:#e9e4ff;color:#2b2350">⏺️ ORTADA</span>';
+  e.innerHTML=lab+`<div style="margin-top:4px">Sağ/Sol: <b>${A>=0?'+':''}${A.toFixed(1)}</b> · İleri/Geri: <b>${B>=0?'+':''}${B.toFixed(1)}</b> adım</div>`+(shake?'<div class="lvShake">📱 Telefonu sabit tutun, çocuğu takip edip çevirmeyin</div>':'')}
+
+/* =================== TELEFON: 🎯 Kalibrasyon (Yön Sihirbazı v14) =================== */
+function calUI(txt,step){sendQ({t:'calui',txt:String(txt).slice(0,90),step});const e=document.getElementById('ywMsg');if(e)e.innerHTML=`<b style="font-size:20px">${esc(txt)}</b>`}
+ywStart=function(){if(!lv.run){toast('Önce ▶️ Kamerayı Aç');return}lv.cal=null;
+  const cp=LS.get('mr_campos','arka');setCamPos(cp==='on'?'on':'arka',true);sendQ({t:'yonfix'});PAN.acc=0;
+  YW={st:'zero',t0:performance.now(),ok:0,fails:0,acc:[],last:null,lr:0,fb:0,flipS:false,flipI:false};
+  ywSay(curName()+'tahtaya bak, ortada dur ve kıpırdama.');calUI('🧍 Ortada dur, kıpırdama',1)};
+lvCalib=function(){ywStart()};
+ywTick=function(A,B,o){const W2=YW;if(!W2)return;const now=performance.now(),el=now-W2.t0;const n=curName();
+  const hold=(c,ms)=>{if(c){W2.ok=W2.ok||now;return now-W2.ok>(ms||450)}W2.ok=0;return false};
+  if(W2.st==='zero'){if(el<1500)return;
+    if(o){const L=W2.last;const still=L&&Math.abs(o.x-L.x)/o.T<.03&&Math.abs(o.T-L.T)/o.T<.04;W2.last=o;if(still)W2.acc.push(o);else W2.acc=[]}
+    if(!o||W2.acc.length>=12){if(o)lvSetBase(avgBase(W2.acc));W2.st='sag';W2.t0=now;W2.ok=0;ywSay(n+'şimdi bir adım SAĞA at, mavi bileklik tarafına! ➡️');calUI('➡️ Bir adım SAĞA (mavi bileklik tarafı)',2);return}
+    if(el>15000){YW=null;ywSay('Çocuk kıpırdamadan duramadı ya da görünmüyor. Çocuk baştan ayağa görünsün, tekrar deneyin.');calUI('⚠️ Tekrar deneyelim',-1)}return}
+  const f=lvFeat(),fx=f[0],fz=f[1];
+  if(W2.st==='sag'){if(el<600)return;
+    if(hold(Math.abs(fx)>.35)){W2.lr=Math.sign(fx);if(A<0){ywFlip('s');W2.flipS=true}
+      W2.st='b1';W2.t0=now;W2.ok=0;ywSay(n+'aferin! Şimdi eski yerine geri dön.');calUI('↩️ Eski yerine dön',2);return}
+    if(Math.abs(fx)<.2&&Math.abs(fz)>.9&&!W2.side){W2.side=1;ywSay('Telefon yandan bakıyor gibi. Telefonu çocuğun arkasına, ortaya alın.')}
+    if(el>10000){W2.t0=now;W2.ok=0;if(++W2.fails>2){YW=null;ywSay('Sağa adımı göremedim. Çocuk baştan ayağa görünsün, telefonu sabit tutun ve tekrar deneyin.');calUI('⚠️ Tekrar deneyelim',-1);return}ywSay(n+'biraz daha büyük bir adım at! SAĞA ➡️')}return}
+  if(W2.st==='b1'){if(el<500)return;if(hold(Math.abs(fx)<.3,350)||el>5000){W2.st='ileri';W2.t0=now;W2.ok=0;ywSay(n+'şimdi tahtaya doğru bir adım İLERİ at! ⬆️');calUI('⬆️ Tahtaya doğru bir adım İLERİ',3)}return}
+  if(W2.st==='ileri'){if(el<600)return;
+    if(hold(Math.abs(fz)>.5)){W2.fb=Math.sign(fz);if(B<0){ywFlip('i');W2.flipI=true}W2.st='b2';W2.t0=now;W2.ok=0;ywSay(n+'aferin! Şimdi eski yerine geri dön.');calUI('↩️ Eski yerine dön',3);return}
+    if(el>9000){W2.st='b2';W2.t0=now;W2.ok=0;W2.skipI=true;ywSay(n+'eski yerine geri dön.');}return}
+  if(W2.st==='b2'){if(el<500)return;if(hold(Math.abs(fz)<.35&&Math.abs(fx)<.3,350)||el>5000){const R=W2;YW=null;
+      LS.set('mr_dirok',{t:Date.now(),lr:R.lr,flipS:R.flipS,flipI:R.flipI});lv.base=null;lv.baseAcc=[];sendQ({t:'yonfix'});
+      const msg=(R.flipS?'Sağ-sol düzeltildi ✅':'Sağ-sol doğru ✅')+(R.skipI?' (ileri-geri varsayılan kaldı)':'');
+      ywSay('Harika! '+msg+' Artık sağ = sağ.');calUI('✅ '+msg,4);if(navigator.vibrate)navigator.vibrate([80,60,80]);setTimeout(()=>sendQ({t:'yon',a:'center'}),900)}}};
+
+/* eski tam kalibrasyon metni: renk dili */
+const _pLiveHTML14=pLiveHTML;pLiveHTML=function(){let h=_pLiveHTML14();
+  h=h.replace('↔️ Sağ-sol ters</button>','↔️ Sağ-sol ters mi? Çevir</button>').replace('↕️ İleri-geri ters</button>','↕️ İleri-geri ters mi? Çevir</button>');
+  h=h.replace('🧭 Yönleri Otomatik Ayarla','🎯 Kalibrasyon: Yönleri Otomatik Ayarla');
+  h=h.replace(/çocuk 1 adım <b>sağa<\/b>, 1 adım <b>ileri<\/b> atar/,'çocuk ortada durur, 1 adım <b>sağa</b> (🔵 mavi bileklik), 1 adım <b>ileri</b> atar');
+  h=h.replace('Tahtadaki robot çocuğun yüzüne bakar; çocuk sağa gidince robot da <b>ekranın sağına</b> gider.','Tahtadaki robot çocuk gibi <b>sırtı dönük</b> durur; çocuk sağa gidince robot da <b>ekranın sağına</b> gider. <b>Telefonu sabit tutun</b>, çocuğu takip edip çevirmeyin.');
+  return h};
+
+/* =================== TAHTA: tek sağ-sol anahtarı =================== */
+(function(){const o=LS.get('mr_bflip',{})||{};live.lr=LS.get('mr_lrflip',null);live.fbf=LS.get('mr_fbflip',null);
+  if(live.lr==null){live.lr=o.fa===-1;LS.set('mr_lrflip',live.lr)}if(live.fbf==null){live.fbf=o.fb===-1;LS.set('mr_fbflip',live.fbf)}
+  try{Y.B.fa=1;Y.B.fb=1;LS.set('mr_bflip',{fa:1,fb:1})}catch(e){}})();
+function yonLRFlip(){live.lr=!live.lr;LS.set('mr_lrflip',live.lr);live.g.ra=null;try{Y.B.was=false}catch(e){}toast(live.lr?'↔️ Sağ-sol ÇEVRİLDİ (ters ayar açık)':'↔️ Sağ-sol normale döndü');yonFlipLbl()}
+function yonFBFlip(){live.fbf=!live.fbf;LS.set('mr_fbflip',live.fbf);live.g.ra=null;try{Y.B.was=false}catch(e){}toast(live.fbf?'↕️ İleri-geri ÇEVRİLDİ':'↕️ İleri-geri normale döndü');yonFlipLbl()}
+function yonFlipLbl(){document.querySelectorAll('.lrLbl').forEach(e=>e.textContent=live.lr?'AÇIK (çevrilmiş)':'normal');document.querySelectorAll('.fbLbl').forEach(e=>e.textContent=live.fbf?'AÇIK (çevrilmiş)':'normal')}
+bireFlip=function(k){k==='fb'?yonFBFlip():yonLRFlip()};
+const _onPose14=onPose;onPose=function(d){if(!d||!Array.isArray(d.p))return _onPose14(d);
+  if(d.bid!=null&&d.bid!==live.bid){const first=live.bid==null;live.bid=d.bid;live.A=null;live.B=null;live.g.ra=null;try{Y.B.was=false}catch(e){}if(!first)live.rebT=performance.now()}
+  if(live.lr||live.fbf){d=Object.assign({},d);if(live.lr){d.p=d.p.map((v,i)=>i%3===0?-v:v);d.ox=-(+d.ox||0)}if(Array.isArray(d.st))d.st=[live.lr?-(+d.st[0]||0):+d.st[0]||0,live.fbf?-(+d.st[1]||0):+d.st[1]||0]}
+  return _onPose14(d)};
+
+/* =================== TAHTA: adım algılama (ölü bölge + yumuşatma + merkeze dönüş) =================== */
+/* hücre: ölü bölge ±0.38 adım, değişim için 0.62 adım gerekir (histerezis) */
+function yCell(v,c){return Math.abs(v-c)>.62?Math.round(v):c}
+function yExpect(d){try{return tab==='yon'&&Y.mode==='git'&&!!Y.item&&!Y.busy&&Y.steps.includes(d)}catch(e){return false}}
+function yBackNote(){let e=document.getElementById('backNote');if(!e){e=document.createElement('div');e.id='backNote';document.body.appendChild(e)}e.textContent='↩️ Ortaya döndü · hata değil';e.classList.remove('hide');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.add('hide'),1100)}
+gesturesST=function(n,A,B,oy){const g=live.g,now=performance.now();let ev=null;
+  if(g.ra==null){g.sa=A;g.sb=B;g.cx=yCell(A,Math.round(A));g.cz=yCell(B,Math.round(B));g.pc=null;g.ra=0}
+  g.sa+=(A-g.sa)*.5;g.sb+=(B-g.sb)*.5;
+  const nx=yCell(g.sa,g.cx),nz=yCell(g.sb,g.cz);
+  if(nx!==g.cx||nz!==g.cz){if(g.pc&&g.pc.x===nx&&g.pc.z===nz)g.pcN++;else{g.pc={x:nx,z:nz};g.pcN=1}
+    if(g.pcN>=2){const dx=nx-g.cx,dz=nz-g.cz;let d=null,tow=false;
+      if(dx&&Math.abs(dx)>=Math.abs(dz)){d=dx>0?'sag':'sol';tow=Math.abs(nx)<Math.abs(g.cx)}else if(dz){d=dz>0?'ileri':'geri';tow=Math.abs(nz)<Math.abs(g.cz)}
+      g.cx=nx;g.cz=nz;g.pc=null;g.stepT=now;
+      if(d){if(tow&&!yExpect(d)){g.backN=(g.backN||0)+1;yBackNote()}else ev=d}}}
+  else g.pc=null;
+  const up=n.lw.v>.4&&n.rw.v>.4&&n.lw.y<n.nose.y&&n.rw.y<n.nose.y;
+  if(up){g.upN++;if(g.up&&g.upN>=3){ev=ev||'yukari';g.up=false}}else{g.upN=0;if(n.lw.y>n.ls.y&&n.rw.y>n.rs.y)g.up=true}
+  const calm=now-(g.stepT||0)>700;
+  if(g.sq&&oy<-.4&&calm){ev=ev||'asagi';g.sq=false}else if(!g.sq&&oy>-.15)g.sq=true;
+  if(g.jp&&oy>.25&&calm){ev=ev||'zipla';g.jp=false}else if(!g.jp&&oy<.08)g.jp=true;
+  if(ev)onGesture(ev)};
+
+/* Birebir: merkeze (başlangıca) dönüş hata sayılmaz + büyük yön işareti */
+const _bireMoved14=bireMoved;bireMoved=function(a,b){const dx=b.x-a.x,dz=b.z-a.z;const d=dx>0?'sag':dx<0?'sol':dz>0?'ileri':dz<0?'geri':null;if(d&&tab==='yon')gFlash2(d);return _bireMoved14(a,b)};
+const _bireWrong14=bireWrong;bireWrong=function(a,b){const home={x:0,z:1};const tow=(b.x!==a.x&&Math.abs(b.x-home.x)<Math.abs(a.x-home.x))||(b.z!==a.z&&Math.abs(b.z-home.z)<Math.abs(a.z-home.z));
+  if(tow){const now=performance.now();Y.hint=bireWant(a);Y.hintT=now+2500;yBackNote();return}return _bireWrong14(a,b)};
+
+/* =================== TAHTA: büyük kalibrasyon şeridi =================== */
+function calBan(txt,step){let e=document.getElementById('calBan');if(!e){e=document.createElement('div');e.id='calBan';document.body.appendChild(e)}
+  e.innerHTML=`<div class="cbT">${esc(txt)}</div>${step>0&&step<4?`<div class="cbS">${[1,2,3].map(i=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div>`:''}`;e.classList.remove('hide');clearTimeout(e._t);if(step>=4||step<0)e._t=setTimeout(()=>e.classList.add('hide'),3500);else e._t=setTimeout(()=>e.classList.add('hide'),20000)}
+const _extMsg14=extMsg;extMsg=function(d,c){if(d&&d.t==='calui'){calBan(String(d.txt||''),+d.step||0);return}if(d&&d.t==='yonfix'){live.lr=false;live.fbf=false;LS.set('mr_lrflip',false);LS.set('mr_fbflip',false);yonFlipLbl()}return _extMsg14(d,c)};
+
+/* =================== Tek cihaz (tahtanın kendi kamerası): sağa adımla öğren =================== */
+const _bcRebase14=bcRebase;bcRebase=function(){_bcRebase14();BC.learn={t0:performance.now()};setTimeout(()=>{if(BC.learn){say('Şimdi bir adım sağa at, mavi bileklik tarafına!');calBan('➡️ Bir adım SAĞA (mavi bileklik tarafı)',2)}},1800)};
+const _onPoseBC14=onPose;onPose=function(d){if(BC&&BC.run&&BC.learn&&BC.base&&d&&Array.isArray(d.st)&&!d.bid){const now=performance.now(),A=+d.st[0]||0,L=BC.learn;
+    if(now-L.t0>2400){if(Math.abs(A)>.5){L.n=(L.n||0)+1;if(L.n>=6){if(A<0){bcFlip()}BC.learn=null;live.lr=false;LS.set('mr_lrflip',false);say(A<0?'Sağ sol düzeltildi.':'Sağ sol doğru.');calBan(A<0?'✅ Sağ-sol düzeltildi':'✅ Sağ-sol doğru',4);bcRebase14b()}}else L.n=0;if(BC.learn&&now-L.t0>14000){BC.learn=null;calBan('⚠️ Sağa adımı göremedim',-1)}}}
+  return _onPoseBC14(d)};
+function bcRebase14b(){setTimeout(()=>{BC.base=null;BC.acc=[]},1500)}
+
+/* =================== Ayarlar: yön satırı ve Çocuk Boyu =================== */
+function cbSeviye(){const u=location.search.match(/[?&]cocuk=([012])/);if(u)return +u[1];let v=null;try{v=localStorage.getItem('zirve_cocuk_boyu')}catch(e){}if(v==null)return tahtaMi()?1:0;return Math.max(0,Math.min(2,+v||0))}
+function tahtaMi(){const d=('ontouchstart' in window)||navigator.maxTouchPoints>0;const dpr=devicePixelRatio||1,mx=Math.max(screen.width,screen.height);return /[?&]tahta=1/.test(location.search)||(d&&mx>=1700&&dpr<=1.3)||(d&&mx*dpr>=3000&&!/iPhone|iPad|Mobile/.test(navigator.userAgent))||(/Windows/.test(navigator.userAgent)&&d&&mx*dpr>=3000)}
+const CB_AD=['Kapalı','Açık','Çok alçak'];
+function cocukBoyuUygula(){const s=cbSeviye();document.body.classList.toggle('cocuk-boyu',s>0);document.body.classList.toggle('cocukBoyu',s>0);document.body.classList.toggle('cocuk-alcak',s===2);document.querySelectorAll('.cbLbl').forEach(e=>e.textContent=CB_AD[s])}
+function cbAyarla(s){try{localStorage.setItem('zirve_cocuk_boyu',String(s))}catch(e){}cocukBoyuUygula();toast(['📏 Çocuk boyu kapalı','📏 Çocuk boyu açık: dokunulan her şey altta','📏 Çok alçak: dokunulan her şey ekranın alt yarısında'][s])}
+function cocukBoyuDegis(){cbAyarla((cbSeviye()+1)%3)}
+cocukBoyuUygula();
+const _ayarModal14=ayarModal;ayarModal=function(){_ayarModal14();const m=document.querySelector('.modal .ayarBox');if(!m)return;
+  const r=m.querySelector('.ayR button[onclick^="bireFlip"]');const row=r?r.closest('.ayR'):null;
+  const yonRow=`<div class="ayR"><b>🧭 Yön</b><button class="yBtn" onclick="yonLRFlip()">↔️ Sağ-sol ters mi? Çevir · <span class="lrLbl"></span></button><button class="yBtn" onclick="yonFBFlip()">↕️ İleri-geri ters mi? Çevir · <span class="fbLbl"></span></button></div>`;
+  const cbRow=`<div class="ayR"><b>📏 Çocuk Boyu</b>${CB_AD.map((t,i)=>`<button class="yBtn ${cbSeviye()===i?'on':''}" onclick="cbAyarla(${i});this.closest('.modal').remove();ayarModal()">${t}</button>`).join('')}</div>`;
+  if(row)row.outerHTML=yonRow+cbRow;else m.querySelector('h2').insertAdjacentHTML('afterend',yonRow+cbRow);yonFlipLbl()};
 </script>
 <script id="bo-siteye-don">/* Barış Öğretmen · her çalışmadan siteye dönüş düğmesi */(function(){try{if(window.top!==window||document.getElementById('bo-don'))return;var S='https://baris-ogretmen.github.io/site-1/';function kur(){if(document.getElementById('bo-don'))return;var b=document.createElement('a');b.id='bo-don';b.href=S;b.textContent='🏠 Site';b.title='Barış Öğretmen sitesine dön (sürükleyerek taşıyabilirsin)';b.setAttribute('aria-label','Siteye dön');var p=null;try{p=JSON.parse(localStorage.getItem('bo_don_pos'))}catch(e){}b.style.cssText='position:fixed;z-index:2147483000;background:rgba(15,23,42,.72);color:#fff;font:700 14px/1 system-ui,-apple-system,sans-serif;padding:10px 13px;border-radius:999px;text-decoration:none;opacity:.6;box-shadow:0 2px 8px rgba(0,0,0,.25);touch-action:none;user-select:none;-webkit-user-select:none;'+(p?'left:'+p[0]+'px;top:'+p[1]+'px;':'left:8px;bottom:calc(8px + env(safe-area-inset-bottom));');var sx,sy,ox,oy,tas=false,bas=false;b.addEventListener('pointerdown',function(e){bas=true;tas=false;sx=e.clientX;sy=e.clientY;var r=b.getBoundingClientRect();ox=r.left;oy=r.top;try{b.setPointerCapture(e.pointerId)}catch(x){}});b.addEventListener('pointermove',function(e){if(!bas)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(!tas&&Math.hypot(dx,dy)>8)tas=true;if(tas){var x=Math.max(0,Math.min(innerWidth-b.offsetWidth,ox+dx)),y=Math.max(0,Math.min(innerHeight-b.offsetHeight,oy+dy));b.style.left=x+'px';b.style.top=y+'px';b.style.bottom='auto';}});b.addEventListener('pointerup',function(){bas=false;if(tas){var r=b.getBoundingClientRect();try{localStorage.setItem('bo_don_pos',JSON.stringify([Math.round(r.left),Math.round(r.top)]))}catch(x){}}});b.addEventListener('click',function(e){if(tas){e.preventDefault();tas=false;return}try{if(document.referrer.indexOf('baris-ogretmen.github.io/site-1')>-1&&history.length>1){e.preventDefault();history.back();setTimeout(function(){location.href=S},700)}}catch(x){}});b.onmouseenter=function(){b.style.opacity='1'};b.onmouseleave=function(){b.style.opacity='.6'};(document.body||document.documentElement).appendChild(b)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',kur);else kur();setInterval(kur,1500)}catch(e){}})();</script>
 </body>
